@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Painel administrativo do MBA Backoffice">
+  <title>MBA Backoffice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="agreements.css">
+</head>
+<body class="auth-loading">
+  <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
+    <div class="login-panel">
+      <div class="login-box">
+        <p class="login-brand"><strong>MBA</strong><span>Backoffice</span></p>
+        <div class="login-divider" aria-hidden="true"></div>
+        <div class="auth-view" id="login-view">
+        <h1>Entrar</h1>
+        <p class="login-subtitle">Use sua conta corporativa para acessar o sistema.</p>
+
+        <form class="login-form" id="task-worker-login-form" autocomplete="on">
+          <div class="login-field"><label for="task-worker-email">E-mail</label><input id="task-worker-email" name="email" type="email" autocomplete="email" required></div>
+          <button class="credentials-login" id="task-worker-login-submit" type="submit">Entrar</button>
+        </form>
+        <div class="login-or" aria-hidden="true">ou</div>
+        <button class="google-login" id="google-login" type="button" data-auth-provider="google" aria-label="Entrar com Google">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.47h5.52c-.11.86-.71 2.16-2.05 3.03l-.02.12 2.98 2.31.2.02c1.85-1.71 2.97-4.23 2.97-7.15Z"/>
+            <path fill="#34A853" d="M12 22c2.69 0 4.95-.89 6.6-2.42l-3.15-2.45c-.84.57-1.97.97-3.45.97-2.59 0-4.78-1.72-5.57-4.1l-.12.01-3.1 2.4-.04.11C4.8 19.76 8.14 22 12 22Z"/>
+            <path fill="#FBBC05" d="M6.43 14a6.1 6.1 0 0 1-.33-2c0-.7.12-1.38.32-2l-.01-.13-3.14-2.44-.1.05A10 10 0 0 0 2 12c0 1.62.39 3.15 1.17 4.52L6.43 14Z"/>
+            <path fill="#EA4335" d="M12 5.9c1.87 0 3.13.81 3.85 1.47l2.82-2.75C16.94 3.02 14.69 2 12 2 8.14 2 4.8 4.24 3.17 7.48L6.42 10C7.22 7.62 9.41 5.9 12 5.9Z"/>
+          </svg>
+          <span>Continuar com Google</span>
+        </button>
+        </div>
+
+        <div class="login-security">
+          <i data-lucide="shield-check"></i>
+          <span>Acesso restrito a usuários autorizados.</span>
+        </div>
+        <div class="login-error" id="login-error" role="alert"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <div class="brand"><span>MBA</span> <span class="brand-word">Backoffice</span></div>
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true"><i data-lucide="panel-left-close"></i></button>
+      </div>
+      <p class="brand-caption">Hub de Gestão</p>
+
+      <nav class="main-nav" aria-label="Navegação principal">
+        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="house"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="workflow"></i><span>Automações</span></button>
+        <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
+        <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
+        <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
+        <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="handshake"></i><span>Acordos</span></button>
+        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span></button>
+        <button class="nav-item" data-page="usuarios" data-permission="users.view"><i data-lucide="users"></i><span>Usuários</span></button>
+      </nav>
+
+      <div class="sidebar-bottom" data-permission="settings.view">
+        <button class="nav-item" data-page="configuracoes"><i data-lucide="settings"></i><span>Configurações</span></button>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-spacer"><span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span></div>
+        <div class="top-actions">
+          <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
+          <div class="profile" aria-label="Usuário autenticado">
+            <span class="avatar" id="profile-avatar">U</span>
+            <span class="profile-copy"><strong id="profile-name">Usuário</strong><small id="profile-role">Carregando perfil...</small></span>
+          </div>
+          <button class="logout-button" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="page active" id="dashboard" data-permission="dashboard.view">
+          <section class="welcome-card">
+            <div class="welcome-copy">
+              <h1>Bem-vindo, <span id="welcome-name">usuário</span>!</h1>
+              <p>Acompanhe aqui as integrações de Liminar e CNJ/DataJud.</p>
+              <div class="summary-grid">
+                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="shield-check"></i></span><div><strong>API Liminar</strong><small id="dashboard-liminar-status">Verificando</small></div></article>
+                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="landmark"></i></span><div><strong>CNJ/DataJud</strong><small id="dashboard-datajud-status">Verificando</small></div></article>
+                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="shield-check"></i></span><div><strong>Sessão segura</strong><small>Supabase Auth ativo</small></div></article>
+                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="server"></i></span><div><strong>Backend VPS</strong><small>Conectado</small></div></article>
+              </div>
+            </div>
+          </section>
+
+          <div class="dashboard-grid">
+            <section class="panel automation-panel">
+              <div class="panel-heading"><h2>Automações em andamento</h2><button data-go="automacoes">Ver todas</button></div>
+              <div class="empty-state"><span class="empty-icon"><i data-lucide="workflow"></i></span><strong>Nenhuma automação em andamento</strong><p>As execuções ativas aparecerão aqui.</p></div>
+              <button class="panel-footer" data-go="automacoes">Acessar automações <i data-lucide="arrow-right"></i></button>
+            </section>
+            <section class="panel scheduled-panel">
+              <div class="panel-heading"><h2>Automações agendadas</h2><button data-go="automacoes">Ver todas</button></div>
+              <div class="empty-state"><span class="empty-icon"><i data-lucide="calendar-clock"></i></span><strong>Nenhum agendamento próximo</strong><p>Os próximos agendamentos aparecerão aqui.</p></div>
+            </section>
+          </div>
+
+          <section class="panel indicators-panel">
+            <div class="panel-heading"><div><h2>Indicadores do dia</h2><p class="panel-subtitle">Resumo operacional de hoje.</p></div></div>
+            <div class="indicator-grid">
+              <article class="indicator blue"><span><i data-lucide="files"></i></span><div><small>Tutelas analisadas</small><strong>—</strong><em>Sem dados</em></div></article>
+              <article class="indicator green"><span><i data-lucide="lock-keyhole"></i></span><div><small>Bloqueios encontrados</small><strong>—</strong><em>Sem dados</em></div></article>
+              <article class="indicator blue"><span><i data-lucide="circle-dollar-sign"></i></span><div><small>Pagamentos conciliados</small><strong>—</strong><em>Sem dados</em></div></article>
+              <article class="indicator amber"><span><i data-lucide="send"></i></span><div><small>Protocolos enviados</small><strong>—</strong><em>Sem dados</em></div></article>
+            </div>
+          </section>
+        </section>
+
+        <section class="page list-page" id="automacoes" data-permission="automations.view">
+          <div class="page-title"><div><h1>Integrações</h1><p>Execute e acompanhe as APIs operacionais do MBA Backoffice.</p></div></div>
+
+          <div class="module-grid">
+            <article class="automation-card" data-integration-card="liminar">
+              <div class="module-icon blue"><i data-lucide="shield-check"></i></div>
+              <div class="module-copy"><div class="module-title-row"><h2>API de Liminar</h2><span class="status-badge" id="liminar-health">Verificando</span></div><p>Executa a consulta automatizada de tutela e persiste resultados no Supabase.</p><div class="module-meta"><span><small>Execução atual</small><strong id="liminar-job-status">—</strong></span><span><small>Progresso</small><strong id="liminar-job-progress">—</strong></span></div></div>
+              <div class="module-actions"><button class="primary-button integration-run-button" data-integration="liminar" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="liminar"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
+            </article>
+
+            <article class="automation-card" data-integration-card="datajud">
+              <div class="module-icon green"><i data-lucide="landmark"></i></div>
+              <div class="module-copy"><div class="module-title-row"><h2>CNJ / DataJud</h2><span class="status-badge" id="datajud-health">Verificando</span></div><p>Importa e atualiza informações processuais consultadas na API pública do CNJ.</p><div class="module-meta"><span><small>Execução atual</small><strong id="datajud-job-status">—</strong></span><span><small>Progresso</small><strong id="datajud-job-progress">—</strong></span></div></div>
+              <div class="module-actions"><button class="primary-button integration-run-button" data-integration="datajud" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="datajud"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
+            </article>
+
+            <article class="automation-card" data-integration-card="encerramentos">
+              <div class="module-icon amber"><i data-lucide="file-check-2"></i></div>
+              <div class="module-copy"><div class="module-title-row"><h2>Agente de Encerramentos</h2><span class="status-badge" id="encerramentos-health">Verificando</span></div><p>Pesquisa processos no Enter e classifica indícios de encerramento conforme os critérios selecionados.</p><div class="module-meta"><span><small>Execução atual</small><strong id="encerramentos-job-status">—</strong></span><span><small>Progresso</small><strong id="encerramentos-job-progress">—</strong></span></div></div>
+              <div class="module-actions"><button class="primary-button integration-run-button" data-integration="encerramentos" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="encerramentos"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
+            </article>
+
+          </div>
+        </section>
+
+        <section class="page list-page tutelas-page" id="tutelas" data-permission="tutelas.view">
+          <div class="page-title tutelas-title">
+            <div>
+              <h1>Tutelas</h1>
+              <p>Identifique processos com indício de pedido de tutela por meio da automação.</p>
+            </div>
+            <div class="page-title-actions">
+              <button class="secondary-button" id="tutelas-add-cases" type="button" data-permission="automations.run"><i data-lucide="plus"></i>Adicionar casos</button>
+              <button class="primary-button integration-run-button" id="tutelas-run-button" data-integration="liminar" data-permission="automations.run">
+              <i data-lucide="search"></i>Procurar tutela
+              </button>
+            </div>
+          </div>
+
+          <section class="tutelas-summary" aria-label="Resumo das consultas de tutela">
+            <article class="stat-card">
+              <span class="stat-card-icon"><i data-lucide="folder"></i></span>
+              <div><strong id="tutelas-total">—</strong><span>Total de processos</span><small>Cadastrados</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card-icon"><i data-lucide="search-check"></i></span>
+              <div><strong id="tutelas-com-indicio">—</strong><span>Com indício</span><small>Resultado da consulta</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card-icon"><i data-lucide="search-x"></i></span>
+              <div><strong id="tutelas-sem-indicio">—</strong><span>Sem indício</span><small>Resultado da consulta</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card-icon"><i data-lucide="clock-3"></i></span>
+              <div><strong id="tutelas-nao-consultados">—</strong><span>Não consultados</span><small>Aguardando busca</small></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-card-icon"><i data-lucide="triangle-alert"></i></span>
+              <div><strong id="tutelas-erros">—</strong><span>Erros na consulta</span><small>Necessitam nova tentativa</small></div>
+            </article>
+          </section>
+
+          <section class="panel tutelas-panel">
+            <div class="tutelas-toolbar">
+              <label class="tutelas-search">
+                <i data-lucide="search"></i>
+                <input id="tutelas-search" type="search" placeholder="Buscar por número do processo..." autocomplete="off">
+              </label>
+              <label class="tutelas-filter">
+                <span>Cliente</span>
+                <select id="tutelas-cliente-filter"><option value="">Todos</option></select>
+              </label>
+              <label class="tutelas-filter">
+                <span>Pedido</span>
+                <select id="tutelas-pedido-filter">
+                  <option value="">Todos</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </label>
+              <label class="tutelas-filter tutelas-date-filter">
+                <span>Data da consulta</span>
+                <input id="tutelas-date-filter" type="date">
+              </label>
+              <button class="tutelas-clear" id="tutelas-clear-filters" type="button"><i data-lucide="list-filter-x"></i>Limpar filtros</button>
+            </div>
+
+            <div class="tutelas-tabs" role="tablist" aria-label="Filtrar resultado da consulta">
+              <button class="tutelas-tab active" type="button" data-tutela-result="" role="tab" aria-selected="true">Todos</button>
+              <button class="tutelas-tab" type="button" data-tutela-result="com_indicio" role="tab">Com indício <span id="tutelas-tab-com-indicio">—</span></button>
+              <button class="tutelas-tab" type="button" data-tutela-result="sem_indicio" role="tab">Sem indício <span id="tutelas-tab-sem-indicio">—</span></button>
+              <button class="tutelas-tab" type="button" data-tutela-result="nao_consultado" role="tab">Não consultados <span id="tutelas-tab-nao-consultados">—</span></button>
+              <button class="tutelas-tab" type="button" data-tutela-result="erro" role="tab">Erros <span id="tutelas-tab-erros">—</span></button>
+            </div>
+
+            <div class="tutelas-table-scroll">
+              <table class="tutelas-table">
+                <thead>
+                  <tr><th>Processo</th><th>Cliente</th><th>Resultado</th><th>Pedido</th><th>Última consulta</th><th>Ações</th></tr>
+                </thead>
+                <tbody id="tutelas-table-body" data-db-source="tutelas">
+                  <tr class="tutelas-empty-row"><td colspan="6"><div class="tutelas-empty"><i data-lucide="database"></i><strong>Nenhum processo carregado</strong><span>Os processos cadastrados aparecerão aqui.</span></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="tutelas-footer">
+              <span id="tutelas-pagination-label">Nenhum registro exibido</span>
+              <div class="tutelas-pagination" id="tutelas-pagination" aria-label="Paginação"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page list-page" id="encerramentos" data-permission="encerramentos.view">
+          <div class="page-title"><div><h1>Encerramentos</h1><p>Execute o agente e acompanhe a classificação dos processos consultados.</p></div><div class="page-title-actions"><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="encerramentos"><i data-lucide="list-checks"></i>Histórico</button><button class="primary-button integration-run-button" data-integration="encerramentos" data-permission="automations.run"><i data-lucide="play"></i>Executar agente</button></div></div>
+          <section class="panel integration-guide"><span class="row-icon amber"><i data-lucide="info"></i></span><div><strong>Como funciona</strong><p>Informe um CNJ por linha, escolha os critérios aplicáveis e acompanhe o progresso em tempo real. O arquivo fica disponível ao concluir.</p></div></section>
+          <section class="panel payments-table-panel" id="encerramentos-results-panel"><div class="panel-heading"><h2 id="encerramentos-results-title">Último resultado concluído</h2></div><div class="table-scroll"><table class="task-table"><thead><tr><th>Processo</th><th>Status</th><th>Resultado</th><th>Critério</th><th>Erro</th></tr></thead><tbody id="encerramentos-results-body"><tr><td colspan="5">Nenhum resultado selecionado.</td></tr></tbody></table></div></section>
+        </section>
+
+        <section class="page list-page pagamentos-page" id="pagamentos" data-permission="pagamentos.view">
+          <div class="page-title"><div><h1>Pagamentos</h1><p>Importe a base do cliente, acompanhe os indicadores e valide a ACP.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="pagamentos-export-button" type="button"><i data-lucide="download"></i>Exportar</button><button class="primary-button page-action-button" id="pagamentos-import-button" type="button" data-permission="pagamentos.import"><i data-lucide="upload"></i>Importar base</button></div></div>
+          <section class="tutelas-summary payments-summary" id="pagamentos-cards" aria-label="Resumo de pagamentos">
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="circle-dollar-sign"></i></span><div><strong id="pagamentos-total-pago">—</strong><span>Total pago</span><small>No período filtrado</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="receipt"></i></span><div><strong id="pagamentos-quantidade">—</strong><span>Pagamentos</span><small>Registros conciliados</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="trending-up"></i></span><div><strong id="pagamentos-ticket-medio">—</strong><span>Ticket médio</span><small>Valor por pagamento</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="clock-3"></i></span><div><strong id="pagamentos-tempo-medio">—</strong><span>Tempo médio</span><small>Dias até o pagamento</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="building-2"></i></span><div><strong id="pagamentos-credenciados-ativos">—</strong><span>Credenciados ativos</span><small>Com pagamentos no período</small></div></article>
+          </section>
+          <section class="panel tutelas-panel pagamentos-tools"><div class="tutelas-toolbar pagamentos-toolbar"><label class="tutelas-filter"><span>Início</span><input id="pagamentos-data-inicio" type="date"></label><label class="tutelas-filter"><span>Fim</span><input id="pagamentos-data-fim" type="date"></label><label class="tutelas-filter"><span>Credenciado</span><select id="pagamentos-credenciado"><option value="">Todos</option></select></label><label class="tutelas-filter"><span>Solicitante</span><input id="pagamentos-solicitante" placeholder="Nome do solicitante"></label><label class="tutelas-filter"><span>Situação</span><select id="pagamentos-situacao"><option value="">Todas</option></select></label><label class="tutelas-filter"><span>Tipo de pagamento</span><input id="pagamentos-tipo" placeholder="Todos"></label><div class="pagamentos-toolbar-actions"><button class="secondary-button" id="pagamentos-refresh" type="button"><i data-lucide="refresh-cw"></i>Atualizar</button><button class="secondary-button" id="pagamentos-acp-button" type="button"><i data-lucide="git-compare-arrows"></i>Validar ACP</button></div></div></section>
+          <section class="panel payments-table-panel"><div class="table-scroll"><table class="task-table payments-table"><thead><tr><th>Pasta</th><th>Credenciado</th><th>Solicitante</th><th>Tipo</th><th>Valor</th><th>Situação</th><th>Aprovação</th><th>Pagamento</th><th>Dias</th></tr></thead><tbody id="pagamentos-table-body"><tr><td colspan="9">Importe uma base para visualizar os pagamentos.</td></tr></tbody></table></div><div class="table-footer"><span id="pagamentos-pagination-label">—</span><div id="pagamentos-pagination"></div></div></section>
+        </section>
+
+        <section class="page list-page agreements-page" id="acordos" data-permission="agreements.view">
+          <div class="page-title"><div><h1>Acordos</h1><p>Consulte os resultados consolidados das Tasks de Acordos.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button"><i data-lucide="download"></i>Exportar</button></div></div>
+          <section class="tutelas-summary" aria-label="Indicadores de Acordos">
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="list-checks"></i></span><div><strong id="agreements-total">—</strong><span>Total de acordos</span><small>Base consolidada</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="clock-3"></i></span><div><strong id="agreements-pending">—</strong><span>Pendentes</span><small>Aguardando análise</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="circle-check"></i></span><div><strong id="agreements-completed">—</strong><span>Aptos</span><small>Liberados para acordo</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="circle-x"></i></span><div><strong id="agreements-ineligible">—</strong><span>Inaptos</span><small>Com impedimento</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="trending-up"></i></span><div><strong id="agreements-average">—</strong><span>Ticket médio</span><small>Valor sugerido</small></div></article>
+          </section>
+          <section class="panel agreements-panel">
+            <div class="agreements-toolbar">
+              <label class="agreements-search"><i data-lucide="search"></i><input id="agreements-search" type="search" placeholder="Buscar por processo..." autocomplete="off"></label>
+              <label><span>Status</span><select id="agreements-status"><option value="">Todos</option><option value="pending">Pendente</option><option value="in_progress">Em execução</option><option value="completed">Concluído</option></select></label>
+              <label><span>Resultado</span><select id="agreements-result"><option value="">Todos</option><option value="eligible">Apto</option><option value="ineligible">Inapto</option></select></label>
+              <label><span>Retorno</span><input id="agreements-return" placeholder="Todos"></label>
+              <label><span>Responsável</span><input id="agreements-responsible" placeholder="Todos"></label>
+              <button class="secondary-button agreements-more-button" id="agreements-more-button" type="button"><i data-lucide="sliders-horizontal"></i>Mais filtros</button>
+            </div>
+            <div class="agreements-more-filters" id="agreements-more-filters" hidden>
+              <label><span>Causa raiz</span><select id="agreements-root-cause"><option value="">Todas</option><option value="alega_nao_fez">Alega que não fez</option><option value="revisao_juros">Revisão de Juros</option><option value="exibitoria">Exibitória</option><option value="alteracao_domicilio_bancario">Alteração de Domicílio Bancário</option><option value="orgaos_protecao_credito">Órgãos de Proteção ao Crédito</option><option value="venda_enganosa">Venda Enganosa</option></select></label>
+              <label><span>OBF</span><select id="agreements-obf"><option value="">Todas</option><option value="nulidade">Nulidade</option><option value="exibicao">Exibição</option><option value="alteracao_domicilio_bancario">Alteração de domicílio bancário</option><option value="retirar_restricao_orgaos_protecao_credito">Retirar restrição dos órgãos de proteção ao crédito</option><option value="revisao_juros">Revisão de Juros</option></select></label>
+              <label><span>Data inicial</span><input id="agreements-start-date" type="date"></label>
+              <label><span>Data final</span><input id="agreements-end-date" type="date"></label>
+              <label><span>Task</span><input id="agreements-task-id" placeholder="UUID"></label>
+              <label><span>Job</span><input id="agreements-job-id" placeholder="UUID"></label>
+            </div>
+            <div class="agreements-state" id="agreements-state">Carregando acordos...</div>
+            <div class="table-scroll agreements-table-scroll" id="agreements-table-wrap" hidden>
+              <table class="task-table agreements-table">
+                <thead><tr><th>Processo</th><th>Provisão</th><th>Status</th><th>Resultado</th><th>Retorno</th><th>Causa raiz</th><th>OBF</th><th>Valor sugerido</th><th>Saldo devedor</th><th>Data limite</th><th>Prazo pagamento</th><th>Prazo OBF</th><th>Fase</th><th>Data da análise</th><th>Responsável</th></tr></thead>
+                <tbody id="agreements-table-body"></tbody>
+              </table>
+            </div>
+            <div class="table-footer"><span id="agreements-pagination-label">—</span><div id="agreements-pagination"></div></div>
+          </section>
+        </section>
+
+        <section class="page list-page" id="tarefas" data-permission="tasks.view">
+          <div class="page-title lobby-title"><div><h1>Lobby de Tarefas</h1><p>Selecione uma tarefa para iniciar ou continuar a execução.</p></div><div class="lobby-actions"><button class="primary-button" id="new-task-button" data-permission="tasks.create"><i data-lucide="plus"></i>Nova tarefa</button><label class="task-filter">Filtrar por tarefa<select><option>Todas as tarefas</option></select></label></div></div>
+          <section class="panel task-table-wrap">
+            <table class="task-table">
+              <thead><tr><th>Tarefa</th><th>Descrição</th><th>Pendências</th><th>Status</th><th>Última atualização</th><th>Ações</th></tr></thead>
+              <tbody id="tasks-table-body">
+                <tr data-task-id="tutela"><td><span class="row-icon green"><i data-lucide="file-check-2"></i></span><strong>Analisar Pedido de Tutela</strong></td><td>Análise humana dos resultados de pedidos de tutela e liminares.</td><td><span class="empty-pill">—</span></td><td><span class="task-status waiting">Aguardando dados</span></td><td>Sem atualização</td><td><button class="execute-button" data-open-task="tutela" data-permission="tasks.execute"><i data-lucide="play"></i>Executar</button></td></tr>
+                <tr data-task-id="encerramento"><td><span class="row-icon amber"><i data-lucide="file-text"></i></span><strong>Analisar Indício de Encerramento</strong></td><td>Validação de indícios de encerramento processual.</td><td><span class="empty-pill">—</span></td><td><span class="task-status waiting">Aguardando dados</span></td><td>Sem atualização</td><td><button class="execute-button" data-permission="tasks.execute"><i data-lucide="play"></i>Executar</button></td></tr>
+                <tr data-task-id="bloqueio"><td><span class="row-icon blue"><i data-lucide="lock-keyhole"></i></span><strong>Analisar Indício de Bloqueio</strong></td><td>Validação de indícios de bloqueio de valores.</td><td><span class="empty-pill">—</span></td><td><span class="task-status waiting">Aguardando dados</span></td><td>Sem atualização</td><td><button class="execute-button" data-permission="tasks.execute"><i data-lucide="play"></i>Executar</button></td></tr>
+                <tr data-task-id="citacao"><td><span class="row-icon blue"><i data-lucide="mail"></i></span><strong>Analisar Indício de Citação</strong></td><td>Validação de indícios de citações realizadas.</td><td><span class="empty-pill">—</span></td><td><span class="task-status waiting">Aguardando dados</span></td><td>Sem atualização</td><td><button class="execute-button" data-permission="tasks.execute"><i data-lucide="play"></i>Executar</button></td></tr>
+              </tbody>
+            </table>
+          </section>
+        </section>
+
+        <section class="page task-detail-page" id="tarefa-analise" data-entity="task_execution">
+          <button class="back-link" data-go="tarefas"><i data-lucide="arrow-left"></i>Voltar para o lobby de tarefas</button>
+          <div class="detail-heading"><h1>Analisar Pedido de Tutela</h1><p>Analise o processo selecionado e registre o resultado correto.</p></div>
+          <section class="panel task-meta compact-meta">
+            <div><small>Progresso</small><strong id="task-progress">Sem dados</strong><span class="progress-track"><i></i></span></div>
+            <div><small>Status</small><strong><i class="status-dot"></i>Aguardando execução</strong></div>
+            <div><small>Prazo</small><strong id="task-deadline" data-db-field="deadline_at">Não informado</strong></div>
+            <div><small>Responsável</small><strong id="task-assignee" data-db-field="assignee_name">Não atribuído</strong></div>
+          </section>
+
+          <div class="analysis-layout two-column">
+            <aside class="panel process-list">
+              <h2>Processos da tarefa</h2>
+              <label class="process-search"><i data-lucide="search"></i><input placeholder="Buscar processo ou parte"></label>
+              <div class="process-filters"><select><option>Todos os status</option></select><select><option>Mais recentes</option></select></div>
+              <div id="process-items" data-db-source="task_processes">
+                <button class="process-item selected" data-process-id="preview"><span><i data-lucide="file-check-2"></i></span><div><strong data-db-field="case_number">Processo não carregado</strong><small data-db-field="party_name">Aguardando dados</small></div><em>Em análise</em></button>
+              </div>
+            </aside>
+
+            <section class="panel analysis-card">
+              <header><small>Processo selecionado</small><h2 id="selected-case-number" data-db-field="case_number">Processo não carregado</h2><p id="selected-party" data-db-field="party_name">Aguardando dados do processo</p><span class="analysis-badge">Em análise</span></header>
+              <div class="analysis-form">
+                <h3>Qual foi o resultado do pedido de tutela?</h3>
+                <p>Selecione a opção que melhor descreve a decisão.</p>
+                <div class="decision-grid" role="radiogroup">
+                  <label><input type="radio" name="decision" value="deferida" data-db-field="decision"><span class="choice-icon success"><i data-lucide="check"></i></span><strong>Deferida</strong><small>Tutela concedida</small></label>
+                  <label><input type="radio" name="decision" value="indeferida" data-db-field="decision"><span class="choice-icon danger"><i data-lucide="x"></i></span><strong>Indeferida</strong><small>Tutela negada</small></label>
+                  <label><input type="radio" name="decision" value="nao_solicitada" data-db-field="decision"><span class="choice-icon warning"><i data-lucide="minus"></i></span><strong>Não solicitada</strong><small>Não há pedido</small></label>
+                  <label><input type="radio" name="decision" value="com_sentenca" data-db-field="decision"><span class="choice-icon info"><i data-lucide="file-text"></i></span><strong>Com sentença</strong><small>Já foi proferida</small></label>
+                </div>
+                <button type="button" class="analysis-error-button"><i data-lucide="triangle-alert"></i><span><strong>Não foi possível analisar</strong><small>Registre um erro operacional ou documental.</small></span><i data-lucide="chevron-right"></i></button>
+                <label class="notes-field"><span>Observações <b id="notes-requirement">(opcional)</b></span><textarea id="task-notes" maxlength="500" data-db-field="notes" placeholder="Adicione observações sobre a análise, pontos relevantes ou justificativas..."></textarea><small><span id="notes-count">0</span>/500</small></label>
+              </div>
+              <footer><button class="secondary-button">Pular e voltar depois</button><button class="primary-button" id="save-next" data-action="save-analysis" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+            </section>
+          </div>
+        </section>
+
+        <section class="page task-detail-page agreement-execution-page" id="acordo-execucao" data-entity="agreement_task_execution">
+          <button class="back-link" data-go="tarefas"><i data-lucide="arrow-left"></i>Voltar para o lobby de tarefas</button>
+          <div class="detail-heading agreement-execution-heading"><div><h1>Acordos</h1><p>Analise o processo atual e registre somente as informações necessárias.</p></div><span id="agreement-task-progress">—</span></div>
+          <section class="panel agreement-process-card" id="agreement-process-card">
+            <header><div><small>Processo</small><strong id="agreement-case-number">—</strong></div><div><small>Provisão</small><strong id="agreement-provision">—</strong></div><div class="agreement-live-result pending" id="agreement-live-result"><small>Elegibilidade</small><strong>Aguardando respostas</strong><span>Responda às perguntas impeditivas.</span><small class="agreement-offer-label">Valor à ofertar</small><b id="agreement-offer-amount">—</b></div></header>
+            <form id="agreement-analysis-form" class="agreement-analysis-form">
+              <fieldset class="agreement-question"><legend>Há sentença?</legend><div class="binary-choice"><label><input type="radio" name="has_judgment" value="true"><span>Sim</span></label><label><input type="radio" name="has_judgment" value="false"><span>Não</span></label></div></fieldset>
+              <fieldset class="agreement-question" id="agreement-impediment-field" hidden><legend>Há Termo de Impedimento 12?</legend><div class="binary-choice"><label><input type="radio" name="has_impediment_12" value="true"><span>Sim</span></label><label><input type="radio" name="has_impediment_12" value="false"><span>Não</span></label></div></fieldset>
+              <fieldset class="agreement-question" id="agreement-defense-field" hidden><legend>Há defesa apresentada nos autos?</legend><div class="binary-choice"><label><input type="radio" name="has_defense_presented" value="true"><span>Sim</span></label><label><input type="radio" name="has_defense_presented" value="false"><span>Não</span></label></div></fieldset>
+              <div class="agreement-ineligible" id="agreement-ineligible" hidden><i data-lucide="circle-x"></i><span></span></div>
+              <div class="agreement-eligible-fields" id="agreement-eligible-fields" hidden>
+                <label>Causa raiz<select name="root_cause"><option value="">Selecione</option><option value="alega_nao_fez">Alega que não fez</option><option value="revisao_juros">Revisão de Juros</option><option value="exibitoria">Exibitória</option><option value="alteracao_domicilio_bancario">Alteração de Domicílio Bancário</option><option value="orgaos_protecao_credito">Órgãos de Proteção ao Crédito</option><option value="venda_enganosa">Venda Enganosa</option></select></label>
+                <fieldset class="agreement-question"><legend>Há obrigação de fazer (OBF)?</legend><div class="binary-choice"><label><input type="radio" name="has_obf" value="true"><span>Sim</span></label><label><input type="radio" name="has_obf" value="false"><span>Não</span></label></div></fieldset>
+                <label id="agreement-obf-type-field" hidden>Tipo de OBF<select name="obf_type"><option value="">Selecione</option><option value="nulidade">Nulidade</option><option value="exibicao">Exibição</option><option value="alteracao_domicilio_bancario">Alteração de domicílio bancário</option><option value="retirar_restricao_orgaos_protecao_credito">Retirar restrição dos órgãos de proteção ao crédito</option><option value="revisao_juros">Revisão de Juros</option></select></label>
+                <div class="agreement-readonly" id="agreement-obligation" hidden><small>Obrigação de fazer</small><p>Não há</p></div>
+                <label>Valor sugerido<div class="currency-input"><span>R$</span><input name="suggested_amount" inputmode="decimal" placeholder="0,00"></div><small class="agreement-provision-alert" id="agreement-provision-alert" hidden></small></label>
+                <label>Saldo devedor<div class="currency-input"><span>R$</span><input name="outstanding_balance" inputmode="decimal" placeholder="0,00"></div><small class="agreement-provision-alert" id="agreement-balance-alert" hidden>Saldo devedor acima de R$ 15.000,00 — processo inapto para acordo.</small></label>
+              </div>
+              <section class="agreement-result-summary" id="agreement-result-summary" hidden><h2>Apto para acordo</h2><dl><div><dt>Valor à ofertar</dt><dd data-summary="offer">—</dd></div><div><dt>Saldo devedor</dt><dd data-summary="balance">—</dd></div><div><dt>Data limite</dt><dd data-summary="deadline">—</dd></div><div><dt>Prazo pagamento</dt><dd data-summary="payment-term">—</dd></div><div><dt>Obrigação de fazer</dt><dd data-summary="obligation">—</dd></div><div><dt>Prazo OBF</dt><dd data-summary="obligation-term">—</dd></div><div><dt>Fase</dt><dd data-summary="phase">—</dd></div></dl></section>
+              <p class="dialog-error" id="agreement-analysis-error" hidden></p>
+              <footer><button class="secondary-button" id="agreement-skip" type="button">Pular e voltar depois</button><button class="primary-button" type="submit">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+            </form>
+          </section>
+          <section class="panel agreement-task-finished" id="agreement-task-finished" hidden><i data-lucide="circle-check"></i><h2>Tarefa concluída</h2><p>Todos os processos atribuídos a você foram analisados.</p></section>
+        </section>
+
+        <section class="page list-page" id="usuarios" data-permission="users.view">
+          <div class="page-title"><div><h1>Usuários</h1><p>Gerencie perfis, acessos e autorizações do Backoffice.</p></div><button id="invite-user-button" class="primary-button master-admin-only" data-permission="users.manage"><i data-lucide="user-plus"></i>Adicionar usuário</button></div>
+          <div class="users-v2">
+            <div class="users-overview">
+              <article class="stat-card"><span class="stat-card-icon"><i data-lucide="users"></i></span><div><strong id="users-total">—</strong><span>Usuários cadastrados</span><small>Total da plataforma</small></div></article>
+              <article class="stat-card"><span class="stat-card-icon"><i data-lucide="user-check"></i></span><div><strong id="users-active">—</strong><span>Usuários ativos</span><small>Credenciais não bloqueadas</small></div></article>
+              <article class="stat-card"><span class="stat-card-icon"><i data-lucide="shield-check"></i></span><div><strong id="users-authorized">—</strong><span>Com autorizações</span><small>Ao menos uma permissão efetiva</small></div></article>
+            </div>
+
+            <section class="users-panel-v2">
+              <div class="users-toolbar-v2">
+                <label class="users-search-v2"><i data-lucide="search"></i><input id="users-search" placeholder="Buscar por nome ou e-mail"></label>
+              <div class="users-filters-v2"><select id="users-role-filter"><option value="">Todos os perfis</option><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user">Usuário</option><option value="task_only">Task only</option><option value="task_worker">Operacional legado</option></select><select id="users-status-filter"><option value="">Todos os status</option><option value="active">Ativo</option><option value="blocked">Bloqueado</option></select></div>
+              </div>
+              <div class="users-table-scroll">
+                <table class="users-table-v2"><thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Acesso</th><th></th></tr></thead><tbody id="users-table-body"></tbody></table>
+              </div>
+              <div class="users-empty" id="users-loading"><i data-lucide="loader-circle"></i><strong>Carregando usuários</strong><span>Consultando o Supabase.</span></div>
+            </section>
+
+            <section class="permissions-editor-v2 master-admin-only" id="permissions-editor" data-permission="users.manage" hidden>
+              <div class="permissions-editor-head">
+                <div class="selected-user-summary"><span class="user-avatar-v2" id="selected-user-avatar">U</span><div><strong id="selected-user-name">Selecione um usuário</strong><small id="selected-user-email">As autorizações aparecerão aqui</small></div></div>
+              <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle"><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user">Usuário</option><option value="task_only">Task only</option><option value="task_worker">Operacional</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Liberar novo OTP</button></div>
+              </div>
+              <div class="permission-grid-edit" id="permission-grid"></div>
+              <fieldset class="agreement-participants" id="selected-user-modules"><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" value="acordos"> Acordos</label><label><input type="checkbox" value="liminar"> Liminar</label><label><input type="checkbox" value="encerramento"> Encerramentos</label><label><input type="checkbox" value="bloqueio"> Bloqueio</label><label><input type="checkbox" value="citacao"> Citação</label><label><input type="checkbox" value="protocolo"> Protocolo</label></div><small id="selected-user-otp-status"></small></fieldset>
+              <div class="permissions-editor-footer"><small id="permission-editor-help">Por padrão, credenciais novas acessam apenas as tarefas atribuídas.</small><button class="permission-save-button" id="save-user-permissions" type="button">Salvar alterações</button></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="page list-page" id="configuracoes" data-permission="settings.view">
+          <div class="page-title"><div><h1>Configurações</h1><p>Configurações administrativas do Backoffice.</p></div></div>
+          <section class="panel large-empty"><span><i data-lucide="settings"></i></span><h2>Configurações ainda não conectadas</h2><p>Esta área ficará disponível apenas para perfis autorizados.</p></section>
+        </section>
+
+        <section class="page" id="sem-acesso"><section class="panel large-empty"><span><i data-lucide="shield-x"></i></span><h2>Credencial sem acesso liberado</h2><p>Solicite ao administrador as autorizações necessárias.</p></section></section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="task-dialog" class="task-dialog">
+    <form id="task-create-form">
+      <header><div><h2>Nova tarefa</h2><p>Crie o lote e importe os processos por XLSX ou CSV.</p></div><button type="button" class="icon-button" data-close-dialog><i data-lucide="x"></i></button></header>
+      <label>Tipo<select name="type" id="task-type" required><option value="liminar">Liminar</option><option value="encerramento">Encerramento</option><option value="bloqueio">Bloqueio</option><option value="citacao">Citação</option><option value="protocolo">Protocolo</option><option value="acordos">Acordos</option></select></label>
+      <label>Título<input name="title" required maxlength="160"></label>
+      <label>Descrição<textarea name="description" rows="3"></textarea></label>
+      <div class="dialog-grid"><label>Prioridade<select name="priority"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option></select></label><label>Prazo<input name="deadline_at" type="datetime-local"></label></div>
+      <label id="task-responsible-field">Responsável (UUID)<input name="responsible_id" type="text" placeholder="Opcional"></label>
+      <fieldset class="agreement-participants" id="agreement-participants" hidden><legend>Participantes</legend><p>Selecione quem participará da força-tarefa.</p><div id="agreement-participant-options"><span>Carregando usuários...</span></div></fieldset>
+      <label>Planilha<input name="file" id="task-file" type="file" accept=".xlsx,.csv" required><small id="agreement-file-help" hidden>O XLSX deve conter as colunas Processo e Provisão.</small></label>
+      <p class="dialog-error" id="task-dialog-error" hidden></p>
+      <footer><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Criar e importar</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="task-assign-dialog" class="task-dialog">
+    <form id="task-assign-form">
+      <header><div><h2>Atribuir tarefa</h2><p>Selecione a tarefa e todas as pessoas que participarão dela.</p></div><button type="button" class="icon-button" data-close-task-assign><i data-lucide="x"></i></button></header>
+      <label>Tarefa<select name="task_id" id="task-assign-task" required></select></label>
+      <fieldset class="task-assignment-users"><legend>Usuários ativos</legend><p>Os processos pendentes serão divididos igualmente entre os participantes.</p><div id="task-assign-users"><span>Carregando usuários...</span></div></fieldset>
+      <p class="dialog-error" id="task-assign-error" hidden></p>
+      <footer><button type="button" class="secondary-button" data-close-task-assign>Cancelar</button><button type="submit" class="primary-button">Salvar atribuição</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="user-create-dialog" class="task-dialog">
+    <form id="user-create-form">
+      <header><div><h2>Adicionar usuário</h2><p>Perfis operacionais entram com o e-mail cadastrado.</p></div><button type="button" class="icon-button" data-close-user-create><i data-lucide="x"></i></button></header>
+      <label>Modelo<select name="role" id="user-create-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user" selected>Usuário</option><option value="task_only">Task only</option><option value="task_worker">Operacional</option></select></label>
+      <label>Nome<input name="name" maxlength="120" required></label>
+      <label id="user-create-email-field">E-mail corporativo<input name="email" type="email" required></label>
+      <fieldset class="agreement-participants" id="user-create-modules" hidden><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" name="allowed_modules" value="acordos"> Acordos</label><label><input type="checkbox" name="allowed_modules" value="liminar"> Liminar</label><label><input type="checkbox" name="allowed_modules" value="encerramento"> Encerramentos</label><label><input type="checkbox" name="allowed_modules" value="bloqueio"> Bloqueio</label><label><input type="checkbox" name="allowed_modules" value="citacao"> Citação</label><label><input type="checkbox" name="allowed_modules" value="protocolo"> Protocolo</label></div></fieldset>
+      <label class="account-toggle" id="user-create-task-access" hidden><input name="task_access_enabled" type="checkbox" checked><span></span><em>Habilitar acesso operacional</em></label>
+      <p class="dialog-error" id="user-create-error" hidden></p>
+      <footer><button type="button" class="secondary-button" data-close-user-create>Cancelar</button><button type="submit" class="primary-button">Criar usuário</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="integration-dialog" class="task-dialog integration-dialog">
+    <form id="integration-form">
+      <header><div><h2 id="integration-dialog-title">Executar integração</h2><p>Informe um número CNJ por linha.</p></div><button type="button" class="icon-button" data-close-integration><i data-lucide="x"></i></button></header>
+      <input type="hidden" name="integration" id="integration-type">
+      <label id="integration-origin-field" hidden>Origem<input name="origem" value="MBA_BACKOFFICE" maxlength="100"></label>
+      <fieldset id="integration-criteria-field" hidden><legend>Critérios de encerramento</legend><div class="criteria-grid"><label><input type="checkbox" name="criterios" value="VITORIA" checked> Vitória</label><label><input type="checkbox" name="criterios" value="DERROTA"> Derrota</label><label><input type="checkbox" name="criterios" value="CUMPRIMENTO_SENTENCA"> Cumprimento de sentença</label><label><input type="checkbox" name="criterios" value="TRANSITO_JULGADO"> Trânsito em julgado</label><label><input type="checkbox" name="criterios" value="SUSPENSO"> Suspenso</label></div></fieldset>
+      <label>Processos CNJ<textarea name="cnjs" rows="8" placeholder="0000000-00.0000.0.00.0000" required></textarea></label>
+      <p class="dialog-error" id="integration-error" hidden></p>
+      <div class="integration-job-result" id="integration-result" hidden><strong id="integration-result-status"></strong><span id="integration-result-progress"></span><a id="integration-download" class="secondary-button" target="_blank" rel="noopener" hidden>Baixar resultado</a></div>
+      <footer><button type="button" class="secondary-button" data-close-integration>Fechar</button><button type="submit" class="primary-button">Iniciar execução</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="tutelas-cases-dialog" class="task-dialog integration-dialog">
+    <form id="tutelas-cases-form">
+      <header><div><h2>Adicionar casos de tutela</h2><p>Informe um CNJ por linha. O cliente é opcional e será aplicado a todo este envio.</p></div><button type="button" class="icon-button" data-close-tutelas-cases><i data-lucide="x"></i></button></header>
+      <label>Cliente<input name="cliente" maxlength="160" placeholder="Opcional"></label>
+      <label>Processos CNJ<textarea name="cnjs" rows="9" placeholder="0000000-00.0000.0.00.0000" required></textarea></label>
+      <p class="dialog-error" id="tutelas-cases-error" hidden></p>
+      <footer><button type="button" class="secondary-button" data-close-tutelas-cases>Cancelar</button><button type="submit" class="primary-button">Salvar casos</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="pagamentos-import-dialog" class="task-dialog integration-dialog">
+    <form id="pagamentos-import-form">
+      <header><div><h2>Importar base do cliente</h2><p>Envie HTML, XLS, XLSX ou HTM. A nova base só ficará ativa após validação completa.</p></div><button type="button" class="icon-button" data-close-pagamentos-import><i data-lucide="x"></i></button></header>
+      <label>Arquivo<input name="file" type="file" accept=".html,.htm,.xls,.xlsx" required></label>
+      <p class="dialog-error" id="pagamentos-import-error" hidden></p>
+      <footer><button type="button" class="secondary-button" data-close-pagamentos-import>Cancelar</button><button type="submit" class="primary-button">Importar</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="pagamentos-acp-dialog" class="task-dialog integration-dialog">
+    <form id="pagamentos-acp-form">
+      <header><div><h2>Validar ACP</h2><p>Envie o XLS ou XLSX ACP. Ele é processado temporariamente e não é armazenado.</p></div><button type="button" class="icon-button" data-close-pagamentos-acp><i data-lucide="x"></i></button></header>
+      <label>Arquivo ACP<input name="file" type="file" accept=".xls,.xlsx" required></label>
+      <p class="dialog-error" id="pagamentos-acp-error" hidden></p>
+      <div class="integration-job-result" id="pagamentos-acp-result" hidden><strong id="pagamentos-acp-summary"></strong><span id="pagamentos-acp-detail"></span><button class="secondary-button" id="pagamentos-acp-export" type="button">Exportar</button></div>
+      <footer><button type="button" class="secondary-button" data-close-pagamentos-acp>Fechar</button><button type="submit" class="primary-button">Validar</button></footer>
+    </form>
+  </dialog>
+
+
+  <script>
+    (() => {
+      const normalize = (value) => (value || '').toString().trim().toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      function initTutelasFilters() {
+        const body = document.getElementById('tutelas-table-body');
+        const search = document.getElementById('tutelas-search');
+        const client = document.getElementById('tutelas-cliente-filter');
+        const pedido = document.getElementById('tutelas-pedido-filter');
+        const date = document.getElementById('tutelas-date-filter');
+        const clear = document.getElementById('tutelas-clear-filters');
+        const tabs = [...document.querySelectorAll('.tutelas-tab')];
+        if (!body || !search || !client || !pedido || !date || !clear || !tabs.length) return;
+
+        let resultFilter = '';
+
+        const rows = () => [...body.querySelectorAll('tr[data-tutela-row]')];
+
+        const refreshClients = () => {
+          const current = client.value;
+          const values = [...new Set(rows().map(row => row.dataset.cliente).filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+          client.innerHTML = '<option value="">Todos</option>' + values.map(value => `<option value="${value.replace(/"/g, '&quot;')}">${value}</option>`).join('');
+          if (values.includes(current)) client.value = current;
+        };
+
+        const apply = () => {
+          const q = normalize(search.value);
+          const c = normalize(client.value);
+          const p = normalize(pedido.value);
+          const d = date.value;
+          let visible = 0;
+          rows().forEach(row => {
+            const matches = (!q || normalize(row.dataset.processo).includes(q))
+              && (!c || normalize(row.dataset.cliente) === c)
+              && (!p || normalize(row.dataset.pedido) === p)
+              && (!d || row.dataset.consultaDate === d)
+              && (!resultFilter || row.dataset.result === resultFilter);
+            row.hidden = !matches;
+            if (matches) visible += 1;
+          });
+          const label = document.getElementById('tutelas-pagination-label');
+          if (label && rows().length) label.textContent = `${visible} de ${rows().length} registro${rows().length === 1 ? '' : 's'} exibido${visible === 1 ? '' : 's'}`;
+        };
+
+        [search, client, pedido, date].forEach(el => el.addEventListener(el === search ? 'input' : 'change', apply));
+        clear.addEventListener('click', () => {
+          search.value = ''; client.value = ''; pedido.value = ''; date.value = ''; resultFilter = '';
+          tabs.forEach((tab, index) => { tab.classList.toggle('active', index === 0); tab.setAttribute('aria-selected', index === 0 ? 'true' : 'false'); });
+          apply();
+        });
+        tabs.forEach(tab => tab.addEventListener('click', () => {
+          resultFilter = tab.dataset.tutelaResult || '';
+          tabs.forEach(item => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', active ? 'true' : 'false'); });
+          apply();
+        }));
+
+        const observer = new MutationObserver(() => { refreshClients(); apply(); });
+        observer.observe(body, { childList: true });
+        refreshClients(); apply();
+      }
+
+      document.addEventListener('DOMContentLoaded', initTutelasFilters);
+    })();
+  </script>
+
+  <dialog id="jobs-dialog" class="task-dialog jobs-dialog">
+    <div class="jobs-dialog-shell">
+      <header>
+        <div><h2 id="jobs-dialog-title">Jobs da automação</h2><p>Consulte as execuções já registradas e baixe resultados disponíveis.</p></div>
+        <button type="button" class="icon-button" id="jobs-dialog-close" aria-label="Fechar consulta de jobs"><i data-lucide="x"></i></button>
+      </header>
+      <div class="jobs-dialog-body">
+        <div class="jobs-dialog-state" id="jobs-dialog-state">
+          <i data-lucide="list-checks"></i>
+          <strong>Selecione uma automação</strong>
+          <span>Os jobs retornados pelo backend aparecerão aqui.</span>
+        </div>
+        <div class="jobs-table-wrap" id="jobs-table-wrap" hidden>
+          <table class="jobs-table">
+            <thead><tr><th>Job</th><th>Status</th><th>Progresso</th><th>Atualização</th><th>Ação</th></tr></thead>
+            <tbody id="jobs-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <footer><button type="button" class="secondary-button" id="jobs-dialog-footer-close">Fechar</button></footer>
+    </div>
+  </dialog>
+
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.min.js" integrity="sha384-l8ah+VgaWtk1mvOe9VC+OirC6qHFF4yH7l7mKRidV9MSti3E9F463bMp6ZVN4kuC" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="config.js?v=20260818"></script>
+  <script src="supabase-client.js?v=20260818"></script>
+  <script src="mock-api.js?v=20260818"></script>
+<script src="data-api.js?v=20260818-agreements-supabase-token"></script>
+  <script src="app.js?v=20260818"></script>
+  <script src="agreements.js?v=20260818"></script>
+  <script src="auth.js?v=20260818"></script>
+
+  <script>
+    (() => {
+      const dialog = document.getElementById('jobs-dialog');
+      const title = document.getElementById('jobs-dialog-title');
+      const state = document.getElementById('jobs-dialog-state');
+      const tableWrap = document.getElementById('jobs-table-wrap');
+      const tbody = document.getElementById('jobs-table-body');
+      let activeIntegration = null;
+
+      const integrationLabel = (key) => key === 'liminar' ? 'API de Liminar' : key === 'datajud' ? 'CNJ / DataJud' : 'Automação';
+      const close = () => dialog?.close();
+      document.getElementById('jobs-dialog-close')?.addEventListener('click', close);
+      document.getElementById('jobs-dialog-footer-close')?.addEventListener('click', close);
+
+      document.querySelectorAll('[data-integration-jobs]').forEach((button) => {
+        button.addEventListener('click', () => {
+          activeIntegration = button.dataset.integrationJobs;
+          title.textContent = `Jobs · ${integrationLabel(activeIntegration)}`;
+          tbody.innerHTML = '';
+          tableWrap.hidden = true;
+          state.hidden = false;
+          state.innerHTML = '<i data-lucide="loader-circle" class="jobs-loading-icon"></i><strong>Consultando jobs</strong><span>Aguardando os dados da integração.</span>';
+          if (window.lucide) window.lucide.createIcons();
+          dialog.showModal();
+          window.dispatchEvent(new CustomEvent('mba:jobs-request', { detail: { integration: activeIntegration } }));
+        });
+      });
+
+      window.addEventListener('mba:jobs-loaded', (event) => {
+        const detail = event.detail || {};
+        if (!dialog?.open || detail.integration !== activeIntegration) return;
+        const jobs = Array.isArray(detail.jobs) ? detail.jobs : [];
+        tbody.innerHTML = '';
+        if (!jobs.length) {
+          tableWrap.hidden = true;
+          state.hidden = false;
+          state.innerHTML = '<i data-lucide="inbox"></i><strong>Nenhum job encontrado</strong><span>Não há execuções registradas para esta automação.</span>';
+          if (window.lucide) window.lucide.createIcons();
+          return;
+        }
+        state.hidden = true;
+        tableWrap.hidden = false;
+        for (const job of jobs) {
+          const tr = document.createElement('tr');
+          const id = String(job.id ?? job.job_id ?? '—');
+          const status = String(job.status ?? '—');
+          const statusKey = status.toUpperCase();
+          const statusClass = statusKey.startsWith('CONCLU') || statusKey === 'DONE' ? 'done'
+            : statusKey.startsWith('ERRO') || statusKey === 'ERROR' ? 'error'
+            : statusKey ? 'running' : '';
+          const done = job.done ?? job.processed ?? '—';
+          const total = job.total ?? '—';
+          const updated = String(job.updated_at ?? job.updatedAt ?? '—');
+          const download = job.download_url ?? job.downloadUrl ?? '';
+          const selectResult = activeIntegration === 'encerramentos' ? `<button class="jobs-download" type="button" data-select-encerramentos-job="${id}">Ver</button>` : '';
+          tr.innerHTML = `<td>${id}</td><td><span class="job-status-chip ${statusClass}">${status}</span></td><td>${done} / ${total}</td><td>${updated}</td><td>${selectResult}${download ? `<a class="jobs-download" href="${download}" target="_blank" rel="noopener"><i data-lucide="download"></i>Baixar</a>` : !selectResult ? '<span class="jobs-no-download">—</span>' : ''}</td>`;
+          tbody.appendChild(tr);
+        }
+        if (window.lucide) window.lucide.createIcons();
+      });
+      tbody.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-select-encerramentos-job]');
+        if (!button) return;
+        window.dispatchEvent(new CustomEvent('mba:encerramentos-job-selected', { detail: { jobId: button.dataset.selectEncerramentosJob } }));
+        close();
+      });
+    })();
+  </script>
+</body>
+</html>
