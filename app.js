@@ -250,7 +250,7 @@ document.querySelector('#user-create-form')?.addEventListener('submit', async (e
   const operational = ['task_only', 'task_worker'].includes(form.elements.role.value);
   const payload = { role: form.elements.role.value, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: [...form.querySelectorAll('[name="allowed_modules"]:checked')].map((input) => input.value), task_access_enabled: operational && form.elements.task_access_enabled.checked };
   submit.disabled = true; errorBox.hidden = true;
-  try { await window.MBA_API.request('/api/users', { method: 'POST', body: JSON.stringify(payload) }); form.reset(); document.querySelector('#user-create-modules').hidden = true; document.querySelector('#user-create-task-access').hidden = true; userCreateDialog.close(); await loadUsers(); window.alert(operational ? 'Usuário operacional criado. O acesso será feito exclusivamente por código OTP enviado ao e-mail.' : 'Usuário administrativo autorizado. Ele já pode entrar com a conta Google cadastrada.'); }
+  try { await window.MBA_API.request('/api/users', { method: 'POST', body: JSON.stringify(payload) }); form.reset(); document.querySelector('#user-create-modules').hidden = true; document.querySelector('#user-create-task-access').hidden = true; userCreateDialog.close(); await loadUsers(); window.alert(operational ? 'Perfis operacionais estão desabilitados no frontend.' : 'Usuário administrativo autorizado. Ele já pode entrar com a conta Google cadastrada.'); }
   catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; } finally { submit.disabled = false; }
 });
 
