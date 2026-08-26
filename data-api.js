@@ -336,6 +336,10 @@
   }
   async function request(path, options = {}) {
     if (window.MBA_LOCAL_PREVIEW && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
+    // Pagamentos é importado e consolidado pelo backend. Mantemos suas leituras na
+    // mesma API para não depender das políticas RLS do navegador estarem sincronizadas
+    // com o schema usado pela importação.
+    if (path.startsWith('/api/pagamentos')) return backendRequest(path, options);
     if (window.sessionStorage.getItem('mba_task_worker_token')) return backendRequest(path, options);
     const direct = await directRequest(path, options);
     return direct !== null ? direct : backendRequest(path, options);
