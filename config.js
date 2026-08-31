@@ -1,6 +1,6 @@
 // Preencha com a origem HTTPS pública do backend Flask na VPS, sem barra final.
 // Exemplo: window.MBA_API_BASE_URL = 'https://api.seudominio.com';
-window.MBA_API_BASE_URL = 'https://api.portilhobackoffice.site';
+window.MBA_API_BASE_URL = 'https://mba-backoffice-proxy-production.up.railway.app';
 
 // Configuração pública do Supabase. Em um frontend estático estes valores são
 // equivalentes a VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.
