@@ -14,11 +14,12 @@
 
   function applyUser(user) {
     if (!user?.id || !user?.email || typeof user.permissions !== 'object') throw new Error('O perfil autenticado retornado pelo Supabase é inválido.');
+    window.MBA_CURRENT_USER = user;
     const name=user.name||user.nome||user.email.split('@')[0], firstName=name.trim().split(/\s+/)[0];
     const initials=name.trim().split(/\s+/).slice(0,2).map((part)=>part[0]?.toUpperCase()).join('')||'U';
     const roleLabels={admin:'Administrador',gestor:'Gestor',user:'Usuário',task_only:'Task only',task_worker:'Operacional'};
     document.getElementById('profile-name').textContent=name; document.getElementById('profile-role').textContent=roleLabels[user.role]||user.role;
-    document.getElementById('profile-avatar').textContent=initials; document.getElementById('welcome-name').textContent=firstName;
+    document.getElementById('profile-avatar').textContent=initials; const welcomeName=document.getElementById('welcome-name'); if(welcomeName)welcomeName.textContent=firstName;
     document.querySelectorAll('[data-permission]').forEach((element)=>{element.hidden=user.permissions[element.dataset.permission]!==true;});
     document.querySelectorAll('.master-admin-only').forEach((element)=>{element.hidden=!user.is_master_admin;});
     const pages=[['dashboard','dashboard.view'],['automacoes','automations.view'],['tutelas','tutelas.view'],['encerramentos','encerramentos.view'],['usuarios','users.view'],['configuracoes','settings.view'],['tarefas','tasks.view'],['pagamentos','pagamentos.view'],['acordos','agreements.view']].filter(([,permission])=>user.permissions[permission]===true);
