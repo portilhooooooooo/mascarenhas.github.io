@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
+  <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260901">
 </head>
 <body class="auth-loading">
   <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
@@ -49,70 +50,47 @@
       <p class="brand-caption">Hub de Gestão</p>
 
       <nav class="main-nav" aria-label="Navegação principal">
-        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="house"></i><span>Dashboard</span></button>
-        <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="workflow"></i><span>Automações</span></button>
-        <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
-        <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
+        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
+        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge">23</em></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="files"></i><span>Documentos</span></button>
         <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
         <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="handshake"></i><span>Acordos</span></button>
-        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span></button>
+        <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
+        <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="lock-keyhole"></i><span>Bloqueios</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="building-2"></i><span>Clientes</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="send"></i><span>Envios ERP</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="chart-no-axes-combined"></i><span>Relatórios</span></button>
         <button class="nav-item" data-page="usuarios" data-permission="users.view"><i data-lucide="users"></i><span>Usuários</span></button>
+        <button class="nav-item" data-page="configuracoes" data-permission="settings.view"><i data-lucide="settings"></i><span>Configurações</span></button>
       </nav>
 
-      <div class="sidebar-bottom" data-permission="settings.view">
-        <button class="nav-item" data-page="configuracoes"><i data-lucide="settings"></i><span>Configurações</span></button>
+      <div class="sidebar-bottom">
+        <button class="sidebar-logout" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
       </div>
     </aside>
 
     <div class="main-area">
       <header class="topbar">
-        <div class="topbar-spacer"><span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span></div>
+        <div class="global-search-wrap">
+          <label class="global-search" for="global-search-input"><i data-lucide="search"></i><span class="sr-only">Busca global</span><input id="global-search-input" type="search" placeholder="Buscar processos, usuários, documentos..."><kbd>Ctrl + K</kbd></label>
+          <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
+        </div>
         <div class="top-actions">
+          <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
           <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
           <div class="profile" aria-label="Usuário autenticado">
-            <span class="avatar" id="profile-avatar">U</span>
-            <span class="profile-copy"><strong id="profile-name">Usuário</strong><small id="profile-role">Carregando perfil...</small></span>
+            <span class="avatar" id="profile-avatar">UU</span>
+            <span class="profile-copy"><strong id="profile-name">Usuário de Usuário</strong><small id="profile-role">Padrão</small></span>
+            <i class="profile-chevron" data-lucide="chevron-down"></i>
           </div>
-          <button class="logout-button" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
         </div>
       </header>
 
       <main class="content">
-        <section class="page active" id="dashboard" data-permission="dashboard.view">
-          <section class="welcome-card">
-            <div class="welcome-copy">
-              <h1>Bem-vindo, <span id="welcome-name">usuário</span>!</h1>
-              <p>Acompanhe aqui as integrações de Liminar e CNJ/DataJud.</p>
-              <div class="summary-grid">
-                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="shield-check"></i></span><div><strong>API Liminar</strong><small id="dashboard-liminar-status">Verificando</small></div></article>
-                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="landmark"></i></span><div><strong>CNJ/DataJud</strong><small id="dashboard-datajud-status">Verificando</small></div></article>
-                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="shield-check"></i></span><div><strong>Sessão segura</strong><small>Supabase Auth ativo</small></div></article>
-                <article class="stat-card"><span class="stat-card-icon"><i data-lucide="server"></i></span><div><strong>Backend VPS</strong><small>Conectado</small></div></article>
-              </div>
-            </div>
-          </section>
-
-          <div class="dashboard-grid">
-            <section class="panel automation-panel">
-              <div class="panel-heading"><h2>Automações em andamento</h2><button data-go="automacoes">Ver todas</button></div>
-              <div class="empty-state"><span class="empty-icon"><i data-lucide="workflow"></i></span><strong>Nenhuma automação em andamento</strong><p>As execuções ativas aparecerão aqui.</p></div>
-              <button class="panel-footer" data-go="automacoes">Acessar automações <i data-lucide="arrow-right"></i></button>
-            </section>
-            <section class="panel scheduled-panel">
-              <div class="panel-heading"><h2>Automações agendadas</h2><button data-go="automacoes">Ver todas</button></div>
-              <div class="empty-state"><span class="empty-icon"><i data-lucide="calendar-clock"></i></span><strong>Nenhum agendamento próximo</strong><p>Os próximos agendamentos aparecerão aqui.</p></div>
-            </section>
-          </div>
-
-          <section class="panel indicators-panel">
-            <div class="panel-heading"><div><h2>Indicadores do dia</h2><p class="panel-subtitle">Resumo operacional de hoje.</p></div></div>
-            <div class="indicator-grid">
-              <article class="indicator blue"><span><i data-lucide="files"></i></span><div><small>Tutelas analisadas</small><strong>—</strong><em>Sem dados</em></div></article>
-              <article class="indicator green"><span><i data-lucide="lock-keyhole"></i></span><div><small>Bloqueios encontrados</small><strong>—</strong><em>Sem dados</em></div></article>
-              <article class="indicator blue"><span><i data-lucide="circle-dollar-sign"></i></span><div><small>Pagamentos conciliados</small><strong>—</strong><em>Sem dados</em></div></article>
-              <article class="indicator amber"><span><i data-lucide="send"></i></span><div><small>Protocolos enviados</small><strong>—</strong><em>Sem dados</em></div></article>
-            </div>
-          </section>
+        <section class="page active dashboard-page" id="dashboard" data-permission="dashboard.view" aria-label="Dashboard executivo">
+          <div id="dashboard-root"></div>
         </section>
 
         <section class="page list-page" id="automacoes" data-permission="automations.view">
@@ -199,7 +177,7 @@
                 <span>Data da consulta</span>
                 <input id="tutelas-date-filter" type="date">
               </label>
-              <button class="tutelas-clear" id="tutelas-clear-filters" type="button"><i data-lucide="list-filter-x"></i>Limpar filtros</button>
+              <button class="tutelas-clear" id="tutelas-clear-filters" type="button"><i data-lucide="list-x"></i>Limpar filtros</button>
             </div>
 
             <div class="tutelas-tabs" role="tablist" aria-label="Filtrar resultado da consulta">
@@ -585,6 +563,7 @@
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
   <script src="app.js?v=20260818"></script>
+  <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260901"></script>
   <script src="agreements.js?v=20260818"></script>
   <script src="auth.js?v=20260820-google-oauth"></script>
 
