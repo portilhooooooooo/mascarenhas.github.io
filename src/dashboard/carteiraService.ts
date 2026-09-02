@@ -31,5 +31,12 @@ export async function getCarteiraData(filters: CarteiraFilters): Promise<Carteir
   const mapping: Record<string, string> = { entryStart: 'entry_start', entryEnd: 'entry_end', resolutionStart: 'resolution_start', resolutionEnd: 'resolution_end', state: 'state', resolution: 'resolution', cnj: 'cnj', integration: 'integration', groupBy: 'group_by', page: 'page', pageSize: 'page_size', sortBy: 'sort_by', sortDirection: 'sort_direction' };
   Object.entries(filters).forEach(([key, value]) => { if (value !== '') params.set(mapping[key], String(value)); });
   if (!window.MBA_AUTOMATION_API) throw new Error('A API do Backoffice não foi inicializada.');
-  return window.MBA_AUTOMATION_API.request(`/api/carteira-processual?${params}`) as Promise<CarteiraData>;
+  try {
+    return await window.MBA_AUTOMATION_API.request(`/api/carteira-processual?${params}`) as CarteiraData;
+  } catch (error) {
+    if (error instanceof TypeError && /fetch/i.test(error.message)) {
+      throw new Error('A API do Backoffice não respondeu. Verifique se o backend publicado está ativo e atualizado.');
+    }
+    throw error;
+  }
 }

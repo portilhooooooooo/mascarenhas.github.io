@@ -24129,12 +24129,20 @@ async function I9(e) {
   if (Object.entries(e).forEach(([n, a]) => {
     a !== "" && t.set(r[n], String(a));
   }), !window.MBA_AUTOMATION_API) throw new Error("A API do Backoffice não foi inicializada.");
-  return window.MBA_AUTOMATION_API.request(`/api/carteira-processual?${t}`);
+  try {
+    return await window.MBA_AUTOMATION_API.request(`/api/carteira-processual?${t}`);
+  } catch (n) {
+    throw n instanceof TypeError && /fetch/i.test(n.message) ? new Error("A API do Backoffice não respondeu. Verifique se o backend publicado está ativo e atualizado.") : n;
+  }
 }
 const j9 = new Intl.NumberFormat("pt-BR"), _9 = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }), nr = (e) => j9.format(e), sS = (e) => _9.format(e), cS = (e) => e.split("-").reverse().join("/");
 async function T9(e = 1) {
   if (!window.MBA_AUTOMATION_API) throw new Error("A API do Backoffice não foi inicializada.");
-  return window.MBA_AUTOMATION_API.request(`/api/acordos-indicadores?page=${e}&page_size=10`);
+  try {
+    return await window.MBA_AUTOMATION_API.request(`/api/acordos-indicadores?page=${e}&page_size=10`);
+  } catch (t) {
+    throw t instanceof TypeError && /fetch/i.test(t.message) ? new Error("A API do Backoffice não respondeu. Verifique se o backend publicado está ativo e atualizado.") : t;
+  }
 }
 const M9 = [
   { label: "Acordo recusado", icon: y9, tone: "red" },
