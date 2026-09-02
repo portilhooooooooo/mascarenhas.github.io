@@ -11,5 +11,12 @@ export interface AgreementsIndicatorsData {
 
 export async function getAgreementsIndicators(page = 1): Promise<AgreementsIndicatorsData> {
   if (!window.MBA_AUTOMATION_API) throw new Error('A API do Backoffice não foi inicializada.');
-  return window.MBA_AUTOMATION_API.request(`/api/acordos-indicadores?page=${page}&page_size=10`) as Promise<AgreementsIndicatorsData>;
+  try {
+    return await window.MBA_AUTOMATION_API.request(`/api/acordos-indicadores?page=${page}&page_size=10`) as AgreementsIndicatorsData;
+  } catch (error) {
+    if (error instanceof TypeError && /fetch/i.test(error.message)) {
+      throw new Error('A API do Backoffice não respondeu. Verifique se o backend publicado está ativo e atualizado.');
+    }
+    throw error;
+  }
 }
