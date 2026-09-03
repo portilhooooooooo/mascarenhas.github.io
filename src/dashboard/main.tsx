@@ -1,11 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { DashboardPage } from './DashboardPage';
 import { CarteiraProcessualPage } from './CarteiraProcessualPage';
 
-const root = document.getElementById('dashboard-root');
+const dashboardRoot = document.getElementById('dashboard-root');
+const carteiraRoot = document.getElementById('carteira-root');
 
-if (!root) {
-  throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
+if (!dashboardRoot || !carteiraRoot) {
+  throw new Error('Os pontos de montagem do dashboard não foram encontrados.');
 }
 
-createRoot(root).render(<StrictMode><CarteiraProcessualPage/></StrictMode>);
+createRoot(dashboardRoot).render(<StrictMode><DashboardPage/></StrictMode>);
+createRoot(carteiraRoot).render(<StrictMode><CarteiraProcessualPage/></StrictMode>);
