@@ -158,9 +158,12 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
   const operational = ['task_only', 'task_worker'].includes(user.role);
   document.querySelector('#selected-user-modules').hidden = !operational;
-  document.querySelectorAll('#selected-user-modules input').forEach((input) => { input.checked = (user.allowed_modules || []).includes(input.value); });
-  document.querySelector('#selected-user-otp-status').textContent = operational ? `${user.otp_requests_24h || 0} de ${user.otp_limit || 2} códigos solicitados na janela atual${user.otp_limit_blocked ? ' · limite atingido' : ''}.` : '';
-  document.querySelector('#reset-task-otp').hidden = !operational;
+  document.querySelectorAll('#selected-user-modules input').forEach((input) => {
+    input.checked = user.role === 'task_only' ? input.value === 'acordos' : (user.allowed_modules || []).includes(input.value);
+    input.disabled = user.role === 'task_only';
+  });
+  document.querySelector('#selected-user-otp-status').textContent = user.role === 'task_only' ? 'Acesso temporário por e-mail, restrito a Tarefas de Acordo.' : operational ? `${user.otp_requests_24h || 0} de ${user.otp_limit || 2} códigos solicitados na janela atual${user.otp_limit_blocked ? ' · limite atingido' : ''}.` : '';
+  document.querySelector('#reset-task-otp').hidden = user.role !== 'task_worker';
   const canReceiveUsersAccess = String(user.email || '').trim().toLowerCase() === exclusiveUsersEmail;
   const effective = Object.fromEntries((user.effective_permissions || []).map((item) => [item.key, item]));
   const groups = permissionCatalog.reduce((result, permission) => {
@@ -222,7 +225,8 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
   const button = event.currentTarget;
   button.disabled = true;
   try {
-    const allowedModules = [...document.querySelectorAll('#selected-user-modules input:checked')].map((input) => input.value);
+    const selectedRole = document.querySelector('#selected-user-role').value;
+    const allowedModules = selectedRole === 'task_only' ? ['acordos'] : [...document.querySelectorAll('#selected-user-modules input:checked')].map((input) => input.value);
     await window.MBA_API.request(`/api/users/${selectedUser.id}`, { method: 'PATCH', body: JSON.stringify({ role: document.querySelector('#selected-user-role').value, active: document.querySelector('#selected-user-active').checked, task_access_enabled: document.querySelector('#selected-user-task-access').checked, allowed_modules: allowedModules }) });
     const permissions = [...document.querySelectorAll('[data-permission-id]')].map((input) => ({ permission_id: input.dataset.permissionId, allowed: input.checked }));
     await window.MBA_API.request(`/api/users/${selectedUser.id}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions }) });
@@ -241,16 +245,24 @@ document.querySelector('#user-create-role')?.addEventListener('change', (event) 
   document.querySelector('#user-create-email-field input').required = true;
   document.querySelector('#user-create-modules').hidden = !operational;
   document.querySelector('#user-create-task-access').hidden = !operational;
+  document.querySelectorAll('#user-create-modules input').forEach((input) => {
+    input.checked = event.target.value === 'task_only' && input.value === 'acordos';
+    input.disabled = event.target.value === 'task_only';
+  });
 });
 document.querySelector('#selected-user-role')?.addEventListener('change', (event) => {
   document.querySelector('#selected-user-modules').hidden = !['task_only', 'task_worker'].includes(event.target.value);
+  document.querySelectorAll('#selected-user-modules input').forEach((input) => {
+    if (event.target.value === 'task_only') input.checked = input.value === 'acordos';
+    input.disabled = event.target.value === 'task_only';
+  });
 });
 document.querySelector('#user-create-form')?.addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget; const errorBox = document.querySelector('#user-create-error'); const submit = form.querySelector('[type="submit"]');
   const operational = ['task_only', 'task_worker'].includes(form.elements.role.value);
-  const payload = { role: form.elements.role.value, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: [...form.querySelectorAll('[name="allowed_modules"]:checked')].map((input) => input.value), task_access_enabled: operational && form.elements.task_access_enabled.checked };
+  const payload = { role: form.elements.role.value, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: form.elements.role.value === 'task_only' ? ['acordos'] : [...form.querySelectorAll('[name="allowed_modules"]:checked')].map((input) => input.value), task_access_enabled: operational && form.elements.task_access_enabled.checked };
   submit.disabled = true; errorBox.hidden = true;
-  try { await window.MBA_API.request('/api/users', { method: 'POST', body: JSON.stringify(payload) }); form.reset(); document.querySelector('#user-create-modules').hidden = true; document.querySelector('#user-create-task-access').hidden = true; userCreateDialog.close(); await loadUsers(); window.alert(operational ? 'Perfis operacionais estão desabilitados no frontend.' : 'Usuário administrativo autorizado. Ele já pode entrar com a conta Google cadastrada.'); }
+  try { await window.MBA_API.request('/api/users', { method: 'POST', body: JSON.stringify(payload) }); form.reset(); document.querySelector('#user-create-modules').hidden = true; document.querySelector('#user-create-task-access').hidden = true; userCreateDialog.close(); await loadUsers(); window.alert(payload.role === 'task_only' ? 'Acesso temporário criado para Tarefas de Acordo.' : 'Usuário administrativo autorizado. Ele já pode entrar com a conta Google cadastrada.'); }
   catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; } finally { submit.disabled = false; }
 });
 

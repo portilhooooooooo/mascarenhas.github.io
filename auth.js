@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   const supabase = window.MBA_SUPABASE;
+  const taskOnlyTokenKey = 'mba_task_worker_token';
+  const taskOnlyUserKey = 'mba_task_only_user';
   let authGeneration = 0;
   const errorBox = document.getElementById('login-error');
   const authLog = (message, details) => {
@@ -43,7 +45,6 @@
   async function initializeAuth() {
     window.localStorage.removeItem('mba_temp_access');
     window.localStorage.removeItem('mba_temp_email');
-    window.sessionStorage.removeItem('mba_task_worker_token');
     if(window.MBA_LOCAL_PREVIEW){
       document.getElementById('local-preview-badge').hidden=false;
       applyUser({id:'00000000-0000-0000-0000-000000000001',name:'Gabriel Portilho',email:'gabriel.portilho@mascarenhasbarbosa.com.br',role:'admin',active:true,is_master_admin:true,permissions:Object.fromEntries([...document.querySelectorAll('[data-permission]')].map((element)=>[element.dataset.permission,true]))});
@@ -52,6 +53,15 @@
       setAuthState(true);
       if(!location.hash)window.showPage?.('dashboard',false);
       return;
+    }
+    const taskOnlyToken=window.sessionStorage.getItem(taskOnlyTokenKey);
+    const storedTaskOnlyUser=window.sessionStorage.getItem(taskOnlyUserKey);
+    if(taskOnlyToken&&storedTaskOnlyUser){
+      try{
+        const user=JSON.parse(storedTaskOnlyUser);
+        if(user?.role!=='task_only')throw new Error('Sessão temporária inválida.');
+        applyUser(user);setAuthState(true);clearError();return;
+      }catch(_error){window.sessionStorage.removeItem(taskOnlyTokenKey);window.sessionStorage.removeItem(taskOnlyUserKey);}
     }
     if(!supabase){setAuthState(false);showError(window.MBA_SUPABASE_ERROR||'Supabase não configurado.');return;}
     try{authLog('verificando sessão');const {data,error}=await supabase.auth.getSession();if(error)throw error;if(data.session)authLog('sessão encontrada');await loadAdministrativeProfile(data.session);}catch(error){authError('erro ao verificar sessão',error);setAuthState(false);showError(error.message||'Não foi possível validar a sessão.');}
@@ -68,7 +78,25 @@
       authLog('OAuth iniciado');
     }catch(error){authError('erro ao iniciar Google OAuth',error);showError(error.message||'Não foi possível iniciar o login com Google.');}
   });
-  document.getElementById('logout-button')?.addEventListener('click',async()=>{if(window.MBA_LOCAL_PREVIEW)return;authGeneration+=1;await supabase?.auth.signOut();location.assign('/');});
+  document.getElementById('task-only-login')?.addEventListener('submit',async(event)=>{
+    event.preventDefault();clearError();
+    const form=event.currentTarget,button=form.querySelector('[type="submit"]');button.disabled=true;
+    try{
+      const session=await window.MBA_AUTOMATION_API.request('/api/task-only/session',{method:'POST',body:JSON.stringify({email:form.elements.email.value.trim()})});
+      window.sessionStorage.setItem(taskOnlyTokenKey,session.access_token);
+      window.sessionStorage.setItem(taskOnlyUserKey,JSON.stringify(session.user));
+      applyUser(session.user);setAuthState(true);clearError();
+    }catch(error){authError('erro no acesso temporário',error);showError(error.message||'Acesso temporário não autorizado.');}
+    finally{button.disabled=false;}
+  });
+  document.getElementById('logout-button')?.addEventListener('click',async()=>{
+    if(window.MBA_LOCAL_PREVIEW)return;authGeneration+=1;
+    if(window.sessionStorage.getItem(taskOnlyTokenKey)){
+      try{await window.MBA_AUTOMATION_API.fetch('/api/task-only/session',{method:'DELETE'});}catch(_error){/* remoção local encerra o acesso no navegador */}
+      window.sessionStorage.removeItem(taskOnlyTokenKey);window.sessionStorage.removeItem(taskOnlyUserKey);
+    }else await supabase?.auth.signOut();
+    location.assign('/');
+  });
   supabase?.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'||event==='TOKEN_REFRESHED')setTimeout(()=>{if(session)authLog('sessão encontrada');loadAdministrativeProfile(session).catch((error)=>{authError('erro ao validar perfil',error);setAuthState(false);showError(error.message);});},0);if(event==='SIGNED_OUT'){authGeneration+=1;setAuthState(false);}});
   initializeAuth();
 })();
