@@ -344,7 +344,7 @@
     const direct = await directRequest(path, options);
     return direct !== null ? direct : backendRequest(path, options);
   }
-  window.MBA_API = { request, fetch: backendFetch, baseUrl: apiBase, getAccessToken: async () => (await db?.auth.getSession())?.data?.session?.access_token || window.sessionStorage.getItem('mba_task_worker_token') || null };
+  window.MBA_API = { request, fetch: backendFetch, baseUrl: apiBase, getAccessToken: async () => window.sessionStorage.getItem('mba_task_worker_token') || (await db?.auth.getSession())?.data?.session?.access_token || null };
   window.MBA_AUTOMATION_API = { request: backendRequest, fetch: backendFetch, baseUrl: apiBase };
   window.MBA_TASK_IMPORT = { createTaskWithImportedProcesses };
 })();

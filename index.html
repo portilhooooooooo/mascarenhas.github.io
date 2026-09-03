@@ -20,7 +20,14 @@
         <div class="login-divider" aria-hidden="true"></div>
         <div class="auth-view" id="login-view">
         <h1>Entrar</h1>
-        <p class="login-subtitle">Use sua conta corporativa Google para acessar o sistema.</p>
+        <form class="login-form" id="task-only-login">
+          <div class="login-field">
+            <label for="task-only-email">E-mail</label>
+            <input id="task-only-email" name="email" type="email" autocomplete="email" required>
+          </div>
+          <button class="credentials-login" type="submit">Entrar</button>
+        </form>
+        <div class="login-or">ou</div>
         <button class="google-login" id="google-login" type="button" data-auth-provider="google" aria-label="Entrar com Google">
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.47h5.52c-.11.86-.71 2.16-2.05 3.03l-.02.12 2.98 2.31.2.02c1.85-1.71 2.97-4.23 2.97-7.15Z"/>
@@ -365,7 +372,7 @@
             <section class="permissions-editor-v2 master-admin-only" id="permissions-editor" data-permission="users.manage" hidden>
               <div class="permissions-editor-head">
                 <div class="selected-user-summary"><span class="user-avatar-v2" id="selected-user-avatar">U</span><div><strong id="selected-user-name">Selecione um usuário</strong><small id="selected-user-email">As autorizações aparecerão aqui</small></div></div>
-              <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle"><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user">Usuário</option><option value="task_only" disabled>Task only (desabilitado)</option><option value="task_worker" disabled>Operacional (desabilitado)</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Liberar novo OTP</button></div>
+              <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle"><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user">Usuário</option><option value="task_only">Task only — Acordos</option><option value="task_worker" disabled>Operacional legado</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Liberar novo OTP</button></div>
               </div>
               <div class="permission-grid-edit" id="permission-grid"></div>
               <fieldset class="agreement-participants" id="selected-user-modules"><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" value="acordos"> Acordos</label><label><input type="checkbox" value="liminar"> Liminar</label><label><input type="checkbox" value="encerramento"> Encerramentos</label><label><input type="checkbox" value="bloqueio"> Bloqueio</label><label><input type="checkbox" value="citacao"> Citação</label><label><input type="checkbox" value="protocolo"> Protocolo</label></div><small id="selected-user-otp-status"></small></fieldset>
@@ -412,7 +419,7 @@
   <dialog id="user-create-dialog" class="task-dialog">
     <form id="user-create-form">
       <header><div><h2>Adicionar usuário</h2><p>Perfis operacionais entram com o e-mail cadastrado.</p></div><button type="button" class="icon-button" data-close-user-create><i data-lucide="x"></i></button></header>
-      <label>Modelo<select name="role" id="user-create-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user" selected>Usuário</option><option value="task_only" disabled>Task only (desabilitado)</option><option value="task_worker" disabled>Operacional (desabilitado)</option></select></label>
+      <label>Modelo<select name="role" id="user-create-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user" selected>Usuário</option><option value="task_only">Task only — Acordos</option><option value="task_worker" disabled>Operacional legado</option></select></label>
       <label>Nome<input name="name" maxlength="120" required></label>
       <label id="user-create-email-field">E-mail corporativo<input name="email" type="email" required></label>
       <fieldset class="agreement-participants" id="user-create-modules" hidden><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" name="allowed_modules" value="acordos"> Acordos</label><label><input type="checkbox" name="allowed_modules" value="liminar"> Liminar</label><label><input type="checkbox" name="allowed_modules" value="encerramento"> Encerramentos</label><label><input type="checkbox" name="allowed_modules" value="bloqueio"> Bloqueio</label><label><input type="checkbox" name="allowed_modules" value="citacao"> Citação</label><label><input type="checkbox" name="allowed_modules" value="protocolo"> Protocolo</label></div></fieldset>
@@ -562,10 +569,10 @@
   <script src="supabase-client.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
-  <script src="app.js?v=20260818"></script>
+  <script src="app.js?v=20260903-task-only"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260902b"></script>
   <script src="agreements.js?v=20260818"></script>
-  <script src="auth.js?v=20260820-google-oauth"></script>
+  <script src="auth.js?v=20260903-task-only"></script>
 
   <script>
     (() => {
