@@ -58,6 +58,7 @@
 
       <nav class="main-nav" aria-label="Navegação principal">
         <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-page="carteira" data-permission="dashboard.view"><i data-lucide="chart-no-axes-combined"></i><span>Carteira processual</span></button>
         <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
         <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge">23</em></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="files"></i><span>Documentos</span></button>
@@ -98,6 +99,10 @@
       <main class="content">
         <section class="page active dashboard-page" id="dashboard" data-permission="dashboard.view" aria-label="Dashboard executivo">
           <div id="dashboard-root"></div>
+        </section>
+
+        <section class="page list-page" id="carteira" data-permission="dashboard.view" aria-label="Carteira processual">
+          <div id="carteira-root"></div>
         </section>
 
         <section class="page list-page" id="automacoes" data-permission="automations.view">
