@@ -34,14 +34,14 @@ export function WelcomePanel({ data, onPeriodChange }: { data: DashboardData; on
   const sessionLabel = data.status.enterSession === 'active' ? 'Ativa' : data.status.enterSession === 'expired' ? 'Expirada' : 'Indisponível';
   return (
     <section className="executive-welcome">
-      <div className="welcome-illustration"><img src="assets/welcome-character.png" alt="Pessoa utilizando um notebook"/></div>
       <div className="executive-welcome-copy">
-        <h1>Bem-vindo, <span id="welcome-name">{name}</span>! <span aria-hidden="true">👋</span></h1>
-        <p>Acompanhe os principais indicadores da carteira Agibank.</p>
+        <p className="dashboard-context">OPERAÇÃO ENTER · AGIBANK</p>
+        <h1>Todos os seus serviços estão saudáveis.</h1>
+        <p>Acompanhe os principais indicadores e os pontos que pedem decisão na operação.</p>
         <div className="operational-grid">
-          <StatusCard title="Backend" status={data.status.backendConnected ? 'Conectado' : 'Indisponível'} icon={Server} tone={data.status.backendConnected ? 'green' : 'red'}/>
-          <StatusCard title="Sessão Enter" status={sessionLabel} icon={LockKeyhole} tone={data.status.enterSession === 'active' ? 'green' : 'red'}/>
-          <StatusCard title="Erros" status={formatNumberBR(data.status.errorsToday)} icon={AlertTriangle} tone={data.status.errorsToday === 0 ? 'blue' : 'red'} detail={`Última atualização: ${data.status.updatedAt}`}/>
+          <StatusCard title="API Backoffice" status={data.status.backendConnected ? 'Operacional' : 'Indisponível'} icon={Server} tone={data.status.backendConnected ? 'green' : 'red'} detail="Conexão segura com a operação"/>
+          <StatusCard title="Integração Enter" status={sessionLabel} icon={LockKeyhole} tone={data.status.enterSession === 'active' ? 'green' : 'red'} detail="Última autenticação registrada"/>
+          <StatusCard title="Erros no dia" status={formatNumberBR(data.status.errorsToday)} icon={AlertTriangle} tone={data.status.errorsToday === 0 ? 'blue' : 'red'} detail={`Atualizado às ${data.status.updatedAt}`}/>
         </div>
       </div>
       <fieldset className="period-filter"><legend>Período global</legend><div><CalendarDays aria-hidden="true"/><label><span>Início</span><input type="date" value={data.period.start} onChange={(event) => onPeriodChange(event.target.value, data.period.end)}/></label><b>—</b><label><span>Fim</span><input type="date" value={data.period.end} onChange={(event) => onPeriodChange(data.period.start, event.target.value)}/></label></div><small>{formatDateBR(data.period.start)} - {formatDateBR(data.period.end)}</small></fieldset>
