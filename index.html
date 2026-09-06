@@ -25,6 +25,7 @@
             <label for="task-only-email">E-mail</label>
             <input id="task-only-email" name="email" type="email" autocomplete="email" required>
           </div>
+          <div class="login-field"><label for="operational-totp">Código do autenticador</label><input id="operational-totp" name="totp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required></div>
           <button class="credentials-login" type="submit">Entrar</button>
         </form>
         <div class="login-or">ou</div>
@@ -361,7 +362,7 @@
             <section class="users-panel-v2">
               <div class="users-toolbar-v2">
                 <label class="users-search-v2"><i data-lucide="search"></i><input id="users-search" placeholder="Buscar por nome ou e-mail"></label>
-              <div class="users-filters-v2"><select id="users-role-filter"><option value="">Todos os perfis</option><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user">Usuário</option><option value="task_only">Task only</option><option value="task_worker">Operacional legado</option></select><select id="users-status-filter"><option value="">Todos os status</option><option value="active">Ativo</option><option value="blocked">Bloqueado</option></select></div>
+              <div class="users-filters-v2"><select id="users-role-filter"><option value="">Todos os perfis</option><option value="admin">Administrador</option><option value="user">Usuário</option><option value="operational">Operacional</option></select><select id="users-status-filter"><option value="">Todos os status</option><option value="active">Ativo</option><option value="blocked">Bloqueado</option><option value="inactive">Desativado</option></select></div>
               </div>
               <div class="users-table-scroll">
                 <table class="users-table-v2"><thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Acesso</th><th></th></tr></thead><tbody id="users-table-body"></tbody></table>
@@ -372,7 +373,7 @@
             <section class="permissions-editor-v2 master-admin-only" id="permissions-editor" data-permission="users.manage" hidden>
               <div class="permissions-editor-head">
                 <div class="selected-user-summary"><span class="user-avatar-v2" id="selected-user-avatar">U</span><div><strong id="selected-user-name">Selecione um usuário</strong><small id="selected-user-email">As autorizações aparecerão aqui</small></div></div>
-              <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle"><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user">Usuário</option><option value="task_only">Task only — Acordos</option><option value="task_worker" disabled>Operacional legado</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Liberar novo OTP</button></div>
+              <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle" hidden><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="user">Usuário</option><option value="operational">Operacional</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Redefinir autenticador</button><button class="secondary-button" id="unlock-user" type="button" hidden>Desbloquear</button><button class="secondary-button" id="revoke-user-sessions" type="button">Revogar sessões</button></div>
               </div>
               <div class="permission-grid-edit" id="permission-grid"></div>
               <fieldset class="agreement-participants" id="selected-user-modules"><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" value="acordos"> Acordos</label><label><input type="checkbox" value="liminar"> Liminar</label><label><input type="checkbox" value="encerramento"> Encerramentos</label><label><input type="checkbox" value="bloqueio"> Bloqueio</label><label><input type="checkbox" value="citacao"> Citação</label><label><input type="checkbox" value="protocolo"> Protocolo</label></div><small id="selected-user-otp-status"></small></fieldset>
@@ -419,7 +420,7 @@
   <dialog id="user-create-dialog" class="task-dialog">
     <form id="user-create-form">
       <header><div><h2>Adicionar usuário</h2><p>Perfis operacionais entram com o e-mail cadastrado.</p></div><button type="button" class="icon-button" data-close-user-create><i data-lucide="x"></i></button></header>
-      <label>Modelo<select name="role" id="user-create-role"><option value="admin">Administrador</option><option value="gestor">Gestor</option><option value="user" selected>Usuário</option><option value="task_only">Task only — Acordos</option><option value="task_worker" disabled>Operacional legado</option></select></label>
+      <label>Modelo<select name="role" id="user-create-role"><option value="administrative">Usuário administrativo</option><option value="operational">Operacional</option></select></label>
       <label>Nome<input name="name" maxlength="120" required></label>
       <label id="user-create-email-field">E-mail corporativo<input name="email" type="email" required></label>
       <fieldset class="agreement-participants" id="user-create-modules" hidden><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" name="allowed_modules" value="acordos"> Acordos</label><label><input type="checkbox" name="allowed_modules" value="liminar"> Liminar</label><label><input type="checkbox" name="allowed_modules" value="encerramento"> Encerramentos</label><label><input type="checkbox" name="allowed_modules" value="bloqueio"> Bloqueio</label><label><input type="checkbox" name="allowed_modules" value="citacao"> Citação</label><label><input type="checkbox" name="allowed_modules" value="protocolo"> Protocolo</label></div></fieldset>
@@ -472,72 +473,7 @@
   </dialog>
 
 
-  <script>
-    (() => {
-      const normalize = (value) => (value || '').toString().trim().toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-      function initTutelasFilters() {
-        const body = document.getElementById('tutelas-table-body');
-        const search = document.getElementById('tutelas-search');
-        const client = document.getElementById('tutelas-cliente-filter');
-        const pedido = document.getElementById('tutelas-pedido-filter');
-        const date = document.getElementById('tutelas-date-filter');
-        const clear = document.getElementById('tutelas-clear-filters');
-        const tabs = [...document.querySelectorAll('.tutelas-tab')];
-        if (!body || !search || !client || !pedido || !date || !clear || !tabs.length) return;
-
-        let resultFilter = '';
-
-        const rows = () => [...body.querySelectorAll('tr[data-tutela-row]')];
-
-        const refreshClients = () => {
-          const current = client.value;
-          const values = [...new Set(rows().map(row => row.dataset.cliente).filter(Boolean))]
-            .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-          client.innerHTML = '<option value="">Todos</option>' + values.map(value => `<option value="${value.replace(/"/g, '&quot;')}">${value}</option>`).join('');
-          if (values.includes(current)) client.value = current;
-        };
-
-        const apply = () => {
-          const q = normalize(search.value);
-          const c = normalize(client.value);
-          const p = normalize(pedido.value);
-          const d = date.value;
-          let visible = 0;
-          rows().forEach(row => {
-            const matches = (!q || normalize(row.dataset.processo).includes(q))
-              && (!c || normalize(row.dataset.cliente) === c)
-              && (!p || normalize(row.dataset.pedido) === p)
-              && (!d || row.dataset.consultaDate === d)
-              && (!resultFilter || row.dataset.result === resultFilter);
-            row.hidden = !matches;
-            if (matches) visible += 1;
-          });
-          const label = document.getElementById('tutelas-pagination-label');
-          if (label && rows().length) label.textContent = `${visible} de ${rows().length} registro${rows().length === 1 ? '' : 's'} exibido${visible === 1 ? '' : 's'}`;
-        };
-
-        [search, client, pedido, date].forEach(el => el.addEventListener(el === search ? 'input' : 'change', apply));
-        clear.addEventListener('click', () => {
-          search.value = ''; client.value = ''; pedido.value = ''; date.value = ''; resultFilter = '';
-          tabs.forEach((tab, index) => { tab.classList.toggle('active', index === 0); tab.setAttribute('aria-selected', index === 0 ? 'true' : 'false'); });
-          apply();
-        });
-        tabs.forEach(tab => tab.addEventListener('click', () => {
-          resultFilter = tab.dataset.tutelaResult || '';
-          tabs.forEach(item => { const active = item === tab; item.classList.toggle('active', active); item.setAttribute('aria-selected', active ? 'true' : 'false'); });
-          apply();
-        }));
-
-        const observer = new MutationObserver(() => { refreshClients(); apply(); });
-        observer.observe(body, { childList: true });
-        refreshClients(); apply();
-      }
-
-      document.addEventListener('DOMContentLoaded', initTutelasFilters);
-    })();
-  </script>
+  <script src="page-init-1.js"></script>
 
   <dialog id="jobs-dialog" class="task-dialog jobs-dialog">
     <div class="jobs-dialog-shell">
@@ -563,10 +499,8 @@
   </dialog>
 
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/dist/umd/supabase.min.js" integrity="sha384-l8ah+VgaWtk1mvOe9VC+OirC6qHFF4yH7l7mKRidV9MSti3E9F463bMp6ZVN4kuC" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="config.js?v=20260818"></script>
-  <script src="supabase-client.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
   <script src="app.js?v=20260903-task-only"></script>
@@ -574,73 +508,8 @@
   <script src="agreements.js?v=20260818"></script>
   <script src="auth.js?v=20260903-task-only"></script>
 
-  <script>
-    (() => {
-      const dialog = document.getElementById('jobs-dialog');
-      const title = document.getElementById('jobs-dialog-title');
-      const state = document.getElementById('jobs-dialog-state');
-      const tableWrap = document.getElementById('jobs-table-wrap');
-      const tbody = document.getElementById('jobs-table-body');
-      let activeIntegration = null;
-
-      const integrationLabel = (key) => key === 'liminar' ? 'API de Liminar' : key === 'datajud' ? 'CNJ / DataJud' : 'Automação';
-      const close = () => dialog?.close();
-      document.getElementById('jobs-dialog-close')?.addEventListener('click', close);
-      document.getElementById('jobs-dialog-footer-close')?.addEventListener('click', close);
-
-      document.querySelectorAll('[data-integration-jobs]').forEach((button) => {
-        button.addEventListener('click', () => {
-          activeIntegration = button.dataset.integrationJobs;
-          title.textContent = `Jobs · ${integrationLabel(activeIntegration)}`;
-          tbody.innerHTML = '';
-          tableWrap.hidden = true;
-          state.hidden = false;
-          state.innerHTML = '<i data-lucide="loader-circle" class="jobs-loading-icon"></i><strong>Consultando jobs</strong><span>Aguardando os dados da integração.</span>';
-          if (window.lucide) window.lucide.createIcons();
-          dialog.showModal();
-          window.dispatchEvent(new CustomEvent('mba:jobs-request', { detail: { integration: activeIntegration } }));
-        });
-      });
-
-      window.addEventListener('mba:jobs-loaded', (event) => {
-        const detail = event.detail || {};
-        if (!dialog?.open || detail.integration !== activeIntegration) return;
-        const jobs = Array.isArray(detail.jobs) ? detail.jobs : [];
-        tbody.innerHTML = '';
-        if (!jobs.length) {
-          tableWrap.hidden = true;
-          state.hidden = false;
-          state.innerHTML = '<i data-lucide="inbox"></i><strong>Nenhum job encontrado</strong><span>Não há execuções registradas para esta automação.</span>';
-          if (window.lucide) window.lucide.createIcons();
-          return;
-        }
-        state.hidden = true;
-        tableWrap.hidden = false;
-        for (const job of jobs) {
-          const tr = document.createElement('tr');
-          const id = String(job.id ?? job.job_id ?? '—');
-          const status = String(job.status ?? '—');
-          const statusKey = status.toUpperCase();
-          const statusClass = statusKey.startsWith('CONCLU') || statusKey === 'DONE' ? 'done'
-            : statusKey.startsWith('ERRO') || statusKey === 'ERROR' ? 'error'
-            : statusKey ? 'running' : '';
-          const done = job.done ?? job.processed ?? '—';
-          const total = job.total ?? '—';
-          const updated = String(job.updated_at ?? job.updatedAt ?? '—');
-          const download = job.download_url ?? job.downloadUrl ?? '';
-          const selectResult = activeIntegration === 'encerramentos' ? `<button class="jobs-download" type="button" data-select-encerramentos-job="${id}">Ver</button>` : '';
-          tr.innerHTML = `<td>${id}</td><td><span class="job-status-chip ${statusClass}">${status}</span></td><td>${done} / ${total}</td><td>${updated}</td><td>${selectResult}${download ? `<a class="jobs-download" href="${download}" target="_blank" rel="noopener"><i data-lucide="download"></i>Baixar</a>` : !selectResult ? '<span class="jobs-no-download">—</span>' : ''}</td>`;
-          tbody.appendChild(tr);
-        }
-        if (window.lucide) window.lucide.createIcons();
-      });
-      tbody.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-select-encerramentos-job]');
-        if (!button) return;
-        window.dispatchEvent(new CustomEvent('mba:encerramentos-job-selected', { detail: { jobId: button.dataset.selectEncerramentosJob } }));
-        close();
-      });
-    })();
-  </script>
+  <script src="page-init-2.js"></script>
+<script src="assets/vendor/qrcode.js"></script><script src="security-ui.js"></script>
 </body>
 </html>
+

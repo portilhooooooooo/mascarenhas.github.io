@@ -105,7 +105,8 @@ let paymentFilterTimer = null;
 let permissionCatalog = [];
 let selectedUser = null;
 let authenticatedUser = null;
-const roleLabels = { admin: 'Administrador', gestor: 'Gestor', user: 'Usuário', task_only: 'Task only', task_worker: 'Operacional' };
+const roleLabels = { admin: 'Administrador', user: 'Usuário', operational: 'Operacional' };
+const userKind = user => user.access_kind === 'operational' ? 'operational' : user.role;
 const exclusiveUsersEmail = 'gabriel.portilho@mascarenhasbarbosa.com.br';
 const permissionSections = { dashboard: 'Dashboard', automations: 'Automações', tutelas: 'Tutelas', encerramentos: 'Encerramentos', pagamentos: 'Pagamentos', agreements: 'Acordos', tasks: 'Tarefas', users: 'Usuários', settings: 'Configurações' };
 const permissionSectionOrder = ['dashboard', 'automations', 'tutelas', 'encerramentos', 'pagamentos', 'agreements', 'tasks', 'users', 'settings'];
@@ -120,8 +121,8 @@ function filteredUsers() {
   const status = document.querySelector('#users-status-filter')?.value || '';
   return usersCache.filter((user) => {
     const matchesSearch = !search || `${user.name || ''} ${user.email || ''}`.toLowerCase().includes(search);
-    const matchesRole = !role || user.role === role;
-    const matchesStatus = !status || (status === 'active' ? user.active : !user.active);
+    const matchesRole = !role || userKind(user) === role;
+    const matchesStatus = !status || (status === 'active' ? user.active && !user.account_locked : status === 'blocked' ? user.active && user.account_locked : !user.active);
     return matchesSearch && matchesRole && matchesStatus;
   });
 }
@@ -134,9 +135,9 @@ function renderUsers() {
     const permissionCount = Object.values(user.permission_map || {}).filter(Boolean).length;
     return `<tr data-user-id="${user.id}" class="${selectedUser?.id === user.id ? 'selected-user' : ''}">
       <td><div class="user-cell-v2"><span class="user-avatar-v2">${escapeHtml(userInitials(user))}</span><div><strong>${escapeHtml(user.name || 'Sem nome')}</strong><small>${escapeHtml(user.email)}</small></div></div></td>
-      <td><span class="role-pill ${user.role === 'admin' ? 'admin' : ''}">${escapeHtml(roleLabels[user.role] || user.role)}</span></td>
-      <td><span class="user-status-v2 ${user.active ? '' : 'blocked'}">${user.active ? 'Ativo' : 'Bloqueado'}</span></td>
-      <td><span class="access-pill ${permissionCount ? 'allowed' : ''}">${user.otp_limit_blocked ? 'OTP bloqueado' : permissionCount ? `${permissionCount} liberadas` : 'Sem acesso'}</span></td>
+      <td><span class="role-pill ${user.role === 'admin' ? 'admin' : ''}">${escapeHtml(roleLabels[userKind(user)] || userKind(user))}</span></td>
+      <td><span class="user-status-v2 ${user.active ? '' : 'blocked'}">${!user.active ? 'Desativado' : user.account_locked ? 'Bloqueado' : 'Ativo'}</span></td>
+      <td><span class="access-pill ${permissionCount ? 'allowed' : ''}">${user.account_locked ? 'Bloqueado' : permissionCount ? `${permissionCount} liberadas` : 'Sem acesso'}</span></td>
       <td><button type="button" class="user-actions-v2" aria-label="Selecionar usuário"><i data-lucide="chevron-right"></i></button></td>
     </tr>`;
   }).join('') || '<tr><td colspan="5">Nenhum usuário encontrado.</td></tr>';
@@ -153,17 +154,21 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-avatar').textContent = userInitials(user);
   document.querySelector('#selected-user-name').textContent = user.name || 'Sem nome';
   document.querySelector('#selected-user-email').textContent = user.email;
-  document.querySelector('#selected-user-role').value = user.role;
+  document.querySelector('#selected-user-role').value = userKind(user);
+  document.querySelector('#selected-user-role').disabled = true;
   document.querySelector('#selected-user-active').checked = Boolean(user.active);
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
-  const operational = ['task_only', 'task_worker'].includes(user.role);
+  const operational = user.access_kind === 'operational';
   document.querySelector('#selected-user-modules').hidden = !operational;
   document.querySelectorAll('#selected-user-modules input').forEach((input) => {
-    input.checked = user.role === 'task_only' ? input.value === 'acordos' : (user.allowed_modules || []).includes(input.value);
-    input.disabled = user.role === 'task_only';
+    input.checked = (user.allowed_modules || []).includes(input.value);
+    input.disabled = false;
   });
-  document.querySelector('#selected-user-otp-status').textContent = user.role === 'task_only' ? 'Acesso temporário por e-mail, restrito a Tarefas de Acordo.' : operational ? `${user.otp_requests_24h || 0} de ${user.otp_limit || 2} códigos solicitados na janela atual${user.otp_limit_blocked ? ' · limite atingido' : ''}.` : '';
-  document.querySelector('#reset-task-otp').hidden = user.role !== 'task_worker';
+  document.querySelector('#selected-user-otp-status').textContent = operational ? (user.totp_status?.confirmed_at ? 'Autenticador confirmado.' : 'Autenticador pendente de confirmação.') : '';
+  document.querySelector('#reset-task-otp').hidden = !operational;
+  document.querySelector('#unlock-user').hidden = !user.account_locked;
+  const protectedIdentity = user.email.toLowerCase() === exclusiveUsersEmail;
+  ['#selected-user-active', '#save-user-permissions', '#reset-task-otp', '#unlock-user', '#revoke-user-sessions'].forEach(selector => { document.querySelector(selector).disabled = protectedIdentity; });
   const canReceiveUsersAccess = String(user.email || '').trim().toLowerCase() === exclusiveUsersEmail;
   const effective = Object.fromEntries((user.effective_permissions || []).map((item) => [item.key, item]));
   const groups = permissionCatalog.reduce((result, permission) => {
@@ -174,10 +179,10 @@ function renderPermissionEditor(user) {
   document.querySelector('#permission-grid').innerHTML = permissionSectionOrder.filter((section) => groups[section]?.length).map((section) => `<div class="permission-edit-card"><h3>${escapeHtml(permissionSections[section] || section)}</h3>${groups[section].map((permission) => {
     const state = effective[permission.key];
     const exclusive = permission.key.startsWith('users.') && !canReceiveUsersAccess;
-    const taskOnlyRestricted = ['task_only', 'task_worker'].includes(user.role) && !['tasks.view', 'tasks.execute'].includes(permission.key);
-    const locked = exclusive || taskOnlyRestricted;
-    const lockLabel = exclusive ? 'Exclusivo' : taskOnlyRestricted ? 'Bloqueado para Task only' : '';
-    return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O perfil Task only acessa somente visualizar e executar Tarefas' : 'Origem atual: ' + (state?.source || 'sem regra')}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
+    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute'].includes(permission.key);
+    const locked = exclusive || operational || protectedIdentity;
+    const lockLabel = exclusive ? 'Exclusivo' : taskOnlyRestricted ? 'Escopo operacional' : '';
+    return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O acesso operacional permite somente tarefas atribuídas' : 'Origem atual: ' + (state?.source || 'sem regra')}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
   }).join('')}</div>`).join('');
 }
 
@@ -225,11 +230,15 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
   const button = event.currentTarget;
   button.disabled = true;
   try {
-    const selectedRole = document.querySelector('#selected-user-role').value;
-    const allowedModules = selectedRole === 'task_only' ? ['acordos'] : [...document.querySelectorAll('#selected-user-modules input:checked')].map((input) => input.value);
-    await window.MBA_API.request(`/api/users/${selectedUser.id}`, { method: 'PATCH', body: JSON.stringify({ role: document.querySelector('#selected-user-role').value, active: document.querySelector('#selected-user-active').checked, task_access_enabled: document.querySelector('#selected-user-task-access').checked, allowed_modules: allowedModules }) });
-    const permissions = [...document.querySelectorAll('[data-permission-id]')].map((input) => ({ permission_id: input.dataset.permissionId, allowed: input.checked }));
-    await window.MBA_API.request(`/api/users/${selectedUser.id}/permissions`, { method: 'PUT', body: JSON.stringify({ permissions }) });
+    if (selectedUser.email.toLowerCase() === exclusiveUsersEmail) return;
+    if (selectedUser.access_kind === 'operational') {
+      const allowed_modules = [...document.querySelectorAll('#selected-user-modules input:checked')].map(input => input.value);
+      await window.MBA_API.request(`/api/users/${selectedUser.id}`, {method: 'PATCH', body: JSON.stringify({allowed_modules})});
+    }
+    const active = document.querySelector('#selected-user-active').checked;
+    if (active !== selectedUser.active) await window.MBA_API.request(`/api/users/${selectedUser.id}/${active ? 'activate' : 'deactivate'}`, {method: 'POST', body: JSON.stringify({motivo: 'Alteração administrativa de estado'})});
+    const permissions = [...document.querySelectorAll('[data-permission-id]:not(:disabled)')].map(input => ({permission_id: input.dataset.permissionId, allowed: input.checked}));
+    if (permissions.length) await window.MBA_API.request(`/api/users/${selectedUser.id}/permissions`, {method: 'PUT', body: JSON.stringify({permissions})});
     button.textContent = 'Alterações salvas';
     await loadUsers();
     await selectUser(selectedUser.id);
@@ -240,30 +249,22 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
 const userCreateDialog = document.querySelector('#user-create-dialog');
 document.querySelector('#invite-user-button')?.addEventListener('click', () => userCreateDialog.showModal());
 document.querySelectorAll('[data-close-user-create]').forEach((button) => button.addEventListener('click', () => userCreateDialog.close()));
-document.querySelector('#user-create-role')?.addEventListener('change', (event) => {
-  const operational = ['task_only', 'task_worker'].includes(event.target.value);
-  document.querySelector('#user-create-email-field input').required = true;
-  document.querySelector('#user-create-modules').hidden = !operational;
-  document.querySelector('#user-create-task-access').hidden = !operational;
-  document.querySelectorAll('#user-create-modules input').forEach((input) => {
-    input.checked = event.target.value === 'task_only' && input.value === 'acordos';
-    input.disabled = event.target.value === 'task_only';
-  });
+document.querySelector('#user-create-role')?.addEventListener('change', event => {
+  document.querySelector('#user-create-modules').hidden = event.target.value !== 'operational';
 });
-document.querySelector('#selected-user-role')?.addEventListener('change', (event) => {
-  document.querySelector('#selected-user-modules').hidden = !['task_only', 'task_worker'].includes(event.target.value);
-  document.querySelectorAll('#selected-user-modules input').forEach((input) => {
-    if (event.target.value === 'task_only') input.checked = input.value === 'acordos';
-    input.disabled = event.target.value === 'task_only';
-  });
-});
-document.querySelector('#user-create-form')?.addEventListener('submit', async (event) => {
-  event.preventDefault(); const form = event.currentTarget; const errorBox = document.querySelector('#user-create-error'); const submit = form.querySelector('[type="submit"]');
-  const operational = ['task_only', 'task_worker'].includes(form.elements.role.value);
-  const payload = { role: form.elements.role.value, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: form.elements.role.value === 'task_only' ? ['acordos'] : [...form.querySelectorAll('[name="allowed_modules"]:checked')].map((input) => input.value), task_access_enabled: operational && form.elements.task_access_enabled.checked };
+document.querySelector('#user-create-form')?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget, errorBox = document.querySelector('#user-create-error'), submit = form.querySelector('[type="submit"]');
+  const access_kind = form.elements.role.value;
+  const payload = {access_kind, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: access_kind === 'operational' ? [...form.querySelectorAll('[name="allowed_modules"]:checked')].map(input => input.value) : []};
   submit.disabled = true; errorBox.hidden = true;
-  try { await window.MBA_API.request('/api/users', { method: 'POST', body: JSON.stringify(payload) }); form.reset(); document.querySelector('#user-create-modules').hidden = true; document.querySelector('#user-create-task-access').hidden = true; userCreateDialog.close(); await loadUsers(); window.alert(payload.role === 'task_only' ? 'Acesso temporário criado para Tarefas de Acordo.' : 'Usuário administrativo autorizado. Ele já pode entrar com a conta Google cadastrada.'); }
-  catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; } finally { submit.disabled = false; }
+  try {
+    const result = await window.MBA_API.request('/api/users', {method: 'POST', body: JSON.stringify(payload)});
+    form.reset(); document.querySelector('#user-create-modules').hidden = true; userCreateDialog.close();
+    if (result.enrollment) window.MBA_SHOW_ENROLLMENT(result.enrollment, result.user.email);
+    await loadUsers();
+  } catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
+  finally { submit.disabled = false; }
 });
 
 const taskLabels = { liminar: 'Analisar Pedido de Tutela', encerramento: 'Analisar Indício de Encerramento', bloqueio: 'Analisar Indício de Bloqueio', citacao: 'Analisar Indício de Citação', protocolo: 'Executar Protocolo', acordos: 'Acordos' };
@@ -275,7 +276,7 @@ async function loadTasks() {
     const canAssign = authenticatedUser?.permissions?.['tasks.assign'] === true;
     tbody.innerHTML = tasks.length ? tasks.map((task) => `<tr data-task-id="${task.id}"><td><span class="row-icon blue"><i data-lucide="clipboard-check"></i></span><strong>${escapeHtml(task.title || taskLabels[task.type])}</strong></td><td>${escapeHtml(task.description || 'Sem descrição')}</td><td><span class="empty-pill">${task.total_processes - task.completed_processes}</span></td><td><span class="task-status waiting">${escapeHtml(task.status)}</span></td><td>${task.updated_at ? new Date(task.updated_at).toLocaleString('pt-BR') : 'Sem atualização'}</td><td><div class="table-row-actions">${canAssign ? `<button class="secondary-button" type="button" data-assign-task="${task.id}"><i data-lucide="user-plus"></i>Atribuir</button>` : ''}<button class="execute-button" data-task-json="${encodeURIComponent(JSON.stringify(task))}"><i data-lucide="play"></i>Executar</button></div></td></tr>`).join('') : '<tr><td colspan="6">Nenhuma tarefa disponível.</td></tr>';
     lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
-    if (['task_worker', 'task_only'].includes(authenticatedUser?.role) && tasks[0]) await openTask(tasks[0]);
+    if (authenticatedUser?.access_kind === 'operational' && tasks[0]) await openTask(tasks[0]);
   } catch (_error) { /* a autorização já controla a visibilidade da área */ }
 }
 
@@ -306,7 +307,7 @@ document.querySelector('#tasks-table-body')?.addEventListener('click', (event) =
 const taskAssignDialog = document.querySelector('#task-assign-dialog');
 async function openTaskAssignment(taskId) {
   if (!usersCache.length) usersCache = await window.MBA_API.request('/api/users');
-  const activeUsers = usersCache.filter((user) => user.active && (user.role !== 'task_worker' || user.task_access_enabled));
+  const activeUsers = usersCache.filter((user) => user.active && !user.account_locked);
   const selectedTask = tasksCache.find((item) => item.id === taskId);
   const selectedIds = new Set(selectedTask?.participant_user_ids || (selectedTask?.responsible_id ? [selectedTask.responsible_id] : []));
   document.querySelector('#task-assign-task').innerHTML = tasksCache.map((item) => `<option value="${item.id}">${escapeHtml(item.title || taskLabels[item.type])}</option>`).join('');
@@ -513,10 +514,10 @@ document.querySelector('#integration-form')?.addEventListener('submit', async (e
 document.querySelector('#reset-task-otp')?.addEventListener('click', async () => {
   if (!selectedUser) return;
   try {
-    await window.MBA_AUTOMATION_API.request(`/api/users/${selectedUser.id}/task-otp/reset`, { method: 'POST' });
+    const result = await window.MBA_API.request(`/api/users/${selectedUser.id}/totp/reset`, {method: 'POST', body: JSON.stringify({motivo: 'Novo enrollment solicitado pelo administrador'})});
+    window.MBA_SHOW_ENROLLMENT(result.enrollment, result.user.email);
     await selectUser(selectedUser.id);
     await loadUsers();
-    window.alert('Novo OTP liberado para o usuário.');
   } catch (error) { window.alert(error.message); }
 });
 
@@ -724,3 +725,14 @@ document.addEventListener('keydown', (event) => {
 });
 
 lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+
+
+for (const [selector, action] of [['#unlock-user', 'unlock'], ['#revoke-user-sessions', 'sessions/revoke']]) {
+  document.querySelector(selector)?.addEventListener('click', async () => {
+    if (!selectedUser || selectedUser.email.toLowerCase() === exclusiveUsersEmail) return;
+    try {
+      await window.MBA_API.request(`/api/users/${selectedUser.id}/${action}`, {method: 'POST', body: JSON.stringify({motivo: 'Ação explícita do administrador'})});
+      await selectUser(selectedUser.id); await loadUsers();
+    } catch (error) { window.alert(error.message); }
+  });
+}
