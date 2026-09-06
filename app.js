@@ -306,13 +306,12 @@ document.querySelector('#tasks-table-body')?.addEventListener('click', (event) =
 
 const taskAssignDialog = document.querySelector('#task-assign-dialog');
 async function openTaskAssignment(taskId) {
-  if (!usersCache.length) usersCache = await window.MBA_API.request('/api/users');
-  const activeUsers = usersCache.filter((user) => user.active && !user.account_locked);
   const selectedTask = tasksCache.find((item) => item.id === taskId);
+  const activeUsers = await window.MBA_API.request(`/api/task-assignees?module=${encodeURIComponent(selectedTask.type)}`);
   const selectedIds = new Set(selectedTask?.participant_user_ids || (selectedTask?.responsible_id ? [selectedTask.responsible_id] : []));
   document.querySelector('#task-assign-task').innerHTML = tasksCache.map((item) => `<option value="${item.id}">${escapeHtml(item.title || taskLabels[item.type])}</option>`).join('');
   document.querySelector('#task-assign-users').innerHTML = activeUsers.length
-    ? activeUsers.map((user) => `<label><input type="checkbox" name="participant_user_ids" value="${escapeHtml(user.id)}" ${selectedIds.has(user.id) ? 'checked' : ''}><span>${escapeHtml(user.name || user.email)}</span></label>`).join('')
+    ? activeUsers.map((user) => `<label><input type="checkbox" name="participant_user_ids" value="${escapeHtml(user.id)}" ${selectedIds.has(user.id) ? 'checked' : ''}><span>${escapeHtml(user.name)}</span></label>`).join('')
     : '<span>Nenhum usuário ativo disponível.</span>';
   document.querySelector('#task-assign-task').value = taskId;
   document.querySelector('#task-assign-error').hidden = true;
