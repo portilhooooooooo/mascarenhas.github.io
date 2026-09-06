@@ -10,12 +10,15 @@ const files = [
   'styles.css',
   'agreements.css',
   'config.js',
-  'supabase-client.js',
   'mock-api.js',
   'data-api.js',
   'app.js',
   'agreements.js',
   'auth.js',
+  'security-ui.js',
+  'page-init-1.js',
+  'page-init-2.js',
+  '_headers',
 ];
 
 for (const file of files) {
@@ -29,3 +32,5 @@ await cp(
 );
 
 console.log('dist preparado para deploy.');
+
+await cp('assets/vendor', `${dist}/assets/vendor`, {recursive: true});

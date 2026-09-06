@@ -87,7 +87,7 @@
     const container = document.querySelector('#agreement-participant-options');
     try {
       const users = await window.MBA_API.request('/api/users');
-      const eligible = users.filter((user) => user.active && (user.role !== 'task_worker' || user.task_access_enabled));
+      const eligible = users.filter((user) => user.active && !user.account_locked);
       container.innerHTML = eligible.length ? eligible.map((user) => `<label><input type="checkbox" name="participant_user_ids" value="${escapeHtml(user.id)}"><span>${escapeHtml(user.name || user.email)}</span></label>`).join('') : '<span>Nenhum usuário apto disponível.</span>';
     } catch (_error) { container.innerHTML = '<span>Não foi possível carregar os participantes.</span>'; }
   }
@@ -229,3 +229,4 @@
     updateTaskFields();
   });
 })();
+
