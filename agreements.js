@@ -98,7 +98,7 @@
     document.querySelector('#task-responsible-field').hidden = isAgreement;
     document.querySelector('#agreement-file-help').hidden = !isAgreement;
     document.querySelector('#task-file').accept = isAgreement ? '.xlsx' : '.xlsx,.csv';
-    if (isAgreement) loadParticipants();
+    if (isAgreement && window.MBA_CURRENT_USER?.access_kind !== 'operational' && window.MBA_CURRENT_USER?.permissions?.['tasks.create']) loadParticipants();
   }
 
   function resetAgreementForm() {
@@ -224,7 +224,6 @@
   document.querySelector('#agreement-analysis-form select[name="obf_type"]')?.addEventListener('change', updateAnalysisFlow);
 
   window.addEventListener('mba:authenticated', (event) => {
-    if (event.detail.permissions?.['agreements.view']) loadAgreements(true);
     updateTaskFields();
   });
 })();

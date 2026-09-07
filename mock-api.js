@@ -3,10 +3,10 @@
 
   const users = [
     { id: '10000000-0000-0000-0000-000000000001', name: 'Gabriel Portilho', email: 'gabriel.portilho@mascarenhasbarbosa.com.br', role: 'admin', active: true, task_access_enabled: false, allowed_modules: [] },
-    { id: '10000000-0000-0000-0000-000000000002', name: 'Ana Souza', email: 'ana@mascarenhasbarbosa.com.br', role: 'task_only', active: true, task_access_enabled: true, allowed_modules: ['acordos'], otp_requests_24h: 1, otp_limit: 2, otp_limit_blocked: false },
-    { id: '10000000-0000-0000-0000-000000000003', name: 'Vitória Lima', email: 'vitoria@mascarenhasbarbosa.com.br', role: 'task_worker', active: true, task_access_enabled: true, allowed_modules: ['acordos'], otp_requests_24h: 2, otp_limit: 2, otp_limit_blocked: true },
+    { id: '10000000-0000-0000-0000-000000000002', name: 'Ana Souza', email: 'ana@mascarenhasbarbosa.com.br', role: null, access_kind: 'operational', active: true, task_access_enabled: true, allowed_modules: ['acordos'], otp_requests_24h: 1, otp_limit: 2, otp_limit_blocked: false },
+    { id: '10000000-0000-0000-0000-000000000003', name: 'Vitória Lima', email: 'vitoria@mascarenhasbarbosa.com.br', role: null, access_kind: 'operational', active: true, task_access_enabled: true, allowed_modules: ['acordos'], otp_requests_24h: 2, otp_limit: 2, otp_limit_blocked: true },
     { id: '10000000-0000-0000-0000-000000000004', name: 'João Martins', email: 'joao@local.preview', role: 'user', active: true, task_access_enabled: false },
-    { id: '10000000-0000-0000-0000-000000000005', name: 'Maria Alves', email: 'maria@local.preview', role: 'task_worker', active: false, task_access_enabled: false },
+    { id: '10000000-0000-0000-0000-000000000005', name: 'Maria Alves', email: 'maria@local.preview', role: null, access_kind: 'operational', active: false, task_access_enabled: false },
   ];
   const permissionDefinitions = [
     ['dashboard.view', 'Visualizar Dashboard'], ['automations.view', 'Visualizar Automações'], ['automations.run', 'Executar automações'],
@@ -18,7 +18,7 @@
     ['settings.manage', 'Gerenciar configurações'],
   ].map(([key, description], index) => ({ id: `permission-${index + 1}`, key, description }));
   const permissionOverrides = Object.fromEntries(users.map((user) => [user.id, Object.fromEntries(permissionDefinitions.map((permission) => [permission.key,
-    user.email === 'gabriel.portilho@mascarenhasbarbosa.com.br' || user.role === 'admin' || (['task_worker', 'task_only'].includes(user.role) && ['tasks.view', 'tasks.execute'].includes(permission.key))
+    user.email === 'gabriel.portilho@mascarenhasbarbosa.com.br' || user.role === 'admin' || (user.access_kind === 'operational' && ['tasks.view', 'tasks.execute'].includes(permission.key))
   ]))]));
   const effectivePermissions = (user) => permissionDefinitions.map((permission) => ({ key: permission.key, allowed: Boolean(permissionOverrides[user.id]?.[permission.key]), source: 'override' }));
   const task = { id: '20000000-0000-0000-0000-000000000001', type: 'acordos', title: 'Acordos — Agosto', description: 'Saneamento da base de acordos recebida em agosto.', priority: 'high', status: 'in_progress', total_processes: 251, completed_processes: 12, updated_at: '2026-08-14T13:45:00-04:00' };
@@ -62,7 +62,7 @@
       encerramentos: { online: true, busy: false },
     };
     if (url.pathname === '/api/users' && method === 'GET') return users;
-    if (url.pathname === '/api/users' && method === 'POST') { const body = jsonBody(options); const user = { id: crypto.randomUUID(), name: body.name, email: body.email, role: body.role || 'user', active: true, task_access_enabled: ['task_only', 'task_worker'].includes(body.role), allowed_modules: body.allowed_modules || [], otp_requests_24h: 0, otp_limit: 2, otp_limit_blocked: false }; users.push(user); permissionOverrides[user.id] = Object.fromEntries(permissionDefinitions.map((permission) => [permission.key, ['task_only', 'task_worker'].includes(user.role) && ['tasks.view', 'tasks.execute'].includes(permission.key)])); return user; }
+    if (url.pathname === '/api/users' && method === 'POST') { const body = jsonBody(options); const user = { id: crypto.randomUUID(), name: body.name, email: body.email, role: body.role || 'user', active: true, task_access_enabled: body.access_kind === 'operational', allowed_modules: body.allowed_modules || [], otp_requests_24h: 0, otp_limit: 2, otp_limit_blocked: false }; users.push(user); permissionOverrides[user.id] = Object.fromEntries(permissionDefinitions.map((permission) => [permission.key, user.access_kind === 'operational' && ['tasks.view', 'tasks.execute'].includes(permission.key)])); return user; }
     if (url.pathname === '/api/permissions') return permissionDefinitions;
     const userDetail = url.pathname.match(/^\/api\/users\/([^/]+)$/);
     if (userDetail && method === 'GET') { const user = users.find((item) => item.id === userDetail[1]) || users[0]; return { ...user, effective_permissions: effectivePermissions(user) }; }
@@ -123,3 +123,4 @@
 
   window.MBA_MOCK_API = { handle, agreements, users, task };
 })();
+
