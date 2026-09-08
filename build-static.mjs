@@ -31,16 +31,15 @@ await cp(
   { recursive: true }
 );
 
-// The dashboard bundle has a stable filename; make every production build
-// explicitly invalidate old browser/CDN references instead of trusting stale
-// query strings that survived previous redesigns.
+// The dashboard bundle has a stable filename; rewrite the query string in the
+// generated index so browsers/CDNs cannot keep serving a previous redesign.
 const indexPath = `${dist}/index.html`;
 const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260907-skill-v2')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260907-skill-v2'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260908-skill-v3')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260908-skill-v3'),
   'utf8'
 );
 
