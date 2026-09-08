@@ -13,9 +13,36 @@ function labelNavItem(button: Element, label: string) {
   if (span) span.textContent = label;
 }
 
+function configureProfileControl() {
+  const profile = document.querySelector<HTMLElement>('.profile');
+  if (!profile || profile.dataset.mbaUsersToggle === 'true') return;
+
+  const openUsers = () => {
+    const user = window.MBA_CURRENT_USER as { permissions?: Record<string, boolean> } | undefined;
+    if (user?.permissions?.['users.view'] !== true) return;
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    window.showPage?.('usuarios');
+  };
+
+  profile.dataset.mbaUsersToggle = 'true';
+  profile.setAttribute('role', 'button');
+  profile.setAttribute('tabindex', '0');
+  profile.setAttribute('aria-label', 'Abrir usuários');
+  profile.addEventListener('click', openUsers);
+  profile.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openUsers();
+    }
+  });
+}
+
 function configureApplicationShell() {
   const nav = document.querySelector('.main-nav');
-  if (!nav || nav.querySelector('[data-mba-gestao]')) return;
+  if (!nav || nav.querySelector('[data-mba-gestao]')) {
+    configureProfileControl();
+    return;
+  }
 
   const visiblePages = new Set(['dashboard', 'acordos', 'pagamentos', 'automacoes', 'tarefas']);
   const labels: Record<string, string> = {
@@ -46,7 +73,10 @@ function configureApplicationShell() {
   });
 
   const home = nav.querySelector<HTMLElement>('[data-page="dashboard"]');
-  if (!home) return;
+  if (!home) {
+    configureProfileControl();
+    return;
+  }
 
   const gestao = document.createElement('button');
   gestao.type = 'button';
@@ -82,6 +112,7 @@ function configureApplicationShell() {
   });
 
   buttons.filter(button => button !== home).forEach(button => button.addEventListener('click', () => gestao.classList.remove('active')));
+  configureProfileControl();
 }
 
 function RootApp() {
