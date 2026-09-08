@@ -8,6 +8,11 @@ import './analytics.css';
 
 type RootView = 'lobby' | 'gestao';
 
+type DashboardWindow = Window & typeof globalThis & {
+  MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
+  showPage?: (page: string, updateRoute?: boolean) => void;
+};
+
 function labelNavItem(button: Element, label: string) {
   const span = button.querySelector('span');
   if (span) span.textContent = label;
@@ -18,10 +23,10 @@ function configureProfileControl() {
   if (!profile || profile.dataset.mbaUsersToggle === 'true') return;
 
   const openUsers = () => {
-    const user = window.MBA_CURRENT_USER as { permissions?: Record<string, boolean> } | undefined;
+    const user = (window as DashboardWindow).MBA_CURRENT_USER;
     if (user?.permissions?.['users.view'] !== true) return;
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    window.showPage?.('usuarios');
+    (window as DashboardWindow).showPage?.('usuarios');
   };
 
   profile.dataset.mbaUsersToggle = 'true';
@@ -105,7 +110,7 @@ function configureApplicationShell() {
   });
 
   gestao.addEventListener('click', () => {
-    window.showPage?.('dashboard', false);
+    (window as DashboardWindow).showPage?.('dashboard', false);
     buttons.forEach(button => button.classList.remove('active'));
     gestao.classList.add('active');
     window.dispatchEvent(new CustomEvent('mba:root-view', { detail: { view: 'gestao' } }));
