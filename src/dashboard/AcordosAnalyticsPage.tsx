@@ -17,7 +17,7 @@ export function AcordosAnalyticsPage() {
 
   const load = useCallback(async (value: string) => {
     setLoading(true); setError('');
-    try { setData(await getAgreementsIndicators(value)); }
+    try { setData(await getAgreementsIndicators(1, value)); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível carregar os acordos.'); }
     finally { setLoading(false); }
   }, []);
