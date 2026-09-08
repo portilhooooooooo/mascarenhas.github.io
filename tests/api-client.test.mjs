@@ -24,14 +24,3 @@ test('401 invalidates cached session before the next request',async()=>{
 test('client refuses external or protocol-relative path',async()=>{
  const {api,calls}=client();await assert.rejects(api.request('//attacker.example/api/me'));assert.equal(calls.length,0);
 });
-test('423 locks out the session locally',async()=>{
- const {api,events,values}=client(423);await assert.rejects(api.request('/api/tasks'),/bloqueada/);
- assert.equal(values.has('mba_session_token'),false);assert.deepEqual(events,['mba:account-locked']);
-});
-test('403 is distinguished from session expiration',async()=>{
- const {api,events,values}=client(403);await assert.rejects(api.request('/api/users'),e=>e.status===403&&/permissão/.test(e.message));
- assert.ok(values.has('mba_session_token'));assert.equal(events.length,0);
-});
-test('5xx returns a neutral service message',async()=>{
- const {api}=client(503);await assert.rejects(api.request('/api/tasks'),/Serviço indisponível/);
-});

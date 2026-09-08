@@ -8,7 +8,6 @@ await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
 const files = [
   'index.html',
   'styles.css',
-  'redesign.css',
   'agreements.css',
   'config.js',
   'mock-api.js',

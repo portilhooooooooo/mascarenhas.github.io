@@ -7,11 +7,10 @@
   <title>MBA Backoffice</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
-  <link rel="stylesheet" href="redesign.css">
-  <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260907">
+  <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260902b">
 </head>
 <body class="auth-loading">
   <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
@@ -21,10 +20,10 @@
         <div class="login-divider" aria-hidden="true"></div>
         <div class="auth-view" id="login-view">
         <h1>Entrar</h1>
-        <form class="login-form" id="operational-login">
+        <form class="login-form" id="task-only-login">
           <div class="login-field">
-            <label for="operational-email">E-mail</label>
-            <input id="operational-email" name="email" type="email" autocomplete="email" required>
+            <label for="task-only-email">E-mail</label>
+            <input id="task-only-email" name="email" type="email" autocomplete="email" required>
           </div>
           <div class="login-field"><label for="operational-totp">Código do autenticador</label><input id="operational-totp" name="totp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required></div>
           <button class="credentials-login" type="submit">Entrar</button>
@@ -51,39 +50,64 @@
   </section>
 
   <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <div class="brand"><span>MBA</span> <span class="brand-word">Backoffice</span></div>
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true"><i data-lucide="panel-left-close"></i></button>
+      </div>
+      <p class="brand-caption">Hub de Gestão</p>
+
+      <nav class="main-nav" aria-label="Navegação principal">
+        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
+        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge">23</em></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="files"></i><span>Documentos</span></button>
+        <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
+        <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="handshake"></i><span>Acordos</span></button>
+        <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
+        <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="lock-keyhole"></i><span>Bloqueios</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="building-2"></i><span>Clientes</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="send"></i><span>Envios ERP</span></button>
+        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="chart-no-axes-combined"></i><span>Relatórios</span></button>
+        <button class="nav-item" data-page="usuarios" data-permission="users.view"><i data-lucide="users"></i><span>Usuários</span></button>
+        <button class="nav-item" data-page="configuracoes" data-permission="settings.view"><i data-lucide="settings"></i><span>Configurações</span></button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <button class="sidebar-logout" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
+      </div>
+    </aside>
+
     <div class="main-area">
-      <header class="global-header">
-        <a class="brand" href="#/inicio"><span>MBA</span> <span class="brand-word">Backoffice</span></a>
-        <nav class="main-nav" aria-label="Navegação principal">
-          <button class="nav-item" data-page="inicio">Início</button>
-          <button class="nav-item" data-page="dashboard" data-permission="dashboard.view">Gestão Processual</button>
-          <button class="nav-item" data-page="acordos" data-permission="agreements.view">Acordos</button>
-          <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view">Pagamentos</button>
-          <button class="nav-item" data-page="automacoes" data-permission="automations.view">Automações</button>
-          <button class="nav-item" data-page="tarefas" data-permission="tasks.view">Tarefas</button>
-        </nav>
-        <div class="header-tools">
-          <form id="global-search-form" role="search"><label class="sr-only" for="global-search-input">Buscar</label><input id="global-search-input" type="search" placeholder="Buscar por CNJ" autocomplete="off"><button type="submit" aria-label="Buscar">⌕</button></form>
-          <details class="profile-menu"><summary><span class="avatar" id="profile-avatar">U</span><span class="profile-copy"><strong id="profile-name">Usuário</strong><small id="profile-role"></small></span><span aria-hidden="true">⌄</span></summary>
-            <div class="profile-options"><button class="nav-item" data-page="usuarios" data-permission="users.view">Usuários</button><button class="nav-item" data-page="configuracoes" data-permission="settings.view">Configurações</button><button id="logout-button" type="button">Sair</button></div>
-          </details>
-          <span id="local-preview-badge" hidden>Prévia local</span>
+      <header class="topbar">
+        <div class="global-search-wrap">
+          <label class="global-search" for="global-search-input"><i data-lucide="search"></i><span class="sr-only">Busca global</span><input id="global-search-input" type="search" placeholder="Buscar processos, usuários, documentos..."><kbd>Ctrl + K</kbd></label>
+          <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
+        </div>
+        <div class="top-actions">
+          <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
+          <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
+          <div class="profile" aria-label="Usuário autenticado">
+            <span class="avatar" id="profile-avatar">UU</span>
+            <span class="profile-copy"><strong id="profile-name">Usuário de Usuário</strong><small id="profile-role">Padrão</small></span>
+            <i class="profile-chevron" data-lucide="chevron-down"></i>
+          </div>
         </div>
       </header>
-      <main class="content">
-        <section class="page active" id="inicio"><div class="home-intro"><p class="eyebrow">Seu espaço de trabalho</p><h1>Olá, <span id="welcome-name">bem-vindo</span>.</h1><p>Acompanhe a operação e continue suas atividades.</p></div><div class="home-links"><button data-go="dashboard" data-permission="dashboard.view"><strong>Gestão Processual <span>↗</span></strong><span>Carteira, evolução e pontos de atenção</span></button><button data-go="tarefas" data-permission="tasks.view"><strong>Minhas tarefas <span>↗</span></strong><span>Abra uma tarefa para continuar</span></button><button data-go="acordos" data-permission="agreements.view"><strong>Acordos <span>↗</span></strong><span>Preditivos e saneamento</span></button><button data-go="automacoes" data-permission="automations.view"><strong>Automações <span>↗</span></strong><span>Execuções e histórico</span></button></div></section>
 
-        <section class="page dashboard-page" id="dashboard" data-permission="dashboard.view" aria-label="Dashboard executivo">
+      <main class="content">
+        <section class="page active dashboard-page" id="dashboard" data-permission="dashboard.view" aria-label="Dashboard executivo">
           <div id="dashboard-root"></div>
         </section>
 
         <section class="page list-page" id="automacoes" data-permission="automations.view">
-          <div class="page-title"><div><h1>Automações</h1><p>Execute e acompanhe as APIs operacionais do MBA Backoffice.</p></div></div>
+          <div class="page-title"><div><h1>Integrações</h1><p>Execute e acompanhe as APIs operacionais do MBA Backoffice.</p></div></div>
 
           <div class="module-grid">
             <article class="automation-card" data-integration-card="liminar">
               <div class="module-icon blue"><i data-lucide="shield-check"></i></div>
-              <div class="module-copy"><div class="module-title-row"><h2>API de Liminar</h2><span class="status-badge" id="liminar-health">Verificando</span></div><p>Consulta processos e organiza os resultados de tutela.</p><div class="module-meta"><span><small>Execução atual</small><strong id="liminar-job-status">—</strong></span><span><small>Progresso</small><strong id="liminar-job-progress">—</strong></span></div></div>
+              <div class="module-copy"><div class="module-title-row"><h2>API de Liminar</h2><span class="status-badge" id="liminar-health">Verificando</span></div><p>Executa a consulta automatizada de tutela e persiste resultados no Supabase.</p><div class="module-meta"><span><small>Execução atual</small><strong id="liminar-job-status">—</strong></span><span><small>Progresso</small><strong id="liminar-job-progress">—</strong></span></div></div>
               <div class="module-actions"><button class="primary-button integration-run-button" data-integration="liminar" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="liminar"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
             </article>
 
@@ -210,9 +234,9 @@
         </section>
 
         <section class="page list-page agreements-page" id="acordos" data-permission="agreements.view">
-          <nav class="context-nav" aria-label="Acordos"><span>Preditivos</span><button type="button" id="open-agreement-portfolio" data-permission="dashboard.view">Carteira em tratativa ↗</button></nav><div class="page-title"><div><h1>Preditivos de acordos</h1><p>Saneamento dos casos potenciais. O fluxo termina na análise de aptidão.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button" data-permission="agreements.export"><i data-lucide="download"></i>Exportar</button></div></div>
+          <div class="page-title"><div><h1>Acordos</h1><p>Consulte os resultados consolidados das Tasks de Acordos.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button"><i data-lucide="download"></i>Exportar</button></div></div>
           <section class="tutelas-summary" aria-label="Indicadores de Acordos">
-            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="list-checks"></i></span><div><strong id="agreements-total">—</strong><span>Total de preditivos</span><small>Base consolidada</small></div></article>
+            <article class="stat-card"><span class="stat-card-icon"><i data-lucide="list-checks"></i></span><div><strong id="agreements-total">—</strong><span>Total de acordos</span><small>Base consolidada</small></div></article>
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="clock-3"></i></span><div><strong id="agreements-pending">—</strong><span>Pendentes</span><small>Aguardando análise</small></div></article>
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="circle-check"></i></span><div><strong id="agreements-completed">—</strong><span>Aptos</span><small>Liberados para acordo</small></div></article>
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="circle-x"></i></span><div><strong id="agreements-ineligible">—</strong><span>Inaptos</span><small>Com impedimento</small></div></article>
@@ -302,7 +326,7 @@
 
         <section class="page task-detail-page agreement-execution-page" id="acordo-execucao" data-entity="agreement_task_execution">
           <button class="back-link" data-go="tarefas"><i data-lucide="arrow-left"></i>Voltar para o lobby de tarefas</button>
-          <div class="detail-heading agreement-execution-heading"><div><h1>Preditivos de acordos</h1><p>Analise o processo atual e registre somente as informações necessárias.</p></div><span id="agreement-task-progress">—</span></div>
+          <div class="detail-heading agreement-execution-heading"><div><h1>Acordos</h1><p>Analise o processo atual e registre somente as informações necessárias.</p></div><span id="agreement-task-progress">—</span></div>
           <section class="panel agreement-process-card" id="agreement-process-card">
             <header><div><small>Processo</small><strong id="agreement-case-number">—</strong></div><div><small>Provisão</small><strong id="agreement-provision">—</strong></div><div class="agreement-live-result pending" id="agreement-live-result"><small>Elegibilidade</small><strong>Aguardando respostas</strong><span>Responda às perguntas impeditivas.</span><small class="agreement-offer-label">Valor à ofertar</small><b id="agreement-offer-amount">—</b></div></header>
             <form id="agreement-analysis-form" class="agreement-analysis-form">
@@ -363,7 +387,7 @@
           <section class="panel large-empty"><span><i data-lucide="settings"></i></span><h2>Configurações ainda não conectadas</h2><p>Esta área ficará disponível apenas para perfis autorizados.</p></section>
         </section>
 
-        <section class="page" id="sem-acesso"><section class="panel large-empty"><span><i data-lucide="shield-x"></i></span><h2>Acesso negado</h2><p>Solicite ao administrador as autorizações necessárias.</p></section></section>
+        <section class="page" id="sem-acesso"><section class="panel large-empty"><span><i data-lucide="shield-x"></i></span><h2>Credencial sem acesso liberado</h2><p>Solicite ao administrador as autorizações necessárias.</p></section></section>
       </main>
     </div>
   </div>
@@ -478,11 +502,11 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="config.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
-<script src="data-api.js?v=20260907"></script>
-  <script src="app.js?v=20260907"></script>
-  <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260907"></script>
+<script src="data-api.js?v=20260818-agreements-supabase-token"></script>
+  <script src="app.js?v=20260903-task-only"></script>
+  <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260902b"></script>
   <script src="agreements.js?v=20260818"></script>
-  <script src="auth.js?v=20260907"></script>
+  <script src="auth.js?v=20260903-task-only"></script>
 
   <script src="page-init-2.js"></script>
 <script src="assets/vendor/qrcode.js"></script><script src="security-ui.js"></script>
