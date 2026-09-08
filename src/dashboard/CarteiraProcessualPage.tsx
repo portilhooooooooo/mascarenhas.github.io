@@ -1,50 +1,99 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart } from 'recharts';
-import { AlertTriangle, ChevronLeft, ChevronRight, Database, FileSearch, RotateCcw, Search } from 'lucide-react';
+import { Activity, CalendarDays, CheckCircle2, Clock3, Database, Layers3, RotateCcw } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Card, EmptyState, ErrorState, Kpi, PageHeader, Ranking } from './analyticsComponents';
 import { getCarteiraData, type CarteiraData, type CarteiraFilters } from './carteiraService';
-import { formatDateBR, formatNumberBR } from './formatters';
-import { AgreementsIndicatorsSection } from './AgreementsIndicatorsSection';
-import './carteira.css';
+import { formatNumberBR } from './formatters';
 
-const initialFilters: CarteiraFilters = { entryStart: '', entryEnd: '', resolutionStart: '', resolutionEnd: '', state: '', resolution: '', cnj: '', integration: '', groupBy: 'month', page: 1, pageSize: 25, sortBy: 'date', sortDirection: 'desc' };
-const palette = ['#0a5fa8', '#2c81c7', '#78aeda', '#183d67', '#6b8aa8', '#9cb8d2', '#b9cce0'];
-const tooltipStyle = { border: '1px solid #dfe6ed', borderRadius: 8, boxShadow: '0 6px 18px rgba(17,42,66,.10)', fontSize: 12 };
+function monthBounds() {
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const iso = (value: Date) => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+  return { start: iso(first), end: iso(now) };
+}
 
-function Metric({ title, value, note }: { title: string; value: string; note: string }) { return <article className="carteira-metric"><span>{title}</span><strong>{value}</strong><small>{note}</small></article>; }
-function Chart({ title, children }: { title: string; children: React.ReactNode }) { return <article className="carteira-chart"><h2>{title}</h2>{children}</article>; }
-function Empty({ message = 'Não há dados para os filtros selecionados.' }: { message?: string }) { return <div className="carteira-empty"><Database/><span>{message}</span></div>; }
+const month = monthBounds();
+const initialFilters: CarteiraFilters = {
+  periodStart: month.start,
+  periodEnd: month.end,
+  dateType: 'entry',
+  state: '',
+  product: '',
+  situation: '',
+  resolution: '',
+  groupBy: 'month',
+};
+const chartColors = ['#0b6ffb', '#7eb4f8', '#c2daf8'];
+const tooltipStyle = { border: '1px solid #e3eaf2', borderRadius: 7, boxShadow: 'none', fontSize: 11 };
 
 export function CarteiraProcessualPage() {
-  const [filters, setFilters] = useState(initialFilters);
+  const [draft, setDraft] = useState<CarteiraFilters>(initialFilters);
+  const [applied, setApplied] = useState<CarteiraFilters>(initialFilters);
   const [data, setData] = useState<CarteiraData | null>(null);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const load = useCallback(async (next: CarteiraFilters) => { setLoading(true); setError(''); try { setData(await getCarteiraData(next)); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a carteira.'); } finally { setLoading(false); } }, []);
-  useEffect(() => { void load(filters); }, [filters, load]);
-  const update = (values: Partial<CarteiraFilters>) => setFilters(current => ({ ...current, ...values, page: values.page ?? 1 }));
-  const states = useMemo(() => data?.filters.states ?? [], [data]);
-  const resolutions = useMemo(() => data?.filters.resolutions ?? [], [data]);
-  const pages = data ? Math.max(1, Math.ceil(data.table.total / data.table.page_size)) : 1;
-  const sort = (sortBy: string) => update({ sortBy, sortDirection: filters.sortBy === sortBy && filters.sortDirection === 'asc' ? 'desc' : 'asc' });
-  const sortLabel = (label: string, key: string) => <button type="button" className="carteira-sort" onClick={() => sort(key)}>{label}{filters.sortBy === key ? (filters.sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}</button>;
-  if (error) return <section className="carteira-error"><AlertTriangle/><div><strong>Carteira Processual indisponível</strong><span>{error}</span></div><button onClick={() => void load(filters)}>Tentar novamente</button></section>;
-  return <div className="carteira-page">
-    <header className="carteira-header"><div><p>GESTÃO PROCESSUAL</p><h1>Carteira Processual</h1><span>Visão analítica da base operacional, atualizada pelos filtros selecionados.</span></div></header>
-    <section className="carteira-filters" aria-label="Filtros globais"><div className="carteira-filter-title"><FileSearch/><span>Filtros globais</span></div>
-      <label>Entrada — início<input type="date" value={filters.entryStart} onChange={event => update({ entryStart: event.target.value })}/></label><label>Entrada — fim<input type="date" value={filters.entryEnd} onChange={event => update({ entryEnd: event.target.value })}/></label>
-      <label>Resolução — início<input type="date" value={filters.resolutionStart} onChange={event => update({ resolutionStart: event.target.value })}/></label><label>Resolução — fim<input type="date" value={filters.resolutionEnd} onChange={event => update({ resolutionEnd: event.target.value })}/></label>
-      <label>UF<select value={filters.state} onChange={event => update({ state: event.target.value })}><option value="">Todas</option>{states.map(state => <option key={state}>{state}</option>)}</select></label>
-      <label>Resolution<select value={filters.resolution} onChange={event => update({ resolution: event.target.value })}><option value="">Todas</option>{resolutions.map(value => <option key={value}>{value}</option>)}</select></label>
-      <button className="carteira-clear" type="button" onClick={() => setFilters(initialFilters)}><RotateCcw/>Limpar filtros</button>
+  const [error, setError] = useState('');
+
+  const load = useCallback(async (filters: CarteiraFilters) => {
+    setLoading(true); setError('');
+    try { setData(await getCarteiraData(filters)); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a carteira.'); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(applied); }, [applied, load]);
+
+  const situation = useMemo(() => data ? [
+    { label: 'Ativos', value: data.summary.active },
+    { label: 'Encerrados', value: data.summary.closed },
+    ...(data.summary.unknown ? [{ label: 'Outros', value: data.summary.unknown }] : []),
+  ] : [], [data]);
+  const totalSituation = situation.reduce((sum, item) => sum + item.value, 0);
+
+  const apply = () => setApplied({ ...draft, groupBy: draft.groupBy });
+  const clear = () => { setDraft(initialFilters); setApplied(initialFilters); };
+  const update = <K extends keyof CarteiraFilters>(key: K, value: CarteiraFilters[K]) => setDraft(current => ({ ...current, [key]: value }));
+
+  if (error && !data) return <ErrorState message={error} onRetry={() => void load(applied)}/>;
+
+  return <>
+    <PageHeader title="Carteira Processual" subtitle="Visão consolidada da base operacional, do recebimento ao encerramento." updatedAt={data?.updated_at}/>
+
+    <section className="analytics-filterbar" aria-label="Filtros da carteira">
+      <div className="filter-fields" style={{ '--filter-cols': 6 } as React.CSSProperties}>
+        <label>Período<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}><input aria-label="Início do período" type="date" value={draft.periodStart} onChange={e => update('periodStart', e.target.value)}/><input aria-label="Fim do período" type="date" value={draft.periodEnd} onChange={e => update('periodEnd', e.target.value)}/></div></label>
+        <label>Tipo de data<select value={draft.dateType} onChange={e => update('dateType', e.target.value as CarteiraFilters['dateType'])}><option value="entry">Entrada</option><option value="resolution">Encerramento</option></select></label>
+        <label>UF<select value={draft.state} onChange={e => update('state', e.target.value)}><option value="">Todas</option>{(data?.filters.states ?? []).map(value => <option key={value}>{value}</option>)}</select></label>
+        <label>Produto<select value={draft.product} onChange={e => update('product', e.target.value)}><option value="">Todos</option>{(data?.filters.products ?? []).map(value => <option key={value}>{value}</option>)}</select></label>
+        <label>Situação<select value={draft.situation} onChange={e => update('situation', e.target.value as CarteiraFilters['situation'])}><option value="">Todas</option><option value="active">Ativos</option><option value="closed">Encerrados</option><option value="unknown">Outros</option></select></label>
+        <label>Tipo de encerramento<select value={draft.resolution} onChange={e => update('resolution', e.target.value)}><option value="">Todos</option>{(data?.filters.resolutions ?? []).map(value => <option key={value}>{value}</option>)}</select></label>
+      </div>
+      <div className="filter-actions"><button className="analytics-button secondary" type="button" onClick={clear}><RotateCcw/>Limpar filtros</button><button className="analytics-button primary" type="button" onClick={apply}>Aplicar filtros</button></div>
     </section>
-    {data && <div className="carteira-schema-note"><AlertTriangle/> A tabela atual não possui Tema, Matéria, Encerrado, Apto a encerramento ou Tipo de encerramento; essas análises não são estimadas.</div>}
-    <section className="carteira-kpis"><Metric title="Total de processos" value={formatNumberBR(data?.summary.total ?? 0)} note="Considerando os filtros globais"/><Metric title="Entradas" value={formatNumberBR(data?.summary.entries ?? 0)} note="Registros com data de entrada"/><Metric title="Processos ativos" value="—" note="Campo encerrado indisponível na base"/><Metric title="Processos encerrados" value="—" note="Campo encerrado indisponível na base"/><Metric title="Aptos a encerramento" value="—" note="Campo apto_encerramento indisponível"/></section>
-    <AgreementsIndicatorsSection/>
-    <section className="carteira-grid carteira-grid-top"><Chart title="Entradas ao longo do tempo"><div className="carteira-chart-action"><label>Agrupar<select value={filters.groupBy} onChange={event => update({ groupBy: event.target.value as CarteiraFilters['groupBy'] })}><option value="day">Dia</option><option value="week">Semana</option><option value="month">Mês</option></select></label></div>{data?.charts.entradas_timeline.length ? <div className="carteira-chart-body"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data.charts.entradas_timeline} margin={{ top: 8, right: 12, left: -24, bottom: 0 }}><CartesianGrid vertical={false} stroke="#e6edf3"/><XAxis dataKey="label" tick={{ fontSize: 10, fill: '#617286' }} tickLine={false}/><YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#617286' }} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle} formatter={value => [formatNumberBR(Number(value)), 'Processos']}/><Area type="monotone" dataKey="value" stroke="#0a5fa8" fill="#dcecf8" strokeWidth={2}/></AreaChart></ResponsiveContainer></div> : <Empty/>}</Chart>
-      <Chart title="Processos por UF">{data?.charts.por_uf.length ? <div className="carteira-chart-body"><ResponsiveContainer width="100%" height="100%"><BarChart data={data.charts.por_uf} layout="vertical" margin={{ top: 2, right: 28, left: 0, bottom: 2 }}><XAxis type="number" hide/><YAxis type="category" dataKey="label" width={72} tick={{ fontSize: 11, fill: '#617286' }} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="value" fill="#0a5fa8" radius={[0, 4, 4, 0]} label={{ position: 'right', fontSize: 10, fill: '#526477' }}/></BarChart></ResponsiveContainer></div> : <Empty/>}</Chart></section>
-    <section className="carteira-grid carteira-grid-bottom"><Chart title="Distribuição de aging">{data?.charts.aging.length ? <div className="carteira-chart-body"><ResponsiveContainer width="100%" height="100%"><BarChart data={data.charts.aging} margin={{ top: 8, right: 10, left: -20, bottom: 0 }}><CartesianGrid vertical={false} stroke="#e6edf3"/><XAxis dataKey="label" tick={{ fontSize: 10, fill: '#617286' }} tickLine={false}/><YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#617286' }} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle}/><Bar dataKey="value" fill="#2c81c7" radius={[4, 4, 0, 0]}/></BarChart></ResponsiveContainer></div> : <Empty/>}</Chart>
-      <Chart title="Situação CPJ">{data?.charts.por_situacao.length ? <div className="carteira-donut"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={data.charts.por_situacao} dataKey="value" nameKey="label" innerRadius="55%" outerRadius="82%" paddingAngle={2}>{data.charts.por_situacao.map((item, index) => <Cell key={item.label} fill={palette[index % palette.length]}/>)}</Pie><Tooltip contentStyle={tooltipStyle}/></PieChart></ResponsiveContainer><div className="carteira-legend">{data.charts.por_situacao.slice(0, 6).map((item, index) => <span key={item.label}><i style={{ background: palette[index % palette.length] }}/>{item.label} <b>{formatNumberBR(item.value)}</b></span>)}</div></div> : <Empty/>}</Chart>
-      <Chart title="Tipo de encerramento"><Empty message="Campo tipo_encerramento não existe na base atual."/></Chart></section>
-    <section className="carteira-table-section"><div className="carteira-table-heading"><div><h2>Base de Processos</h2><span>Consulta paginada no servidor</span></div><div className="carteira-searches"><label><Search/><input placeholder="Buscar por CNJ" value={filters.cnj} onChange={event => update({ cnj: event.target.value })}/></label><label><Search/><input placeholder="Buscar por integração" value={filters.integration} onChange={event => update({ integration: event.target.value })}/></label></div></div><div className="carteira-table-wrap"><table><thead><tr>{sortLabel('CNJ', 'cnj')}{sortLabel('Integração', 'integration')}{sortLabel('Data de entrada', 'date')}{sortLabel('UF', 'state')}<th>Aging</th>{sortLabel('Resolution', 'resolution')}{sortLabel('Data de resolução', 'date_resolution')}{sortLabel('Situação CPJ', 'situation_cpj')}<th>Advogado adverso</th></tr></thead><tbody>{loading ? <tr><td colSpan={9} className="carteira-table-status">Carregando registros…</td></tr> : !data?.table.rows.length ? <tr><td colSpan={9} className="carteira-table-status">Nenhum processo encontrado.</td></tr> : data.table.rows.map(row => <tr key={row.id}><td>{row.cnj || '—'}</td><td>{row.integration || '—'}</td><td>{row.date ? formatDateBR(row.date.slice(0, 10)) : '—'}</td><td>{row.state || '—'}</td><td>{row.aging ?? '—'}</td><td>{row.resolution || '—'}</td><td>{row.date_resolution ? formatDateBR(row.date_resolution.slice(0, 10)) : '—'}</td><td>{row.situation_cpj || '—'}</td><td>{row.adverse_lawyer || '—'}</td></tr>)}</tbody></table></div><footer className="carteira-pagination"><span>{data ? `${formatNumberBR(data.table.total)} registros` : '—'}</span><div><button type="button" disabled={!data || filters.page <= 1} onClick={() => update({ page: filters.page - 1 })}><ChevronLeft/></button><strong>Página {filters.page} de {pages}</strong><button type="button" disabled={!data || filters.page >= pages} onClick={() => update({ page: filters.page + 1 })}><ChevronRight/></button></div></footer></section>
-  </div>;
+
+    {error && <div className="analytics-footer"><span>Uma atualização falhou; os últimos dados válidos continuam visíveis.</span><button className="analytics-button secondary" onClick={() => void load(applied)}>Tentar novamente</button></div>}
+
+    <section className="analytics-kpis" style={{ '--kpi-cols': 4 } as React.CSSProperties} aria-busy={loading}>
+      <Kpi label="Entradas (mês)" value={loading && !data ? '—' : formatNumberBR(data?.movement.entries ?? 0)} note="No período selecionado" icon={CalendarDays}/>
+      <Kpi label="Processos ativos" value={loading && !data ? '—' : formatNumberBR(data?.summary.active ?? 0)} note="Carteira filtrada" icon={Database}/>
+      <Kpi label="Encerrados (mês)" value={loading && !data ? '—' : formatNumberBR(data?.movement.closures ?? 0)} note="No período selecionado" icon={CheckCircle2} tone="success"/>
+      <Kpi label="Aging médio (ativos)" value={loading && !data ? '—' : data?.summary.aging_mean == null ? '—' : `${Math.round(data.summary.aging_mean)} dias`} note="Carteira ativa filtrada" icon={Clock3}/>
+    </section>
+
+    <section className="analytics-grid two">
+      <Card title="Evolução da carteira" subtitle="Entradas e encerramentos ao longo do tempo.">
+        {data?.charts.timeline.length ? <div className="chart-body"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data.charts.timeline} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}><defs><linearGradient id="entriesFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0b6ffb" stopOpacity={.14}/><stop offset="100%" stopColor="#0b6ffb" stopOpacity={0}/></linearGradient></defs><CartesianGrid vertical={false} stroke="#edf2f7"/><XAxis dataKey="date" tick={{ fontSize: 10, fill: '#8190a5' }} tickLine={false} axisLine={false}/><YAxis tick={{ fontSize: 10, fill: '#8190a5' }} tickLine={false} axisLine={false}/><Tooltip contentStyle={tooltipStyle} formatter={(value, name) => [formatNumberBR(Number(value)), name === 'entries' ? 'Entradas' : 'Encerramentos']}/><Area type="monotone" dataKey="entries" stroke="#0b6ffb" fill="url(#entriesFill)" strokeWidth={2}/><Area type="monotone" dataKey="closures" stroke="#10a66a" fill="transparent" strokeWidth={2}/></AreaChart></ResponsiveContainer></div> : <EmptyState/>}
+      </Card>
+      <Card title="Processos por situação" subtitle="Composição da carteira filtrada.">
+        {situation.length ? <div className="analytics-donut"><div className="analytics-donut-chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={situation} dataKey="value" nameKey="label" innerRadius="60%" outerRadius="82%" stroke="none">{situation.map((item, index) => <Cell key={item.label} fill={chartColors[index % chartColors.length]}/>)}</Pie><Tooltip contentStyle={tooltipStyle}/></PieChart></ResponsiveContainer><div className="analytics-donut-center"><strong>{formatNumberBR(totalSituation)}</strong><span>Total</span></div></div><div className="analytics-legend">{situation.map((item, index) => <span key={item.label}><i style={{ background: chartColors[index % chartColors.length] }}/><b>{item.label}</b><strong>{formatNumberBR(item.value)}</strong></span>)}</div></div> : <EmptyState/>}
+      </Card>
+    </section>
+
+    <section className="analytics-grid three">
+      <Card title="Processos por produto" className="compact">{data?.charts.por_produto.length ? <Ranking items={data.charts.por_produto}/> : <EmptyState/>}</Card>
+      <Card title="Processos por UF" className="compact">{data?.charts.por_uf.length ? <Ranking items={data.charts.por_uf}/> : <EmptyState/>}</Card>
+      <Card title="Aging da carteira (ativos)" className="compact">{data?.charts.aging.length ? <Ranking items={data.charts.aging}/> : <EmptyState/>}</Card>
+    </section>
+
+    <footer className="analytics-footer"><span>Os indicadores são calculados pela API do Backoffice considerando os filtros selecionados.</span><span>{loading ? 'Atualizando…' : `${formatNumberBR(data?.summary.total ?? 0)} processos no recorte`}</span></footer>
+  </>;
 }
