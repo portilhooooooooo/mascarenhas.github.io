@@ -1,5 +1,7 @@
 import { ArrowRight, Bot, FileBarChart2, Handshake, ReceiptText } from 'lucide-react';
 
+declare global { interface Window { showPage?: (pageId: string, updateRoute?: boolean) => void } }
+
 export function LobbyPage({ onOpenGestao }: { onOpenGestao: (tab?: 'carteira' | 'acordos' | 'pagamentos') => void }) {
   return <div className="lobby-page">
     <header className="lobby-heading"><h1>Olá, Gabriel.</h1><p>Visão geral da operação e acesso aos espaços de trabalho.</p></header>
