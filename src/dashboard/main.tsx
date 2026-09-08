@@ -1,14 +1,11 @@
-import {createRoot, type Root} from 'react-dom/client';
-import {CarteiraProcessualPage} from './CarteiraProcessualPage';
-const node=document.getElementById('dashboard-root');
-let root:Root|null=null;
-function sync(){
- const user=window.MBA_CURRENT_USER;
- const allowed=Boolean(user && user.access_kind==='administrative' && user.permissions['dashboard.view'] && document.getElementById('dashboard')?.classList.contains('active'));
- if(!allowed){root?.unmount();root=null;return;}
- if(node && !root){root=createRoot(node);root.render(<CarteiraProcessualPage/>);}
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { CarteiraProcessualPage } from './CarteiraProcessualPage';
+
+const root = document.getElementById('dashboard-root');
+
+if (!root) {
+  throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
 }
-window.addEventListener('mba:authenticated',sync);
-window.addEventListener('mba:page-changed',sync);
-window.addEventListener('mba:session-ended',()=>{root?.unmount();root=null;});
-sync();
+
+createRoot(root).render(<StrictMode><CarteiraProcessualPage/></StrictMode>);

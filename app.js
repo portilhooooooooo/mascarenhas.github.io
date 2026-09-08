@@ -1,37 +1,41 @@
 const navItems = [...document.querySelectorAll('.nav-item')];
 const pages = [...document.querySelectorAll('.page')];
 
-const pageRoutes = {inicio:'inicio',dashboard:'gestao-processual',automacoes:'automacoes',pagamentos:'pagamentos',tutelas:'tutelas',encerramentos:'encerramentos',usuarios:'usuarios',configuracoes:'configuracoes',acordos:'acordos',tarefas:'tarefas','acordo-execucao':'tarefas/acordos','tarefa-analise':'tarefas/analise'};
-function canAccessPage(pageId) {
-  const user = window.MBA_CURRENT_USER;
-  if (!user) return false;
-  if (pageId === 'sem-acesso') return true;
-  if (user.access_kind === 'operational' && !['tarefas','acordo-execucao','tarefa-analise'].includes(pageId)) return false;
-  const page = document.getElementById(pageId);
-  if (!page) return false;
-  const permission = page.dataset.permission || (['acordo-execucao','tarefa-analise'].includes(pageId) ? 'tasks.execute' : null);
-  return !permission || user.permissions?.[permission] === true;
-}
-window.canAccessPage = canAccessPage;
+const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', 'acordo-execucao': 'tarefas/acordos' };
 function showPage(pageId, updateRoute = true) {
-  if (!window.MBA_CURRENT_USER) return;
-  if (!canAccessPage(pageId)) pageId = 'sem-acesso';
-  pages.forEach(page => page.classList.toggle('active', page.id === pageId));
-  navItems.forEach(item => {const active=item.dataset.page===pageId;item.classList.toggle('active',active);if(active)item.setAttribute('aria-current','page');else item.removeAttribute('aria-current');});
-  document.querySelector('.profile-menu')?.removeAttribute('open');
-  if (updateRoute && pageRoutes[pageId]) history.pushState({pageId}, '', `#/${pageRoutes[pageId]}`);
-  window.dispatchEvent(new CustomEvent('mba:page-changed',{detail:{pageId}}));
-  window.scrollTo({top:0,behavior:'instant'});
+  pages.forEach((page) => page.classList.toggle('active', page.id === pageId));
+  navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageId));
+  if (updateRoute && pageRoutes[pageId]) {
+    const target = window.MBA_LOCAL_PREVIEW ? `#/${pageRoutes[pageId]}` : `/${pageRoutes[pageId]}`;
+    if (`${location.pathname}${location.hash}` !== target) history.pushState({ pageId }, '', target);
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.showPage = showPage;
+
 function restorePageRoute() {
-  const route=(location.hash.replace(/^#\//,'') || location.pathname.replace(/^\//,'')).replace(/\/$/,'');
-  const pageId=Object.entries(pageRoutes).find(([,value])=>value===route)?.[0];
-  if (pageId) showPage(pageId,false);
+  const route = (location.hash.replace(/^#\//, '') || location.pathname.replace(/^\//, '')).replace(/\/$/, '');
+  const pageId = Object.entries(pageRoutes).find(([, value]) => value === route)?.[0];
+  const targetPage = pageId ? document.getElementById(pageId) : null;
+  if (pageId && targetPage && !targetPage.hidden) showPage(pageId, false);
 }
-window.addEventListener('popstate',restorePageRoute);
-window.addEventListener('hashchange',restorePageRoute);
-window.restorePageRoute=restorePageRoute;
+window.addEventListener('popstate', restorePageRoute);
+window.addEventListener('hashchange', restorePageRoute);
+window.restorePageRoute = restorePageRoute;
+
+const appShell = document.querySelector('.app-shell');
+const sidebarToggle = document.querySelector('#sidebar-toggle');
+function setSidebarCollapsed(collapsed) {
+  appShell?.classList.toggle('sidebar-collapsed', collapsed);
+  if (!sidebarToggle) return;
+  sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  sidebarToggle.setAttribute('aria-label', collapsed ? 'Expandir menu' : 'Recolher menu');
+  sidebarToggle.innerHTML = `<i data-lucide="${collapsed ? 'panel-left-open' : 'panel-left-close'}"></i>`;
+  window.localStorage.setItem('mba-sidebar-collapsed', collapsed ? '1' : '0');
+  window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
+}
+setSidebarCollapsed(window.localStorage.getItem('mba-sidebar-collapsed') === '1');
+sidebarToggle?.addEventListener('click', () => setSidebarCollapsed(!appShell.classList.contains('sidebar-collapsed')));
 
 navItems.forEach((item) => item.addEventListener('click', () => showPage(item.dataset.page)));
 document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => showPage(button.dataset.go)));
@@ -79,7 +83,7 @@ document.querySelector('#save-next').addEventListener('click', async () => {
   } catch (error) { window.alert(error.message); }
 });
 
-// Contrato de dados retornados pela API.
+// Contrato preparado para a futura integração com Supabase.
 // A camada de dados poderá substituir estes valores sem alterar os componentes visuais.
 window.BACKOFFICE_DATA_SCHEMA = Object.freeze({
   task: ['id', 'title', 'description', 'priority', 'status', 'deadline_at', 'assignee_id', 'updated_at'],
@@ -715,7 +719,7 @@ window.addEventListener('mba:authenticated', (event) => {
 document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();
-    document.querySelector('#global-search-input')?.focus();
+    document.querySelector('.search-box input')?.focus();
   }
 });
 
@@ -731,22 +735,3 @@ for (const [selector, action] of [['#unlock-user', 'unlock'], ['#revoke-user-ses
     } catch (error) { window.alert(error.message); }
   });
 }
-
-document.getElementById('global-search-form')?.addEventListener('submit', event => {
-  event.preventDefault();
-  const value=document.getElementById('global-search-input').value.trim();
-  if (window.MBA_CURRENT_USER?.access_kind === 'operational') {
-    showPage('tarefas');
-    document.querySelectorAll('#tasks-table-body tr').forEach(row => {row.hidden=!row.textContent.toLowerCase().includes(value.toLowerCase());});
-  } else if (canAccessPage('dashboard')) {
-    window.MBA_PORTFOLIO_SEARCH=value;showPage('dashboard');
-    window.dispatchEvent(new CustomEvent('mba:portfolio-search',{detail:value}));
-  } else showPage('sem-acesso');
-});
-window.addEventListener('mba:session-ended',()=>{
-  authenticatedUser=null;usersCache=[];tasksCache=[];currentTask=null;currentProcess=null;
-  document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
-  document.querySelectorAll('.page tbody').forEach(body=>body.replaceChildren());
-});
-
-document.getElementById('open-agreement-portfolio')?.addEventListener('click',()=>{ window.MBA_PORTFOLIO_SECTION='agreements';showPage('dashboard'); });

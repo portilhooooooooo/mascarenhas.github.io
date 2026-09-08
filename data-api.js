@@ -11,11 +11,7 @@
     const token = sessionStorage.getItem(tokenKey);
     if (token) headers.set('Authorization', `Bearer ${token}`);
     const response = await fetch(baseUrl + path, { ...options, headers, credentials: 'omit', redirect: 'error' });
-    if (token !== sessionStorage.getItem(tokenKey)) throw new Error('A sessão foi alterada. Atualize a página.');
-    if (response.status === 423) {
-      sessionStorage.removeItem(tokenKey); window.dispatchEvent(new Event('mba:account-locked'));
-    }
-    if (response.status === 401 && token) {
+    if (response.status === 401 && token && !path.startsWith('/api/operational/')) {
       sessionStorage.removeItem(tokenKey);
       window.dispatchEvent(new Event('mba:session-expired'));
     }
@@ -24,12 +20,9 @@
   async function request(path, options = {}) {
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
     const response = await backendFetch(path, options);
-    let data = null;
-    if (response.headers.get('content-type')?.includes('application/json')) { try { data=await response.json(); } catch (_) {} }
+    const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
     if (!response.ok) {
-      const messages = {401:'Sua sessão terminou. Entre novamente.',403:'Você não tem permissão para acessar este conteúdo.',423:'Sua conta está bloqueada. Entre em contato com o administrador.',400:'Verifique os dados e filtros informados.',422:'Verifique os campos informados.',409:'A operação não pôde ser concluída. Atualize os dados e tente novamente.',429:'Muitas tentativas. Aguarde antes de tentar novamente.'};
-      const error = new Error(messages[response.status] || 'Serviço indisponível no momento. Tente novamente.');
-      if (response.status===403 && window.MBA_CURRENT_USER) window.showPage?.('sem-acesso',false);
+      const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code; error.status = response.status;
       throw error;
     }
