@@ -16,9 +16,9 @@ export interface AgreementsIndicatorsData {
   quality: { situacoes_validas: number; tarefas_validas: number; tipos_validos: number; propostas_invalidas: number };
 }
 
-export async function getAgreementsIndicators(origin = ''): Promise<AgreementsIndicatorsData> {
+export async function getAgreementsIndicators(page = 1, origin = ''): Promise<AgreementsIndicatorsData> {
   if (!window.MBA_AUTOMATION_API) throw new Error('A API do Backoffice não foi inicializada.');
-  const params = new URLSearchParams({ page: '1', page_size: '10' });
+  const params = new URLSearchParams({ page: String(page), page_size: '10' });
   if (origin) params.set('origem_acordo', origin);
   try {
     return await window.MBA_AUTOMATION_API.request(`/api/acordos-indicadores?${params}`) as AgreementsIndicatorsData;
