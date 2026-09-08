@@ -27,6 +27,7 @@ function configureApplicationShell() {
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
+  let reports: HTMLElement | null = null;
   buttons.forEach(button => {
     const page = button.dataset.page ?? '';
     const currentLabel = button.textContent?.trim() ?? '';
@@ -36,6 +37,7 @@ function configureApplicationShell() {
       return;
     }
     if (/relat[oó]rios/i.test(currentLabel)) {
+      reports = button;
       button.dataset.mbaHidden = 'false';
       labelNavItem(button, 'Relatórios');
       return;
@@ -51,9 +53,21 @@ function configureApplicationShell() {
   gestao.className = 'nav-item mba-custom-nav';
   gestao.dataset.mbaGestao = 'true';
   gestao.innerHTML = '<span data-mba-gestao-icon></span><span>Gestão Processual</span>';
-  home.insertAdjacentElement('afterend', gestao);
   const iconMount = gestao.querySelector('[data-mba-gestao-icon]');
   if (iconMount) createRoot(iconMount).render(<BarChart3 size={14} strokeWidth={1.7}/>);
+
+  // Preserve the approved information architecture even though the legacy DOM
+  // originally listed these modules in a completely different order.
+  const ordered = [
+    home,
+    gestao,
+    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
+    nav.querySelector<HTMLElement>('[data-page="pagamentos"]'),
+    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
+    nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
+    reports,
+  ].filter((item): item is HTMLElement => Boolean(item));
+  ordered.forEach(item => nav.appendChild(item));
 
   home.addEventListener('click', () => {
     gestao.classList.remove('active');
