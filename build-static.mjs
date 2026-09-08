@@ -38,8 +38,8 @@ const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260908-skill-v3')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260908-skill-v3'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260908-profile-v4')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260908-profile-v4'),
   'utf8'
 );
 
