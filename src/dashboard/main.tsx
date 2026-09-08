@@ -1,11 +1,103 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { CarteiraProcessualPage } from './CarteiraProcessualPage';
+import { BarChart3 } from 'lucide-react';
+import { GestaoProcessualPage, type GestaoTab } from './GestaoProcessualPage';
+import { LobbyPage } from './LobbyPage';
+import './shell.css';
+import './analytics.css';
 
-const root = document.getElementById('dashboard-root');
+type RootView = 'lobby' | 'gestao';
 
-if (!root) {
-  throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
+function labelNavItem(button: Element, label: string) {
+  const span = button.querySelector('span');
+  if (span) span.textContent = label;
 }
 
-createRoot(root).render(<StrictMode><CarteiraProcessualPage/></StrictMode>);
+function configureApplicationShell() {
+  const nav = document.querySelector('.main-nav');
+  if (!nav || nav.querySelector('[data-mba-gestao]')) return;
+
+  const visiblePages = new Set(['dashboard', 'acordos', 'pagamentos', 'automacoes', 'tarefas']);
+  const labels: Record<string, string> = {
+    dashboard: 'Início',
+    acordos: 'Acordos',
+    pagamentos: 'Pagamentos',
+    automacoes: 'Automações',
+    tarefas: 'Tarefas',
+  };
+
+  const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
+  buttons.forEach(button => {
+    const page = button.dataset.page ?? '';
+    const currentLabel = button.textContent?.trim() ?? '';
+    if (page && visiblePages.has(page)) {
+      button.dataset.mbaHidden = 'false';
+      labelNavItem(button, labels[page]);
+      return;
+    }
+    if (/relat[oó]rios/i.test(currentLabel)) {
+      button.dataset.mbaHidden = 'false';
+      labelNavItem(button, 'Relatórios');
+      return;
+    }
+    button.dataset.mbaHidden = 'true';
+  });
+
+  const home = nav.querySelector<HTMLElement>('[data-page="dashboard"]');
+  if (!home) return;
+
+  const gestao = document.createElement('button');
+  gestao.type = 'button';
+  gestao.className = 'nav-item mba-custom-nav';
+  gestao.dataset.mbaGestao = 'true';
+  gestao.innerHTML = '<span data-mba-gestao-icon></span><span>Gestão Processual</span>';
+  home.insertAdjacentElement('afterend', gestao);
+  const iconMount = gestao.querySelector('[data-mba-gestao-icon]');
+  if (iconMount) createRoot(iconMount).render(<BarChart3 size={14} strokeWidth={1.7}/>);
+
+  home.addEventListener('click', () => {
+    gestao.classList.remove('active');
+    window.dispatchEvent(new CustomEvent('mba:root-view', { detail: { view: 'lobby' } }));
+  });
+
+  gestao.addEventListener('click', () => {
+    window.showPage?.('dashboard', false);
+    buttons.forEach(button => button.classList.remove('active'));
+    gestao.classList.add('active');
+    window.dispatchEvent(new CustomEvent('mba:root-view', { detail: { view: 'gestao' } }));
+  });
+
+  buttons.filter(button => button !== home).forEach(button => button.addEventListener('click', () => gestao.classList.remove('active')));
+}
+
+function RootApp() {
+  const [view, setView] = useState<RootView>('lobby');
+  const [tab, setTab] = useState<GestaoTab>('carteira');
+
+  useEffect(() => {
+    configureApplicationShell();
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ view?: RootView; tab?: GestaoTab }>).detail;
+      if (detail?.tab) setTab(detail.tab);
+      if (detail?.view) setView(detail.view);
+    };
+    window.addEventListener('mba:root-view', handler);
+    return () => window.removeEventListener('mba:root-view', handler);
+  }, []);
+
+  const openGestao = (nextTab: GestaoTab = 'carteira') => {
+    setTab(nextTab);
+    setView('gestao');
+    const nav = document.querySelector<HTMLElement>('[data-mba-gestao]');
+    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    nav?.classList.add('active');
+  };
+
+  return view === 'gestao'
+    ? <GestaoProcessualPage key={tab} initialTab={tab}/>
+    : <LobbyPage onOpenGestao={openGestao}/>;
+}
+
+const root = document.getElementById('dashboard-root');
+if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
+createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
