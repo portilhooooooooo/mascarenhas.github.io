@@ -8,6 +8,13 @@
     document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out');
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
   };
+
+  const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
+  favicon.rel = 'icon';
+  favicon.type = 'image/svg+xml';
+  favicon.href = '/favicon.svg?v=20260908';
+  if (!favicon.parentNode) document.head.appendChild(favicon);
+
   function applyUser(user) {
     if (!user?.id || !user?.email || typeof user.permissions !== 'object') throw new Error('O perfil autenticado retornado pela API é inválido.');
     window.MBA_CURRENT_USER = user;
@@ -25,11 +32,24 @@
     if(!(user.access_kind === 'operational')) window.restorePageRoute?.();
   }
 
-
   async function loadProfile() {
     const profile = await window.MBA_API.request('/api/me');
     applyUser(profile); setAuthState(true); clearError();
   }
+
+  async function loadProfileWithRetry() {
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try { return await loadProfile(); }
+      catch (error) {
+        lastError = error;
+        if (error?.status === 401 || error?.status === 403) throw error;
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
+      }
+    }
+    throw lastError;
+  }
+
   const base64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   async function initializeAuth() {
     sessionStorage.removeItem('mba_task_worker_token');
@@ -47,8 +67,21 @@
         const result = await window.MBA_API.request('/auth/session/exchange', {method: 'POST', body: JSON.stringify({handoff_code: code, handoff_verifier: verifier})});
         sessionStorage.setItem(tokenKey, result.access_token);
       }
-      if (sessionStorage.getItem(tokenKey)) await loadProfile(); else setAuthState(false);
-    } catch (error) { sessionStorage.removeItem(tokenKey); setAuthState(false); showError(error.message); }
+      if (sessionStorage.getItem(tokenKey)) await loadProfileWithRetry(); else setAuthState(false);
+    } catch (error) {
+      const invalidSession = error?.status === 401 || error?.status === 403;
+      if (invalidSession) {
+        sessionStorage.removeItem(tokenKey);
+        setAuthState(false);
+        showError('Sua sessão terminou. Entre novamente.');
+      } else if (sessionStorage.getItem(tokenKey)) {
+        setAuthState(false);
+        showError('Não foi possível validar sua sessão agora. Sua sessão foi preservada; atualize a página novamente.');
+      } else {
+        setAuthState(false);
+        showError(error.message);
+      }
+    }
   }
   document.getElementById('google-login')?.addEventListener('click', async () => {
     clearError();
