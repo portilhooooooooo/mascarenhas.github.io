@@ -1,6 +1,8 @@
 (() => {
   'use strict';
   const tokenKey = 'mba_session_token';
+  const googleVerifierKey = 'mba_google_verifier';
+  const googleHandoffKey = 'mba_google_handoff';
   const errorBox = document.getElementById('login-error');
   const showError = message => { errorBox.textContent = message; errorBox.style.display = 'block'; };
   const clearError = () => { errorBox.style.display = 'none'; };
@@ -50,6 +52,20 @@
     throw lastError;
   }
 
+  async function exchangeGoogleHandoff(code, verifier) {
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return await window.MBA_API.request('/auth/session/exchange', {method: 'POST', body: JSON.stringify({handoff_code: code, handoff_verifier: verifier})});
+      } catch (error) {
+        lastError = error;
+        if ([401, 403, 409, 422].includes(error?.status)) throw error;
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+      }
+    }
+    throw lastError;
+  }
+
   const base64url = bytes => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   async function initializeAuth() {
     sessionStorage.removeItem('mba_task_worker_token');
@@ -60,12 +76,28 @@
       const fragment = new URLSearchParams(location.hash.slice(1));
       if (fragment.has('auth_handoff')) {
         const code = fragment.get('auth_handoff');
+        if (code) sessionStorage.setItem(googleHandoffKey, code);
         history.replaceState(null, '', location.pathname + location.search);
-        const verifier = sessionStorage.getItem('mba_google_verifier');
-        sessionStorage.removeItem('mba_google_verifier');
-        if (!verifier) throw new Error('Não foi possível realizar o acesso.');
-        const result = await window.MBA_API.request('/auth/session/exchange', {method: 'POST', body: JSON.stringify({handoff_code: code, handoff_verifier: verifier})});
-        sessionStorage.setItem(tokenKey, result.access_token);
+      }
+      const code = sessionStorage.getItem(googleHandoffKey);
+      if (code) {
+        const verifier = sessionStorage.getItem(googleVerifierKey);
+        if (!verifier) {
+          sessionStorage.removeItem(googleHandoffKey);
+          throw new Error('Não foi possível realizar o acesso.');
+        }
+        try {
+          const result = await exchangeGoogleHandoff(code, verifier);
+          sessionStorage.setItem(tokenKey, result.access_token);
+          sessionStorage.removeItem(googleHandoffKey);
+          sessionStorage.removeItem(googleVerifierKey);
+        } catch (error) {
+          if ([401, 403, 409, 422].includes(error?.status)) {
+            sessionStorage.removeItem(googleHandoffKey);
+            sessionStorage.removeItem(googleVerifierKey);
+          }
+          throw error;
+        }
       }
       if (sessionStorage.getItem(tokenKey)) await loadProfileWithRetry(); else setAuthState(false);
     } catch (error) {
@@ -77,6 +109,9 @@
       } else if (sessionStorage.getItem(tokenKey)) {
         setAuthState(false);
         showError('Não foi possível validar sua sessão agora. Sua sessão foi preservada; atualize a página novamente.');
+      } else if (sessionStorage.getItem(googleHandoffKey) && sessionStorage.getItem(googleVerifierKey)) {
+        setAuthState(false);
+        showError('Não foi possível concluir o acesso agora. Atualize a página para tentar novamente sem refazer o login do Google.');
       } else {
         setAuthState(false);
         showError(error.message);
@@ -88,7 +123,8 @@
     try {
       const verifier = base64url(crypto.getRandomValues(new Uint8Array(48)));
       const challenge = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
-      sessionStorage.setItem('mba_google_verifier', verifier);
+      sessionStorage.removeItem(googleHandoffKey);
+      sessionStorage.setItem(googleVerifierKey, verifier);
       const result = await window.MBA_API.request('/auth/google/start', {method: 'POST', body: JSON.stringify({handoff_challenge: challenge})});
       const target = new URL(result.url);
       if (target.origin !== 'https://accounts.google.com') throw new Error('Não foi possível realizar o acesso.');
