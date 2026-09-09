@@ -59,7 +59,7 @@
         return await window.MBA_API.request('/auth/session/exchange', {method: 'POST', body: JSON.stringify({handoff_code: code, handoff_verifier: verifier})});
       } catch (error) {
         lastError = error;
-        if ([401, 403, 409, 422].includes(error?.status)) throw error;
+        if ([401, 403, 422].includes(error?.status)) throw error;
         if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
       }
     }
@@ -92,7 +92,7 @@
           sessionStorage.removeItem(googleHandoffKey);
           sessionStorage.removeItem(googleVerifierKey);
         } catch (error) {
-          if ([401, 403, 409, 422].includes(error?.status)) {
+          if ([401, 403, 422].includes(error?.status)) {
             sessionStorage.removeItem(googleHandoffKey);
             sessionStorage.removeItem(googleVerifierKey);
           }
