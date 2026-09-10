@@ -1,0 +1,30 @@
+.protocolo-page { max-width: 1600px; }
+.protocolo-intake-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.protocolo-intake { padding: 18px; }
+.protocolo-intake > header { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 16px; }
+.protocolo-intake h2, .protocolo-status-panel h2, .protocolo-exceptions-panel h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.protocolo-intake header p, .protocolo-status-panel .panel-heading p, .protocolo-exceptions-panel .panel-heading p { margin: 4px 0 0; color: var(--muted); font-size: 11.5px; }
+.protocolo-intake form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+#protocolo-documents-form { grid-template-columns: repeat(2, minmax(0, 1fr)) auto; }
+.protocolo-file { display: grid; gap: 6px; color: var(--muted); font-size: 11.5px; font-weight: 500; }
+.protocolo-file input { min-width: 0; height: 38px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; }
+.protocolo-feedback { min-height: 17px; margin: 12px 0 0; color: var(--muted); font-size: 11.5px; }
+.protocolo-feedback.error { color: var(--danger); }
+.protocolo-status-panel, .protocolo-exceptions-panel { margin-top: 12px; overflow: hidden; }
+.protocolo-status-panel .panel-heading, .protocolo-exceptions-panel .panel-heading { padding: 15px 17px; }
+.protocolo-status-strip { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 17px 14px; }
+.protocolo-status-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 10.5px; }
+.protocolo-status-chip strong { color: var(--ink); font-size: 11px; }
+.protocolo-table td { vertical-align: middle; }
+.protocolo-status { display: inline-flex; padding: 4px 7px; border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 10.5px; font-weight: 600; }
+.protocolo-status.enviado, .protocolo-status.done { color: var(--success); background: var(--success-soft); }
+.protocolo-status.human-necessary { color: var(--danger); background: var(--danger-soft); }
+.protocolo-status.running, .protocolo-status.documentos-enviados { color: var(--accent); background: var(--accent-soft); }
+.protocolo-task-link { color: var(--accent); font-weight: 500; text-decoration: none; }
+.protocolo-task-link:hover { text-decoration: underline; }
+@media (max-width: 1100px) {
+  .protocolo-intake-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .protocolo-intake form, #protocolo-documents-form { grid-template-columns: 1fr; }
+}

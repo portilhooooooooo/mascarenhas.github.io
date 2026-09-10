@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
+  <link rel="stylesheet" href="protocolo.css?v=20260910">
   <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260902b">
 </head>
 <body class="auth-loading">
@@ -66,6 +67,7 @@
         <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="handshake"></i><span>Acordos</span></button>
         <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
         <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
+        <button class="nav-item" data-page="protocolo" data-permission="automations.view"><i data-lucide="send"></i><span>Protocolos</span></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="lock-keyhole"></i><span>Bloqueios</span></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="building-2"></i><span>Clientes</span></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="send"></i><span>Envios ERP</span></button>
@@ -210,6 +212,58 @@
             <div class="tutelas-footer">
               <span id="tutelas-pagination-label">Nenhum registro exibido</span>
               <div class="tutelas-pagination" id="tutelas-pagination" aria-label="Paginação"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="page list-page protocolo-page" id="protocolo" data-permission="automations.view">
+          <div class="page-title">
+            <div><h1>Agente de Protocolo</h1><p>Importe as bases e acompanhe o envio automático de protocolo e defesa.</p></div>
+            <div class="page-title-actions">
+              <a class="secondary-button" id="protocolo-exceptions-download" href="#" role="button"><i data-lucide="download"></i>Baixar exceções</a>
+              <button class="secondary-button" id="protocolo-refresh" type="button"><i data-lucide="refresh-cw"></i>Atualizar</button>
+            </div>
+          </div>
+
+          <div class="protocolo-intake-grid">
+            <section class="panel protocolo-intake">
+              <header><span class="row-icon blue"><i data-lucide="sheet"></i></span><div><h2>Base de Controladoria</h2><p>Envie o XLSX RAW exportado do Metabase da Enter.</p></div></header>
+              <form id="protocolo-control-form">
+                <label class="protocolo-file"><span>Base XLSX</span><input name="file" type="file" accept=".xlsx" required></label>
+                <button class="primary-button" type="submit" data-permission="automations.run"><i data-lucide="upload"></i>Importar base</button>
+              </form>
+              <p class="protocolo-feedback" id="protocolo-control-feedback" role="status">Nenhuma importação carregada.</p>
+            </section>
+
+            <section class="panel protocolo-intake">
+              <header><span class="row-icon blue"><i data-lucide="files"></i></span><div><h2>Documentos</h2><p>Envie a relação XLSX e todos os PDFs do lote.</p></div></header>
+              <form id="protocolo-documents-form">
+                <label class="protocolo-file"><span>Planilha de relação</span><input name="relation" type="file" accept=".xlsx" required></label>
+                <label class="protocolo-file"><span>PDFs</span><input name="documents" type="file" accept=".pdf,application/pdf" multiple required></label>
+                <button class="primary-button" type="submit" data-permission="automations.run"><i data-lucide="upload"></i>Importar documentos</button>
+              </form>
+              <p class="protocolo-feedback" id="protocolo-documents-feedback" role="status">Nenhum lote carregado.</p>
+            </section>
+          </div>
+
+          <section class="panel protocolo-status-panel">
+            <div class="panel-heading"><div><h2>Execuções</h2><p>O envio começa automaticamente quando tarefa e documentos correspondem.</p></div></div>
+            <div class="protocolo-status-strip" id="protocolo-status-strip" aria-label="Resumo por status"></div>
+            <div class="table-scroll">
+              <table class="task-table protocolo-table">
+                <thead><tr><th>CNJ</th><th>Status</th><th>Motivo</th><th>Última etapa</th><th>Data/hora</th><th>Tarefa</th></tr></thead>
+                <tbody id="protocolo-items-body"><tr><td colspan="6">Nenhuma execução encontrada.</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel protocolo-exceptions-panel">
+            <div class="panel-heading"><div><h2>Exceções</h2><p>Casos que exigem atuação humana, sem detalhes técnicos sensíveis.</p></div></div>
+            <div class="table-scroll">
+              <table class="task-table protocolo-table">
+                <thead><tr><th>CNJ</th><th>Motivo</th><th>Estágio</th><th>Data/hora</th><th>Tarefa</th></tr></thead>
+                <tbody id="protocolo-exceptions-body"><tr><td colspan="5">Nenhuma exceção encontrada.</td></tr></tbody>
+              </table>
             </div>
           </section>
         </section>
@@ -506,10 +560,10 @@
   <script src="app.js?v=20260903-task-only"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260902b"></script>
   <script src="agreements.js?v=20260818"></script>
+  <script src="protocolo.js?v=20260910"></script>
   <script src="auth.js?v=20260903-task-only"></script>
 
   <script src="page-init-2.js"></script>
 <script src="assets/vendor/qrcode.js"></script><script src="security-ui.js"></script>
 </body>
 </html>
-
