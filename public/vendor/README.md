@@ -1,0 +1,1 @@
+qrcode-generator 2.0.4, Kazuhiko Arase, MIT. Vendored unchanged from npm package (shasum e8b3f30922577eba52078aa9c0d5a2a74fe1fd94). Copyright/license retained in qrcode.js. QR generation is entirely local.
