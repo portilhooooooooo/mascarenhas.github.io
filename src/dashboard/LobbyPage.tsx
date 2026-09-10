@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, FileBarChart2, Handshake, ReceiptText } from 'lucide-react';
+import { ArrowRight, Bot, FileBarChart2, Handshake, ReceiptText, Send } from 'lucide-react';
 
 declare global { interface Window { showPage?: (pageId: string, updateRoute?: boolean) => void } }
 
@@ -23,6 +23,7 @@ export function LobbyPage({ onOpenGestao }: { onOpenGestao: (tab?: 'carteira' | 
       <article className="lobby-panel"><h2>Operação</h2><p>Acesse os módulos de execução sem duplicar indicadores analíticos.</p><div className="lobby-links">
         <button className="lobby-link" type="button" onClick={() => window.showPage?.('acordos')}><div><strong>Acordos</strong><span>Saneamento e negociação</span></div><Handshake/></button>
         <button className="lobby-link" type="button" onClick={() => window.showPage?.('pagamentos')}><div><strong>Pagamentos</strong><span>Importação, validação e ACP</span></div><ReceiptText/></button>
+        <button className="lobby-link" type="button" onClick={() => window.showPage?.('protocolo')}><div><strong>Protocolos</strong><span>Importação, matching, execução e exceções</span></div><Send/></button>
         <button className="lobby-link" type="button" onClick={() => window.showPage?.('automacoes')}><div><strong>Automações</strong><span>Execuções e histórico operacional</span></div><Bot/></button>
         <button className="lobby-link" type="button" disabled><div><strong>Relatórios</strong><span>Área mantida na navegação para evolução posterior</span></div><FileBarChart2/></button>
       </div></article>
