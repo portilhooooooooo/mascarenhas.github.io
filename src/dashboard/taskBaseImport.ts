@@ -8,6 +8,7 @@ type BaseImportResponse = {
     total_rows?: number;
     rejected_rows?: number;
   };
+  consolidacao_pendente?: boolean;
 };
 
 type BaseImportError = Error & {
@@ -153,6 +154,17 @@ export function configureBaseTaskImport() {
 
     try {
       const result = await api.request(config.endpoint, { method: 'POST', body }) as BaseImportResponse;
+      let consolidationPending = result?.consolidacao_pendente === true;
+      if (consolidationPending) {
+        try {
+          await api.request('/api/base-processual/consolidar', { method: 'POST' });
+          consolidationPending = false;
+        } catch {
+          // A importação já foi persistida. Não a trata como falha: apenas informa
+          // claramente que o read-model ainda precisa ser consolidado.
+        }
+      }
+
       const imported = result?.importacao?.valid_rows;
       const total = result?.importacao?.total_rows;
       const rejected = result?.importacao?.rejected_rows;
@@ -163,7 +175,9 @@ export function configureBaseTaskImport() {
       taskForm.reset();
       syncMode();
       taskDialog.close();
-      window.alert(`${config.successName} importada com sucesso. ${summary}`);
+      window.alert(consolidationPending
+        ? `${config.successName} importada com sucesso. ${summary} A consolidação da base processual permaneceu pendente; execute a consolidação novamente antes de usar os indicadores.`
+        : `${config.successName} importada e base processual consolidada com sucesso. ${summary}`);
     } catch (cause) {
       const error = cause as BaseImportError;
       const messages: Record<number, string> = {
