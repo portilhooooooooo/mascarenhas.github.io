@@ -50,12 +50,13 @@ function configureApplicationShell() {
     return;
   }
 
-  const visiblePages = new Set(['dashboard', 'acordos', 'pagamentos', 'automacoes', 'tarefas']);
+  const visiblePages = new Set(['dashboard', 'acordos', 'pagamentos', 'automacoes', 'protocolo', 'tarefas']);
   const labels: Record<string, string> = {
     dashboard: 'Início',
     acordos: 'Acordos',
     pagamentos: 'Pagamentos',
     automacoes: 'Automações',
+    protocolo: 'Protocolos',
     tarefas: 'Tarefas',
   };
 
@@ -100,6 +101,7 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="pagamentos"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
+    nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
     reports,
   ].filter((item): item is HTMLElement => Boolean(item));
