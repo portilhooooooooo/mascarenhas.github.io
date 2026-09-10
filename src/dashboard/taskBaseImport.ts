@@ -61,28 +61,33 @@ export function configureBaseTaskImport() {
     return () => undefined;
   }
 
-  form.dataset.mbaBaseImportBound = 'true';
+  const taskDialog = dialog;
+  const taskForm = form;
+  const taskTypeSelect = typeSelect;
+  const taskFileInput = fileInput;
 
-  const titleInput = form.elements.namedItem('title') as HTMLInputElement | null;
-  const descriptionInput = form.elements.namedItem('description') as HTMLTextAreaElement | null;
+  taskForm.dataset.mbaBaseImportBound = 'true';
+
+  const titleInput = taskForm.elements.namedItem('title') as HTMLInputElement | null;
+  const descriptionInput = taskForm.elements.namedItem('description') as HTMLTextAreaElement | null;
   const titleField = titleInput?.closest('label') ?? null;
   const descriptionField = descriptionInput?.closest('label') ?? null;
-  const taskGrid = form.querySelector<HTMLElement>('.dialog-grid');
-  const headerCopy = form.querySelector<HTMLElement>('header p');
-  const submit = form.querySelector<HTMLButtonElement>('footer [type="submit"]');
+  const taskGrid = taskForm.querySelector<HTMLElement>('.dialog-grid');
+  const headerCopy = taskForm.querySelector<HTMLElement>('header p');
+  const submit = taskForm.querySelector<HTMLButtonElement>('footer [type="submit"]');
   const defaultHeaderCopy = headerCopy?.textContent || 'Crie o lote e importe os processos por XLSX ou CSV.';
   const defaultAgreementHelp = agreementHelp?.textContent || 'O XLSX deve conter as colunas Processo e Provisão.';
   const defaultSubmitCopy = submit?.textContent || 'Criar e importar';
 
-  const currentType = () => String(typeSelect.value || '');
+  const currentType = () => String(taskTypeSelect.value || '');
 
   function ensureOptions() {
     for (const [value, config] of Object.entries(BASE_IMPORT_TYPES)) {
-      if (typeSelect.querySelector(`option[value="${value}"]`)) continue;
+      if (taskTypeSelect.querySelector(`option[value="${value}"]`)) continue;
       const option = document.createElement('option');
       option.value = value;
       option.textContent = config.label;
-      typeSelect.appendChild(option);
+      taskTypeSelect.appendChild(option);
     }
   }
 
@@ -98,7 +103,7 @@ export function configureBaseTaskImport() {
     if (participants) participants.hidden = baseMode || !agreementMode;
     if (titleInput) titleInput.required = !baseMode;
 
-    fileInput.accept = baseMode ? '.xlsx' : agreementMode ? '.xlsx' : '.xlsx,.csv';
+    taskFileInput.accept = baseMode ? '.xlsx' : agreementMode ? '.xlsx' : '.xlsx,.csv';
 
     if (agreementHelp) {
       agreementHelp.hidden = !baseMode && !agreementMode;
@@ -126,7 +131,7 @@ export function configureBaseTaskImport() {
 
     const config = BASE_IMPORT_TYPES[type];
     const api = (window as BaseImportWindow).MBA_API;
-    const file = fileInput.files?.[0];
+    const file = taskFileInput.files?.[0];
 
     if (!api) {
       setError(errorBox, 'O módulo da API ainda não está disponível. Atualize a página e tente novamente.');
@@ -155,9 +160,9 @@ export function configureBaseTaskImport() {
         ? `${imported} linha(s) válida(s)${Number.isFinite(Number(total)) ? ` de ${total}` : ''}${Number(rejected) ? `; ${rejected} rejeitada(s)` : ''}.`
         : 'Importação concluída.';
 
-      form.reset();
+      taskForm.reset();
       syncMode();
-      dialog.close();
+      taskDialog.close();
       window.alert(`${config.successName} importada com sucesso. ${summary}`);
     } catch (cause) {
       const error = cause as BaseImportError;
@@ -182,17 +187,17 @@ export function configureBaseTaskImport() {
     syncMode();
   };
 
-  typeSelect.addEventListener('change', onTypeChange);
+  taskTypeSelect.addEventListener('change', onTypeChange);
   newTaskButton?.addEventListener('click', onOpen);
-  form.addEventListener('submit', submitBase, true);
+  taskForm.addEventListener('submit', submitBase, true);
 
   ensureOptions();
   syncMode();
 
   return () => {
-    typeSelect.removeEventListener('change', onTypeChange);
+    taskTypeSelect.removeEventListener('change', onTypeChange);
     newTaskButton?.removeEventListener('click', onOpen);
-    form.removeEventListener('submit', submitBase, true);
-    delete form.dataset.mbaBaseImportBound;
+    taskForm.removeEventListener('submit', submitBase, true);
+    delete taskForm.dataset.mbaBaseImportBound;
   };
 }
