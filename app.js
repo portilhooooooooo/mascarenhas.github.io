@@ -1,7 +1,7 @@
 const navItems = [...document.querySelectorAll('.nav-item')];
 const pages = [...document.querySelectorAll('.page')];
 
-const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', 'acordo-execucao': 'tarefas/acordos' };
+const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', 'acordo-execucao': 'tarefas/acordos' };
 function showPage(pageId, updateRoute = true) {
   pages.forEach((page) => page.classList.toggle('active', page.id === pageId));
   navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageId));

@@ -27,7 +27,7 @@
     document.getElementById('profile-avatar').textContent=initials; const welcomeName=document.getElementById('welcome-name'); if(welcomeName)welcomeName.textContent=firstName;
     document.querySelectorAll('[data-permission]').forEach((element)=>{element.hidden=user.permissions[element.dataset.permission]!==true;});
     document.querySelectorAll('.master-admin-only').forEach((element)=>{element.hidden=!user.is_master_admin;});
-    const pages=[['dashboard','dashboard.view'],['automacoes','automations.view'],['tutelas','tutelas.view'],['encerramentos','encerramentos.view'],['usuarios','users.view'],['configuracoes','settings.view'],['tarefas','tasks.view'],['pagamentos','pagamentos.view'],['acordos','agreements.view']].filter(([,permission])=>user.permissions[permission]===true);
+    const pages=[['dashboard','dashboard.view'],['automacoes','automations.view'],['protocolo','automations.view'],['tutelas','tutelas.view'],['encerramentos','encerramentos.view'],['usuarios','users.view'],['configuracoes','settings.view'],['tarefas','tasks.view'],['pagamentos','pagamentos.view'],['acordos','agreements.view']].filter(([,permission])=>user.permissions[permission]===true);
     const active=document.querySelector('.page.active');
     if(!pages.length) window.showPage?.('sem-acesso'); else if((user.access_kind === 'operational')) window.showPage?.('tarefas'); else if(active?.dataset.permission&&user.permissions[active.dataset.permission]!==true) window.showPage?.(pages[0][0]);
     window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:user}));
