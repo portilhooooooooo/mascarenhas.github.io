@@ -7,7 +7,7 @@ function client(status=200) {
  const values=new Map([['mba_session_token','tw_test-fixture']]); const calls=[],events=[];
  const window={MBA_API_BASE_URL:'https://api.example.com',dispatchEvent:e=>events.push(e.type)};
  const context={window,location:{hostname:'production.example.com'},sessionStorage:{getItem:k=>values.get(k),removeItem:k=>values.delete(k)},Headers,FormData,Event,File,fetch:async(url,options)=>{calls.push({url,options});return new Response(JSON.stringify({ok:true}),{status,headers:{'content-type':'application/json'}});}};
- vm.runInNewContext(readFileSync(new URL('../data-api.js',import.meta.url),'utf8'),context);
+ vm.runInNewContext(readFileSync(new URL('../src/runtime/data-api.js',import.meta.url),'utf8'),context);
  return {api:window.MBA_API,calls,events,values};
 }
 test('all module reads terminate on API with bearer and no cookies',async()=>{
