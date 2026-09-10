@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
+import { LEGACY_LOCAL_SCRIPTS, singleRuntimeHtml } from '../scripts/single-runtime-html.mjs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -22,10 +23,18 @@ test('application scripts have one source tree and one entrypoint', () => {
     assert.equal(existsSync(new URL(`../${path}`, import.meta.url)), false, `${path} must not exist at repository root`);
   }
   const runtime = read('src/runtime/index.ts');
-  for (const path of removedRootScripts) {
-    assert.match(runtime, new RegExp(`\\./${path.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}`));
-  }
+  for (const path of removedRootScripts) assert.ok(runtime.includes(`./${path}`), `${path} must be imported by runtime/index.ts`);
   assert.match(read('src/dashboard/main.tsx'), /import ['"]\.\.\/runtime\/index['"]/);
+});
+
+test('HTML build transform removes every parallel local application script', () => {
+  const output = singleRuntimeHtml(read('index.html'));
+  for (const source of LEGACY_LOCAL_SCRIPTS) {
+    assert.equal(output.includes(`src="${source}`), false, `${source} leaked into transformed HTML`);
+    assert.equal(output.includes(`src="/${source}`), false, `${source} leaked into transformed HTML`);
+  }
+  assert.equal((output.match(/src=["']\/src\/dashboard\/main\.tsx["']/g) || []).length, 1);
+  assert.equal((output.match(/src=["']\/vendor\/qrcode\.js["']/g) || []).length, 1);
 });
 
 test('browser source does not contain a Supabase client', () => {
@@ -39,6 +48,7 @@ test('base imports bypass generic task creation and target backend contracts', (
   const source = read('src/dashboard/taskBaseImport.ts');
   assert.match(source, /base_benner[\s\S]*\/api\/base-processual\/benner\/importar/);
   assert.match(source, /base_cpj[\s\S]*\/api\/base-processual\/cpj\/importar/);
+  assert.match(source, /\/api\/base-processual\/consolidar/);
   assert.doesNotMatch(source, /\/api\/tasks/);
   assert.match(source, /body\.append\(['"]file['"],\s*file\)/);
 });
