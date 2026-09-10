@@ -9,6 +9,13 @@ const removedRootScripts = [
   'config.js', 'mock-api.js', 'data-api.js', 'app.js', 'agreements.js',
   'auth.js', 'security-ui.js', 'page-init-1.js', 'page-init-2.js',
 ];
+const removedDashboardGeneration = [
+  'src/dashboard/DashboardPage.tsx', 'src/dashboard/dashboardService.ts',
+  'src/dashboard/mockDashboardData.ts', 'src/dashboard/dashboard.css',
+  'src/dashboard/AgreementsIndicatorsSection.tsx', 'src/dashboard/carteira.css',
+  'src/dashboard/components/charts.tsx', 'src/dashboard/components/common.tsx',
+  'src/dashboard/components/sections.tsx', 'src/dashboard/types.ts',
+];
 
 test('Vite is the only production build pipeline', () => {
   const pkg = JSON.parse(read('package.json'));
@@ -27,6 +34,12 @@ test('application scripts have one source tree and one entrypoint', () => {
   assert.match(read('src/dashboard/main.tsx'), /import ['"]\.\.\/runtime\/index['"]/);
 });
 
+test('superseded dashboard generation cannot return silently', () => {
+  for (const path of removedDashboardGeneration) {
+    assert.equal(existsSync(new URL(`../${path}`, import.meta.url)), false, `${path} must stay removed`);
+  }
+});
+
 test('HTML build transform removes every parallel local application script', () => {
   const output = singleRuntimeHtml(read('index.html'));
   for (const source of LEGACY_LOCAL_SCRIPTS) {
@@ -37,11 +50,12 @@ test('HTML build transform removes every parallel local application script', () 
   assert.equal((output.match(/src=["']\/vendor\/qrcode\.js["']/g) || []).length, 1);
 });
 
-test('browser source does not contain a Supabase client', () => {
+test('browser source does not contain a Supabase client or browser credentials', () => {
   const pkg = read('package.json');
   const config = read('src/runtime/config.js');
+  const example = read('config.example.js');
   assert.doesNotMatch(pkg, /@supabase\//i);
-  assert.doesNotMatch(config, /supabase\.co|SUPABASE_URL|SUPABASE_ANON/i);
+  assert.doesNotMatch(`${config}\n${example}`, /supabase\.co|SUPABASE_URL|SUPABASE_ANON/i);
 });
 
 test('base imports bypass generic task creation and target backend contracts', () => {
