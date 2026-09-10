@@ -68,218 +68,167 @@
 (() => {
   'use strict';
 
-  const definitions = {
-    benner: {
-      title: 'Upload da base do Benner',
-      description: 'Importa o snapshot integral do Benner e atualiza a base processual consolidada.',
-      icon: 'database',
+  const taskDialog = document.getElementById('task-dialog');
+  const form = document.getElementById('task-create-form');
+  const typeSelect = document.getElementById('task-type');
+  const fileInput = document.getElementById('task-file');
+  const errorBox = document.getElementById('task-dialog-error');
+  const agreementHelp = document.getElementById('agreement-file-help');
+  const participants = document.getElementById('agreement-participants');
+  const responsibleField = document.getElementById('task-responsible-field');
+  if (!taskDialog || !form || !typeSelect || !fileInput) return;
+
+  const baseTypes = {
+    base_benner: {
+      label: 'Upload - Base do Benner',
+      endpoint: '/api/base-processual/benner/importar',
+      successName: 'Base do Benner',
     },
-    cpj: {
-      title: 'Upload da base do CPJ',
-      description: 'Importa a relação integral do CPJ e atualiza a auditoria da base processual.',
-      icon: 'file-spreadsheet',
+    base_cpj: {
+      label: 'Upload - Base do CPJ',
+      endpoint: '/api/base-processual/cpj/importar',
+      successName: 'Base do CPJ',
     },
   };
-  const currentImports = new Map();
-  let activeSource = null;
-  let observer = null;
 
-  const canUploadBases = () => window.MBA_CURRENT_USER?.permissions?.['bases.import'] === true;
-  const tasksBody = () => document.getElementById('tasks-table-body');
+  const titleInput = form.elements.title;
+  const descriptionInput = form.elements.description;
+  const titleField = titleInput?.closest('label');
+  const descriptionField = descriptionInput?.closest('label');
+  const taskGrid = form.querySelector('.dialog-grid');
+  const headerCopy = form.querySelector('header p');
+  const submit = form.querySelector('footer [type="submit"]');
+  const defaultHeaderCopy = headerCopy?.textContent || 'Crie o lote e importe os processos por XLSX ou CSV.';
+  const defaultAgreementHelp = agreementHelp?.textContent || 'O XLSX deve conter as colunas Processo e Provisão.';
 
-  function formatDate(value) {
-    if (!value) return 'Sem atualização';
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? 'Sem atualização' : date.toLocaleString('pt-BR');
+  const currentType = () => String(typeSelect.value || '');
+  const isBaseType = (type = currentType()) => Boolean(baseTypes[type]);
+  const canImportBases = () => window.MBA_CURRENT_USER?.permissions?.['bases.import'] === true;
+
+  function removeLegacyRows() {
+    document.querySelectorAll('[data-base-upload-task]').forEach((row) => row.remove());
   }
 
-  function createDialog() {
-    let dialog = document.getElementById('base-upload-dialog');
-    if (dialog) return dialog;
-    dialog = document.createElement('dialog');
-    dialog.id = 'base-upload-dialog';
-    dialog.className = 'task-dialog integration-dialog';
-    dialog.innerHTML = `
-      <form id="base-upload-form">
-        <header>
-          <div><h2 id="base-upload-title">Importar base</h2><p id="base-upload-description">Envie a planilha XLSX da execução mais recente.</p></div>
-          <button type="button" class="icon-button" data-close-base-upload aria-label="Fechar"><i data-lucide="x"></i></button>
-        </header>
-        <label>Arquivo XLSX<input name="file" id="base-upload-file" type="file" accept=".xlsx" required></label>
-        <p class="dialog-error" id="base-upload-error" hidden></p>
-        <div class="integration-job-result" id="base-upload-result" hidden>
-          <strong id="base-upload-result-title"></strong>
-          <span id="base-upload-result-detail"></span>
-        </div>
-        <footer>
-          <button type="button" class="secondary-button" data-close-base-upload>Cancelar</button>
-          <button type="submit" class="primary-button" id="base-upload-submit">Importar base</button>
-        </footer>
-      </form>`;
-    document.body.appendChild(dialog);
-
-    dialog.querySelectorAll('[data-close-base-upload]').forEach((button) => button.addEventListener('click', () => dialog.close()));
-    dialog.addEventListener('close', () => {
-      activeSource = null;
-      dialog.querySelector('#base-upload-form')?.reset();
-      const error = dialog.querySelector('#base-upload-error');
-      const result = dialog.querySelector('#base-upload-result');
-      if (error) error.hidden = true;
-      if (result) result.hidden = true;
+  function syncOptions() {
+    const allowed = canImportBases();
+    Object.entries(baseTypes).forEach(([value, config]) => {
+      let option = typeSelect.querySelector(`option[value="${value}"]`);
+      if (allowed && !option) {
+        option = document.createElement('option');
+        option.value = value;
+        option.textContent = config.label;
+        typeSelect.appendChild(option);
+      } else if (!allowed && option) {
+        if (typeSelect.value === value) typeSelect.value = 'liminar';
+        option.remove();
+      }
     });
-    dialog.querySelector('#base-upload-form')?.addEventListener('submit', submitUpload);
-    window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
-    return dialog;
   }
 
-  function updateRow(source) {
-    const row = document.querySelector(`[data-base-upload-task="${source}"]`);
-    if (!row) return;
-    const latest = currentImports.get(source);
-    const status = row.querySelector('[data-base-upload-status]');
-    const updated = row.querySelector('[data-base-upload-updated]');
-    const pending = row.querySelector('[data-base-upload-pending]');
-    if (latest) {
-      status.textContent = 'Atualizada';
-      status.className = 'task-status done';
-      updated.textContent = formatDate(latest.imported_at);
-      pending.textContent = '0';
-    } else {
-      status.textContent = 'Aguardando upload';
-      status.className = 'task-status waiting';
-      updated.textContent = 'Sem atualização';
-      pending.textContent = '1';
+  function syncMode() {
+    const type = currentType();
+    const baseMode = isBaseType(type);
+
+    if (titleField) titleField.hidden = baseMode;
+    if (descriptionField) descriptionField.hidden = baseMode;
+    if (taskGrid) taskGrid.hidden = baseMode;
+    if (responsibleField) responsibleField.hidden = baseMode || type === 'acordos';
+    if (participants) participants.hidden = baseMode || type !== 'acordos';
+
+    if (titleInput) titleInput.required = !baseMode;
+    fileInput.accept = baseMode ? '.xlsx' : '.xlsx,.csv';
+
+    if (agreementHelp) {
+      agreementHelp.hidden = type !== 'acordos' && !baseMode;
+      agreementHelp.textContent = baseMode
+        ? 'Envie a planilha XLSX bruta da execução mais recente.'
+        : defaultAgreementHelp;
     }
+
+    if (headerCopy) {
+      headerCopy.textContent = baseMode
+        ? `Importe a ${baseTypes[type].successName.toLowerCase()} para atualizar a base processual.`
+        : defaultHeaderCopy;
+    }
+    if (submit) submit.textContent = baseMode ? 'Importar base' : 'Criar e importar';
+    if (errorBox) errorBox.hidden = true;
   }
 
-  function ensureRows() {
-    const tbody = tasksBody();
-    if (!tbody) return;
-    if (!canUploadBases()) {
-      tbody.querySelectorAll('[data-base-upload-task]').forEach((row) => row.remove());
+  async function submitBase(event) {
+    const type = currentType();
+    if (!isBaseType(type)) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const config = baseTypes[type];
+    const file = fileInput.files?.[0];
+    if (!canImportBases()) {
+      errorBox.textContent = 'Você não possui permissão para importar bases.';
+      errorBox.hidden = false;
       return;
     }
-
-    let added = false;
-    Object.entries(definitions).forEach(([source, definition]) => {
-      if (tbody.querySelector(`[data-base-upload-task="${source}"]`)) {
-        updateRow(source);
-        return;
-      }
-      const row = document.createElement('tr');
-      row.dataset.baseUploadTask = source;
-      row.innerHTML = `
-        <td><span class="row-icon blue"><i data-lucide="${definition.icon}"></i></span><strong>${definition.title}</strong></td>
-        <td>${definition.description}</td>
-        <td><span class="empty-pill" data-base-upload-pending>1</span></td>
-        <td><span class="task-status waiting" data-base-upload-status>Aguardando upload</span></td>
-        <td data-base-upload-updated>Sem atualização</td>
-        <td><button class="execute-button" type="button" data-base-upload-source="${source}"><i data-lucide="upload"></i>Executar</button></td>`;
-      tbody.appendChild(row);
-      updateRow(source);
-      added = true;
-    });
-    if (added) window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
-  }
-
-  async function loadCurrentImports() {
-    if (!canUploadBases() || !window.MBA_API) return;
-    try {
-      const result = await window.MBA_API.request('/api/base-processual/importacoes');
-      currentImports.clear();
-      for (const item of result?.rows || []) {
-        if (item?.tipo) currentImports.set(item.tipo, item);
-      }
-      ensureRows();
-    } catch (_) {
-      ensureRows();
-    }
-  }
-
-  function openUpload(source) {
-    const definition = definitions[source];
-    if (!definition || !canUploadBases()) return;
-    activeSource = source;
-    const dialog = createDialog();
-    dialog.querySelector('#base-upload-title').textContent = definition.title;
-    dialog.querySelector('#base-upload-description').textContent = source === 'benner'
-      ? 'Envie o XLSX bruto do Benner. O arquivo inteiro será armazenado; o recorte Enter + MBA Advogados ocorre somente na base processual.'
-      : 'Envie o XLSX bruto do CPJ. O arquivo inteiro será armazenado e comparado com a última execução do Benner.';
-    dialog.querySelector('#base-upload-error').hidden = true;
-    dialog.querySelector('#base-upload-result').hidden = true;
-    dialog.querySelector('#base-upload-form').reset();
-    dialog.showModal();
-    window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
-  }
-
-  async function submitUpload(event) {
-    event.preventDefault();
-    if (!activeSource || !window.MBA_API) return;
-    const form = event.currentTarget;
-    const file = form.elements.file?.files?.[0];
-    const errorBox = form.querySelector('#base-upload-error');
-    const resultBox = form.querySelector('#base-upload-result');
-    const submit = form.querySelector('#base-upload-submit');
-
-    errorBox.hidden = true;
-    resultBox.hidden = true;
     if (!(file instanceof File) || !/\.xlsx$/i.test(file.name)) {
       errorBox.textContent = 'Selecione uma planilha XLSX.';
       errorBox.hidden = false;
       return;
     }
 
-    const source = activeSource;
+    const originalLabel = submit.textContent;
+    submit.disabled = true;
+    submit.textContent = 'Importando…';
+    errorBox.hidden = true;
+
     const body = new FormData();
     body.append('file', file);
-    submit.disabled = true;
-    submit.textContent = 'Importando...';
     try {
-      const response = await window.MBA_API.request(`/api/base-processual/${source}/importar`, { method: 'POST', body });
-      if (response?.importacao) currentImports.set(source, response.importacao);
-      updateRow(source);
-      const imported = response?.importacao?.valid_rows ?? '—';
-      const total = response?.importacao?.total_rows ?? '—';
-      const consolidated = response?.consolidacao?.total_processos;
-      form.querySelector('#base-upload-result-title').textContent = 'Importação concluída';
-      form.querySelector('#base-upload-result-detail').textContent = consolidated == null
-        ? `${imported} de ${total} linhas processadas.`
-        : `${imported} de ${total} linhas processadas. Base processual: ${consolidated} processos.`;
-      resultBox.hidden = false;
-      form.elements.file.value = '';
-      await loadCurrentImports();
+      const result = await window.MBA_API.request(config.endpoint, { method: 'POST', body });
+      const imported = result?.importacao?.valid_rows;
+      const total = result?.importacao?.total_rows;
+      const rejected = result?.importacao?.rejected_rows;
+      form.reset();
+      syncMode();
+      taskDialog.close();
+      const summary = Number.isFinite(Number(imported))
+        ? `${imported} linha(s) válida(s)${Number.isFinite(Number(total)) ? ` de ${total}` : ''}${Number(rejected) ? `; ${rejected} rejeitada(s)` : ''}.`
+        : 'Importação concluída.';
+      window.alert(`${config.successName} importada com sucesso. ${summary}`);
     } catch (error) {
-      errorBox.textContent = error.message || 'Não foi possível importar a base.';
+      const messages = {
+        401: 'Sua sessão expirou. Entre novamente.',
+        403: 'Você não possui permissão para importar bases.',
+        409: 'Este arquivo já foi importado.',
+        413: 'O arquivo excede o limite permitido.',
+      };
+      errorBox.textContent = messages[error.status] || error.message || 'Não foi possível importar a base.';
       errorBox.hidden = false;
     } finally {
       submit.disabled = false;
-      submit.textContent = 'Importar base';
+      submit.textContent = originalLabel;
     }
   }
 
-  function bind() {
-    const tbody = tasksBody();
-    if (!tbody) return;
-    if (!tbody.dataset.baseUploadBound) {
-      tbody.dataset.baseUploadBound = '1';
-      tbody.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-base-upload-source]');
-        if (!button) return;
-        event.preventDefault();
-        event.stopPropagation();
-        openUpload(button.dataset.baseUploadSource);
-      });
-      observer = new MutationObserver(() => ensureRows());
-      observer.observe(tbody, { childList: true });
-    }
-    ensureRows();
-    loadCurrentImports();
-  }
-
-  window.addEventListener('mba:authenticated', bind);
-  window.addEventListener('mba:session-expired', () => {
-    observer?.disconnect();
-    document.querySelectorAll('[data-base-upload-task]').forEach((row) => row.remove());
+  typeSelect.addEventListener('change', syncMode);
+  form.addEventListener('submit', submitBase, true);
+  document.getElementById('new-task-button')?.addEventListener('click', () => {
+    syncOptions();
+    syncMode();
   });
-  if (window.MBA_CURRENT_USER) bind();
+  taskDialog.addEventListener('close', () => {
+    if (!isBaseType()) syncMode();
+  });
+
+  window.addEventListener('mba:authenticated', () => {
+    removeLegacyRows();
+    syncOptions();
+    syncMode();
+  });
+  window.addEventListener('mba:session-expired', () => {
+    removeLegacyRows();
+    syncOptions();
+  });
+
+  removeLegacyRows();
+  syncOptions();
+  syncMode();
 })();
