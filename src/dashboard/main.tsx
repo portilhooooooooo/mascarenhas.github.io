@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BarChart3 } from 'lucide-react';
 import { GestaoProcessualPage, type GestaoTab } from './GestaoProcessualPage';
 import { LobbyPage } from './LobbyPage';
+import { configureBaseTaskImport } from './taskBaseImport';
 import './shell.css';
 import './analytics.css';
 
@@ -126,13 +127,17 @@ function RootApp() {
 
   useEffect(() => {
     configureApplicationShell();
+    const cleanupBaseTaskImport = configureBaseTaskImport();
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ view?: RootView; tab?: GestaoTab }>).detail;
       if (detail?.tab) setTab(detail.tab);
       if (detail?.view) setView(detail.view);
     };
     window.addEventListener('mba:root-view', handler);
-    return () => window.removeEventListener('mba:root-view', handler);
+    return () => {
+      window.removeEventListener('mba:root-view', handler);
+      cleanupBaseTaskImport();
+    };
   }, []);
 
   const openGestao = (nextTab: GestaoTab = 'carteira') => {
