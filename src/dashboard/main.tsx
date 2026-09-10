@@ -1,3 +1,4 @@
+import '../runtime/index';
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BarChart3 } from 'lucide-react';
@@ -92,8 +93,8 @@ function configureApplicationShell() {
   const iconMount = gestao.querySelector('[data-mba-gestao-icon]');
   if (iconMount) createRoot(iconMount).render(<BarChart3 size={14} strokeWidth={1.7}/>);
 
-  // Preserve the approved information architecture even though the legacy DOM
-  // originally listed these modules in a completely different order.
+  // Preserve the approved information architecture even though the static DOM
+  // template originally listed these modules in a different order.
   const ordered = [
     home,
     gestao,
