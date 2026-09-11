@@ -6,6 +6,11 @@
     DONE: 'Concluído', HUMAN_NECESSARY: 'Atuação humana',
   };
   const statusClass = value => String(value || '').toLowerCase().replace(/_/g, '-');
+  const number = value => new Intl.NumberFormat('pt-BR').format(Number(value || 0));
+  const countLabel = (value, singular, plural) => {
+    const amount = Number(value || 0);
+    return `${number(amount)} ${amount === 1 ? singular : plural}`;
+  };
   const dateTime = value => {
     if (!value) return '—';
     const date = new Date(value);
@@ -56,6 +61,19 @@
       target.appendChild(row);
     });
   }
+  function documentImportText(documents) {
+    if (!documents) return 'Nenhum lote carregado.';
+    const stored = Number(documents.stored_documents || 0);
+    const ignored = Number(documents.ignored_documents || 0);
+    const failed = Number(documents.failed_rows || 0);
+    const total = Number(documents.total_rows || 0);
+    let text = `Último lote: ${countLabel(stored, 'documento armazenado', 'documentos armazenados')} · ${countLabel(ignored, 'ignorado', 'ignorados')}.`;
+    if (failed > 0) {
+      const scope = total > 0 ? `${number(failed)} de ${number(total)} linhas` : countLabel(failed, 'linha', 'linhas');
+      text += ` Relação: ${scope} não ${failed === 1 ? 'foi processada' : 'foram processadas'} (arquivo não enviado neste lote ou linha com erro).`;
+    }
+    return text;
+  }
   function renderSummary(summary) {
     const strip = document.querySelector('#protocolo-status-strip');
     strip.replaceChildren();
@@ -73,9 +91,7 @@
     document.querySelector('#protocolo-control-feedback').textContent = control
       ? `Última importação: ${control.protocolo_rows} tarefa(s) de protocolo · ${dateTime(control.completed_at || control.created_at)}`
       : 'Nenhuma importação carregada.';
-    document.querySelector('#protocolo-documents-feedback').textContent = documents
-      ? `Último lote: ${documents.stored_documents} armazenado(s), ${documents.ignored_documents} ignorado(s), ${documents.failed_rows} pendência(s).`
-      : 'Nenhum lote carregado.';
+    document.querySelector('#protocolo-documents-feedback').textContent = documentImportText(documents);
   }
   async function load() {
     const [summary, items, exceptions] = await Promise.all([
@@ -87,15 +103,17 @@
     renderRows(document.querySelector('#protocolo-items-body'), items.rows || []);
     renderRows(document.querySelector('#protocolo-exceptions-body'), exceptions.rows || [], true);
   }
-  async function submit(form, path, feedback, success) {
+  async function submit(form, path, feedback, success, options = {}) {
     const button = form.querySelector('[type="submit"]');
     button.disabled = true; feedback.classList.remove('error');
     feedback.textContent = 'Importando e fazendo o matching...';
     try {
       const result = await window.MBA_API.request(path, { method: 'POST', body: new FormData(form) });
-      feedback.textContent = success(result);
+      const successMessage = success(result);
+      feedback.textContent = successMessage;
       form.reset();
       await load();
+      if (options.keepSuccess) feedback.textContent = successMessage;
     } catch (error) {
       feedback.classList.add('error');
       feedback.textContent = error.message;
@@ -113,7 +131,23 @@
     event.preventDefault();
     submit(event.currentTarget, '/api/protocolo/documentos',
       document.querySelector('#protocolo-documents-feedback'),
-      result => `${result.stored} armazenado(s), ${result.ignored} ignorado(s), ${result.missing} faltante(s), ${result.zipped} ZIP(s), ${result.errors} erro(s).`);
+      result => {
+        const parts = [
+          countLabel(result.stored, 'documento armazenado', 'documentos armazenados'),
+          countLabel(result.ignored, 'ignorado', 'ignorados'),
+        ];
+        if (Number(result.missing || 0) > 0) {
+          parts.push(countLabel(result.missing, 'referência sem arquivo neste lote', 'referências sem arquivo neste lote'));
+        }
+        if (Number(result.errors || 0) > 0) {
+          parts.push(countLabel(result.errors, 'linha com erro', 'linhas com erro'));
+        }
+        if (Number(result.zipped || 0) > 0) {
+          parts.push(countLabel(result.zipped, 'ZIP gerado', 'ZIPs gerados'));
+        }
+        return `Importação concluída: ${parts.join(' · ')}.`;
+      },
+      { keepSuccess: true });
   });
   document.querySelector('#protocolo-refresh')?.addEventListener('click', () => load().catch(error => {
     document.querySelector('#protocolo-control-feedback').textContent = error.message;
