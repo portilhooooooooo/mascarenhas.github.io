@@ -94,10 +94,9 @@ export async function importControladoria(file: File): Promise<ControladoriaImpo
   });
 }
 
-export async function importDocuments(relation: File, documents: File[]): Promise<DocumentImportResult> {
+export async function importDocuments(relation: File): Promise<DocumentImportResult> {
   const body = new FormData();
   body.append('relation', relation);
-  documents.forEach(file => body.append('documents', file));
   return api().request<DocumentImportResult>('/api/protocolo/documentos', {
     method: 'POST',
     body,
