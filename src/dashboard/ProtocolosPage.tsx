@@ -120,7 +120,7 @@ function importResultText(result: DocumentImportResult) {
     `${number(result.stored)} armazenado${result.stored === 1 ? '' : 's'}`,
     `${number(result.ignored)} ignorado${result.ignored === 1 ? '' : 's'}`,
   ];
-  if (result.missing) parts.push(`${number(result.missing)} referência${result.missing === 1 ? '' : 's'} sem arquivo neste lote`);
+  if (result.missing) parts.push(`${number(result.missing)} referência${result.missing === 1 ? '' : 's'} sem arquivo no repositório local`);
   if (result.errors) parts.push(`${number(result.errors)} linha${result.errors === 1 ? '' : 's'} com erro`);
   if (result.zipped) parts.push(`${number(result.zipped)} ZIP${result.zipped === 1 ? '' : 's'} gerado${result.zipped === 1 ? '' : 's'}`);
   if (result.unrelated_files?.length) parts.push(`${number(result.unrelated_files.length)} arquivo${result.unrelated_files.length === 1 ? '' : 's'} fora da relação`);
@@ -140,7 +140,6 @@ export function ProtocolosPage() {
 
   const [controlFile, setControlFile] = useState<File[]>([]);
   const [relationFile, setRelationFile] = useState<File[]>([]);
-  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [controlBusy, setControlBusy] = useState(false);
   const [documentsBusy, setDocumentsBusy] = useState(false);
   const [controlFeedback, setControlFeedback] = useState('');
@@ -211,17 +210,16 @@ export function ProtocolosPage() {
   };
 
   const handleDocuments = async () => {
-    if (!relationFile[0] || !documentFiles.length || documentsBusy) return;
+    if (!relationFile[0] || documentsBusy) return;
     setDocumentsBusy(true);
     setDocumentsFeedback('');
     try {
-      const result = await importDocuments(relationFile[0], documentFiles);
-      setDocumentsFeedback(`Importação concluída · ${importResultText(result)}.`);
+      const result = await importDocuments(relationFile[0]);
+      setDocumentsFeedback(`Relação processada · ${importResultText(result)}.`);
       setRelationFile([]);
-      setDocumentFiles([]);
       await refresh();
     } catch (cause) {
-      setDocumentsFeedback(cause instanceof Error ? cause.message : 'Não foi possível importar os documentos.');
+      setDocumentsFeedback(cause instanceof Error ? cause.message : 'Não foi possível processar a relação de documentos.');
     } finally {
       setDocumentsBusy(false);
     }
@@ -284,11 +282,11 @@ export function ProtocolosPage() {
         <article className="protocolos-card protocolos-upload-card">
           <header>
             <span className="protocolos-card-icon"><Files size={18}/></span>
-            <div><h3>Documentos</h3><p>Planilha de relação e PDFs do lote atual.</p></div>
+            <div><h3>Documentos</h3><p>Os PDFs são lidos diretamente do repositório local da VPS.</p></div>
           </header>
           <div className="protocolos-document-fields">
             <UploadField label="Planilha de relação" helper="XLSX com CNJ, tipo e nome do arquivo" accept=".xlsx" files={relationFile} onChange={setRelationFile}/>
-            <UploadField label="PDFs do lote" helper="Selecione um ou vários documentos" accept=".pdf,application/pdf" multiple files={documentFiles} onChange={setDocumentFiles}/>
+            <p className="protocolos-feedback">Antes de processar a relação, os PDFs do lote devem estar disponíveis no inbox local do módulo de Protocolo.</p>
           </div>
           <div className="protocolos-card-footer">
             <div className="protocolos-import-history wide">
@@ -296,8 +294,8 @@ export function ProtocolosPage() {
               <strong>{documentImportSummary(summary?.documents || null)}</strong>
               <small>{summary?.documents ? dateTime(summary.documents.completed_at || summary.documents.created_at) : '—'}</small>
             </div>
-            <button className="protocolos-button primary" type="button" onClick={handleDocuments} disabled={!canRun || !relationFile[0] || !documentFiles.length || documentsBusy}>
-              {documentsBusy ? <LoaderCircle className="spin" size={15}/> : <UploadCloud size={15}/>} Importar documentos
+            <button className="protocolos-button primary" type="button" onClick={handleDocuments} disabled={!canRun || !relationFile[0] || documentsBusy}>
+              {documentsBusy ? <LoaderCircle className="spin" size={15}/> : <FileCheck2 size={15}/>} Processar relação
             </button>
           </div>
           {documentsFeedback && <p className="protocolos-feedback">{documentsFeedback}</p>}
