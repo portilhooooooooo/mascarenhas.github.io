@@ -3,9 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { BarChart3 } from 'lucide-react';
 import { GestaoProcessualPage, type GestaoTab } from './GestaoProcessualPage';
 import { LobbyPage } from './LobbyPage';
+import { ProtocolosPage } from './ProtocolosPage';
 import { configureBaseTaskImport } from './taskBaseImport';
 import './shell.css';
 import './analytics.css';
+import './protocolos.css';
 
 type RootView = 'lobby' | 'gestao';
 
@@ -123,6 +125,18 @@ function configureApplicationShell() {
   configureProfileControl();
 }
 
+function mountProtocolosPage() {
+  const section = document.getElementById('protocolo');
+  if (!section || section.dataset.reactMounted === 'true') return;
+  section.dataset.reactMounted = 'true';
+  section.classList.add('protocolo-react-shell');
+  section.replaceChildren();
+  const mount = document.createElement('div');
+  mount.className = 'protocolos-react-root';
+  section.appendChild(mount);
+  createRoot(mount).render(<StrictMode><ProtocolosPage/></StrictMode>);
+}
+
 function RootApp() {
   const [view, setView] = useState<RootView>('lobby');
   const [tab, setTab] = useState<GestaoTab>('carteira');
@@ -158,3 +172,4 @@ function RootApp() {
 const root = document.getElementById('dashboard-root');
 if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
 createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
+mountProtocolosPage();
