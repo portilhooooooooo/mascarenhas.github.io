@@ -33,15 +33,15 @@ await cp(
   { recursive: true }
 );
 
-// The dashboard bundle has a stable filename; rewrite the query string in the
-// generated index so browsers/CDNs cannot keep serving a previous redesign.
+// The React bundle has a stable filename; rewrite the query string in the
+// generated index so browsers/CDNs cannot keep serving a previous workspace.
 const indexPath = `${dist}/index.html`;
 const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260908-profile-v4')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260908-profile-v4'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260911-protocolos-react-v1')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260911-protocolos-react-v1'),
   'utf8'
 );
 
