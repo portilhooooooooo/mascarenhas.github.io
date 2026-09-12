@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Download,
   ExternalLink,
@@ -10,6 +12,7 @@ import {
   Files,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
   Search,
   Send,
   UploadCloud,
@@ -22,6 +25,7 @@ import {
   getProtocoloSummary,
   importControladoria,
   importDocuments,
+  retryProtocoloItems,
   type DocumentImportResult,
   type ProtocoloItem,
   type ProtocoloStatus,
@@ -38,6 +42,7 @@ const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: 
 };
 
 const STATUS_ORDER = Object.keys(STATUS_META) as ProtocoloStatus[];
+const PAGE_SIZES = [10, 50, 100] as const;
 const number = (value: number | undefined | null) => new Intl.NumberFormat('pt-BR').format(Number(value || 0));
 const dateTime = (value?: string | null) => {
   if (!value) return '—';
@@ -50,6 +55,18 @@ const fileSize = (bytes: number) => {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
 };
+
+function paginationPages(total: number, current: number): Array<number | 'ellipsis'> {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  const pages: Array<number | 'ellipsis'> = [1];
+  if (current > 4) pages.push('ellipsis');
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let value = start; value <= end; value += 1) pages.push(value);
+  if (current < total - 3) pages.push('ellipsis');
+  pages.push(total);
+  return pages;
+}
 
 function userPermissions() {
   return (window as Window & {
@@ -137,6 +154,11 @@ export function ProtocolosPage() {
   const [status, setStatus] = useState<ProtocoloStatus | 'ALL'>('ALL');
   const [tab, setTab] = useState<'executions' | 'exceptions'>('executions');
   const [canRun, setCanRun] = useState(false);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [page, setPage] = useState(1);
+  const [selectedRetryIds, setSelectedRetryIds] = useState<Set<string>>(() => new Set());
+  const [retryBusy, setRetryBusy] = useState(false);
+  const retrySelectAllRef = useRef<HTMLInputElement>(null);
 
   const [controlFile, setControlFile] = useState<File[]>([]);
   const [relationFile, setRelationFile] = useState<File[]>([]);
@@ -193,6 +215,41 @@ export function ProtocolosPage() {
     });
   }, [exceptions, items, query, status, tab]);
 
+  const pageCount = Math.max(1, Math.ceil(visibleItems.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const pageStart = visibleItems.length ? (currentPage - 1) * pageSize : 0;
+  const pageEnd = Math.min(pageStart + pageSize, visibleItems.length);
+  const pagedItems = useMemo(
+    () => visibleItems.slice(pageStart, pageEnd),
+    [pageEnd, pageStart, visibleItems],
+  );
+  const pageLinks = useMemo(() => paginationPages(pageCount, currentPage), [currentPage, pageCount]);
+  const eligiblePageIds = useMemo(
+    () => tab === 'exceptions' ? pagedItems.filter(item => item.retry_allowed).map(item => item.id) : [],
+    [pagedItems, tab],
+  );
+  const allEligibleSelected = eligiblePageIds.length > 0 && eligiblePageIds.every(id => selectedRetryIds.has(id));
+  const someEligibleSelected = eligiblePageIds.some(id => selectedRetryIds.has(id));
+
+  useEffect(() => {
+    setPage(1);
+    setSelectedRetryIds(new Set());
+  }, [pageSize, query, status, tab]);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  useEffect(() => {
+    setSelectedRetryIds(new Set());
+  }, [page]);
+
+  useEffect(() => {
+    if (retrySelectAllRef.current) {
+      retrySelectAllRef.current.indeterminate = someEligibleSelected && !allEligibleSelected;
+    }
+  }, [allEligibleSelected, someEligibleSelected]);
+
   const handleControladoria = async () => {
     if (!controlFile[0] || controlBusy) return;
     setControlBusy(true);
@@ -233,6 +290,42 @@ export function ProtocolosPage() {
       setError(cause instanceof Error ? cause.message : 'Não foi possível baixar as exceções.');
     } finally {
       setDownloadBusy(false);
+    }
+  };
+
+  const toggleRetryItem = (itemId: string, checked: boolean) => {
+    setSelectedRetryIds(current => {
+      const next = new Set(current);
+      if (checked) next.add(itemId);
+      else next.delete(itemId);
+      return next;
+    });
+  };
+
+  const toggleRetryPage = (checked: boolean) => {
+    setSelectedRetryIds(current => {
+      const next = new Set(current);
+      eligiblePageIds.forEach(id => checked ? next.add(id) : next.delete(id));
+      return next;
+    });
+  };
+
+  const handleRetry = async (itemIds: string[]) => {
+    const uniqueIds = Array.from(new Set(itemIds));
+    if (!canRun || retryBusy || uniqueIds.length === 0) return;
+    setRetryBusy(true);
+    setError('');
+    try {
+      const result = await retryProtocoloItems(uniqueIds);
+      setSelectedRetryIds(new Set());
+      await refresh();
+      if (result.blocked.length) {
+        setError(`${number(result.blocked.length)} item${result.blocked.length === 1 ? '' : 's'} permaneceu${result.blocked.length === 1 ? '' : 'ram'} em atuação humana.`);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível solicitar a nova tentativa.');
+    } finally {
+      setRetryBusy(false);
     }
   };
 
@@ -328,12 +421,39 @@ export function ProtocolosPage() {
 
       <div className="protocolos-toolbar">
         <label className="protocolos-search"><Search size={15}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por CNJ, etapa ou motivo..."/></label>
-        <span>{loading ? 'Atualizando…' : `${number(visibleItems.length)} registro${visibleItems.length === 1 ? '' : 's'} exibido${visibleItems.length === 1 ? '' : 's'}`}</span>
+        <div className="protocolos-toolbar-actions">
+          {tab === 'exceptions' && <button
+            type="button"
+            className="protocolos-button protocolos-retry-bulk"
+            disabled={!canRun || retryBusy || selectedRetryIds.size === 0}
+            onClick={() => void handleRetry(Array.from(selectedRetryIds))}
+          >
+            {retryBusy ? <LoaderCircle className="spin" size={14}/> : <RotateCcw size={14}/>} Tentar novamente ({number(selectedRetryIds.size)})
+          </button>}
+          {loading && <span className="protocolos-updating">Atualizando…</span>}
+          <label className="protocolos-page-size">
+            <span>Exibir</span>
+            <select value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>
+              {PAGE_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
+            </select>
+          </label>
+        </div>
       </div>
 
       <div className="protocolos-table-wrap">
         <table className="protocolos-table-react">
           <thead><tr>
+            {tab === 'exceptions' && <th className="protocolos-select-cell">
+              <input
+                ref={retrySelectAllRef}
+                type="checkbox"
+                checked={allEligibleSelected}
+                disabled={!canRun || retryBusy || eligiblePageIds.length === 0}
+                onChange={event => toggleRetryPage(event.target.checked)}
+                aria-label="Selecionar todos os casos aptos desta página"
+                title="Selecionar todos os casos aptos desta página"
+              />
+            </th>}
             <th>Processo</th>
             {tab === 'executions' && <th>Status</th>}
             <th>{tab === 'exceptions' ? 'Motivo' : 'Contexto'}</th>
@@ -342,19 +462,47 @@ export function ProtocolosPage() {
             <th></th>
           </tr></thead>
           <tbody>
-            {!loading && visibleItems.length === 0 && <tr><td colSpan={tab === 'executions' ? 6 : 5}><div className="protocolos-empty"><FileCheck2 size={22}/><strong>Nenhum registro nesta visão</strong><span>Ajuste o filtro ou aguarde a próxima importação.</span></div></td></tr>}
-            {loading && <tr><td colSpan={tab === 'executions' ? 6 : 5}><div className="protocolos-empty"><LoaderCircle className="spin" size={22}/><strong>Carregando protocolos</strong><span>Consultando o estado atual do agente.</span></div></td></tr>}
-            {!loading && visibleItems.map(item => <tr key={item.id}>
+            {!loading && visibleItems.length === 0 && <tr><td colSpan={6}><div className="protocolos-empty"><FileCheck2 size={22}/><strong>Nenhum registro nesta visão</strong><span>Ajuste o filtro ou aguarde a próxima importação.</span></div></td></tr>}
+            {loading && <tr><td colSpan={6}><div className="protocolos-empty"><LoaderCircle className="spin" size={22}/><strong>Carregando protocolos</strong><span>Consultando o estado atual do agente.</span></div></td></tr>}
+            {!loading && pagedItems.map(item => <tr key={item.id}>
+              {tab === 'exceptions' && <td className="protocolos-select-cell">
+                <input
+                  type="checkbox"
+                  checked={selectedRetryIds.has(item.id)}
+                  disabled={!canRun || retryBusy || !item.retry_allowed}
+                  onChange={event => toggleRetryItem(item.id, event.target.checked)}
+                  aria-label={`Selecionar ${item.cnj} para nova tentativa`}
+                  title={item.retry_allowed ? 'Selecionar para nova tentativa' : (item.retry_block_reason || 'Revisão manual necessária')}
+                />
+              </td>}
               <td><strong className="protocolos-cnj">{item.cnj}</strong><small>{item.task_id ? `Task ${item.task_id.slice(0, 8)}…` : 'Task não informada'}</small></td>
               {tab === 'executions' && <td><StatusBadge status={item.status}/></td>}
               <td><span className="protocolos-context">{item.human_reason || item.error_code || 'Fluxo automático'}</span></td>
               <td><span className="protocolos-stage">{item.stage || '—'}</span></td>
               <td><span className="protocolos-date">{dateTime(item.updated_at)}</span></td>
-              <td>{item.task_url && <a className="protocolos-open-task" href={item.task_url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir tarefa do processo ${item.cnj}`}><ExternalLink size={14}/></a>}</td>
+              <td>
+                <div className="protocolos-row-actions">
+                  {tab === 'exceptions' && (item.retry_allowed
+                    ? <button type="button" className="protocolos-retry-action" disabled={!canRun || retryBusy} onClick={() => void handleRetry([item.id])}><RotateCcw size={13}/> Tentar novamente</button>
+                    : <span className="protocolos-manual-only" title={item.retry_block_reason || 'Revisão manual necessária'}>Revisar manualmente</span>)}
+                  {item.task_url && <a className="protocolos-open-task" href={item.task_url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir tarefa do processo ${item.cnj}`}><ExternalLink size={14}/></a>}
+                </div>
+              </td>
             </tr>)}
           </tbody>
         </table>
       </div>
+
+      {!loading && visibleItems.length > 0 && <footer className="protocolos-pagination">
+        <span>{number(pageStart + 1)}–{number(pageEnd)} de {number(visibleItems.length)}</span>
+        <div className="protocolos-pagination-controls">
+          <button type="button" onClick={() => setPage(value => Math.max(1, value - 1))} disabled={currentPage <= 1} aria-label="Página anterior"><ChevronLeft size={14}/></button>
+          {pageLinks.map((value, index) => value === 'ellipsis'
+            ? <span key={`ellipsis-${index}`}>…</span>
+            : <button key={value} type="button" className={currentPage === value ? 'active' : ''} onClick={() => setPage(value)} aria-current={currentPage === value ? 'page' : undefined}>{value}</button>)}
+          <button type="button" onClick={() => setPage(value => Math.min(pageCount, value + 1))} disabled={currentPage >= pageCount} aria-label="Próxima página"><ChevronRight size={14}/></button>
+        </div>
+      </footer>}
     </section>
   </div>;
 }
