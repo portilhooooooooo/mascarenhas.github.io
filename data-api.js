@@ -28,7 +28,7 @@
       response.status === 401 &&
       token &&
       !path.startsWith('/api/operational/') &&
-      !document.body.classList.contains('auth-loading')
+      !bootstrapping
     ) {
       sessionStorage.removeItem(tokenKey);
       window.dispatchEvent(new Event('mba:session-expired'));
