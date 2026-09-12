@@ -97,13 +97,12 @@ export async function getProtocoloItems(status?: ProtocoloStatus): Promise<Proto
   const rows: ProtocoloItem[] = [];
   let offset = 0;
 
-  // The Protocolos workspace is intentionally scoped to the latest successful
-  // Metabase snapshot. Historical items remain persisted only for audit/reconciliation.
+  // The backend endpoint is scoped to the latest successful Metabase snapshot.
+  // Keep the request shape compatible with older backend builds during rollout.
   for (let page = 0; page < 25; page += 1) {
     const params = new URLSearchParams({
       limit: String(pageSize),
       offset: String(offset),
-      snapshot: 'current',
     });
     if (status) params.set('status', status);
     const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
