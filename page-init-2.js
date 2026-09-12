@@ -66,7 +66,7 @@
 })();
 
 (() => {
-  const version = '20260912-controladoria-tarefas';
+  const version = '20260912-sidebar-architecture-v2';
   if (!document.querySelector('link[data-tasks-workspace]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
