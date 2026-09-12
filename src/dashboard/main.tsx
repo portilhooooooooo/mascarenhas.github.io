@@ -17,11 +17,6 @@ type DashboardWindow = Window & typeof globalThis & {
 
 const OPERATION_PAGES = new Set(['acordos', 'pagamentos', 'encerramentos']);
 
-function labelNavItem(button: Element, label: string) {
-  const span = button.querySelector('span');
-  if (span) span.textContent = label;
-}
-
 function configureProfileControl() {
   const profile = document.querySelector<HTMLElement>('.profile');
   if (!profile || profile.dataset.mbaUsersToggle === 'true') return;
@@ -44,38 +39,6 @@ function configureProfileControl() {
       openUsers();
     }
   });
-}
-
-function setTopModuleActive(page: string) {
-  const nav = document.querySelector<HTMLElement>('.main-nav');
-  if (!nav) return;
-  nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  nav.querySelector<HTMLElement>(`[data-page="${page}"]`)?.classList.add('active');
-}
-
-function syncTopModuleFromActivePage() {
-  const activePage = document.querySelector<HTMLElement>('main .page.active');
-  if (!activePage?.id) return;
-
-  if (OPERATION_PAGES.has(activePage.id)) {
-    setTopModuleActive('acordos');
-    return;
-  }
-  if (activePage.id === 'protocolo') {
-    setTopModuleActive('protocolo');
-    return;
-  }
-  if (activePage.id === 'automacoes') {
-    setTopModuleActive('automacoes');
-    return;
-  }
-  if (activePage.id === 'tarefas') {
-    setTopModuleActive('tarefas');
-    return;
-  }
-  if (activePage.id === 'dashboard') {
-    setTopModuleActive('dashboard');
-  }
 }
 
 function ensureOperationSubnav(pageId: string) {
@@ -101,7 +64,6 @@ function ensureOperationSubnav(pageId: string) {
     button.classList.toggle('active', module.page === pageId);
     button.addEventListener('click', () => {
       (window as DashboardWindow).showPage?.(module.page);
-      setTopModuleActive('acordos');
     });
     nav.appendChild(button);
   });
@@ -115,57 +77,16 @@ function configureOperationSubnav() {
 
 function configureApplicationShell() {
   const nav = document.querySelector<HTMLElement>('.main-nav');
-  if (!nav) {
-    configureProfileControl();
-    return;
+
+  if (nav && nav.dataset.mbaModuleNav !== 'true') {
+    nav.dataset.mbaModuleNav = 'true';
+    const home = nav.querySelector<HTMLElement>('[data-page="dashboard"]');
+    home?.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('mba:root-view', { detail: { view: 'lobby' } }));
+    });
   }
-
-  if (nav.dataset.mbaModuleNav === 'true') {
-    configureOperationSubnav();
-    configureProfileControl();
-    syncTopModuleFromActivePage();
-    return;
-  }
-  nav.dataset.mbaModuleNav = 'true';
-
-  const visiblePages = new Set(['dashboard', 'acordos', 'automacoes', 'protocolo', 'tarefas']);
-  const labels: Record<string, string> = {
-    dashboard: 'Início',
-    acordos: 'Operação',
-    automacoes: 'Automações',
-    protocolo: 'Controladoria',
-    tarefas: 'Tarefas',
-  };
-
-  const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
-  buttons.forEach(button => {
-    const page = button.dataset.page ?? '';
-    if (page && visiblePages.has(page)) {
-      button.dataset.mbaHidden = 'false';
-      labelNavItem(button, labels[page]);
-      return;
-    }
-    button.dataset.mbaHidden = 'true';
-  });
-
-  const orderedPages = ['dashboard', 'acordos', 'automacoes', 'protocolo', 'tarefas'];
-  orderedPages.forEach(page => {
-    const item = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
-    if (item) nav.appendChild(item);
-  });
-
-  const home = nav.querySelector<HTMLElement>('[data-page="dashboard"]');
-  home?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('mba:root-view', { detail: { view: 'lobby' } }));
-  });
 
   configureOperationSubnav();
-
-  const observer = new MutationObserver(syncTopModuleFromActivePage);
-  document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
-    observer.observe(page, { attributes: true, attributeFilter: ['class'] });
-  });
-  syncTopModuleFromActivePage();
   configureProfileControl();
 }
 
