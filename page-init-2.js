@@ -66,7 +66,7 @@
 })();
 
 (() => {
-  const version = '20260911-tasks-workspace';
+  const version = '20260912-controladoria-tarefas';
   if (!document.querySelector('link[data-tasks-workspace]')) {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
