@@ -38,6 +38,8 @@ export interface ProtocoloItem {
   retry_count?: number | null;
   error_code?: string | null;
   human_reason?: string | null;
+  retry_allowed?: boolean;
+  retry_block_reason?: string | null;
   first_seen_at?: string | null;
   last_seen_at?: string | null;
   started_at?: string | null;
@@ -60,6 +62,13 @@ export interface DocumentImportResult {
   zipped: number;
   errors: number;
   unrelated_files?: string[];
+  jobs?: Array<{ job_id?: string | null; total?: number }>;
+}
+
+export interface ProtocoloRetryResult {
+  retried: number;
+  retried_ids: string[];
+  blocked: Array<{ item_id: string; reason?: string | null }>;
   jobs?: Array<{ job_id?: string | null; total?: number }>;
 }
 
@@ -100,6 +109,14 @@ export async function importDocuments(relation: File): Promise<DocumentImportRes
   return api().request<DocumentImportResult>('/api/protocolo/documentos', {
     method: 'POST',
     body,
+  });
+}
+
+export async function retryProtocoloItems(itemIds: string[]): Promise<ProtocoloRetryResult> {
+  return api().request<ProtocoloRetryResult>('/api/protocolo/retry', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item_ids: itemIds }),
   });
 }
 
