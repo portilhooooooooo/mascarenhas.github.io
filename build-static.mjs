@@ -10,14 +10,12 @@ const files = [
   'styles.css',
   'agreements.css',
   'protocolo.css',
-  'tasks-workspace.css',
   'config.js',
   'mock-api.js',
   'data-api.js',
   'app.js',
   'agreements.js',
   'protocolo.js',
-  'tasks-workspace.js',
   'auth.js',
   'security-ui.js',
   'page-init-1.js',
@@ -42,8 +40,8 @@ const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-auth-refresh-v1')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-auth-refresh-v1')
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-topnav-restore-v1')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-topnav-restore-v1')
     .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260912-auth-refresh-v1')
     .replace(/auth\.js(?:\?v=[^"']+)?/g, 'auth.js?v=20260912-auth-refresh-v1'),
   'utf8'
