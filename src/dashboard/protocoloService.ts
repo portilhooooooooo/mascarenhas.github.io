@@ -88,10 +88,23 @@ export async function getProtocoloSummary(): Promise<ProtocoloSummary> {
 }
 
 export async function getProtocoloItems(status?: ProtocoloStatus): Promise<ProtocoloItem[]> {
-  const params = new URLSearchParams({ limit: '200' });
-  if (status) params.set('status', status);
-  const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
-  return result.rows || [];
+  const pageSize = 200;
+  const rows: ProtocoloItem[] = [];
+  let offset = 0;
+
+  // The API already exposes offset pagination. Pull the complete operational set
+  // so the 10/50/100 selector and the status filters remain truthful in the UI.
+  for (let page = 0; page < 25; page += 1) {
+    const params = new URLSearchParams({ limit: String(pageSize), offset: String(offset) });
+    if (status) params.set('status', status);
+    const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
+    const batch = result.rows || [];
+    rows.push(...batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+  }
+
+  return rows;
 }
 
 export async function importControladoria(file: File): Promise<ControladoriaImportResult> {
