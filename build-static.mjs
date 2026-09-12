@@ -40,11 +40,11 @@ const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-protocolos-snapshot-atomic-v1')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-protocolos-snapshot-atomic-v1'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-protocolos-snapshot-atomic-v2')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-protocolos-snapshot-atomic-v2'),
   'utf8'
 );
 
 console.log('dist preparado para deploy.');
 
-await cp('assets/vendor', `${dist}/assets/vendor`, {recursive: true});
+await cp('assets/vendor', `${dist}/assets/vendor`, {recursive: true });
