@@ -156,6 +156,17 @@
     if (subtitle) subtitle.textContent = 'Acesse as filas disponíveis e continue a execução dos processos atribuídos.';
   }
 
+  function inferAutoOpenedTaskCategory() {
+    if (selectedCategory !== 'all') return;
+    const firstTask = parseTaskFromRow(taskRows()[0]);
+    if (!firstTask) return;
+    const inferred = categoryForType(firstTask.type);
+    if (inferred !== 'all') {
+      selectedCategory = inferred;
+      sessionStorage.setItem(STORAGE_KEY, inferred);
+    }
+  }
+
   function updateShell() {
     const pageId = currentPage();
     const inTasks = TASK_CONTEXT_PAGES.has(pageId);
@@ -167,6 +178,8 @@
 
     if (pageId === 'protocolo') {
       selectedCategory = 'protocolo';
+    } else if (pageId === 'tarefa-analise') {
+      inferAutoOpenedTaskCategory();
     } else if (pageId === 'tarefas') {
       normalizePageHeading();
     }
@@ -175,6 +188,14 @@
   }
 
   function interceptTaskOpen(event) {
+    const tasksNavItem = event.target.closest('.nav-item[data-page="tarefas"]');
+    if (tasksNavItem) {
+      selectedCategory = 'all';
+      sessionStorage.setItem(STORAGE_KEY, 'all');
+      queueMicrotask(updateShell);
+      return;
+    }
+
     const button = event.target.closest('[data-task-json]');
     if (!button?.dataset.taskJson) return;
     let task;
