@@ -40,8 +40,8 @@ const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-protocolos-pagination-retry-v1')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-protocolos-pagination-retry-v1'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-controladoria-protocolos-v2')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-controladoria-protocolos-v2'),
   'utf8'
 );
 
