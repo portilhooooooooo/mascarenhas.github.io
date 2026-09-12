@@ -35,15 +35,17 @@ await cp(
   { recursive: true }
 );
 
-// The React bundle has a stable filename; rewrite the query string in the
-// generated index so browsers/CDNs cannot keep serving a previous workspace.
+// Stable filenames need explicit versioning so browser/CDN caches cannot keep
+// serving an older workspace or authentication bootstrap after a deploy.
 const indexPath = `${dist}/index.html`;
 const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-protocolos-snapshot-atomic-v2')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-protocolos-snapshot-atomic-v2'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260912-auth-refresh-v1')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260912-auth-refresh-v1')
+    .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260912-auth-refresh-v1')
+    .replace(/auth\.js(?:\?v=[^"']+)?/g, 'auth.js?v=20260912-auth-refresh-v1'),
   'utf8'
 );
 
