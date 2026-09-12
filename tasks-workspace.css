@@ -5,11 +5,83 @@
   --tasks-workspace-bg: #ffffff;
   --tasks-soft-bg: #f7f9fc;
   --tasks-border: #dfe6ef;
+  --tasks-text: #0d2344;
+  --tasks-muted: #63728a;
 }
 
-body.tasks-workspace-active {
-  background: var(--tasks-workspace-bg);
+/* ============================================================
+   Sidebar / arquitetura da Controladoria
+   ============================================================ */
+.sidebar .brand-caption { display: none !important; }
+.sidebar .main-nav { margin-top: 18px; }
+
+.controladoria-nav-group {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0;
 }
+
+.controladoria-nav-parent {
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--mba-text, var(--ink));
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.controladoria-nav-parent:hover { background: var(--mba-bg, #f7f9fc); }
+.controladoria-nav-group.active > .controladoria-nav-parent { color: var(--accent); }
+
+.controladoria-parent-icon {
+  width: 16px;
+  height: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--mba-text-2, var(--muted));
+}
+
+.controladoria-nav-group.active .controladoria-parent-icon { color: var(--accent); }
+.controladoria-parent-icon svg { width: 16px; height: 16px; stroke-width: 1.8; }
+.controladoria-chevron { width: 13px; height: 13px; margin-left: auto; color: var(--muted); transition: transform .15s ease; }
+.controladoria-nav-group.collapsed .controladoria-chevron { transform: rotate(-90deg); }
+
+.controladoria-nav-children {
+  display: grid;
+  gap: 1px;
+  margin: 0 0 2px 8px;
+  padding-left: 10px;
+  border-left: 1px solid #d7e2ef;
+}
+
+.controladoria-nav-group.collapsed .controladoria-nav-children { display: none; }
+.controladoria-nav-children .nav-item { height: 34px; padding-left: 10px; }
+.controladoria-nav-children .nav-item svg { display: none; }
+.controladoria-nav-children .nav-badge { display: none; }
+
+.sidebar-admin-tail {
+  display: grid;
+  gap: 1px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.controladoria-placeholder { opacity: .72; }
+
+/* ============================================================
+   Contexto de Tarefas
+   ============================================================ */
+body.tasks-workspace-active { background: var(--tasks-workspace-bg); }
 
 body.tasks-workspace-active .topbar {
   background: var(--tasks-top-bg);
@@ -18,13 +90,39 @@ body.tasks-workspace-active .topbar {
 
 body.tasks-workspace-active .content {
   min-height: calc(100vh - 64px);
-  padding-top: 0;
+  padding: 0;
   background: var(--tasks-workspace-bg);
 }
 
+body.tasks-workspace-active #tarefas,
+body.tasks-workspace-active #tarefa-analise {
+  padding: 0;
+}
+
+.controladoria-context-header {
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 15px;
+  border-bottom: 1px solid #edf0ec;
+  background: var(--tasks-top-bg);
+}
+
+.controladoria-context-header h1 {
+  margin: 0 0 4px;
+  color: var(--tasks-text);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -.025em;
+}
+
+.controladoria-context-header h1 span { font-weight: 600; color: #314c71; }
+.controladoria-context-header p { margin: 0; color: var(--tasks-muted); font-size: 12px; }
+
 .tasks-workspace-nav {
-  margin: 0 -24px 18px;
-  padding: 10px 24px 0;
+  margin: 0;
+  padding: 8px 24px 0;
   border-bottom: 1px solid var(--tasks-nav-line);
   background: var(--tasks-nav-bg);
 }
@@ -54,16 +152,13 @@ body.tasks-workspace-active .content {
   border-radius: 10px 10px 0 0;
   background: transparent;
   color: #385273;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: color .15s ease, background .15s ease, border-color .15s ease;
 }
 
-.tasks-workspace-tab:hover {
-  background: rgba(255, 255, 255, .48);
-  color: var(--ink);
-}
+.tasks-workspace-tab:hover { background: rgba(255,255,255,.45); color: var(--tasks-text); }
 
 .tasks-workspace-tab.active {
   border-color: var(--tasks-nav-line);
@@ -97,38 +192,31 @@ body.tasks-workspace-active .content {
   font-weight: 700;
 }
 
-.tasks-workspace-tab.active em {
-  background: var(--accent-soft);
-  color: var(--accent);
+.tasks-workspace-tab.active em { background: var(--accent-soft); color: var(--accent); }
+
+/* ============================================================
+   Lobby: usa somente os dados reais de /api/tasks
+   ============================================================ */
+body.tasks-workspace-active #tarefas > .page-title {
+  min-height: 54px;
+  align-items: center;
+  margin: 0;
+  padding: 12px 24px 8px;
 }
 
-/* Tarefas: preserva o contrato atual de IDs/JS e troca somente a camada visual. */
-body.tasks-workspace-active #tarefas .page-title,
-body.tasks-workspace-active #protocolo .page-title {
-  margin-top: 18px;
-}
-
-body.tasks-workspace-active #tarefas .page-title h1,
-body.tasks-workspace-active #protocolo .page-title h1 {
-  color: #0d2344;
-  font-size: 20px;
-  letter-spacing: -.02em;
-}
-
-body.tasks-workspace-active #tarefas .task-table-wrap,
-body.tasks-workspace-active #protocolo .panel {
+body.tasks-workspace-active #tarefas > .page-title > div:first-child[hidden] { display: none !important; }
+body.tasks-workspace-active #tarefas .lobby-actions { margin-left: auto; }
+body.tasks-workspace-active #tarefas .task-table-wrap {
+  margin: 0 24px 24px;
   border-color: var(--tasks-border);
+  border-radius: 11px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(20, 40, 75, .025);
+  box-shadow: none;
+  overflow: hidden;
 }
 
-body.tasks-workspace-active #tarefas .task-table thead th {
-  background: #fbfcfe;
-}
-
-body.tasks-workspace-active #tarefas .task-table tbody tr:hover {
-  background: #f8fbff;
-}
+body.tasks-workspace-active #tarefas .task-table thead th { background: #fbfcfe; }
+body.tasks-workspace-active #tarefas .task-table tbody tr:hover { background: #f8fbff; }
 
 .tasks-category-empty {
   min-height: 220px;
@@ -141,65 +229,59 @@ body.tasks-workspace-active #tarefas .task-table tbody tr:hover {
   text-align: center;
 }
 
-.tasks-category-empty > svg {
-  width: 22px;
-  height: 22px;
-  margin-bottom: 5px;
-  color: var(--accent);
+.tasks-category-empty > svg { width: 22px; height: 22px; margin-bottom: 5px; color: var(--accent); }
+.tasks-category-empty strong { color: var(--ink); font-size: 12.5px; }
+.tasks-category-empty span { font-size: 11.5px; }
+
+/* ============================================================
+   Execução da tarefa: fila branca + painel branco
+   ============================================================ */
+body.tasks-workspace-active #tarefa-analise > .back-link,
+body.tasks-workspace-active #tarefa-analise > .detail-heading {
+  display: none;
 }
 
-.tasks-category-empty strong {
-  color: var(--ink);
-  font-size: 12.5px;
+body.tasks-workspace-active #tarefa-analise .analysis-layout.tasks-execution-layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 14px;
+  margin: 14px 18px 18px;
 }
 
-.tasks-category-empty span {
-  font-size: 11.5px;
-}
-
-/* Execução: aproxima a tela da identidade visual aprovada sem romper o fluxo existente. */
-body.tasks-workspace-active #tarefa-analise {
-  padding-top: 0;
-}
-
-body.tasks-workspace-active #tarefa-analise .back-link {
-  margin-top: 2px;
-  margin-bottom: 10px;
-  color: #526886;
-}
-
-body.tasks-workspace-active #tarefa-analise .detail-heading {
-  margin-bottom: 14px;
-}
-
-body.tasks-workspace-active #tarefa-analise .detail-heading h1 {
-  color: #0d2344;
-  font-size: 20px;
+body.tasks-workspace-active #tarefa-analise .tasks-execution-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 body.tasks-workspace-active #tarefa-analise .task-meta {
-  margin-bottom: 14px;
+  order: 0;
+  width: 100%;
+  margin: 0;
+  padding: 13px 18px;
   border-color: var(--tasks-border);
-  border-radius: 12px;
+  border-radius: 11px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(20, 40, 75, .02);
-}
-
-body.tasks-workspace-active #tarefa-analise .analysis-layout.two-column {
-  grid-template-columns: 330px minmax(0, 1fr);
-  gap: 14px;
+  box-shadow: none;
 }
 
 body.tasks-workspace-active #tarefa-analise .process-list,
 body.tasks-workspace-active #tarefa-analise .analysis-card {
   border-color: var(--tasks-border);
-  border-radius: 12px;
+  border-radius: 11px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(20, 40, 75, .02);
+  box-shadow: none;
 }
 
 body.tasks-workspace-active #tarefa-analise .process-list {
-  min-height: 520px;
+  min-height: 550px;
+  padding: 16px;
+}
+
+body.tasks-workspace-active #tarefa-analise .process-list h2 {
+  color: var(--tasks-text);
+  font-size: 13px;
 }
 
 body.tasks-workspace-active #tarefa-analise .process-search,
@@ -221,6 +303,10 @@ body.tasks-workspace-active #tarefa-analise .analysis-card > header {
   background: #fff;
 }
 
+body.tasks-workspace-active #tarefa-analise .analysis-card > header h2 {
+  color: var(--tasks-text);
+}
+
 body.tasks-workspace-active #tarefa-analise .decision-grid label,
 body.tasks-workspace-active #tarefa-analise .analysis-error-button {
   border-color: var(--tasks-border);
@@ -238,31 +324,43 @@ body.tasks-workspace-active #tarefa-analise .analysis-card > footer {
 }
 
 @media (max-width: 1280px) {
-  body.tasks-workspace-active #tarefa-analise .analysis-layout.two-column {
+  body.tasks-workspace-active #tarefa-analise .analysis-layout.tasks-execution-layout {
     grid-template-columns: 285px minmax(0, 1fr);
   }
 }
 
 @media (max-width: 960px) {
-  body.tasks-workspace-active #tarefa-analise .analysis-layout.two-column {
+  body.tasks-workspace-active #tarefa-analise .analysis-layout.tasks-execution-layout {
     grid-template-columns: 1fr;
   }
 
-  body.tasks-workspace-active #tarefa-analise .process-list {
-    min-height: auto;
-  }
+  body.tasks-workspace-active #tarefa-analise .process-list { min-height: auto; }
 }
 
 @media (max-width: 760px) {
-  .tasks-workspace-nav {
-    margin-right: -12px;
-    margin-left: -12px;
-    padding-right: 12px;
-    padding-left: 12px;
+  .controladoria-context-header { padding-inline: 14px; }
+  .tasks-workspace-nav { padding-inline: 12px; }
+  .tasks-workspace-tab { min-width: 102px; padding-inline: 12px; }
+  body.tasks-workspace-active #tarefas > .page-title { padding-inline: 12px; }
+  body.tasks-workspace-active #tarefas .task-table-wrap { margin-inline: 12px; }
+  body.tasks-workspace-active #tarefa-analise .analysis-layout.tasks-execution-layout { margin-inline: 12px; }
+
+  .controladoria-nav-parent span:not(.controladoria-parent-icon),
+  .controladoria-nav-children .nav-item span,
+  .controladoria-chevron,
+  .sidebar-admin-tail .nav-item span {
+    display: none;
   }
 
-  .tasks-workspace-tab {
-    min-width: 102px;
-    padding-inline: 12px;
+  .controladoria-nav-children {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .controladoria-nav-parent,
+  .controladoria-nav-children .nav-item {
+    justify-content: center;
+    padding: 0;
   }
 }
