@@ -9,14 +9,13 @@ import {
   ExternalLink,
   FileCheck2,
   FileSpreadsheet,
+  FileX2,
   Files,
   LoaderCircle,
   RefreshCw,
   RotateCcw,
   Search,
-  Send,
   UploadCloud,
-  UserRoundCog,
   X,
 } from 'lucide-react';
 import {
@@ -32,16 +31,23 @@ import {
   type ProtocoloSummary,
 } from './protocoloService';
 
+type ProtocolView =
+  | 'ALL'
+  | 'NO_DOCUMENTS'
+  | 'RUNNING'
+  | 'DOCUMENTOS_ENVIADOS'
+  | 'COMPLETED'
+  | 'ERRORS';
+
 const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: typeof Clock3 }> = {
-  PENDING: { label: 'Pendente', tone: 'neutral', icon: Clock3 },
+  PENDING: { label: 'Sem documentos', tone: 'neutral', icon: FileX2 },
   RUNNING: { label: 'Em execução', tone: 'blue', icon: LoaderCircle },
   DOCUMENTOS_ENVIADOS: { label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
-  ENVIADO: { label: 'Enviado', tone: 'success', icon: Send },
+  ENVIADO: { label: 'Concluído', tone: 'success', icon: CheckCircle2 },
   DONE: { label: 'Concluído', tone: 'success', icon: CheckCircle2 },
-  HUMAN_NECESSARY: { label: 'Atuação humana', tone: 'danger', icon: UserRoundCog },
+  HUMAN_NECESSARY: { label: 'Erro', tone: 'danger', icon: AlertTriangle },
 };
 
-const STATUS_ORDER = Object.keys(STATUS_META) as ProtocoloStatus[];
 const PAGE_SIZES = [10, 50, 100] as const;
 const number = (value: number | undefined | null) => new Intl.NumberFormat('pt-BR').format(Number(value || 0));
 const dateTime = (value?: string | null) => {
@@ -75,42 +81,61 @@ function userPermissions() {
 }
 
 function UploadField({
-  label,
+  prompt,
   helper,
-  accept,
-  multiple = false,
   files,
   onChange,
 }: {
-  label: string;
+  prompt: string;
   helper: string;
-  accept: string;
-  multiple?: boolean;
   files: File[];
   onChange: (files: File[]) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-  return <div className={`protocolos-upload-field ${files.length ? 'has-file' : ''}`}>
+  const [dragging, setDragging] = useState(false);
+  const selected = files[0];
+
+  const acceptFiles = (next: FileList | File[]) => {
+    const file = Array.from(next)[0];
+    if (file) onChange([file]);
+  };
+
+  return <div className={`protocolos-upload-field ${selected ? 'has-file' : ''}`}>
     <input
       ref={inputRef}
       type="file"
-      accept={accept}
-      multiple={multiple}
-      onChange={event => onChange(Array.from(event.target.files || []))}
+      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      onChange={event => acceptFiles(event.target.files || [])}
     />
-    <button type="button" className="protocolos-upload-drop" onClick={() => inputRef.current?.click()}>
-      <span className="protocolos-upload-icon"><UploadCloud size={18}/></span>
-      <span className="protocolos-upload-copy">
-        <strong>{label}</strong>
-        {files.length ? <span>{multiple ? `${number(files.length)} arquivos selecionados` : files[0].name}</span> : <span>{helper}</span>}
+    <button
+      type="button"
+      className={`protocolos-modern-drop ${dragging ? 'is-dragging' : ''}`}
+      onClick={() => inputRef.current?.click()}
+      onDragEnter={event => { event.preventDefault(); setDragging(true); }}
+      onDragOver={event => { event.preventDefault(); setDragging(true); }}
+      onDragLeave={event => { event.preventDefault(); setDragging(false); }}
+      onDrop={event => {
+        event.preventDefault();
+        setDragging(false);
+        acceptFiles(event.dataTransfer.files);
+      }}
+    >
+      <span className="protocolos-drop-icon"><UploadCloud size={17}/></span>
+      <span className="protocolos-drop-copy">
+        <strong>{prompt}</strong>
+        <small>{helper}</small>
       </span>
-      {files.length ? <span className="protocolos-upload-meta">{fileSize(totalSize)}</span> : <span className="protocolos-upload-action">Selecionar</span>}
     </button>
-    {files.length > 0 && <button className="protocolos-upload-clear" type="button" aria-label={`Limpar ${label}`} onClick={() => {
-      onChange([]);
-      if (inputRef.current) inputRef.current.value = '';
-    }}><X size={14}/></button>}
+
+    {selected && <div className="protocolos-selected-file">
+      <span className="protocolos-file-icon"><FileSpreadsheet size={16}/></span>
+      <span className="protocolos-file-copy"><strong>{selected.name}</strong><small>{fileSize(selected.size)}</small></span>
+      <span className="protocolos-file-ready"><CheckCircle2 size={15}/>Pronto</span>
+      <button type="button" aria-label="Remover arquivo" onClick={() => {
+        onChange([]);
+        if (inputRef.current) inputRef.current.value = '';
+      }}><X size={15}/></button>
+    </div>}
   </div>;
 }
 
@@ -120,45 +145,52 @@ function StatusBadge({ status }: { status: ProtocoloStatus }) {
   return <span className={`protocolos-badge ${meta.tone}`}><Icon size={12}/>{meta.label}</span>;
 }
 
-function documentImportSummary(summary: ProtocoloSummary['documents']) {
-  if (!summary) return 'Nenhum lote importado ainda.';
-  const stored = Number(summary.stored_documents || 0);
-  const ignored = Number(summary.ignored_documents || 0);
-  const failed = Number(summary.failed_rows || 0);
-  const total = Number(summary.total_rows || 0);
-  const base = `${number(stored)} documento${stored === 1 ? '' : 's'} armazenado${stored === 1 ? '' : 's'} · ${number(ignored)} ignorado${ignored === 1 ? '' : 's'}`;
-  if (!failed) return base;
-  const scope = total ? `${number(failed)} de ${number(total)} linhas da relação não processadas` : `${number(failed)} linhas da relação não processadas`;
-  return `${base} · ${scope}`;
-}
-
 function importResultText(result: DocumentImportResult) {
   const parts = [
     `${number(result.stored)} armazenado${result.stored === 1 ? '' : 's'}`,
     `${number(result.ignored)} ignorado${result.ignored === 1 ? '' : 's'}`,
   ];
-  if (result.missing) parts.push(`${number(result.missing)} referência${result.missing === 1 ? '' : 's'} sem arquivo no repositório local`);
-  if (result.errors) parts.push(`${number(result.errors)} linha${result.errors === 1 ? '' : 's'} com erro`);
-  if (result.zipped) parts.push(`${number(result.zipped)} ZIP${result.zipped === 1 ? '' : 's'} gerado${result.zipped === 1 ? '' : 's'}`);
-  if (result.unrelated_files?.length) parts.push(`${number(result.unrelated_files.length)} arquivo${result.unrelated_files.length === 1 ? '' : 's'} fora da relação`);
+  if (result.missing) parts.push(`${number(result.missing)} referência${result.missing === 1 ? '' : 's'} sem arquivo`);
+  if (result.errors) parts.push(`${number(result.errors)} erro${result.errors === 1 ? '' : 's'}`);
+  if (result.zipped) parts.push(`${number(result.zipped)} ZIP${result.zipped === 1 ? '' : 's'}`);
+  if (result.unrelated_files?.length) parts.push(`${number(result.unrelated_files.length)} fora da relação`);
   return parts.join(' · ');
+}
+
+function viewMatches(item: ProtocoloItem, view: ProtocolView) {
+  if (view === 'ALL') return true;
+  if (view === 'NO_DOCUMENTS') return item.status === 'PENDING';
+  if (view === 'RUNNING') return item.status === 'RUNNING';
+  if (view === 'DOCUMENTOS_ENVIADOS') return item.status === 'DOCUMENTOS_ENVIADOS';
+  if (view === 'COMPLETED') return item.status === 'ENVIADO' || item.status === 'DONE';
+  return item.status === 'HUMAN_NECESSARY';
+}
+
+function viewCount(summary: ProtocoloSummary | null, view: ProtocolView) {
+  const statuses = summary?.statuses || {};
+  if (view === 'ALL') return Object.values(statuses).reduce((sum, value) => sum + Number(value || 0), 0);
+  if (view === 'NO_DOCUMENTS') return Number(statuses.PENDING || 0);
+  if (view === 'RUNNING') return Number(statuses.RUNNING || 0);
+  if (view === 'DOCUMENTOS_ENVIADOS') return Number(statuses.DOCUMENTOS_ENVIADOS || 0);
+  if (view === 'COMPLETED') return Number(statuses.ENVIADO || 0) + Number(statuses.DONE || 0);
+  return Number(statuses.HUMAN_NECESSARY || 0);
 }
 
 export function ProtocolosPage() {
   const [summary, setSummary] = useState<ProtocoloSummary | null>(null);
   const [items, setItems] = useState<ProtocoloItem[]>([]);
-  const [exceptions, setExceptions] = useState<ProtocoloItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
-  const [status, setStatus] = useState<ProtocoloStatus | 'ALL'>('ALL');
-  const [tab, setTab] = useState<'executions' | 'exceptions'>('executions');
+  const [view, setView] = useState<ProtocolView>('ALL');
+  const [canView, setCanView] = useState(false);
   const [canRun, setCanRun] = useState(false);
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState(1);
   const [selectedRetryIds, setSelectedRetryIds] = useState<Set<string>>(() => new Set());
   const [retryBusy, setRetryBusy] = useState(false);
   const retrySelectAllRef = useRef<HTMLInputElement>(null);
+  const refreshInFlightRef = useRef(false);
 
   const [controlFile, setControlFile] = useState<File[]>([]);
   const [relationFile, setRelationFile] = useState<File[]>([]);
@@ -168,22 +200,27 @@ export function ProtocolosPage() {
   const [documentsFeedback, setDocumentsFeedback] = useState('');
   const [downloadBusy, setDownloadBusy] = useState(false);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  const refresh = useCallback(async (silent = false) => {
+    if (refreshInFlightRef.current) return;
+    refreshInFlightRef.current = true;
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
     try {
-      const [nextSummary, nextItems, nextExceptions] = await Promise.all([
+      const [nextSummary, nextItems] = await Promise.all([
         getProtocoloSummary(),
         getProtocoloItems(),
-        getProtocoloItems('HUMAN_NECESSARY'),
       ]);
       setSummary(nextSummary);
       setItems(nextItems);
-      setExceptions(nextExceptions);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar o módulo de Protocolos.');
+      if (!silent) {
+        setError(cause instanceof Error ? cause.message : 'Não foi possível carregar o módulo de Protocolos.');
+      }
     } finally {
-      setLoading(false);
+      refreshInFlightRef.current = false;
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -192,8 +229,10 @@ export function ProtocolosPage() {
     const syncPermissions = () => {
       if (!mounted) return;
       const permissions = userPermissions();
+      const mayView = permissions['automations.view'] === true;
+      setCanView(mayView);
       setCanRun(permissions['automations.run'] === true);
-      if (permissions['automations.view'] === true) void refresh();
+      if (mayView) void refresh();
       else setLoading(false);
     };
     syncPermissions();
@@ -204,16 +243,23 @@ export function ProtocolosPage() {
     };
   }, [refresh]);
 
+  useEffect(() => {
+    if (!canView || !summary) return;
+    const active = Number(summary.statuses?.RUNNING || 0) > 0
+      || Number(summary.statuses?.DOCUMENTOS_ENVIADOS || 0) > 0;
+    const timer = window.setTimeout(() => void refresh(true), active ? 2500 : 15000);
+    return () => window.clearTimeout(timer);
+  }, [canView, refresh, summary]);
+
   const visibleItems = useMemo(() => {
-    const source = tab === 'exceptions' ? exceptions : items;
     const normalized = query.trim().toLocaleLowerCase('pt-BR');
-    return source.filter(item => {
-      if (tab === 'executions' && status !== 'ALL' && item.status !== status) return false;
+    return items.filter(item => {
+      if (!viewMatches(item, view)) return false;
       if (!normalized) return true;
       return [item.cnj, item.status, item.stage, item.human_reason, item.error_code]
         .some(value => String(value || '').toLocaleLowerCase('pt-BR').includes(normalized));
     });
-  }, [exceptions, items, query, status, tab]);
+  }, [items, query, view]);
 
   const pageCount = Math.max(1, Math.ceil(visibleItems.length / pageSize));
   const currentPage = Math.min(page, pageCount);
@@ -224,9 +270,10 @@ export function ProtocolosPage() {
     [pageEnd, pageStart, visibleItems],
   );
   const pageLinks = useMemo(() => paginationPages(pageCount, currentPage), [currentPage, pageCount]);
+  const isErrors = view === 'ERRORS';
   const eligiblePageIds = useMemo(
-    () => tab === 'exceptions' ? pagedItems.filter(item => item.retry_allowed).map(item => item.id) : [],
-    [pagedItems, tab],
+    () => isErrors ? pagedItems.filter(item => item.retry_allowed).map(item => item.id) : [],
+    [isErrors, pagedItems],
   );
   const allEligibleSelected = eligiblePageIds.length > 0 && eligiblePageIds.every(id => selectedRetryIds.has(id));
   const someEligibleSelected = eligiblePageIds.some(id => selectedRetryIds.has(id));
@@ -234,7 +281,7 @@ export function ProtocolosPage() {
   useEffect(() => {
     setPage(1);
     setSelectedRetryIds(new Set());
-  }, [pageSize, query, status, tab]);
+  }, [pageSize, query, view]);
 
   useEffect(() => {
     if (page > pageCount) setPage(pageCount);
@@ -256,9 +303,9 @@ export function ProtocolosPage() {
     setControlFeedback('');
     try {
       const result = await importControladoria(controlFile[0]);
-      setControlFeedback(`${number(result.protocol_tasks)} tarefa${result.protocol_tasks === 1 ? '' : 's'} de protocolo encontrada${result.protocol_tasks === 1 ? '' : 's'} · ${number(result.reconciliation?.done)} concluída${result.reconciliation?.done === 1 ? '' : 's'} por reconciliação.`);
+      setControlFeedback(`${number(result.protocol_tasks)} tarefa${result.protocol_tasks === 1 ? '' : 's'} encontrada${result.protocol_tasks === 1 ? '' : 's'}.`);
       setControlFile([]);
-      await refresh();
+      await refresh(true);
     } catch (cause) {
       setControlFeedback(cause instanceof Error ? cause.message : 'Não foi possível importar a base.');
     } finally {
@@ -274,7 +321,7 @@ export function ProtocolosPage() {
       const result = await importDocuments(relationFile[0]);
       setDocumentsFeedback(`Relação processada · ${importResultText(result)}.`);
       setRelationFile([]);
-      await refresh();
+      await refresh(true);
     } catch (cause) {
       setDocumentsFeedback(cause instanceof Error ? cause.message : 'Não foi possível processar a relação de documentos.');
     } finally {
@@ -318,9 +365,9 @@ export function ProtocolosPage() {
     try {
       const result = await retryProtocoloItems(uniqueIds);
       setSelectedRetryIds(new Set());
-      await refresh();
+      await refresh(true);
       if (result.blocked.length) {
-        setError(`${number(result.blocked.length)} item${result.blocked.length === 1 ? '' : 's'} permaneceu${result.blocked.length === 1 ? '' : 'ram'} em atuação humana.`);
+        setError(`${number(result.blocked.length)} item${result.blocked.length === 1 ? '' : 's'} permaneceu${result.blocked.length === 1 ? '' : 'ram'} em erros.`);
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível solicitar a nova tentativa.');
@@ -329,12 +376,35 @@ export function ProtocolosPage() {
     }
   };
 
+  const filters: Array<{ key: ProtocolView; label: string; tone?: string; icon?: typeof Clock3 }> = [
+    { key: 'ALL', label: 'Todos' },
+    { key: 'NO_DOCUMENTS', label: 'Sem documentos', icon: FileX2 },
+    { key: 'RUNNING', label: 'Em execução', tone: 'blue', icon: LoaderCircle },
+    { key: 'DOCUMENTOS_ENVIADOS', label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
+    { key: 'COMPLETED', label: 'Concluído', tone: 'success', icon: CheckCircle2 },
+    { key: 'ERRORS', label: 'Erros', tone: 'danger', icon: AlertTriangle },
+  ];
+
+  const latestControlDate = summary?.controladoria
+    ? dateTime(summary.controladoria.completed_at || summary.controladoria.created_at)
+    : '—';
+  const latestDocumentsDate = summary?.documents
+    ? dateTime(summary.documents.completed_at || summary.documents.created_at)
+    : '—';
+  const latestDocumentErrors = Number(summary?.documents?.failed_rows || 0);
+
   return <div className="protocolos-page-react">
+    <nav className="controladoria-subnav" aria-label="Módulos de Controladoria">
+      <button type="button" className="active">Protocolos</button>
+      <button type="button" disabled title="Módulo em preparação">Liminar</button>
+      <button type="button" disabled title="Módulo em preparação">Contestação</button>
+    </nav>
+
     <header className="protocolos-header">
       <div>
-        <span className="protocolos-eyebrow">OPERAÇÃO</span>
+        <span className="protocolos-eyebrow">CONTROLADORIA</span>
         <h1>Protocolos</h1>
-        <p>Importe os insumos, acompanhe o matching e trate somente o que sair do fluxo automático.</p>
+        <p>Importe a base e acompanhe a execução dos protocolos.</p>
       </div>
       <div className="protocolos-header-actions">
         <button type="button" className="protocolos-button secondary" onClick={handleDownload} disabled={downloadBusy}>
@@ -349,21 +419,24 @@ export function ProtocolosPage() {
     {error && <div className="protocolos-alert error"><AlertTriangle size={16}/><span>{error}</span><button type="button" onClick={() => setError('')}><X size={14}/></button></div>}
 
     <section className="protocolos-intake-section">
-      <div className="protocolos-section-heading">
-        <div><h2>Entrada de dados</h2><p>Os dois insumos podem chegar em qualquer ordem. O envio começa quando tarefa e documentos correspondem.</p></div>
-      </div>
+      <div className="protocolos-section-heading"><h2>Entrada de dados</h2></div>
       <div className="protocolos-intake-grid-react">
         <article className="protocolos-card protocolos-upload-card">
           <header>
             <span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span>
-            <div><h3>Base de Controladoria</h3><p>XLSX RAW exportado do Metabase da Enter.</p></div>
+            <h3>Arquivo do Metabase</h3>
           </header>
-          <UploadField label="Base XLSX" helper="Selecione o arquivo da Controladoria" accept=".xlsx" files={controlFile} onChange={setControlFile}/>
+          <UploadField
+            prompt="Arraste o XLSX aqui ou clique para selecionar"
+            helper="Apenas arquivos .xlsx"
+            files={controlFile}
+            onChange={setControlFile}
+          />
           <div className="protocolos-card-footer">
-            <div className="protocolos-import-history">
-              <span>Última base</span>
-              <strong>{summary?.controladoria ? `${number(summary.controladoria.protocolo_rows)} tarefas de protocolo` : 'Nenhuma importação'}</strong>
-              <small>{summary?.controladoria ? dateTime(summary.controladoria.completed_at || summary.controladoria.created_at) : '—'}</small>
+            <div className="protocolos-import-line">
+              <span>Último:</span>
+              <strong>{summary?.controladoria ? `${number(summary.controladoria.protocolo_rows)} tarefas` : 'Nenhuma importação'}</strong>
+              {summary?.controladoria && <><i>·</i><span>{latestControlDate}</span></>}
             </div>
             <button className="protocolos-button primary" type="button" onClick={handleControladoria} disabled={!canRun || !controlFile[0] || controlBusy}>
               {controlBusy ? <LoaderCircle className="spin" size={15}/> : <UploadCloud size={15}/>} Importar base
@@ -375,17 +448,19 @@ export function ProtocolosPage() {
         <article className="protocolos-card protocolos-upload-card">
           <header>
             <span className="protocolos-card-icon"><Files size={18}/></span>
-            <div><h3>Documentos</h3><p>Os PDFs são lidos diretamente do repositório local da VPS.</p></div>
+            <h3>Documentos</h3>
           </header>
-          <div className="protocolos-document-fields">
-            <UploadField label="Planilha de relação" helper="XLSX com CNJ, tipo e nome do arquivo" accept=".xlsx" files={relationFile} onChange={setRelationFile}/>
-            <p className="protocolos-feedback">Antes de processar a relação, os PDFs do lote devem estar disponíveis no inbox local do módulo de Protocolo.</p>
-          </div>
+          <UploadField
+            prompt="Arraste o XLSX aqui ou clique para selecionar"
+            helper="Planilha com CNJ, tipo e nome do arquivo"
+            files={relationFile}
+            onChange={setRelationFile}
+          />
           <div className="protocolos-card-footer">
-            <div className="protocolos-import-history wide">
-              <span>Último lote</span>
-              <strong>{documentImportSummary(summary?.documents || null)}</strong>
-              <small>{summary?.documents ? dateTime(summary.documents.completed_at || summary.documents.created_at) : '—'}</small>
+            <div className="protocolos-import-line">
+              <span>Último:</span>
+              <span>{latestDocumentsDate}</span>
+              {summary?.documents && latestDocumentErrors > 0 && <><i>·</i><strong className="danger">{number(latestDocumentErrors)} erro{latestDocumentErrors === 1 ? '' : 's'}</strong></>}
             </div>
             <button className="protocolos-button primary" type="button" onClick={handleDocuments} disabled={!canRun || !relationFile[0] || documentsBusy}>
               {documentsBusy ? <LoaderCircle className="spin" size={15}/> : <FileCheck2 size={15}/>} Processar relação
@@ -400,37 +475,37 @@ export function ProtocolosPage() {
       <header className="protocolos-workspace-head">
         <div>
           <h2>Acompanhamento</h2>
-          <p>Estado operacional dos processos já reconhecidos pelo agente.</p>
-        </div>
-        <div className="protocolos-tabs" role="tablist" aria-label="Visão de protocolos">
-          <button type="button" className={tab === 'executions' ? 'active' : ''} onClick={() => setTab('executions')}>Execuções <span>{number(items.length)}</span></button>
-          <button type="button" className={tab === 'exceptions' ? 'active danger' : ''} onClick={() => setTab('exceptions')}>Atuação humana <span>{number(summary?.statuses?.HUMAN_NECESSARY)}</span></button>
+          <p>Acompanhe o andamento dos protocolos.</p>
         </div>
       </header>
 
-      {tab === 'executions' && <div className="protocolos-status-strip-react">
-        <button type="button" className={status === 'ALL' ? 'active' : ''} onClick={() => setStatus('ALL')}><span>Todos</span><strong>{number(Object.values(summary?.statuses || {}).reduce((sum, value) => sum + Number(value || 0), 0))}</strong></button>
-        {STATUS_ORDER.map(key => {
-          const meta = STATUS_META[key];
-          const Icon = meta.icon;
-          return <button key={key} type="button" className={`${status === key ? 'active ' : ''}${meta.tone}`} onClick={() => setStatus(key)}>
-            <Icon size={13}/><span>{meta.label}</span><strong>{number(summary?.statuses?.[key])}</strong>
+      <div className="protocolos-status-strip-react" role="tablist" aria-label="Status dos protocolos">
+        {filters.map(filter => {
+          const Icon = filter.icon;
+          return <button
+            key={filter.key}
+            type="button"
+            className={`${view === filter.key ? 'active ' : ''}${filter.tone || ''}`}
+            onClick={() => setView(filter.key)}
+            aria-selected={view === filter.key}
+            role="tab"
+          >
+            {Icon && <Icon size={13}/>}<span>{filter.label}</span><strong>{number(viewCount(summary, filter.key))}</strong>
           </button>;
         })}
-      </div>}
+      </div>
 
       <div className="protocolos-toolbar">
         <label className="protocolos-search"><Search size={15}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por CNJ, etapa ou motivo..."/></label>
         <div className="protocolos-toolbar-actions">
-          {tab === 'exceptions' && <button
+          {isErrors && selectedRetryIds.size > 0 && <button
             type="button"
             className="protocolos-button protocolos-retry-bulk"
-            disabled={!canRun || retryBusy || selectedRetryIds.size === 0}
+            disabled={!canRun || retryBusy}
             onClick={() => void handleRetry(Array.from(selectedRetryIds))}
           >
             {retryBusy ? <LoaderCircle className="spin" size={14}/> : <RotateCcw size={14}/>} Tentar novamente ({number(selectedRetryIds.size)})
           </button>}
-          {loading && <span className="protocolos-updating">Atualizando…</span>}
           <label className="protocolos-page-size">
             <span>Exibir</span>
             <select value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>
@@ -443,7 +518,7 @@ export function ProtocolosPage() {
       <div className="protocolos-table-wrap">
         <table className="protocolos-table-react">
           <thead><tr>
-            {tab === 'exceptions' && <th className="protocolos-select-cell">
+            {isErrors && <th className="protocolos-select-cell">
               <input
                 ref={retrySelectAllRef}
                 type="checkbox"
@@ -455,17 +530,17 @@ export function ProtocolosPage() {
               />
             </th>}
             <th>Processo</th>
-            {tab === 'executions' && <th>Status</th>}
-            <th>{tab === 'exceptions' ? 'Motivo' : 'Contexto'}</th>
+            {!isErrors && <th>Status</th>}
+            <th>{isErrors ? 'Motivo' : 'Contexto'}</th>
             <th>Etapa</th>
             <th>Atualização</th>
             <th></th>
           </tr></thead>
           <tbody>
-            {!loading && visibleItems.length === 0 && <tr><td colSpan={6}><div className="protocolos-empty"><FileCheck2 size={22}/><strong>Nenhum registro nesta visão</strong><span>Ajuste o filtro ou aguarde a próxima importação.</span></div></td></tr>}
+            {!loading && visibleItems.length === 0 && <tr><td colSpan={6}><div className="protocolos-empty"><FileCheck2 size={22}/><strong>Nenhum registro nesta visão</strong><span>Ajuste o filtro ou aguarde a próxima atualização.</span></div></td></tr>}
             {loading && <tr><td colSpan={6}><div className="protocolos-empty"><LoaderCircle className="spin" size={22}/><strong>Carregando protocolos</strong><span>Consultando o estado atual do agente.</span></div></td></tr>}
             {!loading && pagedItems.map(item => <tr key={item.id}>
-              {tab === 'exceptions' && <td className="protocolos-select-cell">
+              {isErrors && <td className="protocolos-select-cell">
                 <input
                   type="checkbox"
                   checked={selectedRetryIds.has(item.id)}
@@ -476,13 +551,13 @@ export function ProtocolosPage() {
                 />
               </td>}
               <td><strong className="protocolos-cnj">{item.cnj}</strong><small>{item.task_id ? `Task ${item.task_id.slice(0, 8)}…` : 'Task não informada'}</small></td>
-              {tab === 'executions' && <td><StatusBadge status={item.status}/></td>}
+              {!isErrors && <td><StatusBadge status={item.status}/></td>}
               <td><span className="protocolos-context">{item.human_reason || item.error_code || 'Fluxo automático'}</span></td>
               <td><span className="protocolos-stage">{item.stage || '—'}</span></td>
               <td><span className="protocolos-date">{dateTime(item.updated_at)}</span></td>
               <td>
                 <div className="protocolos-row-actions">
-                  {tab === 'exceptions' && (item.retry_allowed
+                  {isErrors && (item.retry_allowed
                     ? <button type="button" className="protocolos-retry-action" disabled={!canRun || retryBusy} onClick={() => void handleRetry([item.id])}><RotateCcw size={13}/> Tentar novamente</button>
                     : <span className="protocolos-manual-only" title={item.retry_block_reason || 'Revisão manual necessária'}>Revisar manualmente</span>)}
                   {item.task_url && <a className="protocolos-open-task" href={item.task_url} target="_blank" rel="noopener noreferrer" aria-label={`Abrir tarefa do processo ${item.cnj}`}><ExternalLink size={14}/></a>}
