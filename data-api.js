@@ -3,6 +3,8 @@
   const baseUrl = String(window.MBA_API_BASE_URL || '').trim().replace(/\/$/, '');
   const tokenKey = 'mba_session_token';
   const preview = window.MBA_LOCAL_PREVIEW && ['localhost', '127.0.0.1'].includes(location.hostname);
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   async function backendFetch(path, options = {}) {
     if (!baseUrl || !/^\/(api|auth)\//.test(path)) throw new Error('Endereço da API inválido.');
     const headers = new Headers(options.headers || {});
@@ -10,13 +12,30 @@
     if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     const token = sessionStorage.getItem(tokenKey);
     if (token) headers.set('Authorization', `Bearer ${token}`);
-    const response = await fetch(baseUrl + path, { ...options, headers, credentials: 'omit', redirect: 'error' });
-    if (response.status === 401 && token && !path.startsWith('/api/operational/')) {
+
+    const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
+    const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
+    const maxAttempts = bootstrapping ? 3 : 1;
+    let response;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      response = await fetch(baseUrl + path, requestOptions);
+      if (response.status !== 401 || attempt === maxAttempts - 1) break;
+      await sleep(250 * (attempt + 1));
+    }
+
+    if (
+      response.status === 401 &&
+      token &&
+      !path.startsWith('/api/operational/') &&
+      !document.body.classList.contains('auth-loading')
+    ) {
       sessionStorage.removeItem(tokenKey);
       window.dispatchEvent(new Event('mba:session-expired'));
     }
     return response;
   }
+
   async function request(path, options = {}) {
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
     const response = await backendFetch(path, options);
@@ -28,6 +47,7 @@
     }
     return data;
   }
+
   async function createTaskWithImportedProcesses(payload, file) {
     if (!(file instanceof File) || !/\.(xlsx|csv)$/i.test(file.name)) throw new Error('Selecione uma planilha XLSX ou CSV.');
     const task = await request('/api/tasks', { method: 'POST', body: JSON.stringify(payload) });
@@ -41,6 +61,7 @@
       error.code = 'TASK_IMPORT_PARTIAL'; error.status = cause.status; throw error;
     }
   }
+
   window.MBA_API = { request, fetch: backendFetch, baseUrl, getAccessToken: async () => sessionStorage.getItem(tokenKey) };
   window.MBA_AUTOMATION_API = window.MBA_API;
   window.MBA_TASK_IMPORT = { createTaskWithImportedProcesses };
