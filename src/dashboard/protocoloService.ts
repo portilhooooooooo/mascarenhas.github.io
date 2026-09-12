@@ -7,6 +7,7 @@ export type ProtocoloStatus =
   | 'HUMAN_NECESSARY';
 
 export interface ControladoriaImportSummary {
+  id?: string;
   protocolo_rows?: number;
   total_rows?: number;
   completed_at?: string | null;
@@ -23,6 +24,7 @@ export interface DocumentImportSummary {
 }
 
 export interface ProtocoloSummary {
+  snapshot_id?: string | null;
   controladoria: ControladoriaImportSummary | null;
   documents: DocumentImportSummary | null;
   statuses: Partial<Record<ProtocoloStatus, number>>;
@@ -48,11 +50,14 @@ export interface ProtocoloItem {
   done_at?: string | null;
   updated_at?: string | null;
   job_id?: string | null;
+  snapshot_import_id?: string | null;
 }
 
 export interface ControladoriaImportResult {
   protocol_tasks: number;
   reconciliation?: { done?: number; reappeared?: number };
+  dispatch_failed?: boolean;
+  commit_verified_after_transport_error?: boolean;
 }
 
 export interface DocumentImportResult {
@@ -92,10 +97,14 @@ export async function getProtocoloItems(status?: ProtocoloStatus): Promise<Proto
   const rows: ProtocoloItem[] = [];
   let offset = 0;
 
-  // The API already exposes offset pagination. Pull the complete operational set
-  // so the 10/50/100 selector and the status filters remain truthful in the UI.
+  // The Protocolos workspace is intentionally scoped to the latest successful
+  // Metabase snapshot. Historical items remain persisted only for audit/reconciliation.
   for (let page = 0; page < 25; page += 1) {
-    const params = new URLSearchParams({ limit: String(pageSize), offset: String(offset) });
+    const params = new URLSearchParams({
+      limit: String(pageSize),
+      offset: String(offset),
+      snapshot: 'current',
+    });
     if (status) params.set('status', status);
     const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
     const batch = result.rows || [];
