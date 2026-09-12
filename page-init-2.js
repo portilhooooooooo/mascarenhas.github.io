@@ -64,3 +64,20 @@
     close();
   });
 })();
+
+(() => {
+  const version = '20260911-tasks-workspace';
+  if (!document.querySelector('link[data-tasks-workspace]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `tasks-workspace.css?v=${version}`;
+    link.dataset.tasksWorkspace = 'true';
+    document.head.appendChild(link);
+  }
+  if (!document.querySelector('script[data-tasks-workspace]')) {
+    const script = document.createElement('script');
+    script.src = `tasks-workspace.js?v=${version}`;
+    script.dataset.tasksWorkspace = 'true';
+    document.body.appendChild(script);
+  }
+})();
