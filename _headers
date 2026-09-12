@@ -6,5 +6,11 @@
   Strict-Transport-Security: max-age=31536000
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 
+/data-api.js
+  Cache-Control: no-cache
+
+/auth.js
+  Cache-Control: no-cache
+
 /page-init-2.js
   Cache-Control: no-cache
