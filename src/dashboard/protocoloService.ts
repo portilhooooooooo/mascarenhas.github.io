@@ -77,6 +77,11 @@ export interface ProtocoloRetryResult {
   jobs?: Array<{ job_id?: string | null; total?: number }>;
 }
 
+export interface ProtocoloRunResult {
+  jobs?: Array<{ job_id?: string | null; total?: number }>;
+  total?: number;
+}
+
 type BackofficeApi = {
   request: <T = unknown>(path: string, options?: RequestInit) => Promise<T>;
   fetch: (path: string, options?: RequestInit) => Promise<Response>;
@@ -130,6 +135,12 @@ export async function importDocuments(relation: File): Promise<DocumentImportRes
   return api().request<DocumentImportResult>('/api/protocolo/documentos', {
     method: 'POST',
     body,
+  });
+}
+
+export async function startProtocoloRun(): Promise<ProtocoloRunResult> {
+  return api().request<ProtocoloRunResult>('/api/protocolo/run', {
+    method: 'POST',
   });
 }
 
