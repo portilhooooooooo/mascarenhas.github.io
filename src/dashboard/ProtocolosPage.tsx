@@ -9,9 +9,9 @@ import {
   ExternalLink,
   FileCheck2,
   FileSpreadsheet,
-  FileX2,
   Files,
   LoaderCircle,
+  Play,
   RefreshCw,
   RotateCcw,
   Search,
@@ -25,6 +25,7 @@ import {
   importControladoria,
   importDocuments,
   retryProtocoloItems,
+  startProtocoloRun,
   type DocumentImportResult,
   type ProtocoloItem,
   type ProtocoloStatus,
@@ -33,14 +34,14 @@ import {
 
 type ProtocolView =
   | 'ALL'
-  | 'NO_DOCUMENTS'
+  | 'PENDING'
   | 'RUNNING'
   | 'DOCUMENTOS_ENVIADOS'
   | 'COMPLETED'
   | 'ERRORS';
 
 const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: typeof Clock3 }> = {
-  PENDING: { label: 'Sem documentos', tone: 'neutral', icon: FileX2 },
+  PENDING: { label: 'Aguardando execução', tone: 'neutral', icon: Clock3 },
   RUNNING: { label: 'Em execução', tone: 'blue', icon: LoaderCircle },
   DOCUMENTOS_ENVIADOS: { label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
   ENVIADO: { label: 'Concluído', tone: 'success', icon: CheckCircle2 },
@@ -159,7 +160,7 @@ function importResultText(result: DocumentImportResult) {
 
 function viewMatches(item: ProtocoloItem, view: ProtocolView) {
   if (view === 'ALL') return true;
-  if (view === 'NO_DOCUMENTS') return item.status === 'PENDING';
+  if (view === 'PENDING') return item.status === 'PENDING';
   if (view === 'RUNNING') return item.status === 'RUNNING';
   if (view === 'DOCUMENTOS_ENVIADOS') return item.status === 'DOCUMENTOS_ENVIADOS';
   if (view === 'COMPLETED') return item.status === 'ENVIADO' || item.status === 'DONE';
@@ -169,7 +170,7 @@ function viewMatches(item: ProtocoloItem, view: ProtocolView) {
 function viewCount(summary: ProtocoloSummary | null, view: ProtocolView) {
   const statuses = summary?.statuses || {};
   if (view === 'ALL') return Object.values(statuses).reduce((sum, value) => sum + Number(value || 0), 0);
-  if (view === 'NO_DOCUMENTS') return Number(statuses.PENDING || 0);
+  if (view === 'PENDING') return Number(statuses.PENDING || 0);
   if (view === 'RUNNING') return Number(statuses.RUNNING || 0);
   if (view === 'DOCUMENTOS_ENVIADOS') return Number(statuses.DOCUMENTOS_ENVIADOS || 0);
   if (view === 'COMPLETED') return Number(statuses.ENVIADO || 0) + Number(statuses.DONE || 0);
@@ -189,6 +190,7 @@ export function ProtocolosPage() {
   const [page, setPage] = useState(1);
   const [selectedRetryIds, setSelectedRetryIds] = useState<Set<string>>(() => new Set());
   const [retryBusy, setRetryBusy] = useState(false);
+  const [startBusy, setStartBusy] = useState(false);
   const retrySelectAllRef = useRef<HTMLInputElement>(null);
   const refreshInFlightRef = useRef(false);
 
@@ -329,6 +331,20 @@ export function ProtocolosPage() {
     }
   };
 
+  const handleStart = async () => {
+    if (!canRun || startBusy) return;
+    setStartBusy(true);
+    setError('');
+    try {
+      await startProtocoloRun();
+      await refresh(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível iniciar a execução dos protocolos.');
+    } finally {
+      setStartBusy(false);
+    }
+  };
+
   const handleDownload = async () => {
     setDownloadBusy(true);
     try {
@@ -378,7 +394,7 @@ export function ProtocolosPage() {
 
   const filters: Array<{ key: ProtocolView; label: string; tone?: string; icon?: typeof Clock3 }> = [
     { key: 'ALL', label: 'Todos' },
-    { key: 'NO_DOCUMENTS', label: 'Sem documentos', icon: FileX2 },
+    { key: 'PENDING', label: 'Aguardando', icon: Clock3 },
     { key: 'RUNNING', label: 'Em execução', tone: 'blue', icon: LoaderCircle },
     { key: 'DOCUMENTOS_ENVIADOS', label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
     { key: 'COMPLETED', label: 'Concluído', tone: 'success', icon: CheckCircle2 },
@@ -392,6 +408,14 @@ export function ProtocolosPage() {
     ? dateTime(summary.documents.completed_at || summary.documents.created_at)
     : '—';
   const latestDocumentErrors = Number(summary?.documents?.failed_rows || 0);
+  const activeExecutionCount = Number(summary?.statuses?.RUNNING || 0)
+    + Number(summary?.statuses?.DOCUMENTOS_ENVIADOS || 0);
+  const sessionState = startBusy ? 'starting' : activeExecutionCount > 0 ? 'active' : 'idle';
+  const sessionLabel = sessionState === 'starting'
+    ? 'Iniciando'
+    : sessionState === 'active'
+      ? 'Em execução'
+      : 'Não iniciada';
 
   return <div className="protocolos-page-react">
     <nav className="controladoria-subnav" aria-label="Módulos de Controladoria">
@@ -417,6 +441,23 @@ export function ProtocolosPage() {
     </header>
 
     {error && <div className="protocolos-alert error"><AlertTriangle size={16}/><span>{error}</span><button type="button" onClick={() => setError('')}><X size={14}/></button></div>}
+
+    <section className="protocolos-session-bar" aria-label="Sessão do agente de protocolo">
+      <div className="protocolos-session-copy">
+        <span>Sessão Enter</span>
+        <strong className={`protocolos-session-state ${sessionState}`} aria-live="polite">
+          <i aria-hidden="true"/>{sessionLabel}
+        </strong>
+      </div>
+      <button
+        type="button"
+        className="protocolos-button primary protocolos-start-button"
+        onClick={() => void handleStart()}
+        disabled={!canRun || startBusy || activeExecutionCount > 0}
+      >
+        {startBusy ? <LoaderCircle className="spin" size={15}/> : <Play size={15}/>} Iniciar
+      </button>
+    </section>
 
     <section className="protocolos-intake-section">
       <div className="protocolos-section-heading"><h2>Entrada de dados</h2></div>
