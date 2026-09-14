@@ -38,6 +38,7 @@ type ProtocolView =
   | 'RUNNING'
   | 'DOCUMENTOS_ENVIADOS'
   | 'COMPLETED'
+  | 'MISSING_DOCUMENTS'
   | 'ERRORS';
 
 const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: typeof Clock3 }> = {
@@ -48,6 +49,16 @@ const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: 
   DONE: { label: 'Concluído', tone: 'success', icon: CheckCircle2 },
   HUMAN_NECESSARY: { label: 'Erro', tone: 'danger', icon: AlertTriangle },
 };
+
+const DOCUMENT_ISSUE_CODES = new Set([
+  'DOCUMENT_MISSING',
+  'INVALID_DOCUMENT_TYPE',
+  'INVALID_FILENAME',
+  'DEFENSE_DOCUMENT_MISSING',
+  'PROTOCOL_DOCUMENT_MISSING',
+  'DUPLICATE_DEFENSE',
+]);
+const DOCUMENT_ISSUE_STAGES = new Set(['DOCUMENT_INTAKE', 'DOCUMENT_MATCHING']);
 
 const PAGE_SIZES = [10, 50, 100] as const;
 const number = (value: number | undefined | null) => new Intl.NumberFormat('pt-BR').format(Number(value || 0));
@@ -158,23 +169,32 @@ function importResultText(result: DocumentImportResult) {
   return parts.join(' · ');
 }
 
+function isMissingDocuments(item: ProtocoloItem) {
+  return item.status === 'HUMAN_NECESSARY'
+    && DOCUMENT_ISSUE_STAGES.has(String(item.stage || ''))
+    && DOCUMENT_ISSUE_CODES.has(String(item.error_code || ''));
+}
+
 function viewMatches(item: ProtocoloItem, view: ProtocolView) {
   if (view === 'ALL') return true;
   if (view === 'PENDING') return item.status === 'PENDING';
   if (view === 'RUNNING') return item.status === 'RUNNING';
   if (view === 'DOCUMENTOS_ENVIADOS') return item.status === 'DOCUMENTOS_ENVIADOS';
   if (view === 'COMPLETED') return item.status === 'ENVIADO' || item.status === 'DONE';
-  return item.status === 'HUMAN_NECESSARY';
+  if (view === 'MISSING_DOCUMENTS') return isMissingDocuments(item);
+  return item.status === 'HUMAN_NECESSARY' && !isMissingDocuments(item);
 }
 
-function viewCount(summary: ProtocoloSummary | null, view: ProtocolView) {
+function viewCount(summary: ProtocoloSummary | null, items: ProtocoloItem[], view: ProtocolView) {
   const statuses = summary?.statuses || {};
+  const missingDocuments = items.filter(isMissingDocuments).length;
   if (view === 'ALL') return Object.values(statuses).reduce((sum, value) => sum + Number(value || 0), 0);
   if (view === 'PENDING') return Number(statuses.PENDING || 0);
   if (view === 'RUNNING') return Number(statuses.RUNNING || 0);
   if (view === 'DOCUMENTOS_ENVIADOS') return Number(statuses.DOCUMENTOS_ENVIADOS || 0);
   if (view === 'COMPLETED') return Number(statuses.ENVIADO || 0) + Number(statuses.DONE || 0);
-  return Number(statuses.HUMAN_NECESSARY || 0);
+  if (view === 'MISSING_DOCUMENTS') return missingDocuments;
+  return Math.max(0, Number(statuses.HUMAN_NECESSARY || 0) - missingDocuments);
 }
 
 export function ProtocolosPage() {
@@ -398,6 +418,7 @@ export function ProtocolosPage() {
     { key: 'RUNNING', label: 'Em execução', tone: 'blue', icon: LoaderCircle },
     { key: 'DOCUMENTOS_ENVIADOS', label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
     { key: 'COMPLETED', label: 'Concluído', tone: 'success', icon: CheckCircle2 },
+    { key: 'MISSING_DOCUMENTS', label: 'Sem documentos', icon: Files },
     { key: 'ERRORS', label: 'Erros', tone: 'danger', icon: AlertTriangle },
   ];
 
@@ -531,7 +552,7 @@ export function ProtocolosPage() {
             aria-selected={view === filter.key}
             role="tab"
           >
-            {Icon && <Icon size={13}/>}<span>{filter.label}</span><strong>{number(viewCount(summary, filter.key))}</strong>
+            {Icon && <Icon size={13}/>}<span>{filter.label}</span><strong>{number(viewCount(summary, items, filter.key))}</strong>
           </button>;
         })}
       </div>
