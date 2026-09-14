@@ -62,4 +62,78 @@
 
       document.addEventListener('DOMContentLoaded', initTutelasFilters);
     })();
-  
+
+(() => {
+  function installAnalyticsShell() {
+    if (document.getElementById('relatorios')) return;
+
+    const reportsNav = [...document.querySelectorAll('.main-nav .nav-item')]
+      .find((item) => item.textContent.trim() === 'Relatórios');
+    if (reportsNav) {
+      reportsNav.classList.remove('nav-item-muted');
+      reportsNav.disabled = false;
+      reportsNav.removeAttribute('title');
+      reportsNav.dataset.page = 'relatorios';
+      reportsNav.dataset.permission = 'analytics.access';
+      reportsNav.hidden = true;
+    }
+
+    const content = document.querySelector('main.content');
+    if (!content) return;
+
+    const section = document.createElement('section');
+    section.className = 'page list-page analytics-embed-page';
+    section.id = 'relatorios';
+    section.dataset.permission = 'analytics.access';
+    section.hidden = true;
+    section.setAttribute('aria-label', 'Relatórios');
+    section.innerHTML = `
+      <div class="page-title analytics-embed-title">
+        <div>
+          <h1>Relatórios</h1>
+          <p>Indicadores e análises operacionais.</p>
+        </div>
+      </div>
+      <section class="analytics-embed-shell" aria-label="Dashboard de relatórios">
+        <div class="analytics-embed-state" id="analytics-embed-state" role="status">
+          <i data-lucide="loader-circle"></i>
+          <strong>Carregando relatórios</strong>
+          <span>Preparando o dashboard.</span>
+        </div>
+        <iframe
+          id="analytics-embed-frame"
+          title="Relatórios"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          hidden></iframe>
+      </section>`;
+
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard?.nextSibling) content.insertBefore(section, dashboard.nextSibling);
+    else content.appendChild(section);
+
+    if (!document.getElementById('analytics-embed-styles')) {
+      const style = document.createElement('style');
+      style.id = 'analytics-embed-styles';
+      style.textContent = `
+        .analytics-embed-page { min-height: calc(100vh - 92px); }
+        .analytics-embed-title { margin-bottom: 18px; }
+        .analytics-embed-shell { position: relative; min-height: 720px; width: 100%; overflow: hidden; border: 1px solid #dbe4ef; border-radius: 14px; background: #fff; }
+        .analytics-embed-frame { display: block; width: 100%; min-height: 780px; border: 0; background: #fff; }
+        .analytics-embed-state { min-height: 720px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #475569; text-align: center; padding: 32px; }
+        .analytics-embed-state strong { color: #0f172a; font-size: 15px; }
+        .analytics-embed-state span { font-size: 13px; }
+        .analytics-embed-state svg { width: 22px; height: 22px; }
+        .analytics-embed-state.analytics-error svg { color: #b91c1c; }
+        @media (max-width: 900px) {
+          .analytics-embed-shell, .analytics-embed-state { min-height: 620px; }
+          .analytics-embed-frame { min-height: 680px; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  installAnalyticsShell();
+  document.addEventListener('DOMContentLoaded', installAnalyticsShell, { once: true });
+})();
