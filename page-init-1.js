@@ -100,12 +100,7 @@
           <strong>Carregando relatórios</strong>
           <span>Preparando o dashboard.</span>
         </div>
-        <iframe
-          id="analytics-embed-frame"
-          title="Relatórios"
-          loading="lazy"
-          referrerpolicy="strict-origin-when-cross-origin"
-          hidden></iframe>
+        <div id="analytics-embed-container" class="analytics-embed-container" hidden></div>
       </section>`;
 
     const dashboard = document.getElementById('dashboard');
@@ -119,7 +114,8 @@
         .analytics-embed-page { min-height: calc(100vh - 92px); }
         .analytics-embed-title { margin-bottom: 18px; }
         .analytics-embed-shell { position: relative; min-height: 720px; width: 100%; overflow: hidden; border: 1px solid #dbe4ef; border-radius: 14px; background: #fff; }
-        .analytics-embed-frame { display: block; width: 100%; min-height: 780px; border: 0; background: #fff; }
+        .analytics-embed-container { width: 100%; min-height: 780px; background: #fff; }
+        .analytics-embed-container metabase-dashboard { display: block; width: 100%; min-height: 780px; }
         .analytics-embed-state { min-height: 720px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #475569; text-align: center; padding: 32px; }
         .analytics-embed-state strong { color: #0f172a; font-size: 15px; }
         .analytics-embed-state span { font-size: 13px; }
@@ -127,7 +123,7 @@
         .analytics-embed-state.analytics-error svg { color: #b91c1c; }
         @media (max-width: 900px) {
           .analytics-embed-shell, .analytics-embed-state { min-height: 620px; }
-          .analytics-embed-frame { min-height: 680px; }
+          .analytics-embed-container, .analytics-embed-container metabase-dashboard { min-height: 680px; }
         }
       `;
       document.head.appendChild(style);
