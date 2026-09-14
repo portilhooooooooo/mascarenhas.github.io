@@ -97,10 +97,13 @@
   const permissionKey = 'analytics.access';
   const nav = document.querySelector('[data-page="relatorios"]');
   const page = document.getElementById('relatorios');
-  const frame = document.getElementById('analytics-embed-frame');
+  const container = document.getElementById('analytics-embed-container');
   const state = document.getElementById('analytics-embed-state');
   let loading = false;
   let loaded = false;
+  let refreshTimer = null;
+  let metabaseScriptPromise = null;
+  let loadedInstanceUrl = '';
 
   const hasAccess = () => window.MBA_CURRENT_USER?.permissions?.[permissionKey] === true;
 
@@ -108,43 +111,109 @@
     if (!state) return;
     state.hidden = false;
     state.classList.toggle('analytics-error', isError);
-    state.innerHTML = `<i data-lucide="${icon}"></i><strong>${title}</strong><span>${detail}</span>`;
+    state.replaceChildren();
+    const iconElement = document.createElement('i');
+    iconElement.dataset.lucide = icon;
+    const strong = document.createElement('strong');
+    strong.textContent = title;
+    const span = document.createElement('span');
+    span.textContent = detail;
+    state.append(iconElement, strong, span);
     window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
+  }
+
+  function normalizeInstanceUrl(value) {
+    const target = new URL(value);
+    if (target.protocol !== 'https:' && !(target.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(target.hostname))) {
+      throw new Error('O endereço do Metabase retornado pelo servidor é inválido.');
+    }
+    target.pathname = target.pathname.replace(/\/$/, '');
+    target.search = '';
+    target.hash = '';
+    return target.href.replace(/\/$/, '');
+  }
+
+  function ensureMetabaseScript(instanceUrl) {
+    if (customElements.get('metabase-dashboard')) return Promise.resolve();
+    if (metabaseScriptPromise && loadedInstanceUrl === instanceUrl) return metabaseScriptPromise;
+
+    window.metabaseConfig = {
+      isGuest: true,
+      instanceUrl,
+    };
+    loadedInstanceUrl = instanceUrl;
+
+    metabaseScriptPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-metabase-embed]');
+      if (existing) existing.remove();
+      const script = document.createElement('script');
+      script.defer = true;
+      script.src = `${instanceUrl}/app/embed.js`;
+      script.dataset.metabaseEmbed = 'true';
+      script.addEventListener('load', async () => {
+        try {
+          await customElements.whenDefined('metabase-dashboard');
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      }, { once: true });
+      script.addEventListener('error', () => reject(new Error('Não foi possível carregar o componente do Metabase.')), { once: true });
+      document.head.appendChild(script);
+    });
+
+    return metabaseScriptPromise;
+  }
+
+  function scheduleRefresh(expiresIn) {
+    if (refreshTimer) window.clearTimeout(refreshTimer);
+    const seconds = Number(expiresIn) || 600;
+    const refreshIn = Math.max(60, seconds - 60);
+    refreshTimer = window.setTimeout(() => { void loadEmbed(true); }, refreshIn * 1000);
   }
 
   function clearEmbed() {
     loaded = false;
     loading = false;
-    if (frame) {
-      frame.hidden = true;
-      frame.removeAttribute('src');
+    if (refreshTimer) window.clearTimeout(refreshTimer);
+    refreshTimer = null;
+    if (container) {
+      container.hidden = true;
+      container.replaceChildren();
     }
     renderState('loader-circle', 'Carregando relatórios', 'Preparando o dashboard.');
   }
 
-  async function loadEmbed() {
-    if (!frame || !page || !hasAccess() || loaded || loading) return;
+  async function loadEmbed(forceRefresh = false) {
+    if (!container || !page || !hasAccess() || loading || (loaded && !forceRefresh)) return;
     loading = true;
-    renderState('loader-circle', 'Carregando relatórios', 'Preparando o dashboard.');
+    if (!loaded) renderState('loader-circle', 'Carregando relatórios', 'Preparando o dashboard.');
+
     try {
       const result = await window.MBA_API.request('/api/analytics/metabase/embed');
-      const target = new URL(result.embed_url);
-      if (!['https:', 'http:'].includes(target.protocol)) throw new Error('O endereço do relatório retornado pelo servidor é inválido.');
-      frame.src = target.href;
-      frame.hidden = false;
+      if (!result?.jwt || !result?.instance_url) throw new Error('O servidor retornou uma configuração de relatório inválida.');
+      const instanceUrl = normalizeInstanceUrl(result.instance_url);
+      await ensureMetabaseScript(instanceUrl);
+
+      let dashboard = container.querySelector('metabase-dashboard');
+      if (!dashboard) {
+        dashboard = document.createElement('metabase-dashboard');
+        dashboard.setAttribute('with-title', 'false');
+        dashboard.setAttribute('with-downloads', 'false');
+        container.appendChild(dashboard);
+      }
+      dashboard.setAttribute('token', result.jwt);
+      container.hidden = false;
+      if (state) state.hidden = true;
       loaded = true;
+      scheduleRefresh(result.expires_in);
     } catch (error) {
-      frame.hidden = true;
+      clearEmbed();
       renderState('triangle-alert', 'Não foi possível abrir os relatórios', error.message || 'Tente novamente.', true);
     } finally {
       loading = false;
     }
   }
-
-  frame?.addEventListener('load', () => {
-    if (!loaded || !state) return;
-    state.hidden = true;
-  });
 
   nav?.addEventListener('click', () => { void loadEmbed(); });
 
