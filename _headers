@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://mba-backoffice-proxy-production.up.railway.app; frame-src 'self' https://metabase.portilhobackoffice.site; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net https://metabase.portilhobackoffice.site; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com https://metabase.portilhobackoffice.site; img-src 'self' data: https://metabase.portilhobackoffice.site; connect-src 'self' https://mba-backoffice-proxy-production.up.railway.app https://metabase.portilhobackoffice.site; frame-src 'self' https://metabase.portilhobackoffice.site; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   X-Frame-Options: DENY
