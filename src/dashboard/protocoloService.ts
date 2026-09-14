@@ -94,6 +94,21 @@ function api(): BackofficeApi {
   return client;
 }
 
+function normalizeDocumentReadiness(item: ProtocoloItem): ProtocoloItem {
+  if (item.status !== 'HUMAN_NECESSARY' || item.documents_ready !== false) return item;
+
+  // Keep the original human_reason for operational context, but surface the current
+  // blocking condition as document intake so the UI sends the item to "Sem documentos"
+  // instead of leaving an impossible retry inside "Erros".
+  return {
+    ...item,
+    stage: 'DOCUMENT_MATCHING',
+    error_code: 'DOCUMENT_MISSING',
+    retry_allowed: false,
+    retry_block_reason: 'Documentos obrigatórios indisponíveis.',
+  };
+}
+
 export async function getProtocoloSummary(): Promise<ProtocoloSummary> {
   return api().request<ProtocoloSummary>('/api/protocolo/summary');
 }
@@ -112,7 +127,7 @@ export async function getProtocoloItems(status?: ProtocoloStatus): Promise<Proto
     });
     if (status) params.set('status', status);
     const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
-    const batch = result.rows || [];
+    const batch = (result.rows || []).map(normalizeDocumentReadiness);
     rows.push(...batch);
     if (batch.length < pageSize) break;
     offset += pageSize;
