@@ -42,6 +42,7 @@ export interface ProtocoloItem {
   human_reason?: string | null;
   retry_allowed?: boolean;
   retry_block_reason?: string | null;
+  documents_ready?: boolean;
   first_seen_at?: string | null;
   last_seen_at?: string | null;
   started_at?: string | null;
