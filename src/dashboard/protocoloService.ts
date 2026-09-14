@@ -94,21 +94,6 @@ function api(): BackofficeApi {
   return client;
 }
 
-function normalizeDocumentReadiness(item: ProtocoloItem): ProtocoloItem {
-  if (item.status !== 'HUMAN_NECESSARY' || item.documents_ready !== false) return item;
-
-  // Keep the original human_reason for operational context, but surface the current
-  // blocking condition as document intake so the UI sends the item to "Sem documentos"
-  // instead of leaving an impossible retry inside "Erros".
-  return {
-    ...item,
-    stage: 'DOCUMENT_MATCHING',
-    error_code: 'DOCUMENT_MISSING',
-    retry_allowed: false,
-    retry_block_reason: 'Documentos obrigatórios indisponíveis.',
-  };
-}
-
 export async function getProtocoloSummary(): Promise<ProtocoloSummary> {
   return api().request<ProtocoloSummary>('/api/protocolo/summary');
 }
@@ -118,8 +103,10 @@ export async function getProtocoloItems(status?: ProtocoloStatus): Promise<Proto
   const rows: ProtocoloItem[] = [];
   let offset = 0;
 
-  // The backend endpoint is scoped to the latest successful Metabase snapshot.
-  // Keep the request shape compatible with older backend builds during rollout.
+  // Preserve the backend's semantic error. Document readiness is additional state,
+  // not a replacement for an operational/reconciliation failure such as
+  // TASK_REAPPEARED. The UI itself decides whether an actual document-intake error
+  // belongs in the dedicated "Sem documentos" view.
   for (let page = 0; page < 25; page += 1) {
     const params = new URLSearchParams({
       limit: String(pageSize),
@@ -127,7 +114,7 @@ export async function getProtocoloItems(status?: ProtocoloStatus): Promise<Proto
     });
     if (status) params.set('status', status);
     const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
-    const batch = (result.rows || []).map(normalizeDocumentReadiness);
+    const batch = result.rows || [];
     rows.push(...batch);
     if (batch.length < pageSize) break;
     offset += pageSize;
