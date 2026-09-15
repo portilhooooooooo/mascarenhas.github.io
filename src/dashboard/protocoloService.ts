@@ -24,6 +24,8 @@ export interface DocumentImportSummary {
 }
 
 export interface ProtocoloSummary {
+  session?: { state: string; updated_at?: string | null };
+  automatic_active?: boolean;
   snapshot_id?: string | null;
   controladoria: ControladoriaImportSummary | null;
   documents: DocumentImportSummary | null;
@@ -39,6 +41,7 @@ export interface ProtocoloItem {
   stage?: string | null;
   retry_count?: number | null;
   error_code?: string | null;
+  error_message?: string | null;
   human_reason?: string | null;
   retry_allowed?: boolean;
   retry_block_reason?: string | null;
@@ -104,24 +107,6 @@ function api(): BackofficeApi {
   return client;
 }
 
-function normalizeRetryAvailability(item: ProtocoloItem): ProtocoloItem {
-  if (item.status !== 'HUMAN_NECESSARY') return item;
-
-  const documentOnly = DOCUMENT_ERROR_STAGES.has(String(item.stage || ''))
-    && DOCUMENT_ERROR_CODES.has(String(item.error_code || ''));
-
-  if (documentOnly) return item;
-
-  // Contract of the Errors view: every operational/reconciliation error is retryable.
-  // Do not let a stale backend retry_allowed=false render "Revisar manualmente" for
-  // TASK_REAPPEARED or any other error that belongs in this view.
-  return {
-    ...item,
-    retry_allowed: true,
-    retry_block_reason: null,
-  };
-}
-
 export async function getProtocoloSummary(): Promise<ProtocoloSummary> {
   return api().request<ProtocoloSummary>('/api/protocolo/summary');
 }
@@ -142,7 +127,7 @@ export async function getProtocoloItems(status?: ProtocoloStatus): Promise<Proto
     });
     if (status) params.set('status', status);
     const result = await api().request<{ rows?: ProtocoloItem[] }>(`/api/protocolo/items?${params}`);
-    const batch = (result.rows || []).map(normalizeRetryAvailability);
+    const batch = (result.rows || []);
     rows.push(...batch);
     if (batch.length < pageSize) break;
     offset += pageSize;

@@ -1,3 +1,4 @@
+import { protocolDetail, protocolStage, SESSION_LABELS } from './protocoloPresentation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
@@ -45,9 +46,9 @@ const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: 
   PENDING: { label: 'Aguardando execução', tone: 'neutral', icon: Clock3 },
   RUNNING: { label: 'Em execução', tone: 'blue', icon: LoaderCircle },
   DOCUMENTOS_ENVIADOS: { label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
-  ENVIADO: { label: 'Concluído', tone: 'success', icon: CheckCircle2 },
+  ENVIADO: { label: 'Protocolo enviado', tone: 'success', icon: CheckCircle2 },
   DONE: { label: 'Concluído', tone: 'success', icon: CheckCircle2 },
-  HUMAN_NECESSARY: { label: 'Erro', tone: 'danger', icon: AlertTriangle },
+  HUMAN_NECESSARY: { label: 'Ação necessária', tone: 'danger', icon: AlertTriangle },
 };
 
 const DOCUMENT_ISSUE_CODES = new Set([
@@ -237,6 +238,7 @@ export function ProtocolosPage() {
       setSummary(nextSummary);
       setItems(nextItems);
     } catch (cause) {
+      setSummary(current => current ? { ...current, session: { state: 'unknown' } } : current);
       if (!silent) {
         setError(cause instanceof Error ? cause.message : 'Não foi possível carregar o módulo de Protocolos.');
       }
@@ -417,9 +419,9 @@ export function ProtocolosPage() {
     { key: 'PENDING', label: 'Aguardando', icon: Clock3 },
     { key: 'RUNNING', label: 'Em execução', tone: 'blue', icon: LoaderCircle },
     { key: 'DOCUMENTOS_ENVIADOS', label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
-    { key: 'COMPLETED', label: 'Concluído', tone: 'success', icon: CheckCircle2 },
+    { key: 'COMPLETED', label: 'Enviados / concluídos', tone: 'success', icon: CheckCircle2 },
     { key: 'MISSING_DOCUMENTS', label: 'Sem documentos', icon: Files },
-    { key: 'ERRORS', label: 'Erros', tone: 'danger', icon: AlertTriangle },
+    { key: 'ERRORS', label: 'Ação necessária', tone: 'danger', icon: AlertTriangle },
   ];
 
   const latestControlDate = summary?.controladoria
@@ -429,14 +431,9 @@ export function ProtocolosPage() {
     ? dateTime(summary.documents.completed_at || summary.documents.created_at)
     : '—';
   const latestDocumentErrors = Number(summary?.documents?.failed_rows || 0);
-  const activeExecutionCount = Number(summary?.statuses?.RUNNING || 0)
-    + Number(summary?.statuses?.DOCUMENTOS_ENVIADOS || 0);
-  const sessionState = startBusy ? 'starting' : activeExecutionCount > 0 ? 'active' : 'idle';
-  const sessionLabel = sessionState === 'starting'
-    ? 'Iniciando'
-    : sessionState === 'active'
-      ? 'Em execução'
-      : 'Não iniciada';
+  const sessionState = startBusy ? 'starting' : summary?.session?.state || 'unknown';
+  const sessionLabel = SESSION_LABELS[sessionState] || SESSION_LABELS.unknown;
+  const sessionBusy = ['starting', 'authenticating', 'connected', 'in_use'].includes(sessionState);
 
   return <div className="protocolos-page-react">
     <nav className="controladoria-subnav" aria-label="Módulos de Controladoria">
@@ -466,6 +463,7 @@ export function ProtocolosPage() {
     <section className="protocolos-session-bar" aria-label="Sessão do agente de protocolo">
       <div className="protocolos-session-copy">
         <span>Sessão Enter</span>
+        {summary?.automatic_active && <small>Execução automática ativa</small>}
         <strong className={`protocolos-session-state ${sessionState}`} aria-live="polite">
           <i aria-hidden="true"/>{sessionLabel}
         </strong>
@@ -474,9 +472,9 @@ export function ProtocolosPage() {
         type="button"
         className="protocolos-button primary protocolos-start-button"
         onClick={() => void handleStart()}
-        disabled={!canRun || startBusy || activeExecutionCount > 0}
+        disabled={!canRun || startBusy || sessionBusy}
       >
-        {startBusy ? <LoaderCircle className="spin" size={15}/> : <Play size={15}/>} Iniciar
+        {startBusy ? <LoaderCircle className="spin" size={15}/> : <Play size={15}/>} {sessionState === 'lost' ? 'Reconectar' : 'Iniciar'}
       </button>
     </section>
 
@@ -614,8 +612,8 @@ export function ProtocolosPage() {
               </td>}
               <td><strong className="protocolos-cnj">{item.cnj}</strong><small>{item.task_id ? `Task ${item.task_id.slice(0, 8)}…` : 'Task não informada'}</small></td>
               {!isErrors && <td><StatusBadge status={item.status}/></td>}
-              <td><span className="protocolos-context">{item.human_reason || item.error_code || 'Fluxo automático'}</span></td>
-              <td><span className="protocolos-stage">{item.stage || '—'}</span></td>
+              <td><span className="protocolos-context">{protocolDetail(item)}</span></td>
+              <td><span className="protocolos-stage">{protocolStage(item)}</span></td>
               <td><span className="protocolos-date">{dateTime(item.updated_at)}</span></td>
               <td>
                 <div className="protocolos-row-actions">
