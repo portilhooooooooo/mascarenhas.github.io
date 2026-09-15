@@ -85,7 +85,7 @@
 (() => {
   try {
     if (typeof pageRoutes !== 'undefined') pageRoutes.relatorios = 'relatorios';
-    if (typeof permissionSections !== 'undefined') permissionSections.analytics = 'Relatórios';
+    if (typeof permissionSections !== 'undefined') permissionSections.analytics = 'Banco de Dados';
     if (typeof permissionSectionOrder !== 'undefined' && !permissionSectionOrder.includes('analytics')) {
       const settingsIndex = permissionSectionOrder.indexOf('settings');
       permissionSectionOrder.splice(settingsIndex >= 0 ? settingsIndex : permissionSectionOrder.length, 0, 'analytics');
@@ -181,13 +181,13 @@
       container.hidden = true;
       container.replaceChildren();
     }
-    renderState('loader-circle', 'Carregando relatórios', 'Preparando o dashboard.');
+    renderState('loader-circle', 'Carregando banco de dados', 'Preparando o dashboard.');
   }
 
   async function loadEmbed(forceRefresh = false) {
     if (!container || !page || !hasAccess() || loading || (loaded && !forceRefresh)) return;
     loading = true;
-    if (!loaded) renderState('loader-circle', 'Carregando relatórios', 'Preparando o dashboard.');
+    if (!loaded) renderState('loader-circle', 'Carregando banco de dados', 'Preparando o dashboard.');
 
     try {
       const result = await window.MBA_API.request('/api/analytics/metabase/embed');
@@ -209,7 +209,7 @@
       scheduleRefresh(result.expires_in);
     } catch (error) {
       clearEmbed();
-      renderState('triangle-alert', 'Não foi possível abrir os relatórios', error.message || 'Tente novamente.', true);
+      renderState('triangle-alert', 'Não foi possível abrir o banco de dados', error.message || 'Tente novamente.', true);
     } finally {
       loading = false;
     }
