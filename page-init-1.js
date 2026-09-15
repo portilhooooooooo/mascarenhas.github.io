@@ -76,6 +76,10 @@
       reportsNav.dataset.page = 'relatorios';
       reportsNav.dataset.permission = 'analytics.access';
       reportsNav.hidden = true;
+      const label = reportsNav.querySelector('span');
+      if (label) label.textContent = 'Banco de Dados';
+      const icon = reportsNav.querySelector('i[data-lucide]');
+      if (icon) icon.dataset.lucide = 'database';
     }
 
     const content = document.querySelector('main.content');
@@ -86,18 +90,18 @@
     section.id = 'relatorios';
     section.dataset.permission = 'analytics.access';
     section.hidden = true;
-    section.setAttribute('aria-label', 'Relatórios');
+    section.setAttribute('aria-label', 'Banco de Dados');
     section.innerHTML = `
       <div class="page-title analytics-embed-title">
         <div>
-          <h1>Relatórios</h1>
+          <h1>Banco de Dados</h1>
           <p>Indicadores e análises operacionais.</p>
         </div>
       </div>
-      <section class="analytics-embed-shell" aria-label="Dashboard de relatórios">
+      <section class="analytics-embed-shell" aria-label="Dashboard do banco de dados">
         <div class="analytics-embed-state" id="analytics-embed-state" role="status">
           <i data-lucide="loader-circle"></i>
-          <strong>Carregando relatórios</strong>
+          <strong>Carregando banco de dados</strong>
           <span>Preparando o dashboard.</span>
         </div>
         <div id="analytics-embed-container" class="analytics-embed-container" hidden></div>
