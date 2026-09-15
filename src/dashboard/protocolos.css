@@ -225,3 +225,11 @@
   .protocolos-import-line { white-space: normal; flex-wrap: wrap; }
   .protocolos-pagination { align-items: flex-start; flex-direction: column; }
 }
+
+.protocolos-session-copy > small { color: var(--mba-muted); font-size: 10px; }
+.protocolos-session-state.in_use,
+.protocolos-session-state.connected { color: #067647; }
+.protocolos-session-state.in_use i,
+.protocolos-session-state.connected i { background: #12b76a; }
+.protocolos-session-state.authenticating { color: var(--mba-blue-dark); }
+.protocolos-session-state.authenticating i { background: var(--mba-blue); }

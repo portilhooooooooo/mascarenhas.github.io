@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
+const source=fs.readFileSync('src/dashboard/protocoloPresentation.ts','utf8');
+const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext}}).outputText;
+const {protocolDetail,protocolStage,SESSION_LABELS}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+assert.equal(protocolDetail({status:'PENDING',stage:'INTERRUPTED_RESTART'}),'Execução anterior interrompida por reinicialização');
+assert.equal(protocolDetail({status:'RUNNING',retry_count:2,error_code:'INTERRUPTED_RESTART'}),'Nova tentativa automática — 2 de 5');
+assert.equal(protocolStage({status:'RUNNING',stage:'DOCUMENT_ATTACH'}),'Anexando documentos');
+assert.equal(protocolDetail({status:'HUMAN_NECESSARY',error_code:'DOCUMENT_ATTACH_FAILED'}),'Não foi possível anexar os documentos');
+assert.equal(protocolDetail({status:'ENVIADO'}),'Aguardando reconciliação com a Controladoria');
+assert.equal(SESSION_LABELS.idle,'Não iniciada');
+assert.equal(SESSION_LABELS.lost,'Sessão perdida');
+assert.equal(protocolStage({status:'RUNNING',stage:'NEW_TECHNICAL_CODE'}),'Acompanhamento');
+console.log('8 presentation assertions passed');
