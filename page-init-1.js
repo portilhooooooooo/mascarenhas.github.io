@@ -1,4 +1,22 @@
 (() => {
+  const view = document.getElementById('login-view');
+  if (!view) return;
+  view.innerHTML = `
+    <h1>Entrar</h1>
+    <p class="login-subtitle">Acesse com sua conta corporativa Microsoft.</p>
+    <button class="google-login" id="microsoft-login" type="button" data-auth-provider="microsoft" aria-label="Continuar via Outlook">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="#f25022" d="M2 2h9v9H2z"/>
+        <path fill="#7fba00" d="M13 2h9v9h-9z"/>
+        <path fill="#00a4ef" d="M2 13h9v9H2z"/>
+        <path fill="#ffb900" d="M13 13h9v9h-9z"/>
+      </svg>
+      <span>Continuar via Outlook</span>
+    </button>
+  `;
+})();
+
+(() => {
       const normalize = (value) => (value || '').toString().trim().toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
