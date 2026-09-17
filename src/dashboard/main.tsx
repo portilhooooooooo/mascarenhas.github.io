@@ -23,24 +23,109 @@ function configureProfileControl() {
   const profile = document.querySelector<HTMLElement>('.profile');
   if (!profile || profile.dataset.mbaUsersToggle === 'true') return;
 
+  profile.dataset.mbaUsersToggle = 'true';
+  profile.setAttribute('role', 'button');
+  profile.setAttribute('tabindex', '0');
+  profile.setAttribute('aria-label', 'Abrir menu do usuário');
+  profile.setAttribute('aria-haspopup', 'menu');
+  profile.setAttribute('aria-expanded', 'false');
+
+  const menu = document.createElement('div');
+  menu.className = 'profile-menu';
+  menu.id = 'profile-menu';
+  menu.hidden = true;
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Opções do usuário');
+  profile.setAttribute('aria-controls', menu.id);
+
+  const usersItem = document.createElement('button');
+  usersItem.type = 'button';
+  usersItem.className = 'profile-menu-item';
+  usersItem.textContent = 'Usuários';
+  usersItem.setAttribute('role', 'menuitem');
+
+  const logoutItem = document.createElement('button');
+  logoutItem.type = 'button';
+  logoutItem.className = 'profile-menu-item profile-menu-logout';
+  logoutItem.textContent = 'Sair';
+  logoutItem.setAttribute('role', 'menuitem');
+
+  menu.append(usersItem, logoutItem);
+  profile.appendChild(menu);
+
+  const syncUsersVisibility = () => {
+    const user = (window as DashboardWindow).MBA_CURRENT_USER;
+    usersItem.hidden = user?.permissions?.['users.view'] !== true;
+  };
+
+  const setOpen = (open: boolean) => {
+    syncUsersVisibility();
+    menu.hidden = !open;
+    profile.setAttribute('aria-expanded', String(open));
+    profile.classList.toggle('profile-menu-open', open);
+  };
+
+  const toggleMenu = () => setOpen(menu.hidden);
+
   const openUsers = () => {
     const user = (window as DashboardWindow).MBA_CURRENT_USER;
     if (user?.permissions?.['users.view'] !== true) return;
+    setOpen(false);
     document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
     (window as DashboardWindow).showPage?.('usuarios');
   };
 
-  profile.dataset.mbaUsersToggle = 'true';
-  profile.setAttribute('role', 'button');
-  profile.setAttribute('tabindex', '0');
-  profile.setAttribute('aria-label', 'Abrir usuários');
-  profile.addEventListener('click', openUsers);
+  profile.addEventListener('click', event => {
+    if (event.target instanceof Element && event.target.closest('.profile-menu')) return;
+    toggleMenu();
+  });
+
   profile.addEventListener('keydown', event => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      openUsers();
+      toggleMenu();
+      return;
+    }
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setOpen(true);
+      const firstVisible = [...menu.querySelectorAll<HTMLButtonElement>('.profile-menu-item')]
+        .find(item => !item.hidden);
+      firstVisible?.focus();
+      return;
+    }
+    if (event.key === 'Escape') {
+      setOpen(false);
+      profile.focus();
     }
   });
+
+  usersItem.addEventListener('click', event => {
+    event.stopPropagation();
+    openUsers();
+  });
+
+  logoutItem.addEventListener('click', event => {
+    event.stopPropagation();
+    setOpen(false);
+    document.getElementById('logout-button')?.click();
+  });
+
+  document.addEventListener('click', event => {
+    if (!menu.hidden && event.target instanceof Node && !profile.contains(event.target)) {
+      setOpen(false);
+    }
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !menu.hidden) {
+      setOpen(false);
+      profile.focus();
+    }
+  });
+
+  window.addEventListener('mba:authenticated', syncUsersVisibility);
+  syncUsersVisibility();
 }
 
 function setTopModuleActive(page: string) {
