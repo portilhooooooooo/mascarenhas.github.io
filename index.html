@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
-  <link rel="stylesheet" href="payment-receipt.css?v=20260917-2">
+  <link rel="stylesheet" href="payment-receipt.css?v=20260917-task-lobby-v2">
   <link rel="stylesheet" href="protocolo.css?v=20260910">
   <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260914-protocolo-hardening">
 </head>
@@ -326,7 +326,7 @@
         </section>
 
         <section class="page list-page" id="tarefas" data-permission="tasks.view">
-          <div class="page-title lobby-title"><div><h1>Lobby de Tarefas</h1><p>Selecione uma tarefa para iniciar ou continuar a execução.</p></div><div class="lobby-actions"><button class="primary-button" id="new-task-button" data-permission="tasks.create"><i data-lucide="plus"></i>Nova tarefa</button><label class="task-filter">Filtrar por tarefa<select><option>Todas as tarefas</option></select></label></div></div>
+          <div class="page-title lobby-title"><div><h1>Lobby de Tarefas</h1><p>Selecione uma tarefa para iniciar ou continuar a execução.</p></div><div class="lobby-actions"><button class="primary-button" id="new-task-button" data-permission="tasks.create"><i data-lucide="plus"></i>Nova tarefa</button><label class="task-filter">Filtrar por tarefa<select id="task-lobby-type-filter"><option value="">Todas as tarefas</option><option value="comprovante_pagamento">Comprovante de Pagamento</option><option value="liminar">Liminar</option><option value="acordos">Acordos</option><option value="encerramento">Encerramento</option><option value="bloqueio">Bloqueio</option><option value="citacao">Citação</option><option value="protocolo">Protocolo</option></select></label></div></div>
           <section class="panel task-table-wrap">
             <table class="task-table">
               <thead><tr><th>Tarefa</th><th>Descrição</th><th>Pendências</th><th>Status</th><th>Última atualização</th><th>Ações</th></tr></thead>
@@ -388,74 +388,88 @@
           <button class="back-link" data-go="tarefas"><i data-lucide="arrow-left"></i>Voltar para o lobby de tarefas</button>
           <div class="detail-heading payment-receipt-heading">
             <div><h1>Comprovante de Pagamento</h1><p>Analise a situação recebida e registre a devolutiva correspondente.</p></div>
-            <div class="payment-receipt-heading-actions"><button class="secondary-button" id="payment-receipt-history" type="button"><i data-lucide="history"></i>Consultar analisados</button><span id="payment-receipt-progress">—</span></div>
+            <button class="secondary-button" id="payment-receipt-history" type="button"><i data-lucide="history"></i>Consultar analisados</button>
           </div>
 
-          <section class="panel payment-receipt-card" id="payment-receipt-card">
-            <header>
-              <div><small>Processo</small><strong id="payment-receipt-case-number">—</strong></div>
-              <div><small>Pasta</small><strong id="payment-receipt-folder">—</strong></div>
-              <div><small>Situação recebida</small><span class="payment-status" id="payment-receipt-initial-status">—</span></div>
-            </header>
-
-            <form id="payment-receipt-form" class="payment-receipt-form">
-              <fieldset class="payment-question" id="payment-uncertain-field" hidden>
-                <legend>Situação identificada</legend>
-                <p>O caso chegou como incerto. Informe a situação correta após a análise.</p>
-                <div class="payment-choice-grid">
-                  <label><input type="radio" name="resolved_status" value="pagamento_recusado"><span><i data-lucide="circle-x"></i><b>Pagamento recusado</b><small>O pagamento foi recusado.</small></span></label>
-                  <label><input type="radio" name="resolved_status" value="prazo_aberto_equivocadamente"><span><i data-lucide="triangle-alert"></i><b>Prazo aberto equivocadamente</b><small>Será necessário justificar.</small></span></label>
-                  <label><input type="radio" name="resolved_status" value="liquidado"><span><i data-lucide="badge-check"></i><b>Liquidado</b><small>Continuar para a devolutiva.</small></span></label>
-                </div>
-              </fieldset>
-
-              <fieldset class="payment-question" id="payment-liquidated-field" hidden>
-                <legend>Devolutiva do pagamento liquidado</legend>
-                <div class="payment-choice-grid">
-                  <label><input type="radio" name="liquidated_result" value="sem_comprovante"><span><i data-lucide="file-x"></i><b>Sem Comprovante</b><small>Comprovante não localizado.</small></span></label>
-                  <label><input type="radio" name="liquidated_result" value="com_comprovante"><span><i data-lucide="file-check"></i><b>Com Comprovante</b><small>Comprovante localizado.</small></span></label>
-                  <label><input type="radio" name="liquidated_result" value="pagamento_nao_efetivado"><span><i data-lucide="clock-alert"></i><b>Pagamento não efetivado</b><small>Pagamento ainda não efetivado.</small></span></label>
-                </div>
-              </fieldset>
-
-              <fieldset class="payment-question" id="payment-refused-field" hidden>
-                <legend>Devolutiva do pagamento recusado</legend>
-                <p>Informe se o pagamento será solicitado novamente.</p>
-                <div class="binary-choice payment-retry-choice">
-                  <label><input type="radio" name="retry_decision" value="solicitaremos_novamente"><span>Solicitaremos novamente</span></label>
-                  <label><input type="radio" name="retry_decision" value="nao_solicitaremos_novamente"><span>Não solicitaremos novamente</span></label>
-                </div>
-              </fieldset>
-
-              <label class="payment-reason-field" id="payment-wrong-deadline-field" hidden>
-                <span>Justificativa do prazo aberto equivocadamente</span>
-                <textarea name="wrong_deadline_reason" maxlength="2000" rows="4" placeholder="Descreva o motivo da abertura equivocada do prazo..."></textarea>
-                <small><span id="payment-reason-count">0</span>/2000</small>
-              </label>
-
-              <fieldset class="payment-question payment-block-field">
-                <legend>Houve bloqueio?</legend>
-                <p>Esta informação é obrigatória em todos os casos.</p>
-                <div class="binary-choice">
-                  <label><input type="radio" name="had_block" value="true"><span>Sim</span></label>
-                  <label><input type="radio" name="had_block" value="false"><span>Não</span></label>
-                </div>
-              </fieldset>
-              <p class="payment-receipt-error" id="payment-receipt-error" hidden></p>
-              <footer><button class="secondary-button" id="payment-receipt-skip" type="button">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
-            </form>
+          <section class="panel task-meta compact-meta payment-task-meta">
+            <div><small>Meta do dia</small><strong id="payment-daily-goal">—</strong><span class="progress-track"><i id="payment-daily-progress"></i></span></div>
+            <div><small>Status</small><strong id="payment-task-health"><i class="status-dot"></i><span>Em dia</span></strong></div>
+            <div><small>Prazo</small><strong id="payment-task-deadline">Não informado</strong></div>
+            <div><small>Responsável</small><strong id="payment-task-assignee">Não atribuído</strong></div>
           </section>
 
+          <div class="analysis-layout two-column payment-analysis-layout">
+            <aside class="panel process-list payment-process-list">
+              <h2>Tarefas pendentes</h2>
+              <label class="process-search"><i data-lucide="search"></i><input id="payment-process-search" placeholder="Buscar processo ou pasta"></label>
+              <div class="process-filters">
+                <select id="payment-assignment-filter"><option value="mine">Minhas tarefas</option><option value="all">Todas as tarefas</option></select>
+                <select id="payment-urgency-filter"><option value="pending">Pendentes</option><option value="overdue">Atrasos</option><option value="urgent">Urgente</option></select>
+              </div>
+              <div id="payment-process-items"></div>
+              <div class="process-pagination" id="payment-process-pagination" hidden>
+                <button type="button" id="payment-process-prev" aria-label="Tarefas anteriores"><i data-lucide="chevron-left"></i></button>
+                <span id="payment-process-page-label">—</span>
+                <button type="button" id="payment-process-next" aria-label="Próximas tarefas"><i data-lucide="chevron-right"></i></button>
+              </div>
+            </aside>            <section class="panel analysis-card payment-receipt-card" id="payment-receipt-card">
+              <header>
+                <small>Processo selecionado</small><h2 id="payment-receipt-case-number">—</h2>
+                <p>Pasta <strong id="payment-receipt-folder">—</strong></p>
+                <span class="payment-status" id="payment-receipt-initial-status">—</span>
+              </header>
+
+              <form id="payment-receipt-form" class="payment-receipt-form">
+                <fieldset class="payment-question" id="payment-uncertain-field" hidden>
+                  <legend>Situação identificada</legend>
+                  <div class="payment-choice-grid">
+                    <label><input type="radio" name="resolved_status" value="pagamento_recusado"><span><i data-lucide="circle-x"></i><b>Pagamento recusado</b></span></label>
+                    <label><input type="radio" name="resolved_status" value="prazo_aberto_equivocadamente"><span><i data-lucide="triangle-alert"></i><b>Prazo aberto equivocadamente</b></span></label>
+                    <label><input type="radio" name="resolved_status" value="liquidado"><span><i data-lucide="badge-check"></i><b>Liquidado</b></span></label>
+                  </div>
+                </fieldset>
+
+                <fieldset class="payment-question" id="payment-liquidated-field" hidden>
+                  <legend>Devolutiva</legend>
+                  <div class="payment-choice-grid">
+                    <label><input type="radio" name="liquidated_result" value="sem_comprovante"><span><i data-lucide="file-x"></i><b>Sem comprovante</b></span></label>
+                    <label><input type="radio" name="liquidated_result" value="com_comprovante"><span><i data-lucide="file-check"></i><b>Com comprovante</b></span></label>
+                    <label><input type="radio" name="liquidated_result" value="pagamento_nao_efetivado"><span><i data-lucide="clock-alert"></i><b>Não efetivado</b></span></label>
+                  </div>
+                </fieldset>
+
+                <fieldset class="payment-question" id="payment-refused-field" hidden>
+                  <legend>Devolutiva</legend>
+                  <div class="binary-choice payment-retry-choice">
+                    <label><input type="radio" name="retry_decision" value="solicitaremos_novamente"><span>Solicitaremos novamente</span></label>
+                    <label><input type="radio" name="retry_decision" value="nao_solicitaremos_novamente"><span>Não solicitaremos novamente</span></label>
+                  </div>
+                </fieldset>                <label class="payment-reason-field" id="payment-wrong-deadline-field" hidden>
+                  <span>Justificativa</span>
+                  <textarea name="wrong_deadline_reason" maxlength="2000" rows="4" placeholder="Motivo da abertura equivocada do prazo..."></textarea>
+                  <small><span id="payment-reason-count">0</span>/2000</small>
+                </label>
+
+                <fieldset class="payment-question payment-block-field">
+                  <legend>Houve bloqueio?</legend>
+                  <div class="binary-choice">
+                    <label><input type="radio" name="had_block" value="true"><span>Sim</span></label>
+                    <label><input type="radio" name="had_block" value="false"><span>Não</span></label>
+                  </div>
+                </fieldset>
+
+                <p class="payment-receipt-error" id="payment-receipt-error" hidden></p>
+                <footer><button class="secondary-button" id="payment-receipt-skip" type="button">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+              </form>
+            </section>
+          </div>
+
           <section class="panel payment-receipt-empty" id="payment-receipt-empty" hidden>
-            <span><i data-lucide="circle-check"></i></span><h2>Fila concluída</h2><p>Não há outros casos pendentes nesta tarefa.</p>
+            <span><i data-lucide="circle-check"></i></span><h2>Fila concluída</h2><p>Não há outras tarefas pendentes neste lote.</p>
           </section>
 
           <dialog class="task-dialog payment-history-dialog" id="payment-receipt-history-dialog">
-            <div class="payment-history-shell">
-              <header><div><h2>Casos analisados</h2><p>Processos já concluídos nesta tarefa.</p></div><button class="icon-button" id="payment-history-close" type="button"><i data-lucide="x"></i></button></header>
-              <div class="payment-history-body" id="payment-history-body"></div>
-              <footer><button class="secondary-button" id="payment-history-footer-close" type="button">Fechar</button></footer>
-            </div>
+            <div class="payment-history-shell"><header><div><h2>Casos analisados</h2><p>Processos já concluídos nesta tarefa.</p></div><button class="icon-button" id="payment-history-close" type="button"><i data-lucide="x"></i></button></header><div class="payment-history-body" id="payment-history-body"></div><footer><button class="secondary-button" id="payment-history-footer-close" type="button">Fechar</button></footer></div>
           </dialog>
         </section>
 
@@ -638,10 +652,10 @@
   <script src="config.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
-  <script src="app.js?v=20260917-payment-receipt"></script>
+  <script src="app.js?v=20260917-task-lobby-v2"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260914-protocolo-hardening"></script>
   <script src="agreements.js?v=20260818"></script>
-  <script src="payment-receipt.js?v=20260917-2"></script>
+  <script src="payment-receipt.js?v=20260917-task-lobby-v2"></script>
   <script src="protocolo.js?v=20260910"></script>
   <script src="auth.js?v=20260903-task-only"></script>
 
