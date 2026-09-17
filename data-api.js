@@ -5,12 +5,18 @@
   const preview = window.MBA_LOCAL_PREVIEW && ['localhost', '127.0.0.1'].includes(location.hostname);
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+  const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
+  const clearStoredToken = () => {
+    localStorage.removeItem(tokenKey);
+    sessionStorage.removeItem(tokenKey);
+  };
+
   async function backendFetch(path, options = {}) {
     if (!baseUrl || !/^\/(api|auth)\//.test(path)) throw new Error('Endereço da API inválido.');
     const headers = new Headers(options.headers || {});
     headers.set('Accept', 'application/json');
     if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-    const token = sessionStorage.getItem(tokenKey);
+    const token = getStoredToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
     const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
@@ -25,7 +31,7 @@
     }
 
     if (response.status === 401 && token && !bootstrapping) {
-      sessionStorage.removeItem(tokenKey);
+      clearStoredToken();
       window.dispatchEvent(new Event('mba:session-expired'));
     }
     return response;
@@ -70,7 +76,7 @@
     request,
     fetch: backendFetch,
     baseUrl,
-    getAccessToken: async () => sessionStorage.getItem(tokenKey),
+    getAccessToken: async () => getStoredToken(),
   };
   window.MBA_AUTOMATION_API = window.MBA_API;
   window.MBA_TASK_IMPORT = { createTaskWithImportedProcesses };
