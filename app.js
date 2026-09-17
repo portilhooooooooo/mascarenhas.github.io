@@ -268,17 +268,36 @@ document.querySelector('#user-create-form')?.addEventListener('submit', async ev
 });
 
 const taskLabels = { liminar: 'Analisar Pedido de Tutela', encerramento: 'Analisar Indício de Encerramento', bloqueio: 'Analisar Indício de Bloqueio', citacao: 'Analisar Indício de Citação', protocolo: 'Executar Protocolo', comprovante_pagamento: 'Comprovante de Pagamento', acordos: 'Acordos' };
+
+function renderTasksLobby() {
+  const tbody = document.querySelector('#tasks-table-body');
+  if (!tbody) return;
+  const type = document.querySelector('#task-lobby-type-filter')?.value || '';
+  const rows = tasksCache.filter((task) => !type || task.type === type);
+  const canAssign = authenticatedUser?.permissions?.['tasks.assign'] === true;
+  const canManage = authenticatedUser?.permissions?.['tasks.manage'] === true;
+  tbody.innerHTML = rows.length ? rows.map((task) => {
+    const pending = Math.max(0, Number(task.total_processes || 0) - Number(task.completed_processes || 0));
+    const actions = [
+      canAssign ? `<button class="secondary-button" type="button" data-assign-task="${task.id}"><i data-lucide="user-plus"></i>Atribuir</button>` : '',
+      `<button class="execute-button" data-task-json="${encodeURIComponent(JSON.stringify(task))}"><i data-lucide="play"></i>Executar</button>`,
+      canManage ? `<button class="task-delete-button" type="button" data-delete-task="${task.id}" title="Excluir lote"><i data-lucide="trash-2"></i></button>` : '',
+    ].join('');
+    return `<tr data-task-id="${task.id}"><td><span class="row-icon blue"><i data-lucide="clipboard-check"></i></span><strong>${escapeHtml(task.title || taskLabels[task.type])}</strong></td><td>${escapeHtml(task.description || 'Sem descrição')}</td><td><span class="empty-pill">${pending}</span></td><td><span class="task-status waiting">${escapeHtml(task.status)}</span></td><td>${task.updated_at ? new Date(task.updated_at).toLocaleString('pt-BR') : 'Sem atualização'}</td><td><div class="table-row-actions">${actions}</div></td></tr>`;
+  }).join('') : '<tr><td colspan="6">Nenhum lote disponível.</td></tr>';
+  lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+}
+
 async function loadTasks() {
   if (!window.MBA_API) return;
   try {
-    const tasks = await window.MBA_API.request('/api/tasks'); tasksCache = tasks;
-    const tbody = document.querySelector('#tasks-table-body');
-    const canAssign = authenticatedUser?.permissions?.['tasks.assign'] === true;
-    tbody.innerHTML = tasks.length ? tasks.map((task) => `<tr data-task-id="${task.id}"><td><span class="row-icon blue"><i data-lucide="clipboard-check"></i></span><strong>${escapeHtml(task.title || taskLabels[task.type])}</strong></td><td>${escapeHtml(task.description || 'Sem descrição')}</td><td><span class="empty-pill">${task.total_processes - task.completed_processes}</span></td><td><span class="task-status waiting">${escapeHtml(task.status)}</span></td><td>${task.updated_at ? new Date(task.updated_at).toLocaleString('pt-BR') : 'Sem atualização'}</td><td><div class="table-row-actions">${canAssign ? `<button class="secondary-button" type="button" data-assign-task="${task.id}"><i data-lucide="user-plus"></i>Atribuir</button>` : ''}<button class="execute-button" data-task-json="${encodeURIComponent(JSON.stringify(task))}"><i data-lucide="play"></i>Executar</button></div></td></tr>`).join('') : '<tr><td colspan="6">Nenhuma tarefa disponível.</td></tr>';
-    lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
-    if (authenticatedUser?.access_kind === 'operational' && tasks[0]) await openTask(tasks[0]);
+    tasksCache = await window.MBA_API.request('/api/tasks');
+    renderTasksLobby();
+    if (authenticatedUser?.access_kind === 'operational' && tasksCache[0]) await openTask(tasksCache[0]);
   } catch (_error) { /* a autorização já controla a visibilidade da área */ }
 }
+window.loadTasks = loadTasks;
+document.querySelector('#task-lobby-type-filter')?.addEventListener('change', renderTasksLobby);
 
 let currentTaskProcesses = [];
 let processPage = 0;
@@ -332,7 +351,26 @@ async function openTask(task) {
   renderTaskProcessPage();
 }
 
-document.querySelector('#tasks-table-body')?.addEventListener('click', (event) => {
+document.querySelector('#tasks-table-body')?.addEventListener('click', async (event) => {
+  const deleteButton = event.target.closest('[data-delete-task]');
+  if (deleteButton) {
+    const task = tasksCache.find((item) => item.id === deleteButton.dataset.deleteTask);
+    if (!task) return;
+    const pending = Math.max(0, Number(task.total_processes || 0) - Number(task.completed_processes || 0));
+    const confirmed = window.confirm(`Excluir o lote "${task.title || taskLabels[task.type]}"?
+
+${pending} pendência(s) deixarão de aparecer no lobby. O histórico será preservado.`);
+    if (!confirmed) return;
+    deleteButton.disabled = true;
+    try {
+      await window.MBA_API.request(`/api/tasks/${task.id}`, { method: 'DELETE' });
+      await loadTasks();
+    } catch (error) {
+      window.alert(error.message || 'Não foi possível excluir o lote.');
+      deleteButton.disabled = false;
+    }
+    return;
+  }
   const assignButton = event.target.closest('[data-assign-task]');
   if (assignButton) { openTaskAssignment(assignButton.dataset.assignTask); return; }
   const button = event.target.closest('[data-task-json]');

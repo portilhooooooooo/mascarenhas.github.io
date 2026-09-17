@@ -684,3 +684,8 @@ body.auth-signed-in .login-screen { display: none !important; }
 .criteria-grid input { width: auto; padding: 0; }
 @media (max-width: 1200px) { .pagamentos-toolbar { grid-template-columns: repeat(3, minmax(0, 1fr)); } .pagamentos-toolbar-actions { grid-column: 1 / -1; justify-content: flex-end; } }
 @media (max-width: 700px) { .pagamentos-toolbar { grid-template-columns: 1fr 1fr; } .page-title-actions { width: 100%; flex-wrap: wrap; } }
+
+.task-delete-button { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; color: var(--muted); cursor: pointer; }
+.task-delete-button:hover { border-color: #fecaca; background: var(--danger-soft); color: var(--danger); }
+.task-delete-button:disabled { opacity: .45; cursor: default; }
+.task-delete-button svg { width: 14px; height: 14px; }
