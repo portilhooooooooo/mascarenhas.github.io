@@ -41,6 +41,8 @@ const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
+    .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
+    .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
     .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260916-mascarenhas-shell')
     .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260916-mascarenhas-shell')
     .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260916-session-persist')
