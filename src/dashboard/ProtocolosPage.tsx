@@ -43,6 +43,7 @@ type ProtocolView =
   | 'ERRORS';
 
 const STATUS_META: Record<ProtocoloStatus, { label: string; tone: string; icon: typeof Clock3 }> = {
+  SEM_DOCUMENTOS: { label: 'Sem documentos', tone: 'neutral', icon: Files },
   PENDING: { label: 'Aguardando execução', tone: 'neutral', icon: Clock3 },
   RUNNING: { label: 'Em execução', tone: 'blue', icon: LoaderCircle },
   DOCUMENTOS_ENVIADOS: { label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
@@ -170,10 +171,14 @@ function importResultText(result: DocumentImportResult) {
   return parts.join(' · ');
 }
 
-function isMissingDocuments(item: ProtocoloItem) {
+function isLegacyDocumentIssue(item: ProtocoloItem) {
   return item.status === 'HUMAN_NECESSARY'
     && DOCUMENT_ISSUE_STAGES.has(String(item.stage || ''))
     && DOCUMENT_ISSUE_CODES.has(String(item.error_code || ''));
+}
+
+function isMissingDocuments(item: ProtocoloItem) {
+  return item.status === 'SEM_DOCUMENTOS' || isLegacyDocumentIssue(item);
 }
 
 function viewMatches(item: ProtocoloItem, view: ProtocolView) {
@@ -188,14 +193,15 @@ function viewMatches(item: ProtocoloItem, view: ProtocolView) {
 
 function viewCount(summary: ProtocoloSummary | null, items: ProtocoloItem[], view: ProtocolView) {
   const statuses = summary?.statuses || {};
-  const missingDocuments = items.filter(isMissingDocuments).length;
+  const legacyMissingDocuments = items.filter(isLegacyDocumentIssue).length;
+  const missingDocuments = Number(statuses.SEM_DOCUMENTOS || 0) + legacyMissingDocuments;
   if (view === 'ALL') return Object.values(statuses).reduce((sum, value) => sum + Number(value || 0), 0);
   if (view === 'PENDING') return Number(statuses.PENDING || 0);
   if (view === 'RUNNING') return Number(statuses.RUNNING || 0);
   if (view === 'DOCUMENTOS_ENVIADOS') return Number(statuses.DOCUMENTOS_ENVIADOS || 0);
   if (view === 'COMPLETED') return Number(statuses.ENVIADO || 0) + Number(statuses.DONE || 0);
   if (view === 'MISSING_DOCUMENTS') return missingDocuments;
-  return Math.max(0, Number(statuses.HUMAN_NECESSARY || 0) - missingDocuments);
+  return Math.max(0, Number(statuses.HUMAN_NECESSARY || 0) - legacyMissingDocuments);
 }
 
 export function ProtocolosPage() {
