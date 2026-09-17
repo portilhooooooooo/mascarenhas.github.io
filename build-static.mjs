@@ -20,6 +20,7 @@ const files = [
   'security-ui.js',
   'page-init-1.js',
   'page-init-2.js',
+  'favicon.svg',
   '_headers',
 ];
 
@@ -40,13 +41,13 @@ const indexHtml = await readFile(indexPath, 'utf8');
 await writeFile(
   indexPath,
   indexHtml
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260914-protocolo-hardening')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260914-protocolo-hardening')
-    .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260912-auth-refresh-v1')
-    .replace(/auth\.js(?:\?v=[^"']+)?/g, 'auth.js?v=20260912-auth-refresh-v1'),
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260916-mascarenhas-shell')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260916-mascarenhas-shell')
+    .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260916-session-persist')
+    .replace(/auth\.js(?:\?v=[^"']+)?/g, 'auth.js?v=20260916-mascarenhas-login'),
   'utf8'
 );
 
 console.log('dist preparado para deploy.');
 
-await cp('assets/vendor', `${dist}/assets/vendor`, {recursive: true });
+await cp('assets/vendor', `${dist}/assets/vendor`, { recursive: true });
