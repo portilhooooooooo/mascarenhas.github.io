@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
-  <link rel="stylesheet" href="payment-receipt.css?v=20260917">
+  <link rel="stylesheet" href="payment-receipt.css?v=20260917-2">
   <link rel="stylesheet" href="protocolo.css?v=20260910">
   <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260914-protocolo-hardening">
 </head>
@@ -353,10 +353,15 @@
           <div class="analysis-layout two-column">
             <aside class="panel process-list">
               <h2>Processos da tarefa</h2>
-              <label class="process-search"><i data-lucide="search"></i><input placeholder="Buscar processo ou parte"></label>
+              <label class="process-search"><i data-lucide="search"></i><input id="task-process-search" placeholder="Buscar processo ou parte"></label>
               <div class="process-filters"><select><option>Todos os status</option></select><select><option>Mais recentes</option></select></div>
               <div id="process-items" data-db-source="task_processes">
                 <button class="process-item selected" data-process-id="preview"><span><i data-lucide="file-check-2"></i></span><div><strong data-db-field="case_number">Processo não carregado</strong><small data-db-field="party_name">Aguardando dados</small></div><em>Em análise</em></button>
+              </div>
+              <div class="process-pagination" id="process-pagination" hidden>
+                <button type="button" id="process-page-prev" aria-label="Processos anteriores"><i data-lucide="chevron-left"></i></button>
+                <span id="process-page-label">—</span>
+                <button type="button" id="process-page-next" aria-label="Próximos processos"><i data-lucide="chevron-right"></i></button>
               </div>
             </aside>
 
@@ -636,7 +641,7 @@
   <script src="app.js?v=20260917-payment-receipt"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260914-protocolo-hardening"></script>
   <script src="agreements.js?v=20260818"></script>
-  <script src="payment-receipt.js?v=20260917"></script>
+  <script src="payment-receipt.js?v=20260917-2"></script>
   <script src="protocolo.js?v=20260910"></script>
   <script src="auth.js?v=20260903-task-only"></script>
 
