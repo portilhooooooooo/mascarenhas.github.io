@@ -1,7 +1,7 @@
 const navItems = [...document.querySelectorAll('.nav-item')];
 const pages = [...document.querySelectorAll('.page')];
 
-const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', 'acordo-execucao': 'tarefas/acordos' };
+const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', 'acordo-execucao': 'tarefas/acordos', 'comprovante-execucao': 'tarefas/comprovante-pagamento' };
 function showPage(pageId, updateRoute = true) {
   pages.forEach((page) => page.classList.toggle('active', page.id === pageId));
   navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageId));
@@ -267,7 +267,7 @@ document.querySelector('#user-create-form')?.addEventListener('submit', async ev
   finally { submit.disabled = false; }
 });
 
-const taskLabels = { liminar: 'Analisar Pedido de Tutela', encerramento: 'Analisar Indício de Encerramento', bloqueio: 'Analisar Indício de Bloqueio', citacao: 'Analisar Indício de Citação', protocolo: 'Executar Protocolo', acordos: 'Acordos' };
+const taskLabels = { liminar: 'Analisar Pedido de Tutela', encerramento: 'Analisar Indício de Encerramento', bloqueio: 'Analisar Indício de Bloqueio', citacao: 'Analisar Indício de Citação', protocolo: 'Executar Protocolo', comprovante_pagamento: 'Comprovante de Pagamento', acordos: 'Acordos' };
 async function loadTasks() {
   if (!window.MBA_API) return;
   try {
@@ -282,6 +282,7 @@ async function loadTasks() {
 
 async function openTask(task) {
   if (task.type === 'acordos' && window.openAgreementTask) return window.openAgreementTask(task);
+  if (task.type === 'comprovante_pagamento' && window.openPaymentReceiptTask) return window.openPaymentReceiptTask(task);
   currentTask = task;
   const processes = await window.MBA_API.request(`/api/tasks/${task.id}/processes`);
   document.querySelector('.detail-heading h1').textContent = task.title;
