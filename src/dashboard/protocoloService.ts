@@ -1,4 +1,5 @@
 export type ProtocoloStatus =
+  | 'SEM_DOCUMENTOS'
   | 'PENDING'
   | 'RUNNING'
   | 'DOCUMENTOS_ENVIADOS'
