@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
+  <link rel="stylesheet" href="payment-receipt.css?v=20260917">
   <link rel="stylesheet" href="protocolo.css?v=20260910">
   <link rel="stylesheet" href="assets/react-dashboard/dashboard-react.css?v=20260914-protocolo-hardening">
 </head>
@@ -378,6 +379,81 @@
           </div>
         </section>
 
+        <section class="page task-detail-page payment-receipt-page" id="comprovante-execucao" data-entity="payment_receipt_task_execution">
+          <button class="back-link" data-go="tarefas"><i data-lucide="arrow-left"></i>Voltar para o lobby de tarefas</button>
+          <div class="detail-heading payment-receipt-heading">
+            <div><h1>Comprovante de Pagamento</h1><p>Analise a situação recebida e registre a devolutiva correspondente.</p></div>
+            <div class="payment-receipt-heading-actions"><button class="secondary-button" id="payment-receipt-history" type="button"><i data-lucide="history"></i>Consultar analisados</button><span id="payment-receipt-progress">—</span></div>
+          </div>
+
+          <section class="panel payment-receipt-card" id="payment-receipt-card">
+            <header>
+              <div><small>Processo</small><strong id="payment-receipt-case-number">—</strong></div>
+              <div><small>Pasta</small><strong id="payment-receipt-folder">—</strong></div>
+              <div><small>Situação recebida</small><span class="payment-status" id="payment-receipt-initial-status">—</span></div>
+            </header>
+
+            <form id="payment-receipt-form" class="payment-receipt-form">
+              <fieldset class="payment-question" id="payment-uncertain-field" hidden>
+                <legend>Situação identificada</legend>
+                <p>O caso chegou como incerto. Informe a situação correta após a análise.</p>
+                <div class="payment-choice-grid">
+                  <label><input type="radio" name="resolved_status" value="pagamento_recusado"><span><i data-lucide="circle-x"></i><b>Pagamento recusado</b><small>O pagamento foi recusado.</small></span></label>
+                  <label><input type="radio" name="resolved_status" value="prazo_aberto_equivocadamente"><span><i data-lucide="triangle-alert"></i><b>Prazo aberto equivocadamente</b><small>Será necessário justificar.</small></span></label>
+                  <label><input type="radio" name="resolved_status" value="liquidado"><span><i data-lucide="badge-check"></i><b>Liquidado</b><small>Continuar para a devolutiva.</small></span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="payment-question" id="payment-liquidated-field" hidden>
+                <legend>Devolutiva do pagamento liquidado</legend>
+                <div class="payment-choice-grid">
+                  <label><input type="radio" name="liquidated_result" value="sem_comprovante"><span><i data-lucide="file-x"></i><b>Sem Comprovante</b><small>Comprovante não localizado.</small></span></label>
+                  <label><input type="radio" name="liquidated_result" value="com_comprovante"><span><i data-lucide="file-check"></i><b>Com Comprovante</b><small>Comprovante localizado.</small></span></label>
+                  <label><input type="radio" name="liquidated_result" value="pagamento_nao_efetivado"><span><i data-lucide="clock-alert"></i><b>Pagamento não efetivado</b><small>Pagamento ainda não efetivado.</small></span></label>
+                </div>
+              </fieldset>
+
+              <fieldset class="payment-question" id="payment-refused-field" hidden>
+                <legend>Devolutiva do pagamento recusado</legend>
+                <p>Informe se o pagamento será solicitado novamente.</p>
+                <div class="binary-choice payment-retry-choice">
+                  <label><input type="radio" name="retry_decision" value="solicitaremos_novamente"><span>Solicitaremos novamente</span></label>
+                  <label><input type="radio" name="retry_decision" value="nao_solicitaremos_novamente"><span>Não solicitaremos novamente</span></label>
+                </div>
+              </fieldset>
+
+              <label class="payment-reason-field" id="payment-wrong-deadline-field" hidden>
+                <span>Justificativa do prazo aberto equivocadamente</span>
+                <textarea name="wrong_deadline_reason" maxlength="2000" rows="4" placeholder="Descreva o motivo da abertura equivocada do prazo..."></textarea>
+                <small><span id="payment-reason-count">0</span>/2000</small>
+              </label>
+
+              <fieldset class="payment-question payment-block-field">
+                <legend>Houve bloqueio?</legend>
+                <p>Esta informação é obrigatória em todos os casos.</p>
+                <div class="binary-choice">
+                  <label><input type="radio" name="had_block" value="true"><span>Sim</span></label>
+                  <label><input type="radio" name="had_block" value="false"><span>Não</span></label>
+                </div>
+              </fieldset>
+              <p class="payment-receipt-error" id="payment-receipt-error" hidden></p>
+              <footer><button class="secondary-button" id="payment-receipt-skip" type="button">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+            </form>
+          </section>
+
+          <section class="panel payment-receipt-empty" id="payment-receipt-empty" hidden>
+            <span><i data-lucide="circle-check"></i></span><h2>Fila concluída</h2><p>Não há outros casos pendentes nesta tarefa.</p>
+          </section>
+
+          <dialog class="task-dialog payment-history-dialog" id="payment-receipt-history-dialog">
+            <div class="payment-history-shell">
+              <header><div><h2>Casos analisados</h2><p>Processos já concluídos nesta tarefa.</p></div><button class="icon-button" id="payment-history-close" type="button"><i data-lucide="x"></i></button></header>
+              <div class="payment-history-body" id="payment-history-body"></div>
+              <footer><button class="secondary-button" id="payment-history-footer-close" type="button">Fechar</button></footer>
+            </div>
+          </dialog>
+        </section>
+
         <section class="page task-detail-page agreement-execution-page" id="acordo-execucao" data-entity="agreement_task_execution">
           <button class="back-link" data-go="tarefas"><i data-lucide="arrow-left"></i>Voltar para o lobby de tarefas</button>
           <div class="detail-heading agreement-execution-heading"><div><h1>Acordos</h1><p>Analise o processo atual e registre somente as informações necessárias.</p></div><span id="agreement-task-progress">—</span></div>
@@ -430,7 +506,7 @@
               <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle" hidden><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="user">Usuário</option><option value="operational">Operacional</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Redefinir autenticador</button><button class="secondary-button" id="unlock-user" type="button" hidden>Desbloquear</button><button class="secondary-button" id="revoke-user-sessions" type="button">Revogar sessões</button></div>
               </div>
               <div class="permission-grid-edit" id="permission-grid"></div>
-              <fieldset class="agreement-participants" id="selected-user-modules"><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" value="acordos"> Acordos</label><label><input type="checkbox" value="liminar"> Liminar</label><label><input type="checkbox" value="encerramento"> Encerramentos</label><label><input type="checkbox" value="bloqueio"> Bloqueio</label><label><input type="checkbox" value="citacao"> Citação</label><label><input type="checkbox" value="protocolo"> Protocolo</label></div><small id="selected-user-otp-status"></small></fieldset>
+              <fieldset class="agreement-participants" id="selected-user-modules"><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" value="acordos"> Acordos</label><label><input type="checkbox" value="liminar"> Liminar</label><label><input type="checkbox" value="encerramento"> Encerramentos</label><label><input type="checkbox" value="bloqueio"> Bloqueio</label><label><input type="checkbox" value="citacao"> Citação</label><label><input type="checkbox" value="protocolo"> Protocolo</label><label><input type="checkbox" value="comprovante_pagamento"> Comprovante de Pagamento</label></div><small id="selected-user-otp-status"></small></fieldset>
               <div class="permissions-editor-footer"><small id="permission-editor-help">Por padrão, credenciais novas acessam apenas as tarefas atribuídas.</small><button class="permission-save-button" id="save-user-permissions" type="button">Salvar alterações</button></div>
             </section>
           </div>
@@ -449,13 +525,13 @@
   <dialog id="task-dialog" class="task-dialog">
     <form id="task-create-form">
       <header><div><h2>Nova tarefa</h2><p>Crie o lote e importe os processos por XLSX ou CSV.</p></div><button type="button" class="icon-button" data-close-dialog><i data-lucide="x"></i></button></header>
-      <label>Tipo<select name="type" id="task-type" required><option value="liminar">Liminar</option><option value="encerramento">Encerramento</option><option value="bloqueio">Bloqueio</option><option value="citacao">Citação</option><option value="protocolo">Protocolo</option><option value="acordos">Acordos</option></select></label>
+      <label>Tipo<select name="type" id="task-type" required><option value="liminar">Liminar</option><option value="encerramento">Encerramento</option><option value="bloqueio">Bloqueio</option><option value="citacao">Citação</option><option value="protocolo">Protocolo</option><option value="comprovante_pagamento">Comprovante de Pagamento</option><option value="acordos">Acordos</option></select></label>
       <label>Título<input name="title" required maxlength="160"></label>
       <label>Descrição<textarea name="description" rows="3"></textarea></label>
       <div class="dialog-grid"><label>Prioridade<select name="priority"><option value="low">Baixa</option><option value="medium" selected>Média</option><option value="high">Alta</option></select></label><label>Prazo<input name="deadline_at" type="datetime-local"></label></div>
       <label id="task-responsible-field">Responsável (UUID)<input name="responsible_id" type="text" placeholder="Opcional"></label>
       <fieldset class="agreement-participants" id="agreement-participants" hidden><legend>Participantes</legend><p>Selecione quem participará da força-tarefa.</p><div id="agreement-participant-options"><span>Carregando usuários...</span></div></fieldset>
-      <label>Planilha<input name="file" id="task-file" type="file" accept=".xlsx,.csv" required><small id="agreement-file-help" hidden>O XLSX deve conter as colunas Processo e Provisão.</small></label>
+      <label>Planilha<input name="file" id="task-file" type="file" accept=".xlsx,.csv" required><small id="agreement-file-help" hidden>O XLSX deve conter as colunas Processo e Provisão.</small><small id="payment-receipt-file-help" hidden>O arquivo deve conter as colunas Processo, Pasta e Situação.</small></label>
       <p class="dialog-error" id="task-dialog-error" hidden></p>
       <footer><button type="button" class="secondary-button" data-close-dialog>Cancelar</button><button type="submit" class="primary-button">Criar e importar</button></footer>
     </form>
@@ -477,7 +553,7 @@
       <label>Modelo<select name="role" id="user-create-role"><option value="administrative">Usuário administrativo</option><option value="operational">Operacional</option></select></label>
       <label>Nome<input name="name" maxlength="120" required></label>
       <label id="user-create-email-field">E-mail corporativo<input name="email" type="email" required></label>
-      <fieldset class="agreement-participants" id="user-create-modules" hidden><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" name="allowed_modules" value="acordos"> Acordos</label><label><input type="checkbox" name="allowed_modules" value="liminar"> Liminar</label><label><input type="checkbox" name="allowed_modules" value="encerramento"> Encerramentos</label><label><input type="checkbox" name="allowed_modules" value="bloqueio"> Bloqueio</label><label><input type="checkbox" name="allowed_modules" value="citacao"> Citação</label><label><input type="checkbox" name="allowed_modules" value="protocolo"> Protocolo</label></div></fieldset>
+      <fieldset class="agreement-participants" id="user-create-modules" hidden><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" name="allowed_modules" value="acordos"> Acordos</label><label><input type="checkbox" name="allowed_modules" value="liminar"> Liminar</label><label><input type="checkbox" name="allowed_modules" value="encerramento"> Encerramentos</label><label><input type="checkbox" name="allowed_modules" value="bloqueio"> Bloqueio</label><label><input type="checkbox" name="allowed_modules" value="citacao"> Citação</label><label><input type="checkbox" name="allowed_modules" value="protocolo"> Protocolo</label><label><input type="checkbox" name="allowed_modules" value="comprovante_pagamento"> Comprovante de Pagamento</label></div></fieldset>
       <label class="account-toggle" id="user-create-task-access" hidden><input name="task_access_enabled" type="checkbox" checked><span></span><em>Habilitar acesso operacional</em></label>
       <p class="dialog-error" id="user-create-error" hidden></p>
       <footer><button type="button" class="secondary-button" data-close-user-create>Cancelar</button><button type="submit" class="primary-button">Criar usuário</button></footer>
@@ -557,9 +633,10 @@
   <script src="config.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
-  <script src="app.js?v=20260903-task-only"></script>
+  <script src="app.js?v=20260917-payment-receipt"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260914-protocolo-hardening"></script>
   <script src="agreements.js?v=20260818"></script>
+  <script src="payment-receipt.js?v=20260917"></script>
   <script src="protocolo.js?v=20260910"></script>
   <script src="auth.js?v=20260903-task-only"></script>
 
