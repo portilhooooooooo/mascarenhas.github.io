@@ -44,8 +44,8 @@ await writeFile(
     .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
     .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
     .replace('</head>', '  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>')
-    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260916-mascarenhas-shell')
-    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260916-mascarenhas-shell')
+    .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260917-profile-menu')
+    .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260917-profile-menu')
     .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260916-session-persist')
     .replace(/auth\.js(?:\?v=[^"']+)?/g, 'auth.js?v=20260917-exact-symbol'),
   'utf8'
