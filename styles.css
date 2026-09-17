@@ -372,6 +372,14 @@ body.auth-signed-in .login-screen { display: none !important; }
 .process-item strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .process-item small { color: var(--muted); font-size: 11px; }
 .process-item em { margin-left: auto; color: var(--accent); font-size: 10.5px; font-style: normal; }
+#process-items { display: grid; gap: 8px; }
+.process-list { align-self: start; }
+.process-pagination { display: grid; grid-template-columns: 30px 1fr 30px; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.process-pagination button { width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff; color: var(--muted); cursor: pointer; }
+.process-pagination button:hover:not(:disabled) { border-color: var(--line-strong); color: var(--accent); background: var(--accent-soft); }
+.process-pagination button:disabled { opacity: .35; cursor: default; }
+.process-pagination button svg { width: 14px; height: 14px; }
+.process-pagination span { color: var(--muted); font-size: 10.5px; text-align: center; white-space: nowrap; }
 
 .analysis-card { overflow: hidden; }
 .analysis-card > header { padding: 18px; border-bottom: 1px solid var(--line); }

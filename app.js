@@ -280,22 +280,56 @@ async function loadTasks() {
   } catch (_error) { /* a autorização já controla a visibilidade da área */ }
 }
 
+let currentTaskProcesses = [];
+let processPage = 0;
+
+function taskProcessPageSize() {
+  const available = Math.max(150, window.innerHeight - 455);
+  return Math.max(2, Math.min(6, Math.floor(available / 68)));
+}
+
+function filteredTaskProcesses() {
+  const search = document.querySelector('#task-process-search')?.value.trim().toLowerCase() || '';
+  if (!search) return currentTaskProcesses;
+  return currentTaskProcesses.filter((process) => `${process.case_number || ''} ${process.party_name || ''}`.toLowerCase().includes(search));
+}
+
+function renderTaskProcessPage() {
+  const list = document.querySelector('#process-items');
+  const pagination = document.querySelector('#process-pagination');
+  if (!list || !pagination) return;
+  const processes = filteredTaskProcesses();
+  const pageSize = taskProcessPageSize();
+  const totalPages = Math.max(1, Math.ceil(processes.length / pageSize));
+  processPage = Math.min(Math.max(processPage, 0), totalPages - 1);
+  const start = processPage * pageSize;
+  const visible = processes.slice(start, start + pageSize);
+  list.innerHTML = visible.map((process) => `<button class="process-item ${currentProcess?.id === process.id ? 'selected' : ''}" data-process-json="${encodeURIComponent(JSON.stringify(process))}"><span><i data-lucide="file-check-2"></i></span><div><strong>${escapeHtml(process.case_number)}</strong><small>${escapeHtml(process.party_name || 'Parte não informada')}</small></div><em>${escapeHtml(process.status)}</em></button>`).join('') || '<div class="process-list-empty">Nenhum processo encontrado.</div>';
+  pagination.hidden = processes.length <= pageSize;
+  document.querySelector('#process-page-prev').disabled = processPage === 0;
+  document.querySelector('#process-page-next').disabled = processPage >= totalPages - 1;
+  document.querySelector('#process-page-label').textContent = processes.length ? `${start + 1}–${Math.min(start + pageSize, processes.length)} de ${processes.length}` : '0 de 0';
+  lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+}
+
 async function openTask(task) {
   if (task.type === 'acordos' && window.openAgreementTask) return window.openAgreementTask(task);
   if (task.type === 'comprovante_pagamento' && window.openPaymentReceiptTask) return window.openPaymentReceiptTask(task);
   currentTask = task;
-  const processes = await window.MBA_API.request(`/api/tasks/${task.id}/processes`);
+  currentTaskProcesses = await window.MBA_API.request(`/api/tasks/${task.id}/processes`);
   document.querySelector('.detail-heading h1').textContent = task.title;
   document.querySelector('#task-deadline').textContent = task.deadline_at ? new Date(task.deadline_at).toLocaleString('pt-BR') : 'Não informado';
   document.querySelector('#task-progress').textContent = `${task.completed_processes} de ${task.total_processes}`;
-  const list = document.querySelector('#process-items');
-  list.innerHTML = processes.map((process, index) => `<button class="process-item ${index === 0 ? 'selected' : ''}" data-process-json="${encodeURIComponent(JSON.stringify(process))}"><span><i data-lucide="file-check-2"></i></span><div><strong>${escapeHtml(process.case_number)}</strong><small>${escapeHtml(process.party_name || 'Parte não informada')}</small></div><em>${escapeHtml(process.status)}</em></button>`).join('');
-  currentProcess = processes.find((process) => process.status !== 'completed') || processes[0] || null;
+  currentProcess = currentTaskProcesses.find((process) => process.status !== 'completed') || currentTaskProcesses[0] || null;
+  processPage = 0;
   if (currentProcess) {
+    const index = currentTaskProcesses.findIndex((process) => process.id === currentProcess.id);
+    processPage = Math.floor(Math.max(index, 0) / taskProcessPageSize());
     document.querySelector('#selected-case-number').textContent = currentProcess.case_number;
     document.querySelector('#selected-party').textContent = currentProcess.party_name || 'Parte não informada';
   }
-  showPage('tarefa-analise'); lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+  showPage('tarefa-analise');
+  renderTaskProcessPage();
 }
 
 document.querySelector('#tasks-table-body')?.addEventListener('click', (event) => {
@@ -335,6 +369,12 @@ document.querySelector('#process-items')?.addEventListener('click', (event) => {
   document.querySelectorAll('.process-item').forEach((item) => item.classList.toggle('selected', item === button));
   document.querySelector('#selected-case-number').textContent = currentProcess.case_number;
   document.querySelector('#selected-party').textContent = currentProcess.party_name || 'Parte não informada';
+});
+document.querySelector('#process-page-prev')?.addEventListener('click', () => { processPage -= 1; renderTaskProcessPage(); });
+document.querySelector('#process-page-next')?.addEventListener('click', () => { processPage += 1; renderTaskProcessPage(); });
+document.querySelector('#task-process-search')?.addEventListener('input', () => { processPage = 0; renderTaskProcessPage(); });
+window.addEventListener('resize', () => {
+  if (document.querySelector('#tarefa-analise')?.classList.contains('active')) renderTaskProcessPage();
 });
 
 document.querySelector('#task-create-form')?.addEventListener('submit', async (event) => {
