@@ -6,11 +6,37 @@
   const oauthHandoffKey = 'mba_oauth_handoff';
   const errorBox = document.getElementById('login-error');
 
+  const getStoredToken = () => {
+    const persistent = localStorage.getItem(tokenKey);
+    if (persistent) return persistent;
+
+    // Migrate sessions created by the previous frontend so an update/F5 does not
+    // force users who are already authenticated through Microsoft to sign in again.
+    const legacy = sessionStorage.getItem(tokenKey);
+    if (legacy) {
+      localStorage.setItem(tokenKey, legacy);
+      sessionStorage.removeItem(tokenKey);
+    }
+    return legacy;
+  };
+
+  const setStoredToken = token => {
+    localStorage.setItem(tokenKey, token);
+    sessionStorage.removeItem(tokenKey);
+  };
+
+  const clearStoredToken = () => {
+    localStorage.removeItem(tokenKey);
+    sessionStorage.removeItem(tokenKey);
+  };
+
   const showError = message => {
+    if (!errorBox) return;
     errorBox.textContent = message;
     errorBox.style.display = 'block';
   };
   const clearError = () => {
+    if (!errorBox) return;
     errorBox.style.display = 'none';
   };
   const setAuthState = signedIn => {
@@ -18,30 +44,55 @@
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
   };
 
-  const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
-  favicon.rel = 'icon';
-  favicon.type = 'image/svg+xml';
-  favicon.href = '/favicon.svg?v=20260908';
-  if (!favicon.parentNode) document.head.appendChild(favicon);
+  function applyBranding() {
+    document.title = 'Mascarenhas Backoffice';
+
+    const description = document.querySelector('meta[name="description"]');
+    if (description) description.setAttribute('content', 'Mascarenhas Backoffice');
+
+    const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/svg+xml';
+    favicon.href = '/favicon.svg?v=20260916-mascarenhas';
+    if (!favicon.parentNode) document.head.appendChild(favicon);
+
+    const brandMarkup = `
+      <img class="brand-symbol" src="/favicon.svg?v=20260916-mascarenhas" alt="" aria-hidden="true">
+      <span class="brand-word">Backoffice</span>
+    `;
+
+    const loginBrand = document.querySelector('.login-brand');
+    if (loginBrand) {
+      loginBrand.innerHTML = brandMarkup;
+      loginBrand.setAttribute('aria-label', 'Mascarenhas Backoffice');
+    }
+
+    const appBrand = document.querySelector('.brand');
+    if (appBrand) {
+      appBrand.innerHTML = brandMarkup;
+      appBrand.setAttribute('aria-label', 'Mascarenhas Backoffice');
+    }
+  }
 
   function renderMicrosoftOnlyLogin() {
     const view = document.getElementById('login-view');
     if (!view) return;
     view.innerHTML = `
       <h1>Entrar</h1>
-      <p class="login-subtitle">Acesse com sua conta corporativa Microsoft.</p>
-      <button class="google-login" id="microsoft-login" type="button" data-auth-provider="microsoft" aria-label="Continuar via Outlook">
+      <p class="login-subtitle">Acesse com sua conta Microsoft.</p>
+      <button class="microsoft-login" id="microsoft-login" type="button" data-auth-provider="microsoft" aria-label="Entrar com Microsoft">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path fill="#f25022" d="M2 2h9v9H2z"/>
           <path fill="#7fba00" d="M13 2h9v9h-9z"/>
           <path fill="#00a4ef" d="M2 13h9v9H2z"/>
           <path fill="#ffb900" d="M13 13h9v9h-9z"/>
         </svg>
-        <span>Continuar via Outlook</span>
+        <span>Entrar com Microsoft</span>
       </button>
     `;
   }
 
+  applyBranding();
   renderMicrosoftOnlyLogin();
 
   function applyUser(user) {
@@ -101,13 +152,13 @@
 
   async function loadProfileWithRetry() {
     let lastError;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
       try {
         return await loadProfile();
       } catch (error) {
         lastError = error;
         if (error?.status === 401 || error?.status === 403) throw error;
-        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
+        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
       }
     }
     throw lastError;
@@ -161,7 +212,7 @@
         }
         try {
           const result = await exchangeOAuthHandoff(code, verifier);
-          sessionStorage.setItem(tokenKey, result.access_token);
+          setStoredToken(result.access_token);
           sessionStorage.removeItem(oauthHandoffKey);
           sessionStorage.removeItem(oauthVerifierKey);
         } catch (error) {
@@ -173,7 +224,7 @@
         }
       }
 
-      if (sessionStorage.getItem(tokenKey)) {
+      if (getStoredToken()) {
         await loadProfileWithRetry();
       } else {
         setAuthState(false);
@@ -181,12 +232,12 @@
     } catch (error) {
       const invalidSession = error?.status === 401 || error?.status === 403;
       if (invalidSession) {
-        sessionStorage.removeItem(tokenKey);
+        clearStoredToken();
         setAuthState(false);
         showError('Sua sessão terminou. Entre novamente.');
-      } else if (sessionStorage.getItem(tokenKey)) {
+      } else if (getStoredToken()) {
         setAuthState(false);
-        showError('Não foi possível validar sua sessão agora. Sua sessão foi preservada; atualize a página novamente.');
+        showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página novamente.');
       } else if (sessionStorage.getItem(oauthHandoffKey) && sessionStorage.getItem(oauthVerifierKey)) {
         setAuthState(false);
         showError('Não foi possível concluir o acesso agora. Atualize a página para tentar novamente sem refazer o login da Microsoft.');
@@ -229,13 +280,14 @@
     } catch (_) {
       showError('Não foi possível confirmar a revogação no servidor.');
     } finally {
-      sessionStorage.removeItem(tokenKey);
+      clearStoredToken();
       window.MBA_CURRENT_USER = null;
       setAuthState(false);
     }
   });
 
   window.addEventListener('mba:session-expired', () => {
+    clearStoredToken();
     window.MBA_CURRENT_USER = null;
     setAuthState(false);
     showError('Sua sessão terminou. Entre novamente.');
