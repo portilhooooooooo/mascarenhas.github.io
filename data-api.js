@@ -7,12 +7,17 @@
   const transientStatuses = new Set([502, 503, 504]);
   const sessionInvalidCodes = new Set(['AUTH_REQUIRED', 'SESSION_INVALID']);
   const userDetailCache = new Map();
+  const taskProcessCache = new Map();
+  const processToTask = new Map();
+  const inFlightGets = new Map();
+  const TASK_PROCESS_CACHE_MS = 15000;
 
   const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
   const clearStoredToken = () => {
     localStorage.removeItem(tokenKey);
     sessionStorage.removeItem(tokenKey);
   };
+  const cloneRows = rows => rows.map(row => ({ ...row }));
 
   function debugRequest(path, status, startedAt, attempt) {
     if (!preview && window.MBA_API_DEBUG !== true) return;
@@ -42,6 +47,66 @@
       return;
     }
     if (path.startsWith('/api/users')) userDetailCache.clear();
+  }
+
+  function cacheTaskProcesses(taskId, rows) {
+    if (!Array.isArray(rows)) return;
+    const previous = taskProcessCache.get(taskId)?.rows || [];
+    previous.forEach(row => {
+      if (row?.id && processToTask.get(String(row.id)) === taskId) processToTask.delete(String(row.id));
+    });
+    const snapshot = cloneRows(rows);
+    snapshot.forEach(row => {
+      if (row?.id) processToTask.set(String(row.id), taskId);
+    });
+    taskProcessCache.set(taskId, {
+      rows: snapshot,
+      expiresAt: Date.now() + TASK_PROCESS_CACHE_MS,
+    });
+  }
+
+  function cachedTaskProcesses(path, method) {
+    if (method !== 'GET') return null;
+    const match = path.match(/^\/api\/tasks\/([^/?]+)\/processes$/);
+    if (!match) return null;
+    const cached = taskProcessCache.get(match[1]);
+    if (!cached || cached.expiresAt <= Date.now()) {
+      if (cached) taskProcessCache.delete(match[1]);
+      return null;
+    }
+    return cloneRows(cached.rows);
+  }
+
+  function updateTaskProcessCache(path, method, data) {
+    if (method === 'GET') {
+      const match = path.match(/^\/api\/tasks\/([^/?]+)\/processes$/);
+      if (match && Array.isArray(data)) cacheTaskProcesses(match[1], data);
+      return;
+    }
+
+    const analysis = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:liminar|encerramento|bloqueio|citacao|comprovante_pagamento)-analysis$/);
+    if (method === 'POST' && analysis) {
+      const processId = analysis[1];
+      const taskId = processToTask.get(processId);
+      const cached = taskId ? taskProcessCache.get(taskId) : null;
+      if (cached) {
+        cached.rows = cached.rows.map(row => row.id === processId
+          ? { ...row, status: 'completed', updated_at: new Date().toISOString() }
+          : row);
+        cached.expiresAt = Date.now() + TASK_PROCESS_CACHE_MS;
+      }
+      return;
+    }
+
+    const skipped = path.match(/^\/api\/task-processes\/([^/?]+)\/skip$/);
+    if (method === 'POST' && skipped) {
+      const taskId = processToTask.get(skipped[1]);
+      if (taskId) taskProcessCache.delete(taskId);
+      return;
+    }
+
+    const taskMutation = path.match(/^\/api\/tasks\/([^/?]+)(?:\/upload)?$/);
+    if (method !== 'GET' && taskMutation) taskProcessCache.delete(taskMutation[1]);
   }
 
   async function backendFetch(path, options = {}) {
@@ -75,12 +140,7 @@
     throw lastError || new Error('Não foi possível acessar a API.');
   }
 
-  async function request(path, options = {}) {
-    if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
-    const method = String(options.method || 'GET').toUpperCase();
-    const cached = cachedUserDetail(path, method);
-    if (cached) return cached;
-
+  async function performRequest(path, options, method) {
     const tokenBeforeRequest = getStoredToken();
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
@@ -104,7 +164,31 @@
       throw error;
     }
     updateUserCache(path, method, data);
+    updateTaskProcessCache(path, method, data);
     return data;
+  }
+
+  async function request(path, options = {}) {
+    if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
+    const method = String(options.method || 'GET').toUpperCase();
+
+    const userCached = cachedUserDetail(path, method);
+    if (userCached) return userCached;
+    const processesCached = cachedTaskProcesses(path, method);
+    if (processesCached) return processesCached;
+
+    if (method !== 'GET') return performRequest(path, options, method);
+
+    // Multiple legacy/React listeners can ask for the same resource in the same
+    // tick. Share one parsed request instead of issuing duplicate CORS roundtrips.
+    if (inFlightGets.has(path)) return inFlightGets.get(path);
+    const pending = performRequest(path, options, method);
+    inFlightGets.set(path, pending);
+    try {
+      return await pending;
+    } finally {
+      if (inFlightGets.get(path) === pending) inFlightGets.delete(path);
+    }
   }
 
   async function createTaskWithImportedProcesses(payload, file) {
