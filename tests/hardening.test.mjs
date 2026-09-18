@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+
+const [auth, api, dashboard] = await Promise.all([
+  readFile(new URL('../auth.js', import.meta.url), 'utf8'),
+  readFile(new URL('../data-api.js', import.meta.url), 'utf8'),
+  readFile(new URL('../src/dashboard/main.tsx', import.meta.url), 'utf8'),
+]);
+
+assert.match(auth, /if \(microsoftLoginInFlight\) return;/, 'Microsoft login must be single-flight');
+assert.match(auth, /button\.disabled = busy;/, 'Microsoft login button must lock while starting OAuth');
+assert.match(auth, /dispatchModuleAuthentication\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
+assert.doesNotMatch(auth, /data-auth-provider="google"/, 'rendered login must not offer Google');
+
+assert.match(api, /sessionInvalidCodes = new Set\(\['AUTH_REQUIRED', 'SESSION_INVALID'\]\)/, 'logout must require an explicit session-invalid code');
+assert.match(api, /inFlightGets\.has\(path\)/, 'duplicate GETs must share one request');
+assert.match(api, /TASK_PROCESS_CACHE_MS = 15000/, 'task process queue must have a short-lived cache');
+
+assert.match(dashboard, /function unmountProtocolosPage\(\)/, 'Protocolos must be unmounted when hidden');
+assert.match(dashboard, /document\.addEventListener\('visibilitychange', syncProtocolosLifecycle\)/, 'Protocolos polling must stop while the tab is hidden');
+assert.doesNotMatch(dashboard, /\nmountProtocolosPage\(\);\s*$/, 'Protocolos must not mount unconditionally at bundle startup');
+
+console.log('hardening regression checks passed');
