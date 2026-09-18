@@ -4,7 +4,9 @@
   const tokenKey = 'mba_session_token';
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
+  const oauthStartedAtKey = 'mba_oauth_started_at';
   const errorBox = document.getElementById('login-error');
+  let microsoftLoginInFlight = false;
 
   const getStoredToken = () => {
     const persistent = localStorage.getItem(tokenKey);
@@ -30,18 +32,35 @@
     sessionStorage.removeItem(tokenKey);
   };
 
+  const clearOAuthFlow = () => {
+    sessionStorage.removeItem(oauthHandoffKey);
+    sessionStorage.removeItem(oauthVerifierKey);
+    sessionStorage.removeItem(oauthStartedAtKey);
+  };
+
   const showError = message => {
     if (!errorBox) return;
     errorBox.textContent = message;
     errorBox.style.display = 'block';
   };
+
   const clearError = () => {
     if (!errorBox) return;
     errorBox.style.display = 'none';
   };
+
   const setAuthState = signedIn => {
     document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out');
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
+  };
+
+  const setMicrosoftLoginBusy = busy => {
+    const button = document.getElementById('microsoft-login');
+    if (!button) return;
+    button.disabled = busy;
+    button.setAttribute('aria-busy', String(busy));
+    const label = button.querySelector('span');
+    if (label) label.textContent = busy ? 'Entrando…' : 'Entrar com Microsoft';
   };
 
   function applyBranding() {
@@ -138,27 +157,28 @@
     } else if (active?.dataset.permission && user.permissions[active.dataset.permission] !== true) {
       window.showPage?.(pages[0][0]);
     }
-
-    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: user }));
-    window.restorePageRoute?.();
   }
 
   async function loadProfile() {
     const profile = await window.MBA_API.request('/api/me');
     applyUser(profile);
+    // Restore the requested route before notifying modules. This prevents every
+    // module from bootstrapping against the default dashboard route first.
+    window.restorePageRoute?.();
+    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: profile }));
     setAuthState(true);
     clearError();
   }
 
   async function loadProfileWithRetry() {
     let lastError;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
         return await loadProfile();
       } catch (error) {
         lastError = error;
         if (error?.status === 401 || error?.status === 403) throw error;
-        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
       }
     }
     throw lastError;
@@ -187,6 +207,7 @@
     .replace(/=+$/, '');
 
   async function initializeAuth() {
+    // Remove retired credential artifacts. Microsoft is the only supported login.
     sessionStorage.removeItem('mba_task_worker_token');
     sessionStorage.removeItem('mba_task_only_user');
     sessionStorage.removeItem('mba_google_verifier');
@@ -207,19 +228,16 @@
       if (code) {
         const verifier = sessionStorage.getItem(oauthVerifierKey);
         if (!verifier) {
-          sessionStorage.removeItem(oauthHandoffKey);
-          throw new Error('Não foi possível realizar o acesso.');
+          clearOAuthFlow();
+          throw new Error('Não foi possível concluir o acesso. Inicie o login novamente.');
         }
         try {
           const result = await exchangeOAuthHandoff(code, verifier);
+          if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
           setStoredToken(result.access_token);
-          sessionStorage.removeItem(oauthHandoffKey);
-          sessionStorage.removeItem(oauthVerifierKey);
+          clearOAuthFlow();
         } catch (error) {
-          if ([401, 403, 422].includes(error?.status)) {
-            sessionStorage.removeItem(oauthHandoffKey);
-            sessionStorage.removeItem(oauthVerifierKey);
-          }
+          if ([401, 403, 422].includes(error?.status)) clearOAuthFlow();
           throw error;
         }
       }
@@ -230,26 +248,38 @@
         setAuthState(false);
       }
     } catch (error) {
-      const invalidSession = error?.status === 401 || error?.status === 403;
-      if (invalidSession) {
+      const hasToken = Boolean(getStoredToken());
+      const invalidSession = error?.status === 401
+        && ['SESSION_INVALID', 'AUTH_REQUIRED'].includes(error?.code);
+      const unauthorizedProfile = error?.status === 403 && error?.code === 'PROFILE_NOT_AUTHORIZED';
+
+      if (invalidSession || unauthorizedProfile) {
         clearStoredToken();
+        window.MBA_CURRENT_USER = null;
         setAuthState(false);
-        showError('Sua sessão terminou. Entre novamente.');
-      } else if (getStoredToken()) {
+        showError(unauthorizedProfile
+          ? 'Seu usuário não possui acesso ativo ao Backoffice.'
+          : 'Sua sessão terminou. Entre novamente.');
+      } else if (hasToken) {
+        // A proxy/backend failure must not destroy a session that may still be valid.
         setAuthState(false);
-        showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página novamente.');
+        showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.');
       } else if (sessionStorage.getItem(oauthHandoffKey) && sessionStorage.getItem(oauthVerifierKey)) {
         setAuthState(false);
         showError('Não foi possível concluir o acesso agora. Atualize a página para tentar novamente sem refazer o login da Microsoft.');
       } else {
         setAuthState(false);
-        showError(error.message);
+        showError(error?.message || 'Não foi possível realizar o acesso.');
       }
     }
   }
 
   document.getElementById('microsoft-login')?.addEventListener('click', async () => {
+    if (microsoftLoginInFlight) return;
+    microsoftLoginInFlight = true;
+    setMicrosoftLoginBusy(true);
     clearError();
+
     try {
       const verifier = base64url(crypto.getRandomValues(new Uint8Array(48)));
       const challenge = base64url(new Uint8Array(await crypto.subtle.digest(
@@ -257,8 +287,11 @@
         new TextEncoder().encode(verifier),
       )));
 
+      // A single active verifier belongs to a single OAuth navigation. The button
+      // stays locked until navigation, so a second click cannot overwrite it.
       sessionStorage.removeItem(oauthHandoffKey);
       sessionStorage.setItem(oauthVerifierKey, verifier);
+      sessionStorage.setItem(oauthStartedAtKey, String(Date.now()));
 
       const result = await window.MBA_API.request('/auth/microsoft/start', {
         method: 'POST',
@@ -270,7 +303,10 @@
       }
       location.assign(target.href);
     } catch (error) {
-      showError(error.message);
+      clearOAuthFlow();
+      microsoftLoginInFlight = false;
+      setMicrosoftLoginBusy(false);
+      showError(error?.message || 'Não foi possível iniciar o acesso com Microsoft.');
     }
   });
 
@@ -281,6 +317,7 @@
       showError('Não foi possível confirmar a revogação no servidor.');
     } finally {
       clearStoredToken();
+      clearOAuthFlow();
       window.MBA_CURRENT_USER = null;
       setAuthState(false);
     }
@@ -288,6 +325,7 @@
 
   window.addEventListener('mba:session-expired', () => {
     clearStoredToken();
+    clearOAuthFlow();
     window.MBA_CURRENT_USER = null;
     setAuthState(false);
     showError('Sua sessão terminou. Entre novamente.');
