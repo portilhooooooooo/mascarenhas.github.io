@@ -6,6 +6,7 @@
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const transientStatuses = new Set([502, 503, 504]);
   const sessionInvalidCodes = new Set(['AUTH_REQUIRED', 'SESSION_INVALID']);
+  const userDetailCache = new Map();
 
   const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
   const clearStoredToken = () => {
@@ -17,6 +18,30 @@
     if (!preview && window.MBA_API_DEBUG !== true) return;
     const duration = Math.round(performance.now() - startedAt);
     console.debug(`[MBA API] ${path} -> ${status} (${duration}ms, tentativa ${attempt + 1})`);
+  }
+
+  function cachedUserDetail(path, method) {
+    if (method !== 'GET') return null;
+    const match = path.match(/^\/api\/users\/([^/?]+)$/);
+    if (!match) return null;
+    const cached = userDetailCache.get(match[1]);
+    return cached ? { ...cached, effective_permissions: [...(cached.effective_permissions || [])] } : null;
+  }
+
+  function updateUserCache(path, method, data) {
+    if (method === 'GET' && path === '/api/users' && Array.isArray(data)) {
+      userDetailCache.clear();
+      data.forEach(user => {
+        if (user?.id) userDetailCache.set(String(user.id), user);
+      });
+      return;
+    }
+    if (method === 'GET') {
+      const match = path.match(/^\/api\/users\/([^/?]+)$/);
+      if (match && data?.id) userDetailCache.set(match[1], data);
+      return;
+    }
+    if (path.startsWith('/api/users')) userDetailCache.clear();
   }
 
   async function backendFetch(path, options = {}) {
@@ -52,6 +77,10 @@
 
   async function request(path, options = {}) {
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
+    const method = String(options.method || 'GET').toUpperCase();
+    const cached = cachedUserDetail(path, method);
+    if (cached) return cached;
+
     const tokenBeforeRequest = getStoredToken();
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
@@ -74,6 +103,7 @@
       }
       throw error;
     }
+    updateUserCache(path, method, data);
     return data;
   }
 
