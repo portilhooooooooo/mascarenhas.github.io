@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 
 const dist = 'dist';
+const hardeningVersion = '20260918-auth-performance-hardening';
 
 await rm(dist, { recursive: true, force: true });
 await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
@@ -45,12 +46,15 @@ const indexHtml = await readFile(indexPath, 'utf8');
 const builtIndexHtml = indexHtml
   .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
-  .replace('</head>', '  <link rel="stylesheet" href="/tasks.css?v=20260917-task-lobby-v3">\n  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>')
-  .replace('</body>', '  <script src="/tasks-lobby.js?v=20260917-task-lobby-v3"></script>\n</body>')
-  .replace(/dashboard-react\.css\?v=[^"']+/g, 'dashboard-react.css?v=20260917-profile-menu')
-  .replace(/dashboard-react\.js\?v=[^"']+/g, 'dashboard-react.js?v=20260917-profile-menu')
-  .replace(/data-api\.js(?:\?v=[^"']+)?/g, 'data-api.js?v=20260916-session-persist')
-  .replace(/auth\.js(?:\?v=[^"']+)?/g, 'auth.js?v=20260917-exact-symbol')
+  .replace('</head>', `  <link rel="stylesheet" href="/tasks.css?v=${hardeningVersion}">\n  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
+  .replace('</body>', `  <script src="/tasks-lobby.js?v=${hardeningVersion}"></script>\n</body>`)
+  .replace(/dashboard-react\.css\?v=[^"']+/g, `dashboard-react.css?v=${hardeningVersion}`)
+  .replace(/dashboard-react\.js\?v=[^"']+/g, `dashboard-react.js?v=${hardeningVersion}`)
+  .replace(/data-api\.js(?:\?v=[^"']+)?/g, `data-api.js?v=${hardeningVersion}`)
+  .replace(/auth\.js(?:\?v=[^"']+)?/g, `auth.js?v=${hardeningVersion}`)
+  .replace(/app\.js(?:\?v=[^"']+)?/g, `app.js?v=${hardeningVersion}`)
+  .replace(/agreements\.js(?:\?v=[^"']+)?/g, `agreements.js?v=${hardeningVersion}`)
+  .replace(/payment-receipt\.js(?:\?v=[^"']+)?/g, `payment-receipt.js?v=${hardeningVersion}`)
   // Every local asset is rooted at /. Direct SPA routes such as /tarefas and
   // /tarefas/comprovante-pagamento must never resolve assets inside the route.
   .replace(/(href|src)="(?!https?:|\/\/|\/|#|mailto:|data:)([^"]+)"/g, '$1="/$2"');
