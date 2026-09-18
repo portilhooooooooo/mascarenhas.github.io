@@ -90,7 +90,7 @@ body {
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   color: var(--mba-text);
   font-size: 13.5px;
   font-weight: 600;
@@ -105,6 +105,13 @@ body {
 .brand .brand-word {
   color: var(--mba-text);
   font-weight: 500;
+}
+.brand-symbol {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: block;
+  object-fit: contain;
 }
 .brand-caption { display: none !important; }
 
