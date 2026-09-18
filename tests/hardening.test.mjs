@@ -19,7 +19,8 @@ assert.match(api, /inFlightGets\.has\(path\)/, 'duplicate GETs must share one re
 assert.match(api, /TASK_PROCESS_CACHE_MS = 15000/, 'task process queue must have a short-lived cache');
 assert.match(api, /const requestUrl = baseUrl \? baseUrl \+ path : path;/, 'localhost must support same-origin API paths');
 
-assert.match(config, /mbaIsLocal[\s\S]*\? ''[\s\S]*mba-backoffice-proxy-production/, 'localhost must not call Railway directly');
+assert.match(config, /mbaIsLocal[\s\S]*\? location\.origin[\s\S]*mba-backoffice-proxy-production/, 'localhost must use the Vite origin instead of Railway');
+assert.doesNotMatch(config, /mbaIsLocal[\s\S]*\? ''/, 'localhost API base must never be empty');
 assert.match(vite, /'\/auth'[\s\S]*target: localBackend/, 'Vite must proxy auth to the local backend');
 assert.match(vite, /'\/api'[\s\S]*target: localBackend/, 'Vite must proxy API calls to the local backend');
 
