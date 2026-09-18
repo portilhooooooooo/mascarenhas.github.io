@@ -1,8 +1,9 @@
 (() => {
   'use strict';
+  const localHost = ['localhost', '127.0.0.1'].includes(location.hostname);
   const baseUrl = String(window.MBA_API_BASE_URL || '').trim().replace(/\/$/, '');
   const tokenKey = 'mba_session_token';
-  const preview = window.MBA_LOCAL_PREVIEW && ['localhost', '127.0.0.1'].includes(location.hostname);
+  const preview = window.MBA_LOCAL_PREVIEW && localHost;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const transientStatuses = new Set([502, 503, 504]);
   const sessionInvalidCodes = new Set(['AUTH_REQUIRED', 'SESSION_INVALID']);
@@ -110,7 +111,9 @@
   }
 
   async function backendFetch(path, options = {}) {
-    if (!baseUrl || !/^\/(api|auth)\//.test(path)) throw new Error('Endereço da API inválido.');
+    if (!/^\/(api|auth)\//.test(path)) throw new Error('Endereço da API inválido.');
+    if (!baseUrl && !localHost) throw new Error('Endereço da API inválido.');
+
     const headers = new Headers(options.headers || {});
     headers.set('Accept', 'application/json');
     if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
@@ -119,16 +122,14 @@
 
     const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
     const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
-    // During bootstrap we tolerate one transient gateway/network failure. We do
-    // not retry 401: authentication failures are deterministic and retries used
-    // to amplify login races.
     const maxAttempts = bootstrapping ? 2 : 1;
+    const requestUrl = baseUrl ? baseUrl + path : path;
     let lastError;
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const startedAt = performance.now();
       try {
-        const response = await fetch(baseUrl + path, requestOptions);
+        const response = await fetch(requestUrl, requestOptions);
         debugRequest(path, response.status, startedAt, attempt);
         if (!transientStatuses.has(response.status) || attempt === maxAttempts - 1) return response;
       } catch (error) {
@@ -149,9 +150,6 @@
       error.code = data?.code;
       error.status = response.status;
 
-      // Only explicit backend session codes can invalidate the browser session.
-      // A 401 from another integration/proxy endpoint is not enough evidence to
-      // log the user out.
       const sessionInvalid = response.status === 401
         && Boolean(tokenBeforeRequest)
         && sessionInvalidCodes.has(String(data?.code || ''));
@@ -179,8 +177,6 @@
 
     if (method !== 'GET') return performRequest(path, options, method);
 
-    // Multiple legacy/React listeners can ask for the same resource in the same
-    // tick. Share one parsed request instead of issuing duplicate CORS roundtrips.
     if (inFlightGets.has(path)) return inFlightGets.get(path);
     const pending = performRequest(path, options, method);
     inFlightGets.set(path, pending);
