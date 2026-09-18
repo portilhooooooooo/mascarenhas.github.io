@@ -32,6 +32,16 @@
   --radius-lg: 8px;
   --shadow-sm: none;
   --shadow-md: none;
+
+  /* Shared interface scale. Keep the application dense at 100% browser zoom. */
+  --mba-shell-height: 52px;
+  --mba-subnav-height: 38px;
+  --mba-page-x: 24px;
+  --mba-page-y: 14px;
+  --mba-page-title: 20px;
+  --mba-page-subtitle: 12px;
+  --mba-nav-text: 12px;
+  --mba-nav-icon: 13px;
 }
 
 html,
@@ -328,4 +338,157 @@ body {
   .login-screen { padding: 16px; }
   .login-box { padding: 36px 24px 32px; }
   .login-brand .brand-symbol { width: 68px; height: 68px; flex-basis: 68px; }
+}
+
+/* ============================================================
+   Interface architecture: shared density, typography and module navigation
+   ============================================================ */
+@media (min-width: 981px) {
+  body .sidebar {
+    height: var(--mba-shell-height);
+    gap: 16px;
+    padding-inline: var(--mba-page-x);
+  }
+  body .brand { gap: 7px; font-size: 17px; }
+  body .brand-symbol { width: 30px; height: 30px; flex-basis: 30px; }
+  body .main-nav { gap: 1px; }
+  body .nav-item {
+    height: calc(var(--mba-shell-height) - 1px);
+    gap: 5px;
+    padding-inline: 9px;
+    font-size: var(--mba-nav-text);
+  }
+  body .nav-item svg { width: var(--mba-nav-icon); height: var(--mba-nav-icon); }
+  body .nav-item.active::after { left: 7px; right: 7px; }
+  body .nav-badge { min-width: 18px; height: 17px; padding-inline: 5px; font-size: 8.5px; }
+
+  body .topbar {
+    right: 20px;
+    height: calc(var(--mba-shell-height) - 1px);
+    gap: 10px;
+  }
+  body .global-search { width: 300px; height: 34px; }
+  body .global-search input { font-size: 11px; }
+  body .avatar { width: 32px; height: 32px; font-size: 10.5px; }
+  body .profile-chevron { width: 13px; height: 13px; }
+
+  body .page:not(#dashboard) {
+    padding: var(--mba-page-y) var(--mba-page-x) 24px;
+  }
+  body .analytics-page {
+    min-height: calc(100vh - var(--mba-shell-height));
+    padding: var(--mba-page-y) var(--mba-page-x) 24px;
+  }
+
+  /* One secondary navigation contract for Gestão, Operação and Controladoria. */
+  body .analytics-page > .analytics-subnav,
+  body .page > .mba-operation-subnav,
+  body .protocolos-page-react > .controladoria-subnav {
+    width: auto;
+    max-width: none;
+    height: var(--mba-subnav-height);
+    margin: calc(-1 * var(--mba-page-y)) calc(-1 * var(--mba-page-x)) 14px;
+    padding: 0 var(--mba-page-x);
+    display: flex;
+    align-items: stretch;
+    gap: 20px;
+    border-bottom: 1px solid var(--mba-border);
+    background: #fff;
+  }
+  body .analytics-page > .analytics-subnav button,
+  body .page > .mba-operation-subnav button,
+  body .protocolos-page-react > .controladoria-subnav button {
+    position: relative;
+    height: var(--mba-subnav-height);
+    padding: 0 1px;
+    border: 0;
+    background: transparent;
+    color: var(--mba-text-2);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1;
+  }
+  body .analytics-page > .analytics-subnav button.active,
+  body .page > .mba-operation-subnav button.active,
+  body .protocolos-page-react > .controladoria-subnav button.active {
+    color: var(--mba-blue);
+    font-weight: 600;
+  }
+  body .analytics-page > .analytics-subnav button.active::after,
+  body .page > .mba-operation-subnav button.active::after,
+  body .protocolos-page-react > .controladoria-subnav button.active::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--mba-blue);
+  }
+
+  /* Controladoria used to constrain the whole module, which shortened its subnav. */
+  body .protocolos-page-react {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    gap: 12px;
+  }
+
+  /* The same typographic hierarchy across every top-level workspace. */
+  body .analytics-page-header h1,
+  body .protocolos-header h1,
+  body .page-title h1,
+  body .detail-heading h1,
+  body .lobby-heading h1 {
+    font-size: var(--mba-page-title);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -.025em;
+  }
+  body .analytics-page-header p,
+  body .protocolos-header p,
+  body .page-title p,
+  body .detail-heading p,
+  body .lobby-heading p {
+    font-size: var(--mba-page-subtitle);
+    line-height: 1.45;
+  }
+  body .analytics-page-header { margin-bottom: 12px; }
+  body .protocolos-header { gap: 16px; }
+  body .protocolos-header h1 { margin: 2px 0 4px; }
+  body .protocolos-eyebrow { font-size: 9px; letter-spacing: .1em; }
+
+  body .primary-button,
+  body .secondary-button,
+  body .analytics-button,
+  body .protocolos-button {
+    min-height: 34px;
+    height: 34px;
+    border-radius: 7px;
+    font-size: 11.5px;
+  }
+  body .primary-button svg,
+  body .secondary-button svg,
+  body .analytics-button svg,
+  body .protocolos-button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1260px) {
+  body .sidebar { padding-inline: 18px; gap: 12px; }
+  body .nav-item { padding-inline: 6px; font-size: 11.5px; }
+  body .global-search { width: 235px; }
+  body .page:not(#dashboard),
+  body .analytics-page { padding-inline: 18px; }
+  body .analytics-page > .analytics-subnav,
+  body .page > .mba-operation-subnav,
+  body .protocolos-page-react > .controladoria-subnav {
+    margin-left: -18px;
+    margin-right: -18px;
+    padding-inline: 18px;
+  }
 }
