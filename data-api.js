@@ -4,12 +4,20 @@
   const tokenKey = 'mba_session_token';
   const preview = window.MBA_LOCAL_PREVIEW && ['localhost', '127.0.0.1'].includes(location.hostname);
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const transientStatuses = new Set([502, 503, 504]);
+  const sessionInvalidCodes = new Set(['AUTH_REQUIRED', 'SESSION_INVALID']);
 
   const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
   const clearStoredToken = () => {
     localStorage.removeItem(tokenKey);
     sessionStorage.removeItem(tokenKey);
   };
+
+  function debugRequest(path, status, startedAt, attempt) {
+    if (!preview && window.MBA_API_DEBUG !== true) return;
+    const duration = Math.round(performance.now() - startedAt);
+    console.debug(`[MBA API] ${path} -> ${status} (${duration}ms, tentativa ${attempt + 1})`);
+  }
 
   async function backendFetch(path, options = {}) {
     if (!baseUrl || !/^\/(api|auth)\//.test(path)) throw new Error('Endereço da API inválido.');
@@ -21,30 +29,49 @@
 
     const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
     const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
-    const maxAttempts = bootstrapping ? 3 : 1;
-    let response;
+    // During bootstrap we tolerate one transient gateway/network failure. We do
+    // not retry 401: authentication failures are deterministic and retries used
+    // to amplify login races.
+    const maxAttempts = bootstrapping ? 2 : 1;
+    let lastError;
 
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      response = await fetch(baseUrl + path, requestOptions);
-      if (response.status !== 401 || attempt === maxAttempts - 1) break;
+      const startedAt = performance.now();
+      try {
+        const response = await fetch(baseUrl + path, requestOptions);
+        debugRequest(path, response.status, startedAt, attempt);
+        if (!transientStatuses.has(response.status) || attempt === maxAttempts - 1) return response;
+      } catch (error) {
+        lastError = error;
+        if (attempt === maxAttempts - 1) throw error;
+      }
       await sleep(250 * (attempt + 1));
     }
-
-    if (response.status === 401 && token && !bootstrapping) {
-      clearStoredToken();
-      window.dispatchEvent(new Event('mba:session-expired'));
-    }
-    return response;
+    throw lastError || new Error('Não foi possível acessar a API.');
   }
 
   async function request(path, options = {}) {
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
+    const tokenBeforeRequest = getStoredToken();
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
     if (!response.ok) {
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
       error.status = response.status;
+
+      // Only explicit backend session codes can invalidate the browser session.
+      // A 401 from another integration/proxy endpoint is not enough evidence to
+      // log the user out.
+      const sessionInvalid = response.status === 401
+        && Boolean(tokenBeforeRequest)
+        && sessionInvalidCodes.has(String(data?.code || ''));
+      if (sessionInvalid && !document.body.classList.contains('auth-loading')) {
+        clearStoredToken();
+        window.dispatchEvent(new CustomEvent('mba:session-expired', {
+          detail: { code: data?.code },
+        }));
+      }
       throw error;
     }
     return data;
