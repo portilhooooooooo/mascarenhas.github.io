@@ -6,6 +6,7 @@ import { configureBaseTaskImport } from './taskBaseImport';
 import './shell.css';
 import './analytics.css';
 import './protocolos.css';
+import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
