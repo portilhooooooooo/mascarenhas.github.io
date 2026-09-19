@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && vite build && node build-static.mjs",
-    "dev": "vite --host 0.0.0.0"
+    "dev": "vite --host 0.0.0.0",
+    "dev:local": "vite --host localhost --port 5173 --strictPort --force",
+    "test:hardening": "node tests/hardening.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
