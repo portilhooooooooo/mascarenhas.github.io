@@ -4,7 +4,27 @@
   const tokenKey = 'mba_session_token';
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
+  const oauthStartedAtKey = 'mba_oauth_started_at';
   const errorBox = document.getElementById('login-error');
+  const moduleActivationAt = new Map();
+  const MODULE_REVALIDATE_MS = 30000;
+  let microsoftLoginInFlight = false;
+
+  const pagePermissionScopes = Object.freeze({
+    dashboard: ['dashboard.view'],
+    automacoes: ['automations.view'],
+    protocolo: [],
+    tutelas: ['tutelas.view'],
+    encerramentos: ['encerramentos.view'],
+    usuarios: ['users.view'],
+    configuracoes: ['settings.view'],
+    tarefas: ['tasks.view'],
+    'tarefa-analise': [],
+    pagamentos: ['pagamentos.view'],
+    acordos: ['agreements.view'],
+    'acordo-execucao': [],
+    'comprovante-execucao': [],
+  });
 
   const getStoredToken = () => {
     const persistent = localStorage.getItem(tokenKey);
@@ -30,18 +50,35 @@
     sessionStorage.removeItem(tokenKey);
   };
 
+  const clearOAuthFlow = () => {
+    sessionStorage.removeItem(oauthHandoffKey);
+    sessionStorage.removeItem(oauthVerifierKey);
+    sessionStorage.removeItem(oauthStartedAtKey);
+  };
+
   const showError = message => {
     if (!errorBox) return;
     errorBox.textContent = message;
     errorBox.style.display = 'block';
   };
+
   const clearError = () => {
     if (!errorBox) return;
     errorBox.style.display = 'none';
   };
+
   const setAuthState = signedIn => {
     document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out');
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
+  };
+
+  const setMicrosoftLoginBusy = busy => {
+    const button = document.getElementById('microsoft-login');
+    if (!button) return;
+    button.disabled = busy;
+    button.setAttribute('aria-busy', String(busy));
+    const label = button.querySelector('span');
+    if (label) label.textContent = busy ? 'Entrando…' : 'Entrar com Microsoft';
   };
 
   function applyBranding() {
@@ -92,8 +129,24 @@
     `;
   }
 
+  function enforceMicrosoftOnlyUserUI() {
+    const role = document.getElementById('user-create-role');
+    if (role) {
+      role.innerHTML = '<option value="administrative">Usuário Microsoft</option>';
+      role.value = 'administrative';
+      role.disabled = true;
+    }
+    const modules = document.getElementById('user-create-modules');
+    if (modules) modules.hidden = true;
+    const taskAccess = document.getElementById('user-create-task-access');
+    if (taskAccess) taskAccess.hidden = true;
+    const resetOtp = document.getElementById('reset-task-otp');
+    if (resetOtp) resetOtp.hidden = true;
+  }
+
   applyBranding();
   renderMicrosoftOnlyLogin();
+  enforceMicrosoftOnlyUserUI();
 
   function applyUser(user) {
     if (!user?.id || !user?.email || typeof user.permissions !== 'object') {
@@ -138,27 +191,94 @@
     } else if (active?.dataset.permission && user.permissions[active.dataset.permission] !== true) {
       window.showPage?.(pages[0][0]);
     }
-
-    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: user }));
-    window.restorePageRoute?.();
   }
+
+  function activePageId() {
+    return document.querySelector('main .page.active')?.id || 'dashboard';
+  }
+
+  function dispatchModuleAuthentication(pageId = activePageId(), force = false) {
+    const user = window.MBA_CURRENT_USER;
+    if (!user?.permissions) return;
+
+    const now = Date.now();
+    const last = moduleActivationAt.get(pageId) || 0;
+    if (!force && now - last < MODULE_REVALIDATE_MS) return;
+    moduleActivationAt.set(pageId, now);
+
+    const allowedDuringDispatch = new Set(pagePermissionScopes[pageId] || []);
+    const gate = { active: true };
+    const permissions = new Proxy(user.permissions, {
+      get(target, property, receiver) {
+        if (!gate.active || typeof property !== 'string') {
+          return Reflect.get(target, property, receiver);
+        }
+        if (Object.prototype.hasOwnProperty.call(target, property)) {
+          return allowedDuringDispatch.has(property) ? Reflect.get(target, property, receiver) : false;
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const detail = { ...user, permissions };
+    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail }));
+    gate.active = false;
+  }
+
+  function installModuleActivationHooks() {
+    // React/sub-navigation code calls window.showPage directly. Wrap that public
+    // API while preserving the legacy function used by existing click handlers.
+    const originalShowPage = window.showPage;
+    if (typeof originalShowPage === 'function' && !originalShowPage.__mbaLazyWrapped) {
+      const wrapped = function(pageId, updateRoute = true) {
+        const result = originalShowPage(pageId, updateRoute);
+        queueMicrotask(() => dispatchModuleAuthentication(pageId));
+        return result;
+      };
+      wrapped.__mbaLazyWrapped = true;
+      window.showPage = wrapped;
+    }
+
+    // Legacy nav listeners captured their lexical showPage before auth.js loads.
+    // This post-bubble hook observes the resulting active page and activates only it.
+    document.addEventListener('click', event => {
+      if (!window.MBA_CURRENT_USER) return;
+      const target = event.target instanceof Element
+        ? event.target.closest('[data-page], [data-go]')
+        : null;
+      if (!target) return;
+      queueMicrotask(() => dispatchModuleAuthentication(activePageId()));
+    });
+
+    const activateFromHistory = () => {
+      if (!window.MBA_CURRENT_USER) return;
+      queueMicrotask(() => dispatchModuleAuthentication(activePageId()));
+    };
+    window.addEventListener('popstate', activateFromHistory);
+    window.addEventListener('hashchange', activateFromHistory);
+  }
+
+  installModuleActivationHooks();
 
   async function loadProfile() {
     const profile = await window.MBA_API.request('/api/me');
     applyUser(profile);
+    // Restore the requested route before notifying modules. This prevents every
+    // module from bootstrapping against the default dashboard route first.
+    window.restorePageRoute?.();
+    dispatchModuleAuthentication(activePageId(), true);
     setAuthState(true);
     clearError();
   }
 
   async function loadProfileWithRetry() {
     let lastError;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
         return await loadProfile();
       } catch (error) {
         lastError = error;
         if (error?.status === 401 || error?.status === 403) throw error;
-        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
+        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
       }
     }
     throw lastError;
@@ -187,6 +307,7 @@
     .replace(/=+$/, '');
 
   async function initializeAuth() {
+    // Remove retired credential artifacts. Microsoft is the only supported login.
     sessionStorage.removeItem('mba_task_worker_token');
     sessionStorage.removeItem('mba_task_only_user');
     sessionStorage.removeItem('mba_google_verifier');
@@ -207,19 +328,16 @@
       if (code) {
         const verifier = sessionStorage.getItem(oauthVerifierKey);
         if (!verifier) {
-          sessionStorage.removeItem(oauthHandoffKey);
-          throw new Error('Não foi possível realizar o acesso.');
+          clearOAuthFlow();
+          throw new Error('Não foi possível concluir o acesso. Inicie o login novamente.');
         }
         try {
           const result = await exchangeOAuthHandoff(code, verifier);
+          if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
           setStoredToken(result.access_token);
-          sessionStorage.removeItem(oauthHandoffKey);
-          sessionStorage.removeItem(oauthVerifierKey);
+          clearOAuthFlow();
         } catch (error) {
-          if ([401, 403, 422].includes(error?.status)) {
-            sessionStorage.removeItem(oauthHandoffKey);
-            sessionStorage.removeItem(oauthVerifierKey);
-          }
+          if ([401, 403, 422].includes(error?.status)) clearOAuthFlow();
           throw error;
         }
       }
@@ -230,26 +348,38 @@
         setAuthState(false);
       }
     } catch (error) {
-      const invalidSession = error?.status === 401 || error?.status === 403;
-      if (invalidSession) {
+      const hasToken = Boolean(getStoredToken());
+      const invalidSession = error?.status === 401
+        && ['SESSION_INVALID', 'AUTH_REQUIRED'].includes(error?.code);
+      const unauthorizedProfile = error?.status === 403 && error?.code === 'PROFILE_NOT_AUTHORIZED';
+
+      if (invalidSession || unauthorizedProfile) {
         clearStoredToken();
+        window.MBA_CURRENT_USER = null;
         setAuthState(false);
-        showError('Sua sessão terminou. Entre novamente.');
-      } else if (getStoredToken()) {
+        showError(unauthorizedProfile
+          ? 'Seu usuário não possui acesso ativo ao Backoffice.'
+          : 'Sua sessão terminou. Entre novamente.');
+      } else if (hasToken) {
+        // A proxy/backend failure must not destroy a session that may still be valid.
         setAuthState(false);
-        showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página novamente.');
+        showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.');
       } else if (sessionStorage.getItem(oauthHandoffKey) && sessionStorage.getItem(oauthVerifierKey)) {
         setAuthState(false);
         showError('Não foi possível concluir o acesso agora. Atualize a página para tentar novamente sem refazer o login da Microsoft.');
       } else {
         setAuthState(false);
-        showError(error.message);
+        showError(error?.message || 'Não foi possível realizar o acesso.');
       }
     }
   }
 
   document.getElementById('microsoft-login')?.addEventListener('click', async () => {
+    if (microsoftLoginInFlight) return;
+    microsoftLoginInFlight = true;
+    setMicrosoftLoginBusy(true);
     clearError();
+
     try {
       const verifier = base64url(crypto.getRandomValues(new Uint8Array(48)));
       const challenge = base64url(new Uint8Array(await crypto.subtle.digest(
@@ -257,8 +387,11 @@
         new TextEncoder().encode(verifier),
       )));
 
+      // A single active verifier belongs to a single OAuth navigation. The button
+      // stays locked until navigation, so a second click cannot overwrite it.
       sessionStorage.removeItem(oauthHandoffKey);
       sessionStorage.setItem(oauthVerifierKey, verifier);
+      sessionStorage.setItem(oauthStartedAtKey, String(Date.now()));
 
       const result = await window.MBA_API.request('/auth/microsoft/start', {
         method: 'POST',
@@ -270,7 +403,10 @@
       }
       location.assign(target.href);
     } catch (error) {
-      showError(error.message);
+      clearOAuthFlow();
+      microsoftLoginInFlight = false;
+      setMicrosoftLoginBusy(false);
+      showError(error?.message || 'Não foi possível iniciar o acesso com Microsoft.');
     }
   });
 
@@ -281,6 +417,8 @@
       showError('Não foi possível confirmar a revogação no servidor.');
     } finally {
       clearStoredToken();
+      clearOAuthFlow();
+      moduleActivationAt.clear();
       window.MBA_CURRENT_USER = null;
       setAuthState(false);
     }
@@ -288,6 +426,8 @@
 
   window.addEventListener('mba:session-expired', () => {
     clearStoredToken();
+    clearOAuthFlow();
+    moduleActivationAt.clear();
     window.MBA_CURRENT_USER = null;
     setAuthState(false);
     showError('Sua sessão terminou. Entre novamente.');

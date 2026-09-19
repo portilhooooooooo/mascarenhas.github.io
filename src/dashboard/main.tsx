@@ -1,5 +1,5 @@
 import { StrictMode, useEffect } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { ProtocolosPage } from './ProtocolosPage';
 import { configureBaseTaskImport } from './taskBaseImport';
@@ -262,16 +262,51 @@ function configureApplicationShell() {
   configureProfileControl();
 }
 
+let protocolosRoot: Root | null = null;
+
 function mountProtocolosPage() {
   const section = document.getElementById('protocolo');
-  if (!section || section.dataset.reactMounted === 'true') return;
+  if (!section || protocolosRoot) return;
   section.dataset.reactMounted = 'true';
   section.classList.add('protocolo-react-shell');
   section.replaceChildren();
   const mount = document.createElement('div');
   mount.className = 'protocolos-react-root';
   section.appendChild(mount);
-  createRoot(mount).render(<StrictMode><ProtocolosPage/></StrictMode>);
+  protocolosRoot = createRoot(mount);
+  protocolosRoot.render(<StrictMode><ProtocolosPage/></StrictMode>);
+}
+
+function unmountProtocolosPage() {
+  if (!protocolosRoot) return;
+  protocolosRoot.unmount();
+  protocolosRoot = null;
+  const section = document.getElementById('protocolo');
+  if (section) {
+    delete section.dataset.reactMounted;
+    section.replaceChildren();
+  }
+}
+
+function syncProtocolosLifecycle() {
+  const section = document.getElementById('protocolo');
+  const user = (window as DashboardWindow).MBA_CURRENT_USER;
+  const visible = section?.classList.contains('active') === true && !document.hidden;
+  const allowed = user?.permissions?.['automations.view'] === true;
+  if (visible && allowed) mountProtocolosPage();
+  else unmountProtocolosPage();
+}
+
+function configureProtocolosLifecycle() {
+  const section = document.getElementById('protocolo');
+  if (!section) return;
+
+  const observer = new MutationObserver(syncProtocolosLifecycle);
+  observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('mba:authenticated', syncProtocolosLifecycle);
+  window.addEventListener('mba:session-expired', unmountProtocolosPage);
+  document.addEventListener('visibilitychange', syncProtocolosLifecycle);
+  syncProtocolosLifecycle();
 }
 
 function RootApp() {
@@ -287,4 +322,4 @@ function RootApp() {
 const root = document.getElementById('dashboard-root');
 if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
 createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
-mountProtocolosPage();
+configureProtocolosLifecycle();
