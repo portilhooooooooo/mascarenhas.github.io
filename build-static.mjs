@@ -28,6 +28,7 @@ const files = [
   'mock-api.js',
   'data-api.js',
   'app.js',
+  'react-compat.js',
   'agreements.js',
   'payment-receipt.js',
   'protocolo.js',
@@ -55,6 +56,7 @@ const builtIndexHtml = indexHtml
   .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
   .replace('</head>', `  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
+  .replace(/(<script src="\/app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
   .replace('</body>', `  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)
