@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { TasksApp } from './TasksApp';
 
@@ -15,9 +14,5 @@ export function mountTasksPage() {
   section.appendChild(mount);
 
   tasksRoot = createRoot(mount);
-  tasksRoot.render(
-    <StrictMode>
-      <TasksApp />
-    </StrictMode>,
-  );
+  tasksRoot.render(<TasksApp />);
 }
