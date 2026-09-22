@@ -83,7 +83,7 @@ const builtIndexHtml = indexHtml
   .replace(/(href|src)="(?!https?:|\/\/|\/|#|mailto:|data:)([^"]+)"/g, '$1="/$2"');
 
 await writeFile(indexPath, builtIndexHtml, 'utf8');
-await writeFile(`${dist}/.mba-build-sha`, `${buildVersion}\n`, 'utf8');
+await writeFile(`${dist}/mba-build-sha.txt`, `${buildVersion}\n`, 'utf8');
 
 // Keep the runtime brand image on the same cache-busted exact asset used by
 // the document head. The source image is extracted from the provided artwork,
