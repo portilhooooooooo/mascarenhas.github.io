@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './login.css';
 
@@ -21,6 +21,11 @@ function MicrosoftMark() {
 
 function LoginPage() {
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    document.getElementById('login-view')?.removeAttribute('hidden');
+    document.body.dataset.reactLogin = 'true';
+  }, []);
 
   const startMicrosoftLogin = async () => {
     const start = (window as AuthWindow).MBA_AUTH?.startMicrosoftLogin;
@@ -61,6 +66,4 @@ if (mount) {
       <LoginPage />
     </StrictMode>,
   );
-  mount.hidden = false;
-  document.body.dataset.reactLogin = 'true';
 }
