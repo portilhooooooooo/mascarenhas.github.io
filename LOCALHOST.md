@@ -20,7 +20,7 @@ O localhost deve executar o mesmo artefato `dist/` publicado pela Cloudflare. N�
    ```
 5. Acesse `http://localhost:5173`.
 
-`npm run dev` executa `npm run build` antes de subir o servidor local. O build recompila `src/dashboard/main.tsx`, gera o bundle React em `.build/react-dashboard`, monta o artefato final em `dist/` e então usa `vite preview` para servir exatamente esse `dist/`.
+`npm run dev` executa `npm run build` antes de subir o servidor local. O build recompila `src/dashboard/main.tsx`, gera o bundle React em `.build/react-dashboard`, monta o artefato final em `dist/` e então usa `vite preview --outDir dist` para servir exatamente esse `dist/`.
 
 ## API local
 
@@ -39,6 +39,16 @@ CMD:
 set VITE_BACKEND_TARGET=http://127.0.0.1:5001
 npm run dev
 ```
+
+## Preview visual sem backend
+
+Para validar apenas UI, navegação e layout usando os mocks já existentes:
+
+```text
+http://localhost:5173/?preview=1
+```
+
+Esse modo ainda serve o mesmo `dist/`; ele só ativa a identidade/mock API local quando o hostname é `localhost` ou `127.0.0.1` e a query `preview=1` está presente.
 
 ## Microsoft Login
 
