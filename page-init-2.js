@@ -66,23 +66,6 @@
 })();
 
 (() => {
-  const version = '20260912-controladoria-tarefas';
-  if (!document.querySelector('link[data-tasks-workspace]')) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `tasks-workspace.css?v=${version}`;
-    link.dataset.tasksWorkspace = 'true';
-    document.head.appendChild(link);
-  }
-  if (!document.querySelector('script[data-tasks-workspace]')) {
-    const script = document.createElement('script');
-    script.src = `tasks-workspace.js?v=${version}`;
-    script.dataset.tasksWorkspace = 'true';
-    document.body.appendChild(script);
-  }
-})();
-
-(() => {
   try {
     if (typeof pageRoutes !== 'undefined') pageRoutes.relatorios = 'relatorios';
     if (typeof permissionSections !== 'undefined') permissionSections.analytics = 'Banco de Dados';
