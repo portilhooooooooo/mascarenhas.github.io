@@ -24,7 +24,8 @@ assert.match(api, /inFlightGets\.has\(path\)/, 'duplicate GETs must share one re
 assert.match(api, /TASK_PROCESS_CACHE_MS = 15000/, 'task process queue must have a short-lived cache');
 
 assert.match(config, /mbaIsLocal[\s\S]*\? ''[\s\S]*mba-backoffice-proxy-production/, 'localhost must use same-origin API paths while production keeps Railway');
-assert.match(packageJson.scripts['dev:local'], /npm run build && vite preview/, 'localhost must serve the freshly built production artifact');
+assert.match(packageJson.scripts['dev:local'], /npm run build && vite preview/, 'localhost must build before serving');
+assert.match(packageJson.scripts['dev:local'], /--outDir dist/, 'localhost must serve the final dist artifact');
 assert.equal(packageJson.scripts.dev, 'npm run dev:local', 'npm run dev must use the deterministic localhost runtime');
 assert.doesNotMatch(packageJson.scripts['dev:local'], /vite --host/, 'localhost must not serve the repository source tree directly');
 
