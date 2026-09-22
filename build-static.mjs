@@ -2,7 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 
 const dist = 'dist';
-const fallbackVersion = '20260922-tasks-workspace';
+const fallbackVersion = '20260922-react-tasks';
 let buildVersion = process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA || '';
 
 if (!buildVersion) {
@@ -21,7 +21,6 @@ await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
 const files = [
   'index.html',
   'styles.css',
-  'tasks.css',
   'agreements.css',
   'payment-receipt.css',
   'protocolo.css',
@@ -29,8 +28,6 @@ const files = [
   'mock-api.js',
   'data-api.js',
   'app.js',
-  'tasks-lobby.js',
-  'tasks-workspace.js',
   'agreements.js',
   'payment-receipt.js',
   'protocolo.js',
@@ -57,8 +54,8 @@ const indexHtml = await readFile(indexPath, 'utf8');
 const builtIndexHtml = indexHtml
   .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
-  .replace('</head>', `  <link rel="stylesheet" href="/tasks.css?v=${buildVersion}">\n  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
-  .replace('</body>', `  <script src="/tasks-workspace.js?v=${buildVersion}"></script>\n  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace('</head>', `  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
+  .replace('</body>', `  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)
   .replace(/payment-receipt\.css(?:\?v=[^"']+)?/g, `payment-receipt.css?v=${buildVersion}`)
