@@ -16,7 +16,17 @@ export default defineConfig({
     allowedHosts: ['dev.portilhobackoffice.site', 'local.portilhobackoffice.site'],
   },
   build: {
-    outDir: '.build/react-dashboard', emptyOutDir: true, cssCodeSplit: false,
-    lib: { entry: resolve(__dirname, 'src/dashboard/main.tsx'), formats: ['es'], fileName: () => 'dashboard-react.js', cssFileName: 'dashboard-react' },
+    outDir: '.build/react-dashboard',
+    emptyOutDir: true,
+    cssCodeSplit: false,
+    lib: {
+      entry: {
+        dashboard: resolve(__dirname, 'src/dashboard/main.tsx'),
+        login: resolve(__dirname, 'src/login/main.tsx'),
+      },
+      formats: ['es'],
+      fileName: (_format, entryName) => entryName === 'login' ? 'login-react.js' : 'dashboard-react.js',
+      cssFileName: 'dashboard-react',
+    },
   },
 });
