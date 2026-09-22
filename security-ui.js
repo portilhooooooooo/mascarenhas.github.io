@@ -1,11 +1,10 @@
 (() => {
   'use strict';
 
-  const version = '20260921-login-workspace-v3';
+  const version = '20260922-login-workspace-v4';
   const screen = document.getElementById('login-screen');
-  const oauthButton = document.getElementById('microsoft-login');
   const errorBox = document.getElementById('login-error');
-  if (!screen || !oauthButton || screen.dataset.workspaceLogin === 'true') return;
+  if (!screen || screen.dataset.workspaceLogin === 'true') return;
 
   const verifierKey = 'mba_oauth_verifier';
   const handoffKey = 'mba_oauth_handoff';
@@ -40,7 +39,8 @@
     divider.className = 'login-access-divider'; divider.textContent = 'ou';
     const corporate = document.createElement('button');
     corporate.className = 'login-access-secondary'; corporate.type = 'button'; corporate.textContent = 'Acesso Corporativo';
-    oauthButton.classList.add('login-oauth-proxy'); oauthButton.tabIndex = -1; oauthButton.setAttribute('aria-hidden', 'true');
+    const oauthButton = document.createElement('button');
+    oauthButton.className = 'login-oauth-proxy'; oauthButton.id = 'microsoft-login'; oauthButton.type = 'button'; oauthButton.tabIndex = -1; oauthButton.setAttribute('aria-hidden', 'true'); oauthButton.innerHTML = '<span>Entrar com Microsoft</span>';
     form.append(field, primary, divider, corporate, oauthButton); if (errorBox) form.appendChild(errorBox);
     access.appendChild(form); main.appendChild(access); screen.replaceChildren(header, main);
     screen.classList.add('login-workspace'); screen.dataset.workspaceLogin = 'true'; screen.style.visibility = 'visible';
@@ -68,6 +68,11 @@
   };
 
   screen.style.visibility = 'hidden';
+  const existingStylesheet = document.querySelector('link[data-login-workspace="true"]');
+  if (existingStylesheet) {
+    render();
+    return;
+  }
   const stylesheet = document.createElement('link');
   stylesheet.rel = 'stylesheet'; stylesheet.href = `/login-ui.css?v=${version}`; stylesheet.dataset.loginWorkspace = 'true';
   stylesheet.addEventListener('load', render, { once: true });
