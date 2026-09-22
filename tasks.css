@@ -1,137 +1,38 @@
-/* ============================================================
-   Subnavegação do módulo Tarefas
-   ============================================================ */
-.main-area>.tasks-module-nav{
-  display:flex;
-  align-items:center;
-  flex:0 0 46px;
-  min-height:46px;
-  margin:0;
-  padding:0 24px;
-  border:0;
-  border-bottom:1px solid var(--line);
-  background:#fff;
-}
-.main-area>.tasks-module-nav[hidden]{display:none!important}
-.tasks-module-nav-inner{width:100%;height:46px;display:flex;align-items:center;gap:28px}
-.tasks-module-nav button{
-  position:relative;
-  height:46px;
-  padding:0;
-  border:0;
-  background:transparent;
-  color:#64748b;
-  font:600 12px/1 Inter,sans-serif;
-  cursor:pointer;
-}
-.tasks-module-nav button[hidden]{display:none!important}
-.tasks-module-nav button:hover{color:var(--ink)}
-.tasks-module-nav button.active{color:var(--ink)}
-.tasks-module-nav button.active::after{
-  content:"";
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:0;
-  height:2px;
-  border-radius:2px 2px 0 0;
-  background:var(--accent);
-}
-
-/* ============================================================
-   Gestão de Tarefas
-   ============================================================ */
-#tasks-management-view .lobby-title{align-items:flex-end;gap:20px;margin-bottom:18px}
-#tasks-management-view .lobby-actions{display:flex;align-items:flex-end;gap:10px}
-#tasks-management-view .task-filter{display:grid;gap:5px;color:var(--muted);font-size:10.5px;font-weight:500}
-#tasks-management-view .task-filter select{min-width:210px;height:36px}
-#tasks-management-view .task-table-wrap{overflow:hidden;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.02)}
-#tasks-management-view .task-table{width:100%;border-collapse:collapse;table-layout:fixed}
-#tasks-management-view .task-table thead{background:#f8fafc}
-#tasks-management-view .task-table th{height:42px;padding:0 16px;border-bottom:1px solid var(--line);color:#64748b;font-size:10.5px;font-weight:600;letter-spacing:.035em;text-align:left;text-transform:uppercase}
-#tasks-management-view .task-table td{height:72px;padding:12px 16px;border-bottom:1px solid var(--line);color:#334155;font-size:12px;vertical-align:middle}
-#tasks-management-view .task-table tbody tr:last-child td{border-bottom:0}
-#tasks-management-view .task-table tbody tr:hover{background:#fbfdff}
-#tasks-management-view .task-table th:nth-child(1){width:35%}
-#tasks-management-view .task-table th:nth-child(2){width:22%}
-#tasks-management-view .task-table th:nth-child(3){width:10%}
-#tasks-management-view .task-table th:nth-child(4){width:11%}
-#tasks-management-view .task-table th:nth-child(5){width:15%}
-#tasks-management-view .task-table th:nth-child(6){width:165px}
-#tasks-management-view .task-table td:first-child{display:flex;align-items:center;gap:12px}
-#tasks-management-view .task-table td:first-child strong{min-width:0;overflow:hidden;color:var(--ink);font-size:12.5px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-#tasks-management-view .row-icon{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;border-radius:8px;background:#f1f5f9;color:#1e3a8a}
-#tasks-management-view .row-icon svg{width:15px;height:15px}
-#tasks-management-view .empty-pill{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:25px;padding:0 9px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#475569;font-size:11px;font-weight:600}
-#tasks-management-view .task-status{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;background:#fff7ed;color:#b45309;font-size:10.5px;font-weight:600;text-transform:none}
-#tasks-management-view .task-status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
-#tasks-management-view .task-status.status-in-progress{background:#eff6ff;color:#2563eb}
-#tasks-management-view .task-status.status-completed{background:#f0fdf4;color:#15803d}
-#tasks-management-view .task-status.status-inactive,#tasks-management-view .task-status.status-cancelled{background:#f1f5f9;color:#64748b}
-#tasks-management-view .table-row-actions{display:flex;align-items:center;justify-content:flex-start;gap:7px;white-space:nowrap}
-#tasks-management-view .table-row-actions button{height:34px}
-#tasks-management-view .execute-button{display:none!important}
-#tasks-management-view .task-delete-button{width:34px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:8px;background:#fff;color:#64748b;cursor:pointer}
-#tasks-management-view .task-delete-button:hover{border-color:#fecaca;background:#fef2f2;color:#dc2626}
-#tasks-management-view .task-delete-button svg{width:14px;height:14px}
-
-/* ============================================================
-   Workspace único de execução
-   A lista nativa de cada tarefa continua no DOM apenas para os
-   handlers legados; o usuário opera pela fila unificada abaixo.
-   ============================================================ */
-.tasks-native-process-list{display:none!important}
-.tasks-unified-sidebar{
-  align-self:start;
-  min-height:0!important;
-  max-height:calc(100dvh - 250px);
-  display:flex!important;
-  flex-direction:column;
-  overflow:hidden;
-}
-.tasks-unified-sidebar>h2{margin:0 0 8px;font-size:12px}
-.tasks-unified-sidebar .process-search{flex:0 0 auto}
-.tasks-unified-filters{flex:0 0 auto;display:grid!important;grid-template-columns:minmax(0,1.25fr) minmax(0,.85fr);gap:6px;margin:6px 0 8px}
-.tasks-unified-filters select{min-width:0;width:100%;height:30px;padding:0 8px;font-size:10px;text-overflow:ellipsis}
-.tasks-unified-items{display:grid;gap:5px;min-height:0;overflow:auto;align-content:start;scrollbar-width:thin}
-.tasks-unified-items .process-item{min-height:54px;height:auto;gap:7px;padding:7px 8px}
-.tasks-unified-items .process-item>span svg{width:13px;height:13px}
-.tasks-unified-items .process-item div{min-width:0;display:grid;gap:2px}
-.tasks-unified-items .process-item strong{overflow:hidden;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}
-.tasks-unified-items .process-item small{overflow:hidden;color:var(--muted);font-size:9px;text-overflow:ellipsis;white-space:nowrap}
-.tasks-unified-items .process-item small b{color:#475569;font-weight:600}
-.tasks-unified-items .process-item em{font-size:8.5px;white-space:nowrap}
-.tasks-unified-items .process-item em.overdue{color:#c2410c}
-.tasks-unified-items .process-item em.completed{color:#15803d}
-.tasks-unified-pagination{flex:0 0 auto;grid-template-columns:26px 1fr 26px;gap:6px;margin-top:6px;padding-top:6px}
-.tasks-unified-pagination button{width:26px;height:26px}
-.tasks-unified-pagination span{font-size:9.5px}
-
-/* O formulário continua usando o mesmo shell visual em qualquer tipo de tarefa. */
-#tarefa-analise .analysis-layout,
-#comprovante-execucao .payment-analysis-layout{align-items:start}
-#tarefa-analise .tasks-unified-sidebar,
-#comprovante-execucao .tasks-unified-sidebar{min-height:470px}
-#tarefa-analise .detail-heading h1,
-#comprovante-execucao .payment-receipt-heading h1{font-size:18px}
-
-@media(max-width:1180px){
-  #tasks-management-view .task-table th:nth-child(2),#tasks-management-view .task-table td:nth-child(2){display:none}
-  #tasks-management-view .task-table th:nth-child(1){width:auto}
-  #tasks-management-view .task-table th:nth-child(6){width:150px}
-}
-@media(max-width:900px){
-  .main-area>.tasks-module-nav{padding-inline:18px}
-  #tasks-management-view .lobby-title{align-items:stretch;flex-direction:column}
-  #tasks-management-view .lobby-actions{align-items:stretch;flex-wrap:wrap}
-  #tasks-management-view .task-filter{flex:1}
-  #tasks-management-view .task-filter select{width:100%;min-width:0}
-  #tasks-management-view .task-table-wrap{overflow-x:auto}
-  #tasks-management-view .task-table{min-width:760px}
-  .tasks-unified-sidebar{max-height:none}
-}
-@media(max-width:680px){
-  .main-area>.tasks-module-nav{padding-inline:14px}
-  .tasks-module-nav-inner{gap:20px}
-  .tasks-unified-filters{grid-template-columns:1fr}
-}
+/* Lobby de Tarefas — camada visual própria */
+#tarefas .lobby-title{align-items:flex-end;gap:20px;margin-bottom:18px}
+#tarefas .lobby-actions{display:flex;align-items:flex-end;gap:10px}
+#tarefas .task-filter{display:grid;gap:5px;color:var(--muted);font-size:10.5px;font-weight:500}
+#tarefas .task-filter select{min-width:210px;height:36px}
+#tarefas .task-table-wrap{overflow:hidden;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.02)}
+#tarefas .task-table{width:100%;border-collapse:collapse;table-layout:fixed}
+#tarefas .task-table thead{background:#f8fafc}
+#tarefas .task-table th{height:42px;padding:0 16px;border-bottom:1px solid var(--line);color:#64748b;font-size:10.5px;font-weight:600;letter-spacing:.035em;text-align:left;text-transform:uppercase}
+#tarefas .task-table td{height:72px;padding:12px 16px;border-bottom:1px solid var(--line);color:#334155;font-size:12px;vertical-align:middle}
+#tarefas .task-table tbody tr:last-child td{border-bottom:0}
+#tarefas .task-table tbody tr:hover{background:#fbfdff}
+#tarefas .task-table th:nth-child(1){width:35%}
+#tarefas .task-table th:nth-child(2){width:20%}
+#tarefas .task-table th:nth-child(3){width:10%}
+#tarefas .task-table th:nth-child(4){width:11%}
+#tarefas .task-table th:nth-child(5){width:15%}
+#tarefas .task-table th:nth-child(6){width:220px}
+#tarefas .task-table td:first-child{display:flex;align-items:center;gap:12px}
+#tarefas .task-table td:first-child strong{min-width:0;overflow:hidden;color:var(--ink);font-size:12.5px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+#tarefas .row-icon{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;border-radius:8px;background:#f1f5f9;color:#1e3a8a}
+#tarefas .row-icon svg{width:15px;height:15px}
+#tarefas .empty-pill{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:25px;padding:0 9px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#475569;font-size:11px;font-weight:600}
+#tarefas .task-status{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;background:#fff7ed;color:#b45309;font-size:10.5px;font-weight:600;text-transform:none}
+#tarefas .task-status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+#tarefas .task-status.status-in-progress{background:#eff6ff;color:#2563eb}
+#tarefas .task-status.status-completed{background:#f0fdf4;color:#15803d}
+#tarefas .task-status.status-inactive,#tarefas .task-status.status-cancelled{background:#f1f5f9;color:#64748b}
+#tarefas .table-row-actions{display:flex;align-items:center;justify-content:flex-start;gap:7px;white-space:nowrap}
+#tarefas .table-row-actions button{height:34px}
+#tarefas .execute-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:11.5px;font-weight:600;cursor:pointer}
+#tarefas .execute-button:hover{border-color:#bfdbfe;background:var(--accent-soft);color:var(--accent)}
+#tarefas .execute-button svg{width:13px;height:13px}
+#tarefas .task-delete-button{width:34px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:8px;background:#fff;color:#64748b;cursor:pointer}
+#tarefas .task-delete-button:hover{border-color:#fecaca;background:#fef2f2;color:#dc2626}
+#tarefas .task-delete-button svg{width:14px;height:14px}
+@media(max-width:1180px){#tarefas .task-table th:nth-child(2),#tarefas .task-table td:nth-child(2){display:none}#tarefas .task-table th:nth-child(1){width:auto}#tarefas .task-table th:nth-child(6){width:205px}}
+@media(max-width:850px){#tarefas .lobby-title{align-items:stretch;flex-direction:column}#tarefas .lobby-actions{align-items:stretch;flex-wrap:wrap}#tarefas .task-filter{flex:1}#tarefas .task-filter select{width:100%;min-width:0}#tarefas .task-table-wrap{overflow-x:auto}#tarefas .task-table{min-width:780px}}

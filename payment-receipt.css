@@ -1,277 +1,54 @@
-/* ============================================================
-   Tasks workspace navigation
-   ============================================================ */
-.tasks-module-nav{
-  display:flex;
-  align-items:center;
-  gap:22px;
-  min-height:42px;
-  margin:0 0 14px;
-  border-bottom:1px solid var(--line);
-}
-.tasks-module-nav[hidden]{display:none!important}
-.tasks-module-nav button{
-  position:relative;
-  height:42px;
-  padding:0 2px;
-  border:0;
-  background:transparent;
-  color:var(--muted);
-  font:600 12px/1 Inter,sans-serif;
-  cursor:pointer;
-}
-.tasks-module-nav button:hover{color:var(--ink)}
-.tasks-module-nav button.active{color:var(--accent)}
-.tasks-module-nav button.active::after{
-  content:"";
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:-1px;
-  height:2px;
-  border-radius:2px 2px 0 0;
-  background:var(--accent);
-}
-.tasks-module-active #tarefas .lobby-title{margin-top:0}
-.task-execution-kicker{
-  display:block;
-  margin:0 0 4px;
-  color:var(--muted);
-  font-size:9.5px;
-  font-weight:700;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
+.payment-receipt-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:10px}
+.payment-receipt-heading .secondary-button{flex:0 0 auto}
+.payment-task-meta{margin-bottom:10px}.payment-task-health{gap:0}.payment-task-health .status-dot{background:var(--success)}
+.payment-task-health.overdue .status-dot{background:var(--warning)}.payment-task-health.critical .status-dot{background:var(--danger)}
+.payment-task-health.overdue span{color:var(--warning)}.payment-task-health.critical span{color:var(--danger)}
+.payment-analysis-layout{align-items:stretch}.payment-process-list{align-self:stretch}.payment-process-list #payment-process-items{display:grid;gap:6px}
+.payment-process-list .process-item>span{color:var(--accent)}.payment-process-list .process-item em{white-space:nowrap}
+.payment-receipt-card{max-width:none;margin:0;overflow:hidden}.payment-receipt-card>header strong{font-weight:600}.payment-receipt-card>header p strong{color:var(--ink)}
+.payment-status{display:inline-flex;align-items:center;width:max-content;min-height:20px;padding:0 8px;border-radius:var(--radius-sm);font-size:10px;font-weight:600;background:var(--accent-soft);color:var(--accent)}
+.payment-status.incerto{background:var(--warning-soft);color:var(--warning)}.payment-status.liquidado{background:var(--success-soft);color:var(--success)}.payment-status.pagamento_recusado{background:var(--danger-soft);color:var(--danger)}
+.payment-receipt-form{display:flex;flex-direction:column;gap:12px;padding:14px;min-height:0}.payment-question{display:grid;gap:7px;margin:0;padding:0;border:0}
+.payment-question+.payment-question,.payment-reason-field+.payment-question{padding-top:12px;border-top:1px solid var(--line)}
+.payment-question legend,.payment-reason-field>span{color:var(--ink);font-size:11.5px;font-weight:600}.payment-question>p{margin:0;color:var(--muted);font-size:10.5px}
+.payment-choice-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.payment-choice-grid label{position:relative;min-height:74px}
+.payment-choice-grid input{position:absolute;opacity:0}.payment-choice-grid label>span{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;cursor:pointer;text-align:center}
+.payment-choice-grid svg{width:15px;height:15px;color:var(--muted)}.payment-choice-grid b{font-size:11px}.payment-choice-grid input:checked+span{border-color:var(--accent);background:var(--accent-soft)}.payment-choice-grid input:checked+span svg{color:var(--accent)}
+.payment-retry-choice{display:flex;gap:7px}.payment-retry-choice label{min-width:190px}.payment-reason-field{display:grid;gap:6px}.payment-reason-field textarea{width:100%;min-height:68px;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);resize:vertical;color:var(--ink);background:#fff;outline:none;font-size:11px;line-height:1.4}
+.payment-reason-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}.payment-reason-field>small{justify-self:end;color:var(--muted-soft);font-size:9.5px}
+.payment-block-field{padding-top:12px!important;border-top:1px solid var(--line)!important}.payment-receipt-form footer{display:flex;justify-content:space-between;gap:10px;padding-top:0;margin-top:auto}
+.payment-receipt-error{margin:0;padding:8px 10px;border:1px solid #fecaca;border-radius:var(--radius-sm);background:var(--danger-soft);color:var(--danger);font-size:10.5px;font-weight:500}
+.payment-receipt-empty{max-width:820px;margin:0 auto;padding:40px 24px;text-align:center}.payment-receipt-empty>span{width:36px;height:36px;display:grid;place-items:center;margin:0 auto 10px;border-radius:9px;background:var(--success-soft);color:var(--success)}.payment-receipt-empty svg{width:18px;height:18px}.payment-receipt-empty h2{margin:0 0 4px;font-size:13px}.payment-receipt-empty p{margin:0;color:var(--muted);font-size:11px}
+.payment-history-dialog{width:min(760px,calc(100vw - 32px))}.payment-history-shell>header,.payment-history-shell>footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}.payment-history-shell>header{border-bottom:1px solid var(--line)}.payment-history-shell>footer{border-top:1px solid var(--line);justify-content:flex-end}.payment-history-shell h2{margin:0 0 3px;font-size:14px}.payment-history-shell p{margin:0;color:var(--muted);font-size:10.5px}
+.payment-history-body{max-height:55vh;overflow:auto;padding:8px 16px 14px}.payment-history-row{display:grid;grid-template-columns:1.4fr 1fr .8fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:10.5px}.payment-history-row strong{font-size:11px}.payment-history-row span{color:var(--muted)}
 
-/* ============================================================
-   Payment task shell
-   ============================================================ */
-.payment-receipt-heading{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:16px;
-  margin-bottom:12px;
-}
-.payment-receipt-heading h1{
-  margin:0 0 3px;
-  font-size:20px;
-  line-height:1.2;
-}
-.payment-receipt-heading p{
-  margin:0;
-  color:var(--muted);
-  font-size:11px;
-}
-.payment-task-meta{margin-bottom:12px}
-.payment-task-health{gap:0}
-.payment-task-health .status-dot{background:var(--success)}
-.payment-task-health.overdue .status-dot{background:var(--warning)}
-.payment-task-health.critical .status-dot{background:var(--danger)}
-.payment-task-health.overdue span{color:var(--warning)}
-.payment-task-health.critical span{color:var(--danger)}
-
-.payment-analysis-layout{align-items:start}
-.payment-process-list{align-self:start;min-height:0}
-.payment-process-list #payment-process-items{display:grid;gap:6px}
-.payment-process-list .process-item>span{color:var(--accent)}
-.payment-process-list .process-item em{white-space:nowrap}
-.payment-process-list .process-item em,
-.payment-process-list .process-item small{overflow:hidden;text-overflow:ellipsis}
-
-.payment-receipt-card{
-  align-self:start;
-  width:100%;
-  max-width:none;
-  margin:0;
-  overflow:hidden;
-}
-.payment-receipt-card>header strong{font-weight:600}
-.payment-receipt-card>header p strong{color:var(--ink)}
-.payment-status{
-  display:inline-flex;
-  align-items:center;
-  width:max-content;
-  min-height:20px;
-  padding:0 8px;
-  border-radius:var(--radius-sm);
-  background:var(--accent-soft);
-  color:var(--accent);
-  font-size:10px;
-  font-weight:600;
-}
-.payment-status.incerto{background:var(--warning-soft);color:var(--warning)}
-.payment-status.liquidado{background:var(--success-soft);color:var(--success)}
-.payment-status.pagamento_recusado{background:var(--danger-soft);color:var(--danger)}
-.payment-status.completed{background:var(--success-soft);color:var(--success)}
-
-.payment-receipt-form{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  padding:14px;
-  min-height:0;
-}
-.payment-question{
-  display:grid;
-  gap:7px;
-  margin:0;
-  padding:0;
-  border:0;
-}
-.payment-question+.payment-question,
-.payment-reason-field+.payment-question{
-  padding-top:12px;
-  border-top:1px solid var(--line);
-}
-.payment-question legend,
-.payment-reason-field>span{
-  color:var(--ink);
-  font-size:11.5px;
-  font-weight:600;
-}
-.payment-question>p{margin:0;color:var(--muted);font-size:10.5px}
-.payment-choice-grid{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:8px;
-}
-.payment-choice-grid-two{grid-template-columns:repeat(2,minmax(0,1fr))}
-.payment-choice-grid label{position:relative;min-height:68px}
-.payment-choice-grid input{position:absolute;opacity:0;pointer-events:none}
-.payment-choice-grid label>span{
-  height:100%;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:5px;
-  padding:9px 10px;
-  border:1px solid var(--line);
-  border-radius:var(--radius-sm);
-  background:#fff;
-  cursor:pointer;
-  text-align:center;
-  transition:border-color .15s ease,background .15s ease,box-shadow .15s ease;
-}
-.payment-choice-grid label>span:hover{border-color:#bcc7dd}
-.payment-choice-grid svg{width:15px;height:15px;color:var(--muted)}
-.payment-choice-grid b{font-size:11px}
-.payment-choice-grid small{color:var(--muted);font-size:9.5px;font-weight:500}
-.payment-choice-grid input:checked+span{
-  border-color:var(--accent);
-  background:var(--accent-soft);
-  box-shadow:inset 0 0 0 1px var(--accent);
-}
-.payment-choice-grid input:checked+span svg{color:var(--accent)}
-.payment-binary-choice{display:flex;gap:8px}
-.payment-binary-choice label{min-width:92px}
-.payment-binary-choice label span{min-height:36px}
-.payment-reason-field{display:grid;gap:6px}
-.payment-reason-field textarea{
-  width:100%;
-  min-height:72px;
-  padding:9px 10px;
-  border:1px solid var(--line);
-  border-radius:var(--radius-sm);
-  resize:vertical;
-  background:#fff;
-  color:var(--ink);
-  outline:none;
-  font:400 11px/1.45 Inter,sans-serif;
-}
-.payment-reason-field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.payment-reason-field>small{justify-self:end;color:var(--muted-soft);font-size:9.5px}
-.payment-block-field{padding-top:12px!important;border-top:1px solid var(--line)!important}
-.payment-receipt-form footer{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  margin-top:2px;
-  padding-top:2px;
-}
-.payment-receipt-error{
-  margin:0;
-  padding:8px 10px;
-  border:1px solid #fecaca;
-  border-radius:var(--radius-sm);
-  background:var(--danger-soft);
-  color:var(--danger);
-  font-size:10.5px;
-  font-weight:500;
-}
-.payment-receipt-form.is-readonly{opacity:.72}
-.payment-receipt-form.is-readonly::before{
-  content:"Processo concluído · visualização somente para consulta";
-  display:block;
-  padding:8px 10px;
-  border:1px solid var(--line);
-  border-radius:var(--radius-sm);
-  background:var(--surface-subtle,#f8fafc);
-  color:var(--muted);
-  font-size:10.5px;
-  font-weight:600;
-}
-.payment-receipt-empty{max-width:820px;margin:0 auto;padding:40px 24px;text-align:center}
-.payment-receipt-empty>span{
-  width:36px;
-  height:36px;
-  display:grid;
-  place-items:center;
-  margin:0 auto 10px;
-  border-radius:9px;
-  background:var(--success-soft);
-  color:var(--success);
-}
-.payment-receipt-empty svg{width:18px;height:18px}
-.payment-receipt-empty h2{margin:0 0 4px;font-size:13px}
-.payment-receipt-empty p{margin:0;color:var(--muted);font-size:11px}
-
-.payment-history-dialog{width:min(760px,calc(100vw - 32px))}
-.payment-history-shell>header,
-.payment-history-shell>footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px}
-.payment-history-shell>header{border-bottom:1px solid var(--line)}
-.payment-history-shell>footer{border-top:1px solid var(--line);justify-content:flex-end}
-.payment-history-shell h2{margin:0 0 3px;font-size:14px}
-.payment-history-shell p{margin:0;color:var(--muted);font-size:10.5px}
-.payment-history-body{max-height:55vh;overflow:auto;padding:8px 16px 14px}
-.payment-history-row{display:grid;grid-template-columns:1.4fr 1fr .8fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:10.5px}
-.payment-history-row strong{font-size:11px}
-.payment-history-row span{color:var(--muted)}
-
+/* Desktop task execution is deliberately viewport-bound: the analyst should not
+   need to scroll the page to finish one case. Conditional flows keep the same
+   frame height and the actions stay anchored at the bottom of the workspace. */
 @media(min-width:981px){
-  #comprovante-execucao.payment-receipt-page.active{min-height:0;padding-top:4px;padding-bottom:12px}
-  #comprovante-execucao .payment-receipt-heading{align-items:center;margin-bottom:10px}
-  #comprovante-execucao .payment-receipt-heading h1{margin:0 0 3px;font-size:18px}
-  #comprovante-execucao .payment-receipt-heading p{font-size:10.5px;line-height:1.4}
-  #comprovante-execucao .payment-task-meta{margin-bottom:10px;padding:9px 14px}
+  #comprovante-execucao.payment-receipt-page.active{height:calc(100dvh - var(--mba-topbar-height,52px));min-height:0;display:flex;flex-direction:column;overflow:hidden;padding-top:8px;padding-bottom:10px}
+  #comprovante-execucao .back-link{height:24px;min-height:24px;flex:0 0 24px;margin:0 0 2px;font-size:10.5px}
+  #comprovante-execucao .back-link svg{width:12px;height:12px}
+  #comprovante-execucao .payment-receipt-heading{flex:0 0 auto;align-items:center;margin-bottom:8px}
+  #comprovante-execucao .payment-receipt-heading h1{margin:0 0 3px;font-size:18px;line-height:1.2}
+  #comprovante-execucao .payment-receipt-heading p{font-size:11px;line-height:1.4}
+  #comprovante-execucao .payment-receipt-heading .secondary-button{height:32px;min-height:32px;padding-inline:11px;font-size:11px}
+
+  #comprovante-execucao .payment-task-meta{flex:0 0 auto;margin-bottom:10px;padding:9px 14px}
   #comprovante-execucao .payment-task-meta>div{gap:3px;padding-right:16px}
   #comprovante-execucao .payment-task-meta>div+div{padding-left:16px}
   #comprovante-execucao .payment-task-meta small{font-size:9.5px}
   #comprovante-execucao .payment-task-meta strong{font-size:11.5px;line-height:1.2}
   #comprovante-execucao .progress-track{height:4px;margin-top:1px}
-  #comprovante-execucao .payment-analysis-layout{grid-template-columns:240px minmax(0,1fr);gap:10px;align-items:start}
-  #comprovante-execucao .payment-process-list{
-    display:flex;
-    flex-direction:column;
-    min-height:470px;
-    max-height:calc(100dvh - 245px);
-    padding:11px;
-    overflow:hidden;
-  }
+
+  #comprovante-execucao .payment-analysis-layout{flex:1 1 auto;min-height:0;grid-template-columns:240px minmax(0,1fr);gap:10px;align-items:stretch}
+  #comprovante-execucao .payment-process-list{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:11px}
   #comprovante-execucao .payment-process-list h2{margin:0 0 8px;font-size:12px}
   #comprovante-execucao .process-search{height:31px;padding-inline:9px}
   #comprovante-execucao .process-search input{font-size:10.5px}
   #comprovante-execucao .process-filters{gap:6px;margin:6px 0 8px}
   #comprovante-execucao .process-filters select{height:29px;padding-inline:8px;font-size:10px}
-  #comprovante-execucao #payment-process-items{
-    flex:1 1 auto;
-    min-height:0;
-    align-content:start;
-    gap:5px;
-    overflow:auto;
-    scrollbar-width:thin;
-  }
+  #comprovante-execucao #payment-process-items{flex:1 1 auto;min-height:0;align-content:start;gap:5px;overflow:hidden}
   #comprovante-execucao .process-item{min-height:46px;height:46px;gap:7px;padding:6px 8px}
   #comprovante-execucao .process-item>span svg{width:13px;height:13px}
   #comprovante-execucao .process-item div{gap:1px}
@@ -281,49 +58,49 @@
   #comprovante-execucao .process-pagination{grid-template-columns:26px 1fr 26px;gap:6px;margin-top:6px;padding-top:6px}
   #comprovante-execucao .process-pagination button{width:26px;height:26px}
   #comprovante-execucao .process-pagination span{font-size:9.5px}
-  #comprovante-execucao .payment-receipt-card{height:auto;min-height:0;max-height:calc(100dvh - 245px);overflow:auto}
-  #comprovante-execucao .payment-receipt-card>header{padding:11px 14px}
+
+  #comprovante-execucao .payment-receipt-card{height:100%;min-height:0;display:flex;flex-direction:column}
+  #comprovante-execucao .payment-receipt-card>header{flex:0 0 auto;padding:11px 14px}
   #comprovante-execucao .payment-receipt-card>header small{font-size:9.5px}
   #comprovante-execucao .payment-receipt-card>header h2{margin:3px 0;font-size:14px;line-height:1.2}
   #comprovante-execucao .payment-receipt-card>header p{margin:0 0 6px;font-size:10.5px}
   #comprovante-execucao .payment-status{min-height:19px;padding-inline:7px;font-size:9.5px}
-  #comprovante-execucao .payment-receipt-form{display:flex;flex:none;gap:10px;padding:11px 14px 12px}
+  #comprovante-execucao .payment-receipt-form{flex:1 1 auto;min-height:0;gap:10px;padding:11px 14px 12px}
   #comprovante-execucao .payment-question{gap:6px}
   #comprovante-execucao .payment-question+.payment-question,
   #comprovante-execucao .payment-reason-field+.payment-question{padding-top:10px}
   #comprovante-execucao .payment-question legend,
   #comprovante-execucao .payment-reason-field>span{font-size:11px}
   #comprovante-execucao .payment-choice-grid{gap:7px}
-  #comprovante-execucao .payment-choice-grid label{min-height:60px}
-  #comprovante-execucao .payment-choice-grid label>span{gap:4px;padding:7px 8px}
+  #comprovante-execucao .payment-choice-grid label{min-height:66px}
+  #comprovante-execucao .payment-choice-grid label>span{gap:5px;padding:7px}
   #comprovante-execucao .payment-choice-grid svg{width:14px;height:14px}
   #comprovante-execucao .payment-choice-grid b{font-size:10.5px}
-  #comprovante-execucao .payment-choice-grid small{font-size:9px}
-  #comprovante-execucao .payment-reason-field textarea{min-height:58px;max-height:84px}
+  #comprovante-execucao .payment-retry-choice{gap:7px}
+  #comprovante-execucao .payment-retry-choice label{min-width:178px}
+  #comprovante-execucao .payment-reason-field textarea{min-height:60px;max-height:72px;resize:none}
   #comprovante-execucao .payment-block-field{padding-top:10px!important}
-  #comprovante-execucao .payment-receipt-form footer{margin-top:2px;padding-top:2px}
+  #comprovante-execucao .payment-receipt-form footer{flex:0 0 auto;margin-top:auto;padding-top:2px}
   #comprovante-execucao .payment-receipt-form footer .primary-button,
   #comprovante-execucao .payment-receipt-form footer .secondary-button{height:32px;min-height:32px;font-size:10.5px}
 }
 
 @media(min-width:981px) and (max-height:760px){
-  #comprovante-execucao .payment-process-list{min-height:390px;max-height:calc(100dvh - 220px)}
-  #comprovante-execucao .payment-receipt-card{max-height:calc(100dvh - 220px)}
-  #comprovante-execucao .payment-choice-grid label{min-height:54px}
-  #comprovante-execucao .payment-receipt-form{gap:8px}
+  #comprovante-execucao.payment-receipt-page.active{padding-top:6px;padding-bottom:8px}
+  #comprovante-execucao .back-link{height:22px;min-height:22px;flex-basis:22px}
+  #comprovante-execucao .payment-receipt-heading{margin-bottom:6px}
+  #comprovante-execucao .payment-task-meta{margin-bottom:8px;padding-block:7px}
+  #comprovante-execucao .payment-analysis-layout{grid-template-columns:228px minmax(0,1fr);gap:8px}
+  #comprovante-execucao .payment-process-list{padding:9px}
+  #comprovante-execucao .process-item{min-height:42px;height:42px}
+  #comprovante-execucao .payment-receipt-card>header{padding:9px 12px}
+  #comprovante-execucao .payment-receipt-form{gap:8px;padding:9px 12px 10px}
+  #comprovante-execucao .payment-choice-grid label{min-height:58px}
+  #comprovante-execucao .payment-question+.payment-question,
+  #comprovante-execucao .payment-reason-field+.payment-question,
+  #comprovante-execucao .payment-block-field{padding-top:8px!important}
+  #comprovante-execucao .payment-reason-field textarea{min-height:52px;max-height:58px}
 }
 
-@media(max-width:980px){
-  .tasks-module-nav{margin-bottom:12px}
-  .payment-analysis-layout{align-items:stretch}
-  .payment-choice-grid,
-  .payment-choice-grid-two{grid-template-columns:1fr}
-  .payment-binary-choice{display:grid;grid-template-columns:1fr 1fr}
-  .payment-binary-choice label{min-width:0}
-}
-@media(max-width:760px){
-  .payment-receipt-heading{align-items:stretch;flex-direction:column}
-  .payment-receipt-form footer{flex-direction:column-reverse}
-  .payment-receipt-form footer button{width:100%}
-  .payment-history-row{grid-template-columns:1fr}
-}
+@media(max-width:980px){.payment-choice-grid{grid-template-columns:1fr}.payment-retry-choice{display:grid}.payment-retry-choice label{min-width:0}}
+@media(max-width:760px){.payment-receipt-heading{align-items:stretch;flex-direction:column}.payment-receipt-form footer{flex-direction:column-reverse}.payment-receipt-form footer button{width:100%}.payment-history-row{grid-template-columns:1fr}}
