@@ -34,7 +34,7 @@ for (const file of files) {
 }
 
 await cp(
-  'assets/react-dashboard',
+  '.build/react-dashboard',
   `${dist}/assets/react-dashboard`,
   { recursive: true }
 );
@@ -72,6 +72,6 @@ await writeFile(
   'utf8'
 );
 
-console.log('dist preparado para deploy.');
+console.log('dist preparado para deploy e preview local.');
 
 await cp('assets/vendor', `${dist}/assets/vendor`, { recursive: true });

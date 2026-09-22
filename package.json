@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && vite build && node build-static.mjs",
-    "dev": "vite --host 0.0.0.0",
-    "dev:local": "vite --host localhost --port 5173 --strictPort --force",
+    "dev": "npm run dev:local",
+    "dev:local": "npm run build && vite preview --outDir dist --host localhost --port 5173 --strictPort",
+    "preview": "vite preview --outDir dist --host 0.0.0.0 --port 5173 --strictPort",
     "test:hardening": "node tests/hardening.test.mjs"
   },
   "dependencies": {
