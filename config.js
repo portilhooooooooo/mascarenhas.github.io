@@ -38,8 +38,8 @@ if (window.MBA_LOCAL_PREVIEW) {
     };
     const user = {
       id: 'local-preview-admin',
-      name: 'Gabriel Portilho',
-      email: 'gabriel.portilho@mascarenhasbarbosa.com.br',
+      name: 'Local Preview',
+      email: 'local.preview@localhost.invalid',
       role: 'admin',
       is_master_admin: true,
       permissions,
