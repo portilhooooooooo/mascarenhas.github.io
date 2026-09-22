@@ -1,5 +1,5 @@
 /* ============================================================
-   Subnavegação padronizada do módulo Tarefas
+   Subnavegação do módulo Tarefas
    ============================================================ */
 .main-area>.tasks-module-nav{
   display:flex;
@@ -13,13 +13,7 @@
   background:#fff;
 }
 .main-area>.tasks-module-nav[hidden]{display:none!important}
-.tasks-module-nav-inner{
-  width:100%;
-  height:46px;
-  display:flex;
-  align-items:center;
-  gap:28px;
-}
+.tasks-module-nav-inner{width:100%;height:46px;display:flex;align-items:center;gap:28px}
 .tasks-module-nav button{
   position:relative;
   height:46px;
@@ -82,119 +76,49 @@
 #tasks-management-view .task-delete-button svg{width:14px;height:14px}
 
 /* ============================================================
-   Workspace operacional — todas as tarefas atribuídas
+   Workspace único de execução
+   A lista nativa de cada tarefa continua no DOM apenas para os
+   handlers legados; o usuário opera pela fila unificada abaixo.
    ============================================================ */
-.tasks-execution-view{display:block}
-.tasks-execution-view[hidden]{display:none!important}
-.tasks-operational-heading{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:18px;
-  margin-bottom:18px;
+.tasks-native-process-list{display:none!important}
+.tasks-unified-sidebar{
+  align-self:start;
+  min-height:0!important;
+  max-height:calc(100dvh - 250px);
+  display:flex!important;
+  flex-direction:column;
+  overflow:hidden;
 }
-.tasks-operational-heading h1{margin:0 0 4px;color:var(--ink);font-size:20px;line-height:1.2}
-.tasks-operational-heading p{margin:0;color:var(--muted);font-size:11.5px}
-.tasks-operational-total{color:#475569;font-size:11px;font-weight:600}
-.tasks-operational-layout{
-  display:grid;
-  grid-template-columns:260px minmax(0,1fr);
-  gap:14px;
-  align-items:start;
-}
-.tasks-operational-filters{padding:14px}
-.tasks-filter-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
-.tasks-filter-heading small,.tasks-operational-queue>header small{display:block;margin-bottom:2px;color:var(--muted);font-size:9.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase}
-.tasks-filter-heading h2,.tasks-operational-queue>header h2{margin:0;color:var(--ink);font-size:13px}
-.tasks-filter-heading>span{min-width:26px;height:22px;display:grid;place-items:center;border-radius:999px;background:#f1f5f9;color:#475569;font-size:10px;font-weight:700}
-.tasks-operational-search{
-  height:36px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:0 10px;
-  margin-bottom:12px;
-  border:1px solid var(--line);
-  border-radius:8px;
-  background:#fff;
-}
-.tasks-operational-search svg{width:14px;height:14px;color:#94a3b8}
-.tasks-operational-search input{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font:400 11px/1 Inter,sans-serif}
-.tasks-type-filter{display:grid;gap:4px}
-.tasks-type-filter button{
-  width:100%;
-  min-height:36px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:0 10px;
-  border:0;
-  border-radius:7px;
-  background:transparent;
-  color:#475569;
-  font:500 11px/1.2 Inter,sans-serif;
-  text-align:left;
-  cursor:pointer;
-}
-.tasks-type-filter button:hover{background:#f8fafc;color:var(--ink)}
-.tasks-type-filter button.active{background:var(--accent-soft);color:var(--accent);font-weight:600}
-.tasks-type-filter button em{min-width:24px;height:20px;display:grid;place-items:center;padding:0 5px;border-radius:999px;background:#f1f5f9;color:#64748b;font-size:9.5px;font-style:normal;font-weight:700}
-.tasks-type-filter button.active em{background:#fff;color:var(--accent)}
-.tasks-status-filter{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-.tasks-status-filter>span{display:block;margin-bottom:7px;color:var(--muted);font-size:9.5px;font-weight:700;letter-spacing:.055em;text-transform:uppercase}
-.tasks-status-options{display:grid;grid-template-columns:1fr;gap:4px}
-.tasks-status-options button{height:32px;padding:0 10px;border:1px solid transparent;border-radius:7px;background:transparent;color:#64748b;font:500 10.5px/1 Inter,sans-serif;text-align:left;cursor:pointer}
-.tasks-status-options button:hover{background:#f8fafc;color:var(--ink)}
-.tasks-status-options button.active{border-color:var(--line);background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.03)}
-.tasks-operational-queue{overflow:hidden;padding:0}
-.tasks-operational-queue>header{height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:#fff}
-.tasks-operational-queue>header>span{color:var(--muted);font-size:10.5px;font-weight:600}
-.tasks-queue-list{display:grid;background:#fff}
-.tasks-queue-item{
-  width:100%;
-  min-height:82px;
-  display:grid;
-  grid-template-columns:38px minmax(220px,1.6fr) minmax(120px,.7fr) minmax(120px,.75fr) auto 18px;
-  align-items:center;
-  gap:14px;
-  padding:12px 16px;
-  border:0;
-  border-bottom:1px solid var(--line);
-  background:#fff;
-  color:inherit;
-  text-align:left;
-  cursor:pointer;
-}
-.tasks-queue-item:last-child{border-bottom:0}
-.tasks-queue-item:hover{background:#fbfdff}
-.tasks-queue-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:8px;background:#f1f5f9;color:#1e3a8a}
-.tasks-queue-icon svg{width:15px;height:15px}
-.tasks-queue-copy{min-width:0;display:grid;gap:3px}
-.tasks-queue-copy>small{color:var(--accent);font-size:9.5px;font-weight:700;letter-spacing:.02em}
-.tasks-queue-copy>strong{overflow:hidden;color:var(--ink);font-size:12px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-.tasks-queue-copy>span{overflow:hidden;color:var(--muted);font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}
-.tasks-queue-progress{display:grid;gap:5px}
-.tasks-queue-progress>small,.tasks-queue-deadline>small{color:var(--muted);font-size:9.5px}
-.tasks-queue-progress>span{width:100%;height:4px;overflow:hidden;border-radius:999px;background:#e9eef5}
-.tasks-queue-progress>span>i{display:block;height:100%;border-radius:inherit;background:var(--accent)}
-.tasks-queue-deadline{display:grid;gap:3px}
-.tasks-queue-deadline>strong{color:#334155;font-size:10.5px;font-weight:600}
-.tasks-queue-state{display:inline-flex;align-items:center;justify-content:center;min-height:25px;padding:0 9px;border-radius:999px;background:#eff6ff;color:#2563eb;font-size:9.5px;font-weight:700;white-space:nowrap}
-.tasks-queue-state.overdue{background:#fff7ed;color:#c2410c}
-.tasks-queue-state.completed{background:#f0fdf4;color:#15803d}
-.tasks-queue-chevron{width:15px;height:15px;color:#94a3b8}
-.tasks-queue-empty{min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:30px;text-align:center}
-.tasks-queue-empty svg{width:22px;height:22px;color:#94a3b8}
-.tasks-queue-empty strong{color:var(--ink);font-size:12px}
-.tasks-queue-empty span{color:var(--muted);font-size:10.5px}
+.tasks-unified-sidebar>h2{margin:0 0 8px;font-size:12px}
+.tasks-unified-sidebar .process-search{flex:0 0 auto}
+.tasks-unified-filters{flex:0 0 auto;display:grid!important;grid-template-columns:minmax(0,1.25fr) minmax(0,.85fr);gap:6px;margin:6px 0 8px}
+.tasks-unified-filters select{min-width:0;width:100%;height:30px;padding:0 8px;font-size:10px;text-overflow:ellipsis}
+.tasks-unified-items{display:grid;gap:5px;min-height:0;overflow:auto;align-content:start;scrollbar-width:thin}
+.tasks-unified-items .process-item{min-height:54px;height:auto;gap:7px;padding:7px 8px}
+.tasks-unified-items .process-item>span svg{width:13px;height:13px}
+.tasks-unified-items .process-item div{min-width:0;display:grid;gap:2px}
+.tasks-unified-items .process-item strong{overflow:hidden;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}
+.tasks-unified-items .process-item small{overflow:hidden;color:var(--muted);font-size:9px;text-overflow:ellipsis;white-space:nowrap}
+.tasks-unified-items .process-item small b{color:#475569;font-weight:600}
+.tasks-unified-items .process-item em{font-size:8.5px;white-space:nowrap}
+.tasks-unified-items .process-item em.overdue{color:#c2410c}
+.tasks-unified-items .process-item em.completed{color:#15803d}
+.tasks-unified-pagination{flex:0 0 auto;grid-template-columns:26px 1fr 26px;gap:6px;margin-top:6px;padding-top:6px}
+.tasks-unified-pagination button{width:26px;height:26px}
+.tasks-unified-pagination span{font-size:9.5px}
+
+/* O formulário continua usando o mesmo shell visual em qualquer tipo de tarefa. */
+#tarefa-analise .analysis-layout,
+#comprovante-execucao .payment-analysis-layout{align-items:start}
+#tarefa-analise .tasks-unified-sidebar,
+#comprovante-execucao .tasks-unified-sidebar{min-height:470px}
+#tarefa-analise .detail-heading h1,
+#comprovante-execucao .payment-receipt-heading h1{font-size:18px}
 
 @media(max-width:1180px){
   #tasks-management-view .task-table th:nth-child(2),#tasks-management-view .task-table td:nth-child(2){display:none}
   #tasks-management-view .task-table th:nth-child(1){width:auto}
   #tasks-management-view .task-table th:nth-child(6){width:150px}
-  .tasks-queue-item{grid-template-columns:38px minmax(220px,1.5fr) minmax(110px,.7fr) auto 18px}
-  .tasks-queue-deadline{display:none}
 }
 @media(max-width:900px){
   .main-area>.tasks-module-nav{padding-inline:18px}
@@ -204,16 +128,10 @@
   #tasks-management-view .task-filter select{width:100%;min-width:0}
   #tasks-management-view .task-table-wrap{overflow-x:auto}
   #tasks-management-view .task-table{min-width:760px}
-  .tasks-operational-layout{grid-template-columns:1fr}
-  .tasks-type-filter{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .tasks-status-options{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .tasks-status-options button{text-align:center}
+  .tasks-unified-sidebar{max-height:none}
 }
 @media(max-width:680px){
   .main-area>.tasks-module-nav{padding-inline:14px}
   .tasks-module-nav-inner{gap:20px}
-  .tasks-operational-heading{align-items:flex-start;flex-direction:column}
-  .tasks-type-filter{grid-template-columns:1fr}
-  .tasks-queue-item{grid-template-columns:34px minmax(0,1fr) 18px;gap:10px}
-  .tasks-queue-progress,.tasks-queue-deadline,.tasks-queue-state{display:none}
+  .tasks-unified-filters{grid-template-columns:1fr}
 }
