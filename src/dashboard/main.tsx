@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { ProtocolosPage } from './ProtocolosPage';
 import { configureBaseTaskImport } from './taskBaseImport';
+import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
 import './analytics.css';
 import './protocolos.css';
@@ -10,10 +11,12 @@ import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
+  MBA_REACT_TASKS?: boolean;
   showPage?: (page: string, updateRoute?: boolean) => void;
 };
 
 const OPERATION_PAGES = new Set(['pagamentos', 'acordos', 'tutelas', 'encerramentos']);
+const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao']);
 
 function labelNavItem(button: Element, label: string) {
   const span = button.querySelector('span');
@@ -152,7 +155,7 @@ function syncTopModuleFromActivePage() {
     setTopModuleActive('automacoes');
     return;
   }
-  if (activePage.id === 'tarefas' || activePage.id === 'tarefa-analise') {
+  if (TASK_PAGES.has(activePage.id)) {
     setTopModuleActive('tarefas');
     return;
   }
@@ -313,7 +316,9 @@ function configureProtocolosLifecycle() {
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
-    const cleanupBaseTaskImport = configureBaseTaskImport();
+    const cleanupBaseTaskImport = (window as DashboardWindow).MBA_REACT_TASKS
+      ? () => undefined
+      : configureBaseTaskImport();
     return () => cleanupBaseTaskImport();
   }, []);
 
@@ -323,4 +328,5 @@ function RootApp() {
 const root = document.getElementById('dashboard-root');
 if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
 createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
+mountTasksPage();
 configureProtocolosLifecycle();
