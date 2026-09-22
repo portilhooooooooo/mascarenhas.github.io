@@ -8,6 +8,7 @@
   const errorBox = document.getElementById('login-error');
   const moduleActivationAt = new Map();
   const MODULE_REVALIDATE_MS = 30000;
+  const reactLoginEnabled = window.MBA_REACT_LOGIN === true;
   let microsoftLoginInFlight = false;
 
   const pagePermissionScopes = Object.freeze({
@@ -30,8 +31,6 @@
     const persistent = localStorage.getItem(tokenKey);
     if (persistent) return persistent;
 
-    // Migrate sessions created by the previous frontend so an update/F5 does not
-    // force users who are already authenticated through Microsoft to sign in again.
     const legacy = sessionStorage.getItem(tokenKey);
     if (legacy) {
       localStorage.setItem(tokenKey, legacy);
@@ -78,7 +77,7 @@
     button.disabled = busy;
     button.setAttribute('aria-busy', String(busy));
     const label = button.querySelector('span');
-    if (label) label.textContent = busy ? 'Entrando…' : 'Entrar com Microsoft';
+    if (label) label.textContent = busy ? 'Entrando…' : (reactLoginEnabled ? 'Acesso Corporativo' : 'Entrar com Microsoft');
   };
 
   function applyBranding() {
@@ -145,7 +144,7 @@
   }
 
   applyBranding();
-  renderMicrosoftOnlyLogin();
+  if (!reactLoginEnabled) renderMicrosoftOnlyLogin();
   enforceMicrosoftOnlyUserUI();
 
   function applyUser(user) {
@@ -225,8 +224,6 @@
   }
 
   function installModuleActivationHooks() {
-    // React/sub-navigation code calls window.showPage directly. Wrap that public
-    // API while preserving the legacy function used by existing click handlers.
     const originalShowPage = window.showPage;
     if (typeof originalShowPage === 'function' && !originalShowPage.__mbaLazyWrapped) {
       const wrapped = function(pageId, updateRoute = true) {
@@ -238,8 +235,6 @@
       window.showPage = wrapped;
     }
 
-    // Legacy nav listeners captured their lexical showPage before auth.js loads.
-    // This post-bubble hook observes the resulting active page and activates only it.
     document.addEventListener('click', event => {
       if (!window.MBA_CURRENT_USER) return;
       const target = event.target instanceof Element
@@ -262,8 +257,6 @@
   async function loadProfile() {
     const profile = await window.MBA_API.request('/api/me');
     applyUser(profile);
-    // Restore the requested route before notifying modules. This prevents every
-    // module from bootstrapping against the default dashboard route first.
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
     setAuthState(true);
@@ -307,7 +300,6 @@
     .replace(/=+$/, '');
 
   async function initializeAuth() {
-    // Remove retired credential artifacts. Microsoft is the only supported login.
     sessionStorage.removeItem('mba_task_worker_token');
     sessionStorage.removeItem('mba_task_only_user');
     sessionStorage.removeItem('mba_google_verifier');
@@ -361,7 +353,6 @@
           ? 'Seu usuário não possui acesso ativo ao Backoffice.'
           : 'Sua sessão terminou. Entre novamente.');
       } else if (hasToken) {
-        // A proxy/backend failure must not destroy a session that may still be valid.
         setAuthState(false);
         showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.');
       } else if (sessionStorage.getItem(oauthHandoffKey) && sessionStorage.getItem(oauthVerifierKey)) {
@@ -374,7 +365,7 @@
     }
   }
 
-  document.getElementById('microsoft-login')?.addEventListener('click', async () => {
+  async function startMicrosoftLogin() {
     if (microsoftLoginInFlight) return;
     microsoftLoginInFlight = true;
     setMicrosoftLoginBusy(true);
@@ -387,8 +378,6 @@
         new TextEncoder().encode(verifier),
       )));
 
-      // A single active verifier belongs to a single OAuth navigation. The button
-      // stays locked until navigation, so a second click cannot overwrite it.
       sessionStorage.removeItem(oauthHandoffKey);
       sessionStorage.setItem(oauthVerifierKey, verifier);
       sessionStorage.setItem(oauthStartedAtKey, String(Date.now()));
@@ -408,7 +397,16 @@
       setMicrosoftLoginBusy(false);
       showError(error?.message || 'Não foi possível iniciar o acesso com Microsoft.');
     }
-  });
+  }
+
+  window.MBA_AUTH = {
+    ...(window.MBA_AUTH || {}),
+    startMicrosoftLogin,
+  };
+
+  if (!reactLoginEnabled) {
+    document.getElementById('microsoft-login')?.addEventListener('click', startMicrosoftLogin);
+  }
 
   document.getElementById('logout-button')?.addEventListener('click', async () => {
     try {
