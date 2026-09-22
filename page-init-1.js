@@ -1,5 +1,7 @@
 window.MBA_REACT_LOGIN = true;
 window.MBA_REACT_TASKS = true;
+const mbaReactLoginView = document.getElementById('login-view');
+if (mbaReactLoginView) mbaReactLoginView.hidden = true;
 
 (() => {
       const normalize = (value) => (value || '').toString().trim().toLowerCase()
