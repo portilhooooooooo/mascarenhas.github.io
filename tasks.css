@@ -1,205 +1,38 @@
-/* ============================================================
-   Tarefas — shell operacional padrão
-   Escopo estrito: não altera login, Controladoria, Operação ou shell global.
-   ============================================================ */
-
-/* Gestão */
+/* Lobby de Tarefas — camada visual própria */
 #tarefas .lobby-title{align-items:flex-end;gap:20px;margin-bottom:18px}
 #tarefas .lobby-actions{display:flex;align-items:flex-end;gap:10px}
 #tarefas .task-filter{display:grid;gap:5px;color:var(--muted);font-size:10.5px;font-weight:500}
 #tarefas .task-filter select{min-width:210px;height:36px}
-#tarefas .task-table-wrap{overflow:hidden;border-radius:8px;box-shadow:none}
+#tarefas .task-table-wrap{overflow:hidden;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.02)}
 #tarefas .task-table{width:100%;border-collapse:collapse;table-layout:fixed}
 #tarefas .task-table thead{background:#f8fafc}
 #tarefas .task-table th{height:42px;padding:0 16px;border-bottom:1px solid var(--line);color:#64748b;font-size:10.5px;font-weight:600;letter-spacing:.035em;text-align:left;text-transform:uppercase}
 #tarefas .task-table td{height:72px;padding:12px 16px;border-bottom:1px solid var(--line);color:#334155;font-size:12px;vertical-align:middle}
 #tarefas .task-table tbody tr:last-child td{border-bottom:0}
 #tarefas .task-table tbody tr:hover{background:#fbfdff}
-#tarefas .task-table th:nth-child(1){width:38%}
-#tarefas .task-table th:nth-child(2){width:24%}
+#tarefas .task-table th:nth-child(1){width:35%}
+#tarefas .task-table th:nth-child(2){width:20%}
 #tarefas .task-table th:nth-child(3){width:10%}
-#tarefas .task-table th:nth-child(4){width:12%}
-#tarefas .task-table th:nth-child(5){width:16%}
-#tarefas .task-table th:nth-child(6),#tarefas .task-table td:nth-child(6){display:none}
+#tarefas .task-table th:nth-child(4){width:11%}
+#tarefas .task-table th:nth-child(5){width:15%}
+#tarefas .task-table th:nth-child(6){width:220px}
 #tarefas .task-table td:first-child{display:flex;align-items:center;gap:12px}
 #tarefas .task-table td:first-child strong{min-width:0;overflow:hidden;color:var(--ink);font-size:12.5px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
-#tarefas .row-icon{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;border-radius:7px;background:#f1f5f9;color:var(--accent)}
+#tarefas .row-icon{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;border-radius:8px;background:#f1f5f9;color:#1e3a8a}
 #tarefas .row-icon svg{width:15px;height:15px}
 #tarefas .empty-pill{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:25px;padding:0 9px;border:1px solid var(--line);border-radius:999px;background:#fff;color:#475569;font-size:11px;font-weight:600}
-#tarefas .task-status{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;background:#fff7ed;color:#b45309;font-size:10.5px;font-weight:600}
+#tarefas .task-status{display:inline-flex;align-items:center;gap:6px;min-height:26px;padding:0 10px;border-radius:999px;background:#fff7ed;color:#b45309;font-size:10.5px;font-weight:600;text-transform:none}
 #tarefas .task-status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 #tarefas .task-status.status-in-progress{background:#eff6ff;color:#2563eb}
 #tarefas .task-status.status-completed{background:#f0fdf4;color:#15803d}
 #tarefas .task-status.status-inactive,#tarefas .task-status.status-cancelled{background:#f1f5f9;color:#64748b}
-
-/* ============================================================
-   Navbar do módulo
-   Reutiliza exatamente a linguagem .analytics-subnav usada nos demais módulos.
-   Só ajusta o recuo para o padding padrão das páginas legadas (24px).
-   ============================================================ */
-#tarefas>.tasks-module-subnav,
-#tarefa-analise>.tasks-module-subnav,
-#comprovante-execucao>.tasks-module-subnav,
-#acordo-execucao>.tasks-module-subnav{
-  height:42px;
-  margin:-18px -24px 18px;
-  padding:0 24px;
-  background:#fff;
-  border-bottom:1px solid var(--mba-border,var(--line));
-}
-.tasks-module-subnav button[hidden]{display:none!important}
-
-/* ============================================================
-   Workspace compartilhado
-   O shell não conhece a regra do formulário; só organiza navegação, fila e contexto.
-   ============================================================ */
-#tarefa-analise .back-link,
-#comprovante-execucao .back-link,
-#acordo-execucao .back-link,
-#tarefa-analise .detail-heading,
-#comprovante-execucao .payment-receipt-heading,
-#acordo-execucao .agreement-execution-heading,
-#tarefa-analise .task-meta,
-#comprovante-execucao .payment-task-meta,
-#comprovante-execucao #payment-receipt-history,
-#comprovante-execucao #payment-receipt-history-dialog{display:none!important}
-
-.tasks-native-process-list{display:none!important}
-
-#tarefa-analise .analysis-layout,
-#comprovante-execucao .payment-analysis-layout,
-#acordo-execucao .tasks-agreement-workspace{
-  display:grid;
-  grid-template-columns:300px minmax(0,1fr);
-  gap:12px;
-  align-items:start;
-}
-
-#acordo-execucao .tasks-workspace-renderer{min-width:0}
-#acordo-execucao .agreement-process-card,
-#acordo-execucao .agreement-task-finished{max-width:none;margin:0}
-
-.tasks-workspace-summary{
-  display:grid;
-  grid-template-columns:1.35fr .8fr .8fr;
-  margin-bottom:12px;
-  padding:11px 14px;
-}
-.tasks-workspace-summary>div{display:grid;gap:4px;min-width:0}
-.tasks-workspace-summary>div+div{padding-left:16px;border-left:1px solid var(--line)}
-.tasks-workspace-summary small{color:var(--muted);font-size:9.5px;font-weight:500;text-transform:uppercase;letter-spacing:.035em}
-.tasks-workspace-summary strong{color:var(--ink);font-size:12px;font-weight:600}
-.tasks-workspace-summary [data-workspace-status][data-state="urgent"]{color:#dc2626}
-.tasks-workspace-summary [data-workspace-status][data-state="overdue"]{color:#c2410c}
-.tasks-workspace-summary [data-workspace-status][data-state="on_time"]{color:#15803d}
-
-.tasks-workspace-sidebar{
-  align-self:start;
-  min-height:0!important;
-  max-height:calc(100dvh - 166px);
-  display:flex!important;
-  flex-direction:column;
-  overflow:hidden;
-  padding:0!important;
-}
-.tasks-filter-block{padding:13px 14px;border-bottom:1px solid var(--line)}
-.tasks-filter-block>small,
-.tasks-process-block-head>strong{
-  display:block;
-  color:#64748b;
-  font-size:9.5px;
-  font-weight:700;
-  letter-spacing:.055em;
-  text-transform:uppercase;
-}
-.tasks-deadline-filters,.tasks-type-filters{display:grid;gap:3px;margin-top:7px}
-.tasks-deadline-filters button,.tasks-type-filters button{
-  width:100%;
-  min-height:34px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:0 9px;
-  border:1px solid transparent;
-  border-radius:7px;
-  background:transparent;
-  color:#475569;
-  font:500 10.5px/1.2 Inter,sans-serif;
-  text-align:left;
-  cursor:pointer;
-}
-.tasks-deadline-filters button:hover,.tasks-type-filters button:hover{background:#f8fafc;color:var(--ink)}
-.tasks-deadline-filters button.active,.tasks-type-filters button.active{border-color:#dbe4f0;background:#f8fafc;color:var(--ink);font-weight:600}
-.tasks-deadline-filters button>span,.tasks-type-filters button>span{display:flex;align-items:center;gap:8px;min-width:0}
-.tasks-deadline-filters button em,.tasks-type-filters button em{
-  min-width:27px;height:20px;display:grid;place-items:center;padding:0 5px;border-radius:999px;
-  background:#f1f5f9;color:#64748b;font-size:9px;font-style:normal;font-weight:700;
-}
-.tasks-deadline-filters button.active em,.tasks-type-filters button.active em{background:#fff;color:var(--accent)}
-
-.deadline-dot{width:8px;height:8px;display:inline-block;flex:0 0 8px;border-radius:999px;background:#94a3b8}
-.deadline-dot.urgent{background:#ef4444}
-.deadline-dot.overdue{background:#f97316}
-.deadline-dot.pending{background:#94a3b8}
-.deadline-dot.on_time{background:#10b981}
-
-.tasks-process-block{display:flex;flex:1;min-height:0;flex-direction:column;padding:12px 14px 10px}
-.tasks-process-block-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.tasks-process-block-head small{color:#94a3b8;font-size:8.5px;white-space:nowrap}
-.tasks-workspace-sidebar .process-search{height:32px;flex:0 0 auto;margin-bottom:8px}
-.tasks-workspace-sidebar .process-search input{font-size:10.5px}
-.tasks-workspace-items{display:grid;gap:5px;min-height:0;align-content:start;overflow:auto;scrollbar-width:thin}
-
-.tasks-workspace-item{
-  min-height:62px!important;
-  height:auto!important;
-  display:grid!important;
-  grid-template-columns:minmax(0,1fr) auto!important;
-  gap:8px!important;
-  padding:8px 9px!important;
-}
-.tasks-workspace-item>div{min-width:0;display:grid;gap:2px;text-align:left}
-.tasks-workspace-item strong{overflow:hidden;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}
-.tasks-workspace-item small{overflow:hidden;color:#64748b;font-size:8.8px;text-overflow:ellipsis;white-space:nowrap}
-.tasks-workspace-item[aria-disabled="true"]{cursor:default}
-.tasks-workspace-item .deadline-badge{
-  align-self:center;min-width:52px;min-height:20px;display:inline-flex;align-items:center;justify-content:center;
-  padding:0 7px;border-radius:999px;font-size:8.5px;font-style:normal;font-weight:700;white-space:nowrap;
-}
-.tasks-workspace-item .deadline-badge.urgent{background:#fef2f2;color:#dc2626}
-.tasks-workspace-item .deadline-badge.overdue{background:#fff7ed;color:#c2410c}
-.tasks-workspace-item .deadline-badge.pending{background:#f1f5f9;color:#64748b}
-.tasks-workspace-item .deadline-badge.on_time{background:#f0fdf4;color:#15803d}
-
-/* Contexto mínimo: tipo + indício. O título do lote não aparece na execução. */
-.tasks-renderer-context{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px}
-.tasks-renderer-context small{color:#64748b!important;font-size:9px!important;font-weight:700!important;letter-spacing:.045em!important;text-transform:uppercase}
-.tasks-renderer-context span{color:#475569;font-size:10px;font-weight:500}
-#acordo-execucao .tasks-renderer-context{margin:0 0 10px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:#fff}
-
-/* Atribuição: urgência explícita. */
-#task-assign-form .task-assignment-priority{display:grid;gap:5px}
-#task-assign-form .task-assignment-priority small{color:var(--muted);font-size:9.5px;line-height:1.4}
-
-/* O shell deliberadamente não estiliza decision-grid, payment-choice-grid ou binary-choice. */
-
-@media(max-width:1180px){
-  #tarefas .task-table th:nth-child(2),#tarefas .task-table td:nth-child(2){display:none}
-  #tarefas .task-table th:nth-child(1){width:auto}
-  #tarefa-analise .analysis-layout,#comprovante-execucao .payment-analysis-layout,#acordo-execucao .tasks-agreement-workspace{grid-template-columns:270px minmax(0,1fr)}
-}
-@media(max-width:900px){
-  #tarefas .lobby-title{align-items:stretch;flex-direction:column}
-  #tarefas .lobby-actions{align-items:stretch;flex-wrap:wrap}
-  #tarefas .task-table-wrap{overflow-x:auto}
-  #tarefas .task-table{min-width:760px}
-  #tarefa-analise .analysis-layout,#comprovante-execucao .payment-analysis-layout,#acordo-execucao .tasks-agreement-workspace{grid-template-columns:1fr}
-  .tasks-workspace-sidebar{max-height:none}
-}
-@media(max-width:680px){
-  #tarefas>.tasks-module-subnav,#tarefa-analise>.tasks-module-subnav,#comprovante-execucao>.tasks-module-subnav,#acordo-execucao>.tasks-module-subnav{padding-inline:14px}
-  .tasks-process-block-head{align-items:flex-start;flex-direction:column}
-  .tasks-workspace-summary{grid-template-columns:1fr}
-  .tasks-workspace-summary>div+div{padding:8px 0 0;margin-top:8px;border-left:0;border-top:1px solid var(--line)}
-}
+#tarefas .table-row-actions{display:flex;align-items:center;justify-content:flex-start;gap:7px;white-space:nowrap}
+#tarefas .table-row-actions button{height:34px}
+#tarefas .execute-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:11.5px;font-weight:600;cursor:pointer}
+#tarefas .execute-button:hover{border-color:#bfdbfe;background:var(--accent-soft);color:var(--accent)}
+#tarefas .execute-button svg{width:13px;height:13px}
+#tarefas .task-delete-button{width:34px;display:grid;place-items:center;padding:0;border:1px solid var(--line);border-radius:8px;background:#fff;color:#64748b;cursor:pointer}
+#tarefas .task-delete-button:hover{border-color:#fecaca;background:#fef2f2;color:#dc2626}
+#tarefas .task-delete-button svg{width:14px;height:14px}
+@media(max-width:1180px){#tarefas .task-table th:nth-child(2),#tarefas .task-table td:nth-child(2){display:none}#tarefas .task-table th:nth-child(1){width:auto}#tarefas .task-table th:nth-child(6){width:205px}}
+@media(max-width:850px){#tarefas .lobby-title{align-items:stretch;flex-direction:column}#tarefas .lobby-actions{align-items:stretch;flex-wrap:wrap}#tarefas .task-filter{flex:1}#tarefas .task-filter select{width:100%;min-width:0}#tarefas .task-table-wrap{overflow-x:auto}#tarefas .task-table{min-width:780px}}
