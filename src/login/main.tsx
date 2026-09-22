@@ -1,6 +1,12 @@
-import { StrictMode } from 'react';
+import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './login.css';
+
+type AuthWindow = Window & typeof globalThis & {
+  MBA_AUTH?: {
+    startMicrosoftLogin?: () => Promise<void> | void;
+  };
+};
 
 function MicrosoftMark() {
   return (
@@ -13,9 +19,19 @@ function MicrosoftMark() {
   );
 }
 
-function LoginPage({ legacyButton }: { legacyButton: HTMLButtonElement | null }) {
-  const startMicrosoftLogin = () => {
-    legacyButton?.click();
+function LoginPage() {
+  const [busy, setBusy] = useState(false);
+
+  const startMicrosoftLogin = async () => {
+    const start = (window as AuthWindow).MBA_AUTH?.startMicrosoftLogin;
+    if (!start || busy) return;
+    setBusy(true);
+    try {
+      await start();
+    } finally {
+      // Em sucesso haverá navegação para a Microsoft; em falha o auth.js libera o fluxo.
+      setBusy(false);
+    }
   };
 
   return (
@@ -27,10 +43,12 @@ function LoginPage({ legacyButton }: { legacyButton: HTMLButtonElement | null })
         id="microsoft-login"
         type="button"
         aria-label="Acesso Corporativo"
+        aria-busy={busy}
+        disabled={busy}
         onClick={startMicrosoftLogin}
       >
         <MicrosoftMark />
-        <span>Acesso Corporativo</span>
+        <span>{busy ? 'Entrando…' : 'Acesso Corporativo'}</span>
       </button>
     </div>
   );
@@ -38,11 +56,11 @@ function LoginPage({ legacyButton }: { legacyButton: HTMLButtonElement | null })
 
 const mount = document.getElementById('login-view');
 if (mount) {
-  const legacyButton = document.getElementById('microsoft-login') as HTMLButtonElement | null;
   createRoot(mount).render(
     <StrictMode>
-      <LoginPage legacyButton={legacyButton} />
+      <LoginPage />
     </StrictMode>,
   );
+  mount.hidden = false;
   document.body.dataset.reactLogin = 'true';
 }
