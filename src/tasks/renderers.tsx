@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 
 export type ApiRequest = (path: string, options?: RequestInit) => Promise<any>;
@@ -14,7 +14,7 @@ type OptionGroupProps = {
 };
 
 export function OptionGroup({ name, value, onChange, options, disabled = false }: OptionGroupProps) {
-  const columns = Math.min(Math.max(options.length, 2), 4);
+  const columns = options.length === 5 ? 3 : Math.min(Math.max(options.length, 2), 4);
   return (
     <div className={`task-option-grid task-option-grid-${columns}`} role="radiogroup" aria-label={name}>
       {options.map(option => (
@@ -366,8 +366,10 @@ function moneyToApi(value: string) {
 }
 
 function moneyNumber(value: string) {
-  const parsed = Number(moneyToApi(value));
-  return Number.isFinite(parsed) ? parsed : NaN;
+  const normalized = moneyToApi(value);
+  if (!normalized) return Number.NaN;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
 }
 
 function currency(value: unknown) {
@@ -566,10 +568,10 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
 
       {preliminaryEligible ? (
         <div className="agreement-fields">
-          <label className="task-select-field"><span>Causa raiz</span><select value={rootCause} disabled={busy} onChange={event => setRootCause(event.target.value)}><option value="">Selecione</option>{ROOT_CAUSES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+          <label className="task-select-field"><span>Causa raiz</span><select value={rootCause} disabled={busy} onChange={event => setRootCause(event.target.value)}><option value="">Selecione</option>{ROOT_CAUSES.map(([optionValue, label]) => <option value={optionValue} key={optionValue}>{label}</option>)}</select></label>
           <section className="task-question task-question-nested"><h3>Há obrigação de fazer (OBF)?</h3><OptionGroup name="has-obf" value={hasObf} onChange={value => { setHasObf(value); if (value === 'false') setObfType(''); }} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section>
-          {hasObfBool === true ? <label className="task-select-field"><span>Tipo de OBF</span><select value={obfType} disabled={busy} onChange={event => setObfType(event.target.value)}><option value="">Selecione</option>{OBF_TYPES.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select>{obfType ? <small>{OBLIGATION_PREVIEW[obfType]}</small> : null}</label> : null}
-          <label className="task-select-field"><span>Produto</span><select value={product} disabled={busy} onChange={event => setProduct(event.target.value)}><option value="">Selecione</option>{PRODUCTS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
+          {hasObfBool === true ? <label className="task-select-field"><span>Tipo de OBF</span><select value={obfType} disabled={busy} onChange={event => setObfType(event.target.value)}><option value="">Selecione</option>{OBF_TYPES.map(([optionValue, label]) => <option value={optionValue} key={optionValue}>{label}</option>)}</select>{obfType ? <small>{OBLIGATION_PREVIEW[obfType]}</small> : null}</label> : null}
+          <label className="task-select-field"><span>Produto</span><select value={product} disabled={busy} onChange={event => setProduct(event.target.value)}><option value="">Selecione</option>{PRODUCTS.map(([optionValue, label]) => <option value={optionValue} key={optionValue}>{label}</option>)}</select></label>
           <div className="agreement-money-grid">
             <label className="task-text-field"><span>Valor sugerido</span><input value={suggestedAmount} inputMode="decimal" disabled={busy} onChange={event => setSuggestedAmount(event.target.value)} placeholder="0,00" />{offer !== null ? <small>Valor à ofertar: {currency(offer)}</small> : null}</label>
             <label className="task-text-field"><span>Saldo devedor</span><input value={outstandingBalance} inputMode="decimal" disabled={busy} onChange={event => setOutstandingBalance(event.target.value)} placeholder="0,00" />{balanceExceeded ? <small className="field-danger">Saldo acima de R$ 15.000,00 torna o processo inapto.</small> : null}</label>
