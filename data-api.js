@@ -85,7 +85,7 @@
       return;
     }
 
-    const analysis = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:liminar|encerramento|bloqueio|citacao|comprovante_pagamento)-analysis$/);
+    const analysis = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:liminar|encerramento|bloqueio|citacao|comprovante_pagamento|agreement)-analysis$/);
     if (method === 'POST' && analysis) {
       const processId = analysis[1];
       const taskId = processToTask.get(processId);
@@ -99,7 +99,7 @@
       return;
     }
 
-    const skipped = path.match(/^\/api\/task-processes\/([^/?]+)\/skip$/);
+    const skipped = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:skip|agreement-skip-next)$/);
     if (method === 'POST' && skipped) {
       const taskId = processToTask.get(skipped[1]);
       if (taskId) taskProcessCache.delete(taskId);
