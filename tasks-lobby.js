@@ -1,27 +1,31 @@
 (() => {
   'use strict';
 
-  const TASK_TYPE_LABELS = {
-    comprovante_pagamento: 'Validar Pagamento',
-    liminar: 'Validar Liminar',
+  const TASK_TYPE_LABELS = Object.freeze({
+    comprovante_pagamento: 'Validação de Comprovante',
+    liminar: 'Validação de Liminar',
     acordos: 'Saneamento de Acordos',
-    encerramento: 'Validar Encerramento',
-    bloqueio: 'Validar Bloqueio',
-    citacao: 'Validar Citação',
-    protocolo: 'Protocolar',
-    contestacao: 'Validar Contestação',
-    reagendamento: 'Validar Reagendamento',
-  };
-  const TASK_CONTEXT_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'protocolo']);
-  const STORAGE_KEY = 'mba-tasks-submodule';
+    encerramento: 'Validação de Encerramento',
+    bloqueio: 'Validação de Bloqueio',
+    citacao: 'Validação de Citação',
+    protocolo: 'Protocolo',
+    contestacao: 'Validação de Contestação',
+    reagendamento: 'Validação de Reagendamento',
+  });
+  const TASK_EXECUTION_PAGES = new Set(['tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'protocolo']);
+  const LAST_TASK_TYPE_KEY = 'mba-last-task-type';
 
   let currentUser = window.MBA_CURRENT_USER || null;
   let tasks = [];
-  let activeMode = sessionStorage.getItem(STORAGE_KEY) || 'management';
+  let workItems = [];
   let selectedType = 'all';
   let selectedStatus = 'pending';
   let searchTerm = '';
+  let queuePage = 0;
+  let activeTask = null;
+  let activeProcessId = null;
   let refreshToken = 0;
+  let refreshPromise = null;
 
   const escapeHtml = (value) => {
     const el = document.createElement('span');
@@ -29,25 +33,15 @@
     return el.innerHTML;
   };
 
+  const taskTypeLabel = (type) => TASK_TYPE_LABELS[String(type || '').toLowerCase()] || 'Tarefa operacional';
+  window.MBA_TASK_TYPE_LABELS = TASK_TYPE_LABELS;
+
   const canManage = () => Boolean(
     currentUser?.is_master_admin
     || currentUser?.permissions?.['tasks.manage'] === true
     || currentUser?.permissions?.['tasks.assign'] === true
     || currentUser?.permissions?.['tasks.create'] === true
   );
-
-  const taskTypeLabel = (type) => TASK_TYPE_LABELS[String(type || '').toLowerCase()] || 'Tarefa operacional';
-  const pendingCount = (task) => Math.max(0, Number(task.total_processes || 0) - Number(task.completed_processes || 0));
-
-  function taskState(task) {
-    const pending = pendingCount(task);
-    if (pending <= 0 || String(task.status || '').toLowerCase() === 'completed') return 'completed';
-    if (task.deadline_at) {
-      const deadline = new Date(task.deadline_at);
-      if (!Number.isNaN(deadline.getTime()) && deadline.getTime() < Date.now()) return 'overdue';
-    }
-    return 'pending';
-  }
 
   function assignedTasks() {
     if (canManage() || !currentUser?.id) return tasks;
@@ -59,8 +53,48 @@
     });
   }
 
+  function taskContextLabel(task) {
+    if (!task) return '';
+    let value = String(task.title || '').trim();
+    const patterns = {
+      comprovante_pagamento: /^Comprovante de Pagamento\s*[-–—:]\s*/i,
+      liminar: /^An[aá]lise de Liminar\s*[-–—:]\s*/i,
+      acordos: /^Acordos\s*[-–—:]\s*/i,
+      encerramento: /^An[aá]lise de (?:Ind[ií]cio de )?Encerramento\s*[-–—:]\s*/i,
+      bloqueio: /^An[aá]lise de (?:Ind[ií]cio de )?Bloqueio\s*[-–—:]\s*/i,
+      citacao: /^An[aá]lise de (?:Ind[ií]cio de )?Cita[cç][aã]o\s*[-–—:]\s*/i,
+    };
+    const pattern = patterns[String(task.type || '').toLowerCase()];
+    if (pattern) value = value.replace(pattern, '').trim();
+    return value || task.description || '';
+  }
+
+  function taskState(task, process) {
+    if (String(process?.status || '').toLowerCase() === 'completed') return 'completed';
+    if (task?.deadline_at) {
+      const deadline = new Date(task.deadline_at);
+      if (!Number.isNaN(deadline.getTime()) && deadline.getTime() < Date.now()) return 'overdue';
+    }
+    return 'pending';
+  }
+
   function currentPageId() {
     return document.querySelector('main.content .page.active')?.id || '';
+  }
+
+  function ensureManagementView() {
+    const page = document.querySelector('#tarefas');
+    if (!page) return null;
+    let management = document.querySelector('#tasks-management-view');
+    if (!management) {
+      management = document.createElement('div');
+      management.id = 'tasks-management-view';
+      management.className = 'tasks-management-view';
+      [...page.children].forEach((child) => management.appendChild(child));
+      page.appendChild(management);
+    }
+    document.querySelector('#tasks-execution-view')?.remove();
+    return management;
   }
 
   function ensureSubnav() {
@@ -83,112 +117,31 @@
       </div>
     `;
 
-    if (!nav.dataset.unifiedHandler) {
-      nav.dataset.unifiedHandler = '1';
+    if (!nav.dataset.directWorkspaceHandler) {
+      nav.dataset.directWorkspaceHandler = '1';
       nav.addEventListener('click', (event) => {
         const button = event.target.closest('[data-task-module-tab]');
         if (!button) return;
         event.preventDefault();
         event.stopImmediatePropagation();
-        setMode(button.dataset.taskModuleTab);
+        if (button.dataset.taskModuleTab === 'management') {
+          if (!canManage()) return;
+          window.showPage?.('tarefas');
+          queueMicrotask(syncTaskContext);
+          return;
+        }
+        openDefaultTask().catch(() => {});
       }, true);
     }
 
     return nav;
   }
 
-  function ensureViews() {
-    const page = document.querySelector('#tarefas');
-    if (!page) return null;
-
-    let management = document.querySelector('#tasks-management-view');
-    if (!management) {
-      management = document.createElement('div');
-      management.id = 'tasks-management-view';
-      management.className = 'tasks-management-view';
-      [...page.children].forEach((child) => management.appendChild(child));
-      page.appendChild(management);
-    }
-
-    let execution = document.querySelector('#tasks-execution-view');
-    if (!execution) {
-      execution = document.createElement('section');
-      execution.id = 'tasks-execution-view';
-      execution.className = 'tasks-execution-view';
-      execution.hidden = true;
-      execution.innerHTML = `
-        <div class="tasks-operational-heading">
-          <div>
-            <h1>Tarefas</h1>
-            <p>Todas as tarefas atribuídas a você ficam concentradas neste workspace.</p>
-          </div>
-          <span class="tasks-operational-total" id="tasks-operational-total">—</span>
-        </div>
-
-        <div class="tasks-operational-layout">
-          <aside class="panel tasks-operational-filters">
-            <div class="tasks-filter-heading">
-              <div><small>Fila pessoal</small><h2>Minhas tarefas</h2></div>
-              <span id="tasks-filter-total">—</span>
-            </div>
-
-            <label class="tasks-operational-search">
-              <i data-lucide="search"></i>
-              <input id="tasks-operational-search" type="search" placeholder="Buscar tarefa">
-            </label>
-
-            <div class="tasks-type-filter" id="tasks-type-filter" aria-label="Filtrar por tipo de tarefa"></div>
-
-            <div class="tasks-status-filter">
-              <span>Status</span>
-              <div class="tasks-status-options" role="group" aria-label="Status da fila">
-                <button type="button" data-work-status="pending" class="active">Pendentes</button>
-                <button type="button" data-work-status="completed">Concluídas</button>
-                <button type="button" data-work-status="overdue">Em atraso</button>
-              </div>
-            </div>
-          </aside>
-
-          <section class="panel tasks-operational-queue">
-            <header>
-              <div><small>Fila de trabalho</small><h2 id="tasks-queue-title">Todas as tarefas</h2></div>
-              <span id="tasks-queue-count">—</span>
-            </header>
-            <div class="tasks-queue-list" id="tasks-queue-list"></div>
-          </section>
-        </div>
-      `;
-      page.appendChild(execution);
-
-      execution.querySelector('#tasks-operational-search')?.addEventListener('input', (event) => {
-        searchTerm = event.target.value.trim().toLowerCase();
-        renderOperationalWorkspace();
-      });
-      execution.querySelector('#tasks-type-filter')?.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-work-type]');
-        if (!button) return;
-        selectedType = button.dataset.workType;
-        renderOperationalWorkspace();
-      });
-      execution.querySelector('.tasks-status-options')?.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-work-status]');
-        if (!button) return;
-        selectedStatus = button.dataset.workStatus;
-        renderOperationalWorkspace();
-      });
-      execution.querySelector('#tasks-queue-list')?.addEventListener('click', (event) => {
-        const item = event.target.closest('[data-open-operational-task]');
-        if (!item) return;
-        openOperationalTask(item.dataset.openOperationalTask);
-      });
-    }
-
-    return { page, management, execution };
-  }
-
   function normalizeManagementLobby() {
-    const title = document.querySelector('#tasks-management-view .page-title h1');
-    const subtitle = document.querySelector('#tasks-management-view .page-title p');
+    const management = ensureManagementView();
+    if (!management) return;
+    const title = management.querySelector('.page-title h1');
+    const subtitle = management.querySelector('.page-title p');
     if (title) title.textContent = 'Gestão de Tarefas';
     if (subtitle) subtitle.textContent = 'Crie, distribua e acompanhe os lotes operacionais.';
 
@@ -206,125 +159,71 @@
     });
   }
 
-  function typeCounts(source) {
-    const counts = new Map();
-    source.forEach((task) => counts.set(task.type, (counts.get(task.type) || 0) + pendingCount(task)));
-    return counts;
+  function updateSubnav() {
+    const nav = ensureSubnav();
+    const pageId = currentPageId();
+    const inTaskContext = pageId === 'tarefas' || TASK_EXECUTION_PAGES.has(pageId);
+    nav.hidden = !inTaskContext;
+    if (!inTaskContext) return;
+
+    const management = nav.querySelector('[data-task-module-tab="management"]');
+    const execution = nav.querySelector('[data-task-module-tab="execution"]');
+    management.hidden = !canManage();
+    management.classList.toggle('active', pageId === 'tarefas' && canManage());
+    execution.classList.toggle('active', TASK_EXECUTION_PAGES.has(pageId) || !canManage());
   }
 
-  function filteredOperationalTasks() {
-    return assignedTasks().filter((task) => {
-      const typeMatch = selectedType === 'all' || task.type === selectedType;
-      const statusMatch = taskState(task) === selectedStatus;
-      const haystack = `${taskTypeLabel(task.type)} ${task.title || ''} ${task.description || ''}`.toLowerCase();
-      const searchMatch = !searchTerm || haystack.includes(searchTerm);
-      return typeMatch && statusMatch && searchMatch;
-    });
-  }
-
-  function formatDeadline(value) {
-    if (!value) return 'Sem prazo';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Sem prazo';
-    return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  }
-
-  function renderOperationalWorkspace() {
-    const execution = document.querySelector('#tasks-execution-view');
-    if (!execution) return;
-
-    const source = assignedTasks();
-    const counts = typeCounts(source);
-    const types = [...new Set(source.map((task) => task.type).filter(Boolean))]
-      .sort((a, b) => taskTypeLabel(a).localeCompare(taskTypeLabel(b), 'pt-BR'));
-
-    if (selectedType !== 'all' && !types.includes(selectedType)) selectedType = 'all';
-
-    const totalPending = source.reduce((sum, task) => sum + pendingCount(task), 0);
-    const filter = execution.querySelector('#tasks-type-filter');
-    filter.innerHTML = `
-      <button type="button" data-work-type="all" class="${selectedType === 'all' ? 'active' : ''}">
-        <span>Todas</span><em>${totalPending}</em>
-      </button>
-      ${types.map((type) => `
-        <button type="button" data-work-type="${escapeHtml(type)}" class="${selectedType === type ? 'active' : ''}">
-          <span>${escapeHtml(taskTypeLabel(type))}</span><em>${counts.get(type) || 0}</em>
-        </button>
-      `).join('')}
-    `;
-
-    execution.querySelectorAll('[data-work-status]').forEach((button) => {
-      button.classList.toggle('active', button.dataset.workStatus === selectedStatus);
-    });
-
-    const visible = filteredOperationalTasks();
-    const queue = execution.querySelector('#tasks-queue-list');
-    queue.innerHTML = visible.length ? visible.map((task) => {
-      const pending = pendingCount(task);
-      const total = Math.max(0, Number(task.total_processes || 0));
-      const completed = Math.max(0, Number(task.completed_processes || 0));
-      const progress = total ? Math.min(100, Math.round((completed / total) * 100)) : 0;
-      const state = taskState(task);
-      const stateLabel = state === 'completed' ? 'Concluída' : state === 'overdue' ? 'Em atraso' : `${pending} pendente${pending === 1 ? '' : 's'}`;
-      return `
-        <button type="button" class="tasks-queue-item" data-open-operational-task="${escapeHtml(task.id)}">
-          <span class="tasks-queue-icon"><i data-lucide="clipboard-check"></i></span>
-          <span class="tasks-queue-copy">
-            <small>${escapeHtml(taskTypeLabel(task.type))}</small>
-            <strong>${escapeHtml(task.title || taskTypeLabel(task.type))}</strong>
-            <span>${escapeHtml(task.description || 'Sem descrição')}</span>
-          </span>
-          <span class="tasks-queue-progress">
-            <small>${completed} de ${total || completed}</small>
-            <span><i style="width:${progress}%"></i></span>
-          </span>
-          <span class="tasks-queue-deadline">
-            <small>Prazo</small>
-            <strong>${escapeHtml(formatDeadline(task.deadline_at))}</strong>
-          </span>
-          <span class="tasks-queue-state ${state}">${escapeHtml(stateLabel)}</span>
-          <i class="tasks-queue-chevron" data-lucide="chevron-right"></i>
-        </button>
-      `;
-    }).join('') : `
-      <div class="tasks-queue-empty">
-        <i data-lucide="inbox"></i>
-        <strong>Nenhuma tarefa neste filtro</strong>
-        <span>Altere o tipo ou o status para consultar outra fila.</span>
-      </div>
-    `;
-
-    const title = selectedType === 'all' ? 'Todas as tarefas' : taskTypeLabel(selectedType);
-    execution.querySelector('#tasks-queue-title').textContent = title;
-    execution.querySelector('#tasks-queue-count').textContent = `${visible.length} fila${visible.length === 1 ? '' : 's'}`;
-    execution.querySelector('#tasks-operational-total').textContent = `${totalPending} pendentes`;
-    execution.querySelector('#tasks-filter-total').textContent = String(source.length);
-    window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
-  }
-
-  async function refreshOperationalTasks() {
+  async function refreshUnifiedData(force = false) {
     if (!window.MBA_API) return;
+    if (refreshPromise && !force) return refreshPromise;
     const token = ++refreshToken;
-    try {
+    refreshPromise = (async () => {
       const response = await window.MBA_API.request('/api/tasks');
       if (token !== refreshToken) return;
       tasks = Array.isArray(response) ? response : [];
-      renderOperationalWorkspace();
-    } catch (_error) {
-      const queue = document.querySelector('#tasks-queue-list');
-      if (queue) queue.innerHTML = '<div class="tasks-queue-empty"><strong>Não foi possível carregar suas tarefas.</strong><span>Tente novamente em alguns instantes.</span></div>';
-    }
+      const assigned = assignedTasks();
+      const processGroups = await Promise.all(assigned.map(async (task) => {
+        try {
+          const rows = await window.MBA_API.request(`/api/tasks/${task.id}/processes`);
+          return (Array.isArray(rows) ? rows : []).map((process) => ({ task, process }));
+        } catch (_error) {
+          return [];
+        }
+      }));
+      if (token !== refreshToken) return;
+      workItems = processGroups.flat();
+      renderUnifiedSidebar();
+      normalizeExecutionIdentity();
+    })().finally(() => { refreshPromise = null; });
+    return refreshPromise;
   }
 
-  function openOperationalTask(taskId) {
-    const task = tasks.find((item) => String(item.id) === String(taskId));
-    if (!task) return;
+  function defaultWorkItem(preferredType = sessionStorage.getItem(LAST_TASK_TYPE_KEY)) {
+    const pending = workItems.filter(({ task, process }) => taskState(task, process) !== 'completed');
+    const source = pending.length ? pending : workItems;
+    const preferred = preferredType
+      ? source.find(({ task }) => String(task.type) === String(preferredType))
+      : null;
+    return preferred || source[0] || null;
+  }
 
-    if (String(task.type).toLowerCase() === 'protocolo') {
+  async function openDefaultTask() {
+    await refreshUnifiedData();
+    const item = defaultWorkItem();
+    if (!item) {
+      window.showPage?.('tarefas');
+      normalizeManagementLobby();
+      updateSubnav();
+      return;
+    }
+    openWorkItem(item.task, item.process);
+  }
+
+  function openTaskProxy(task) {
+    if (String(task.type || '').toLowerCase() === 'protocolo') {
       window.showPage?.('protocolo');
       return;
     }
-
     const tbody = document.querySelector('#tasks-table-body');
     if (!tbody) return;
     const proxy = document.createElement('button');
@@ -336,51 +235,253 @@
     proxy.remove();
   }
 
-  function applyMode() {
-    const views = ensureViews();
-    const nav = ensureSubnav();
-    if (!views || !nav) return;
-
-    const manager = canManage();
-    if (!manager) activeMode = 'execution';
-
-    const managementTab = nav.querySelector('[data-task-module-tab="management"]');
-    const executionTab = nav.querySelector('[data-task-module-tab="execution"]');
-    managementTab.hidden = !manager;
-    managementTab.classList.toggle('active', manager && activeMode === 'management');
-    executionTab.classList.toggle('active', activeMode === 'execution');
-
-    views.management.hidden = activeMode !== 'management';
-    views.execution.hidden = activeMode !== 'execution';
-
-    if (activeMode === 'execution') refreshOperationalTasks();
-    normalizeManagementLobby();
+  function selectNativeProcess(task, process) {
+    const caseNumber = String(process?.case_number || '');
+    const processId = String(process?.id || '');
+    let attempts = 0;
+    const trySelect = () => {
+      attempts += 1;
+      const pageId = currentPageId();
+      if (String(task.type) === 'comprovante_pagamento' && pageId === 'comprovante-execucao') {
+        const search = document.querySelector('#payment-process-search');
+        if (search && search.value !== caseNumber) {
+          search.value = caseNumber;
+          search.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const button = document.querySelector(`#payment-process-items [data-payment-process-id="${CSS.escape(processId)}"]`);
+        if (button) { button.click(); return; }
+      } else if (pageId === 'tarefa-analise') {
+        const search = document.querySelector('#task-process-search');
+        if (search && search.value !== caseNumber) {
+          search.value = caseNumber;
+          search.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const button = [...document.querySelectorAll('#process-items [data-process-json]')].find((candidate) => {
+          try {
+            return String(JSON.parse(decodeURIComponent(candidate.dataset.processJson)).id) === processId;
+          } catch (_error) {
+            return false;
+          }
+        });
+        if (button) { button.click(); return; }
+      }
+      if (attempts < 25) setTimeout(trySelect, 80);
+    };
+    setTimeout(trySelect, 50);
   }
 
-  function setMode(mode) {
-    const target = mode === 'management' && canManage() ? 'management' : 'execution';
-    activeMode = target;
-    sessionStorage.setItem(STORAGE_KEY, target);
+  function openWorkItem(task, process) {
+    if (!task) return;
+    activeTask = task;
+    activeProcessId = process?.id || null;
+    sessionStorage.setItem(LAST_TASK_TYPE_KEY, task.type || '');
+    openTaskProxy(task);
+    if (process) selectNativeProcess(task, process);
+    setTimeout(() => {
+      normalizeExecutionIdentity();
+      ensureUnifiedSidebar();
+      renderUnifiedSidebar();
+      updateSubnav();
+    }, 80);
+  }
 
-    if (currentPageId() !== 'tarefas') window.showPage?.('tarefas');
-    queueMicrotask(applyMode);
+  function executionContextTask() {
+    if (activeTask) return activeTask;
+    const context = document.querySelector('#payment-task-context')?.textContent?.trim()
+      || document.querySelector('#tarefa-analise .detail-heading h1')?.textContent?.trim()
+      || '';
+    return assignedTasks().find((task) => task.title === context) || null;
+  }
+
+  function normalizeExecutionIdentity() {
+    const task = executionContextTask();
+    if (!task) return;
+    const label = taskTypeLabel(task.type);
+    const context = taskContextLabel(task);
+
+    if (currentPageId() === 'comprovante-execucao') {
+      const title = document.querySelector('#payment-task-type-title');
+      const subtitle = document.querySelector('#payment-task-context');
+      if (title && title.textContent !== label) title.textContent = label;
+      if (subtitle && context && subtitle.textContent !== context) subtitle.textContent = context;
+    }
+
+    if (currentPageId() === 'tarefa-analise') {
+      const title = document.querySelector('#tarefa-analise .detail-heading h1');
+      const subtitle = document.querySelector('#tarefa-analise .detail-heading p');
+      if (title && title.textContent !== label) title.textContent = label;
+      if (subtitle) subtitle.textContent = context || task.description || 'Analise o processo selecionado e registre o resultado.';
+    }
+
+    document.querySelectorAll('#payment-assignment-filter option').forEach((option) => {
+      if (TASK_TYPE_LABELS[option.value]) option.textContent = TASK_TYPE_LABELS[option.value];
+    });
+  }
+
+  function queuePageSize() {
+    const available = Math.max(220, window.innerHeight - 370);
+    return Math.max(5, Math.min(9, Math.floor(available / 58)));
+  }
+
+  function filteredWorkItems() {
+    return workItems.filter(({ task, process }) => {
+      const typeMatch = selectedType === 'all' || String(task.type) === selectedType;
+      const stateMatch = taskState(task, process) === selectedStatus;
+      const haystack = `${process.case_number || ''} ${process.folder || ''} ${process.party_name || ''} ${taskTypeLabel(task.type)} ${task.title || ''}`.toLowerCase();
+      const searchMatch = !searchTerm || haystack.includes(searchTerm);
+      return typeMatch && stateMatch && searchMatch;
+    });
+  }
+
+  function typeCounts() {
+    const counts = new Map();
+    workItems.forEach(({ task, process }) => {
+      if (taskState(task, process) !== selectedStatus) return;
+      counts.set(task.type, (counts.get(task.type) || 0) + 1);
+    });
+    return counts;
+  }
+
+  function ensureUnifiedSidebar() {
+    const pageId = currentPageId();
+    if (!['tarefa-analise', 'comprovante-execucao'].includes(pageId)) return null;
+    const page = document.getElementById(pageId);
+    const layout = page?.querySelector('.analysis-layout');
+    const native = layout?.querySelector(':scope > .process-list:not(.tasks-unified-sidebar)');
+    if (!layout || !native) return null;
+
+    native.classList.add('tasks-native-process-list');
+    let sidebar = layout.querySelector(':scope > .tasks-unified-sidebar');
+    if (!sidebar) {
+      sidebar = document.createElement('aside');
+      sidebar.className = 'panel process-list tasks-unified-sidebar';
+      sidebar.innerHTML = `
+        <h2>Minhas tarefas</h2>
+        <label class="process-search"><i data-lucide="search"></i><input class="tasks-unified-search" type="search" placeholder="Buscar processo ou pasta"></label>
+        <div class="process-filters tasks-unified-filters">
+          <select class="tasks-unified-type" aria-label="Tipo de tarefa"></select>
+          <select class="tasks-unified-status" aria-label="Status da tarefa">
+            <option value="pending">Pendentes</option>
+            <option value="completed">Concluídas</option>
+            <option value="overdue">Em atraso</option>
+          </select>
+        </div>
+        <div class="tasks-unified-items"></div>
+        <div class="process-pagination tasks-unified-pagination" hidden>
+          <button type="button" data-unified-prev aria-label="Tarefas anteriores"><i data-lucide="chevron-left"></i></button>
+          <span class="tasks-unified-page-label">—</span>
+          <button type="button" data-unified-next aria-label="Próximas tarefas"><i data-lucide="chevron-right"></i></button>
+        </div>
+      `;
+      layout.insertBefore(sidebar, native);
+
+      sidebar.querySelector('.tasks-unified-search')?.addEventListener('input', (event) => {
+        searchTerm = event.target.value.trim().toLowerCase();
+        queuePage = 0;
+        renderUnifiedSidebar();
+      });
+      sidebar.querySelector('.tasks-unified-type')?.addEventListener('change', (event) => {
+        selectedType = event.target.value || 'all';
+        queuePage = 0;
+        renderUnifiedSidebar();
+      });
+      sidebar.querySelector('.tasks-unified-status')?.addEventListener('change', (event) => {
+        selectedStatus = event.target.value || 'pending';
+        queuePage = 0;
+        renderUnifiedSidebar();
+      });
+      sidebar.querySelector('[data-unified-prev]')?.addEventListener('click', () => {
+        queuePage -= 1;
+        renderUnifiedSidebar();
+      });
+      sidebar.querySelector('[data-unified-next]')?.addEventListener('click', () => {
+        queuePage += 1;
+        renderUnifiedSidebar();
+      });
+      sidebar.querySelector('.tasks-unified-items')?.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-unified-task-id][data-unified-process-id]');
+        if (!button) return;
+        const item = workItems.find(({ task, process }) => String(task.id) === button.dataset.unifiedTaskId && String(process.id) === button.dataset.unifiedProcessId);
+        if (item) openWorkItem(item.task, item.process);
+      });
+    }
+    window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
+    return sidebar;
+  }
+
+  function renderUnifiedSidebar() {
+    const sidebar = ensureUnifiedSidebar();
+    if (!sidebar) return;
+
+    const counts = typeCounts();
+    const types = [...new Set(workItems.map(({ task }) => task.type).filter(Boolean))]
+      .sort((a, b) => taskTypeLabel(a).localeCompare(taskTypeLabel(b), 'pt-BR'));
+    if (selectedType !== 'all' && !types.includes(selectedType)) selectedType = 'all';
+
+    const typeSelect = sidebar.querySelector('.tasks-unified-type');
+    const currentType = selectedType;
+    const totalForStatus = workItems.filter(({ task, process }) => taskState(task, process) === selectedStatus).length;
+    typeSelect.innerHTML = `<option value="all">Todas as tarefas (${totalForStatus})</option>${types.map((type) => `<option value="${escapeHtml(type)}">${escapeHtml(taskTypeLabel(type))} (${counts.get(type) || 0})</option>`).join('')}`;
+    typeSelect.value = currentType;
+    sidebar.querySelector('.tasks-unified-status').value = selectedStatus;
+    sidebar.querySelector('.tasks-unified-search').value = searchTerm;
+
+    const filtered = filteredWorkItems();
+    const size = queuePageSize();
+    const pages = Math.max(1, Math.ceil(filtered.length / size));
+    queuePage = Math.min(Math.max(queuePage, 0), pages - 1);
+    const start = queuePage * size;
+    const visible = filtered.slice(start, start + size);
+
+    sidebar.querySelector('.tasks-unified-items').innerHTML = visible.length ? visible.map(({ task, process }) => {
+      const state = taskState(task, process);
+      const stateLabel = state === 'completed' ? 'Concluída' : state === 'overdue' ? 'Em atraso' : 'Pendente';
+      const secondary = process.folder || process.party_name || taskContextLabel(task) || 'Sem informação adicional';
+      return `
+        <button class="process-item ${String(process.id) === String(activeProcessId) ? 'selected' : ''}" type="button" data-unified-task-id="${escapeHtml(task.id)}" data-unified-process-id="${escapeHtml(process.id)}">
+          <span><i data-lucide="${state === 'completed' ? 'circle-check' : 'clipboard-check'}"></i></span>
+          <div>
+            <strong>${escapeHtml(process.case_number || 'Processo sem número')}</strong>
+            <small><b>${escapeHtml(taskTypeLabel(task.type))}</b> · ${escapeHtml(secondary)}</small>
+          </div>
+          <em class="${state}">${escapeHtml(stateLabel)}</em>
+        </button>
+      `;
+    }).join('') : '<div class="process-list-empty">Nenhuma tarefa encontrada para este filtro.</div>';
+
+    const pagination = sidebar.querySelector('.tasks-unified-pagination');
+    pagination.hidden = filtered.length <= size;
+    sidebar.querySelector('[data-unified-prev]').disabled = queuePage === 0;
+    sidebar.querySelector('[data-unified-next]').disabled = queuePage >= pages - 1;
+    sidebar.querySelector('.tasks-unified-page-label').textContent = filtered.length ? `${start + 1}–${Math.min(start + size, filtered.length)} de ${filtered.length}` : '0 de 0';
+    window.lucide?.createIcons({ attrs: { 'aria-hidden': 'true' } });
+  }
+
+  function syncSelectedFromNative() {
+    const pageId = currentPageId();
+    if (pageId === 'comprovante-execucao') {
+      const selected = document.querySelector('#payment-process-items .process-item.selected[data-payment-process-id]');
+      if (selected) activeProcessId = selected.dataset.paymentProcessId;
+    } else if (pageId === 'tarefa-analise') {
+      const selected = document.querySelector('#process-items .process-item.selected[data-process-json]');
+      if (selected) {
+        try { activeProcessId = JSON.parse(decodeURIComponent(selected.dataset.processJson)).id; } catch (_error) {}
+      }
+    }
+    renderUnifiedSidebar();
   }
 
   function syncTaskContext() {
-    const nav = ensureSubnav();
+    normalizeManagementLobby();
+    updateSubnav();
     const pageId = currentPageId();
-    const inTasks = TASK_CONTEXT_PAGES.has(pageId);
-    nav.hidden = !inTasks;
-    if (!inTasks) return;
-
-    if (pageId !== 'tarefas') {
-      activeMode = 'execution';
-      nav.querySelector('[data-task-module-tab="management"]')?.classList.remove('active');
-      nav.querySelector('[data-task-module-tab="execution"]')?.classList.add('active');
-      return;
+    if (TASK_EXECUTION_PAGES.has(pageId)) {
+      ensureUnifiedSidebar();
+      normalizeExecutionIdentity();
+      renderUnifiedSidebar();
+    } else if (pageId === 'tarefas' && !canManage()) {
+      openDefaultTask().catch(() => {});
     }
-
-    applyMode();
   }
 
   function installObservers() {
@@ -391,32 +492,46 @@
     });
 
     const body = document.querySelector('#tasks-table-body');
-    if (body) {
-      new MutationObserver(() => {
-        normalizeManagementLobby();
-      }).observe(body, { childList: true, subtree: true, characterData: true });
-    }
+    if (body) new MutationObserver(normalizeManagementLobby).observe(body, { childList: true, subtree: true, characterData: true });
+
+    ['#process-items', '#payment-process-items'].forEach((selector) => {
+      const node = document.querySelector(selector);
+      if (node) new MutationObserver(() => queueMicrotask(syncSelectedFromNative)).observe(node, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    });
 
     document.addEventListener('click', (event) => {
       const sidebar = event.target.closest('.nav-item[data-page="tarefas"]');
       if (!sidebar) return;
-      queueMicrotask(() => {
-        if (!canManage()) activeMode = 'execution';
-        syncTaskContext();
-      });
-    });
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      openDefaultTask().catch(() => {});
+    }, true);
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('#save-next, #payment-receipt-skip')) return;
+      setTimeout(() => refreshUnifiedData(true).catch(() => {}), 700);
+    }, true);
+    document.addEventListener('submit', (event) => {
+      if (event.target?.id !== 'payment-receipt-form') return;
+      setTimeout(() => refreshUnifiedData(true).catch(() => {}), 700);
+    }, true);
   }
 
-  window.addEventListener('mba:authenticated', () => {
-    currentUser = window.MBA_CURRENT_USER || currentUser;
-    if (!canManage()) activeMode = 'execution';
-    syncTaskContext();
-    if (activeMode === 'execution') refreshOperationalTasks();
+  window.addEventListener('mba:authenticated', (event) => {
+    currentUser = window.MBA_CURRENT_USER || event.detail || currentUser;
+    refreshUnifiedData(true).then(() => {
+      syncTaskContext();
+      if (currentPageId() === 'tarefas' && !canManage()) openDefaultTask().catch(() => {});
+    }).catch(() => {});
   });
 
-  ensureViews();
+  window.addEventListener('resize', () => {
+    if (TASK_EXECUTION_PAGES.has(currentPageId())) renderUnifiedSidebar();
+  });
+
+  ensureManagementView();
   ensureSubnav();
   installObservers();
   normalizeManagementLobby();
-  syncTaskContext();
+  updateSubnav();
 })();
