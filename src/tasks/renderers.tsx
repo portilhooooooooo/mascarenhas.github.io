@@ -123,8 +123,9 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
           options={[
             { value: 'deferida', label: 'Deferida', description: 'Tutela concedida' },
             { value: 'indeferida', label: 'Indeferida', description: 'Tutela negada' },
-            { value: 'nao_solicitada', label: 'Não solicitada', description: 'Não há pedido' },
+            { value: 'nao_solicitada', label: 'Não houve pedido', description: 'Não há pedido de tutela' },
             { value: 'com_sentenca', label: 'Com sentença', description: 'Já foi proferida sentença' },
+            { value: 'sem_decisao', label: 'Sem decisão', description: 'Pedido ainda sem decisão' },
             { value: 'erro', label: 'Não foi possível analisar', description: 'Erro operacional ou documental' },
           ]}
         />
