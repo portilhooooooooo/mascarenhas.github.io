@@ -69,6 +69,7 @@
 .task-question h3{margin:0;color:var(--mba-text,#0f1f3d);font-size:12.5px;font-weight:650}
 .task-question>p{display:none}
 .task-question-nested{padding-top:0}
+.task-question:has(input[name="had-block"]){margin-top:10px}
 .task-option-grid{display:grid;gap:8px}
 .task-option-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}.task-option-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.task-option-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
 .task-option-card{position:relative;min-width:0}
