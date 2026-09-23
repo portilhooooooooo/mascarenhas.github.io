@@ -17,6 +17,7 @@ const [
   tasksApp,
   taskModel,
   taskRenderers,
+  tasksCss,
 ] = await Promise.all([
   readFile(new URL('../auth.js', import.meta.url), 'utf8'),
   readFile(new URL('../data-api.js', import.meta.url), 'utf8'),
@@ -33,6 +34,7 @@ const [
   readFile(new URL('../src/tasks/TasksApp.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/model.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/renderers.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/tasks/tasks.css', import.meta.url), 'utf8'),
 ]);
 
 const packageJson = JSON.parse(packageText);
@@ -117,5 +119,9 @@ assert.doesNotMatch(taskModel, /deadline.*today.*urgent/i, 'today alone must not
 assert.doesNotMatch(taskRenderers, /data-lucide/, 'answer cards must not use decorative icons');
 assert.match(taskRenderers, /workflow_version: 2/, 'payment renderer must use the current payment workflow contract');
 assert.match(taskRenderers, /agreement-skip-next/, 'agreement renderer must preserve the backend skip-next contract');
+assert.match(taskRenderers, /label: 'Não houve pedido'/, 'liminar must use the operational label Não houve pedido');
+assert.match(taskRenderers, /value: 'sem_decisao', label: 'Sem decisão'/, 'liminar must include Sem decisão as a distinct outcome');
+assert.match(taskRenderers, /sem_decisao[\s\S]*value: 'erro', label: 'Não foi possível analisar'/, 'liminar analysis failure must remain the final outcome');
+assert.match(tasksCss, /task-option-grid\[aria-label="liminar-decision"\]\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/, 'liminar outcomes must render in pairs');
 
 console.log('hardening regression checks passed');
