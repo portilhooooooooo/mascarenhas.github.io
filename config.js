@@ -5,9 +5,9 @@ const mbaIsLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 window.MBA_REACT_LOGIN = true;
 window.MBA_REACT_TASKS = true;
 
-// Frontend local e produção usam o mesmo backend real através do proxy Railway.
-// O localhost/tunnel altera apenas a origem do frontend, não a infraestrutura da API.
-window.MBA_API_BASE_URL = 'https://mba-backoffice-proxy-production.up.railway.app';
+// Frontend local e produção acessam a API diretamente na VPS.
+// O Railway não participa do caminho HTTP da aplicação.
+window.MBA_API_BASE_URL = 'https://api.portilhobackoffice.site';
 
 window.MBA_LOCAL_PREVIEW = mbaIsLocal
   && new URLSearchParams(location.search).get('preview') === '1';
