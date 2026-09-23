@@ -55,7 +55,7 @@ assert.match(config, /window\.MBA_REACT_LOGIN = true;/, 'config must declare Rea
 assert.match(config, /window\.MBA_REACT_TASKS = true;/, 'config must declare React task ownership before auth.js');
 
 assert.match(login, /MBA_AUTH\?\.startMicrosoftLogin/, 'React login must call the auth service directly');
-assert.match(login, /MBA_AUTH\?\.getLoginState/, 'React login must hydrate from the headless auth state');
+assert.match(login, /auth\?\.getLoginState\?\.\(\)/, 'React login must hydrate from the headless auth state');
 assert.match(login, /mba:auth-state/, 'React login must subscribe to auth state changes');
 assert.match(login, /useLayoutEffect/, 'React login must claim the surface before paint');
 assert.match(login, /id="login-display-email"/, 'corporate login must preserve the decorative e-mail field');
