@@ -1,10 +1,16 @@
-import { StrictMode, useLayoutEffect, useState } from 'react';
+import { FormEvent, StrictMode, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './login.css';
+
+type LoginState = {
+  busy: boolean;
+  error: string | null;
+};
 
 type AuthWindow = Window & typeof globalThis & {
   MBA_AUTH?: {
     startMicrosoftLogin?: () => Promise<void> | void;
+    getLoginState?: () => LoginState;
   };
 };
 
@@ -20,41 +26,97 @@ function MicrosoftMark() {
 }
 
 function LoginPage() {
-  const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState('');
+  const [authState, setAuthState] = useState<LoginState>({ busy: false, error: null });
 
   useLayoutEffect(() => {
-    document.getElementById('login-view')?.removeAttribute('hidden');
     document.body.dataset.reactLogin = 'true';
+    document.getElementById('login-view')?.removeAttribute('hidden');
+
+    const auth = (window as AuthWindow).MBA_AUTH;
+    const current = auth?.getLoginState?.();
+    if (current) setAuthState(current);
+
+    const handleAuthState = (event: Event) => {
+      const detail = (event as CustomEvent<LoginState>).detail;
+      if (detail) setAuthState(detail);
+    };
+
+    window.addEventListener('mba:auth-state', handleAuthState);
+    return () => window.removeEventListener('mba:auth-state', handleAuthState);
   }, []);
 
   const startMicrosoftLogin = async () => {
     const start = (window as AuthWindow).MBA_AUTH?.startMicrosoftLogin;
-    if (!start || busy) return;
-    setBusy(true);
-    try {
-      await start();
-    } finally {
-      // Em sucesso haverá navegação para a Microsoft; em falha o auth.js libera o fluxo.
-      setBusy(false);
-    }
+    if (!start || authState.busy) return;
+    await start();
+  };
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void startMicrosoftLogin();
   };
 
   return (
     <div className="react-login-view">
-      <h1>Entrar</h1>
-      <p>Acesse o Backoffice com sua conta corporativa Microsoft.</p>
-      <button
-        className="microsoft-login"
-        id="microsoft-login"
-        type="button"
-        aria-label="Acesso Corporativo"
-        aria-busy={busy}
-        disabled={busy}
-        onClick={startMicrosoftLogin}
-      >
-        <MicrosoftMark />
-        <span>{busy ? 'Entrando…' : 'Acesso Corporativo'}</span>
-      </button>
+      <header className="react-login-header" aria-label="Mascarenhas Backoffice">
+        <div className="react-login-brand">
+          <img src="/favicon.svg?v=20260917-exact-symbol" alt="" aria-hidden="true" />
+          <span>Backoffice</span>
+        </div>
+      </header>
+
+      <main className="react-login-main">
+        <section className="react-login-access" aria-labelledby="react-login-title">
+          <h1 id="react-login-title">Entrar</h1>
+          <p className="react-login-subtitle">Use sua conta corporativa Microsoft para continuar.</p>
+
+          <form className="react-login-form" onSubmit={submit} noValidate>
+            <label className="react-login-field" htmlFor="login-display-email">
+              <span>E-mail</span>
+              <input
+                id="login-display-email"
+                name="display-email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="nome@empresa.com"
+                value={email}
+                disabled={authState.busy}
+                onChange={event => setEmail(event.target.value)}
+              />
+            </label>
+
+            <button
+              className="react-login-primary"
+              type="submit"
+              aria-busy={authState.busy}
+              disabled={authState.busy}
+            >
+              {authState.busy ? 'Redirecionando…' : 'Acessar'}
+            </button>
+
+            <div className="react-login-divider" aria-hidden="true"><span>ou</span></div>
+
+            <button
+              className="react-login-corporate"
+              type="button"
+              aria-busy={authState.busy}
+              disabled={authState.busy}
+              onClick={() => void startMicrosoftLogin()}
+            >
+              <MicrosoftMark />
+              <span>Acesso Corporativo</span>
+            </button>
+          </form>
+
+          {authState.error ? (
+            <div className="react-login-error" role="alert">{authState.error}</div>
+          ) : null}
+
+          <p className="react-login-security">Acesso restrito a usuários autorizados.</p>
+        </section>
+      </main>
     </div>
   );
 }
