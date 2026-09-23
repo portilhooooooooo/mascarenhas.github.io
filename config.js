@@ -1,5 +1,10 @@
 const mbaIsLocal = ['localhost', '127.0.0.1'].includes(location.hostname);
 
+// Ownership flags must exist before auth.js runs. React owns presentation;
+// auth.js remains a headless authentication/session service.
+window.MBA_REACT_LOGIN = true;
+window.MBA_REACT_TASKS = true;
+
 // Frontend local e produção usam o mesmo backend real através do proxy Railway.
 // O localhost/tunnel altera apenas a origem do frontend, não a infraestrutura da API.
 window.MBA_API_BASE_URL = 'https://mba-backoffice-proxy-production.up.railway.app';
