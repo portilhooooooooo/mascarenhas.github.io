@@ -72,6 +72,8 @@ assert.match(buildStatic, /'\.build\/react-dashboard'/, 'dist must receive the R
 assert.doesNotMatch(buildStatic, /await cp\(\s*'assets\/react-dashboard'/, 'dist must not depend on a tracked precompiled React bundle');
 assert.doesNotMatch(buildStatic, /tasks-workspace\.js/, 'dist must not load the legacy task workspace controller');
 assert.doesNotMatch(buildStatic, /'tasks\.css'/, 'dist must not load the legacy task stylesheet');
+assert.doesNotMatch(buildStatic, /\n\s*'security-ui\.js',/, 'dist must not copy the legacy login renderer');
+assert.match(buildStatic, /security-ui\\\.js\|login-ui\\\.css/, 'build must reject any surviving legacy login UI reference');
 assert.match(buildStatic, /react-compat\.js/, 'dist must install the legacy compatibility guard before authentication');
 assert.match(buildStatic, /reactOwnedIndexHtml/, 'build must strip the legacy login markup before serving');
 assert.match(buildStatic, /id=\"task-only-login\"\|id=\"google-login\"/, 'build must fail if legacy login controls survive');
