@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './login.css';
 
@@ -22,7 +22,7 @@ function MicrosoftMark() {
 function LoginPage() {
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.getElementById('login-view')?.removeAttribute('hidden');
     document.body.dataset.reactLogin = 'true';
   }, []);
