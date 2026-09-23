@@ -2,7 +2,7 @@ import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 
 const dist = 'dist';
-const fallbackVersion = '20260922-react-tasks';
+const fallbackVersion = '20260923-react-login';
 let buildVersion = process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA || '';
 
 if (!buildVersion) {
@@ -33,7 +33,6 @@ const files = [
   'payment-receipt.js',
   'protocolo.js',
   'auth.js',
-  'security-ui.js',
   'page-init-1.js',
   'page-init-2.js',
   'favicon.svg',
@@ -47,15 +46,17 @@ for (const file of files) {
 await cp(
   '.build/react-dashboard',
   `${dist}/assets/react-dashboard`,
-  { recursive: true }
+  { recursive: true },
 );
 
 const indexPath = `${dist}/index.html`;
 const indexHtml = await readFile(indexPath, 'utf8');
-const reactOwnedIndexHtml = indexHtml.replace(
-  /<div class="auth-view" id="login-view">[\s\S]*?<\/div>\s*<div class="login-security">/,
-  '<div class="auth-view" id="login-view"></div>\n\n        <div class="login-security">',
-);
+const reactOwnedIndexHtml = indexHtml
+  .replace(
+    /<div class="auth-view" id="login-view">[\s\S]*?<\/div>\s*<div class="login-security">/,
+    '<div class="auth-view" id="login-view"></div>\n\n        <div class="login-security">',
+  )
+  .replace(/\s*<script src="\/?security-ui\.js(?:\?v=[^"]+)?"><\/script>/g, '');
 
 if (reactOwnedIndexHtml === indexHtml) {
   throw new Error('Não foi possível isolar o ponto de montagem React do login.');
@@ -81,7 +82,6 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/agreements\.js(?:\?v=[^"']+)?/g, `agreements.js?v=${buildVersion}`)
   .replace(/payment-receipt\.js(?:\?v=[^"']+)?/g, `payment-receipt.js?v=${buildVersion}`)
   .replace(/protocolo\.js(?:\?v=[^"']+)?/g, `protocolo.js?v=${buildVersion}`)
-  .replace(/security-ui\.js(?:\?v=[^"']+)?/g, `security-ui.js?v=${buildVersion}`)
   .replace(/page-init-1\.js(?:\?v=[^"']+)?/g, `page-init-1.js?v=${buildVersion}`)
   .replace(/page-init-2\.js(?:\?v=[^"']+)?/g, `page-init-2.js?v=${buildVersion}`)
   .replace(/(href|src)="(?!https?:|\/\/|\/|#|mailto:|data:)([^"]+)"/g, '$1="/$2"');
@@ -92,6 +92,9 @@ if (/id="task-only-login"|id="google-login"|data-auth-provider="google"/.test(bu
 if (!/<div class="auth-view" id="login-view"><\/div>/.test(builtIndexHtml)) {
   throw new Error('O artefato final deve conter somente o mount React do login.');
 }
+if (/security-ui\.js|login-ui\.css/.test(builtIndexHtml)) {
+  throw new Error('O artefato final ainda referencia a implementação visual legada do login.');
+}
 
 await writeFile(indexPath, builtIndexHtml, 'utf8');
 await writeFile(`${dist}/mba-build-sha.txt`, `${buildVersion}\n`, 'utf8');
@@ -101,7 +104,7 @@ const authJs = await readFile(authPath, 'utf8');
 await writeFile(
   authPath,
   authJs.replace(/20260916-mascarenhas/g, '20260917-exact-symbol'),
-  'utf8'
+  'utf8',
 );
 
 console.log(`dist preparado para deploy e preview local (${buildVersion}).`);
