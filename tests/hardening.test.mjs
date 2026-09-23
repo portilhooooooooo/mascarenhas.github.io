@@ -45,8 +45,11 @@ assert.match(auth, /if \(!reactLoginEnabled\) renderMicrosoftOnlyLogin\(\);/, 'l
 assert.match(pageInit, /window\.MBA_REACT_LOGIN = true;/, 'React login ownership must be declared before bootstrap');
 assert.match(pageInit, /window\.MBA_REACT_TASKS = true;/, 'React task ownership must be declared before bootstrap');
 assert.doesNotMatch(pageInit, /Continuar via Outlook/, 'page bootstrap must not rebuild the login');
+assert.match(config, /window\.MBA_REACT_LOGIN = true;/, 'config must declare React login ownership before auth.js');
+assert.match(config, /window\.MBA_REACT_TASKS = true;/, 'config must declare React task ownership before auth.js');
 assert.match(login, /MBA_AUTH\?\.startMicrosoftLogin/, 'React login must call the auth service directly');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');
+assert.match(login, /useLayoutEffect/, 'React login must reveal its mount before paint');
 
 assert.match(api, /sessionInvalidCodes = new Set\(\['AUTH_REQUIRED', 'SESSION_INVALID'\]\)/, 'logout must require an explicit session-invalid code');
 assert.match(api, /inFlightGets\.has\(path\)/, 'duplicate GETs must share one request');
@@ -70,6 +73,9 @@ assert.doesNotMatch(buildStatic, /await cp\(\s*'assets\/react-dashboard'/, 'dist
 assert.doesNotMatch(buildStatic, /tasks-workspace\.js/, 'dist must not load the legacy task workspace controller');
 assert.doesNotMatch(buildStatic, /'tasks\.css'/, 'dist must not load the legacy task stylesheet');
 assert.match(buildStatic, /react-compat\.js/, 'dist must install the legacy compatibility guard before authentication');
+assert.match(buildStatic, /reactOwnedIndexHtml/, 'build must strip the legacy login markup before serving');
+assert.match(buildStatic, /id=\"task-only-login\"\|id=\"google-login\"/, 'build must fail if legacy login controls survive');
+assert.match(buildStatic, /somente o mount React do login/, 'build must assert a single login mount point');
 assert.match(gitignore, /\.build\//, 'disposable React build output must stay untracked');
 
 assert.match(dashboard, /mountTasksPage\(\);/, 'the application shell must mount the React Tasks workspace');
