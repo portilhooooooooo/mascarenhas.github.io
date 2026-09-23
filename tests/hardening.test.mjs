@@ -59,8 +59,8 @@ assert.match(login, /auth\?\.getLoginState\?\.\(\)/, 'React login must hydrate f
 assert.match(login, /mba:auth-state/, 'React login must subscribe to auth state changes');
 assert.match(login, /useLayoutEffect/, 'React login must claim the surface before paint');
 assert.match(login, /id="login-display-email"/, 'corporate login must preserve the decorative e-mail field');
-assert.match(login, />Acessar</, 'corporate login must preserve the primary access action');
-assert.match(login, />Acesso Corporativo</, 'corporate login must preserve the secondary corporate access action');
+assert.match(login, /'Acessar'/, 'corporate login must preserve the primary access action');
+assert.match(login, /Acesso Corporativo/, 'corporate login must preserve the secondary corporate access action');
 assert.match(login, /favicon\.svg\?v=20260917-exact-symbol/, 'login must use the same Mascarenhas symbol as the app shell');
 assert.doesNotMatch(login, /id="microsoft-login"/, 'React buttons must not expose a legacy DOM control point');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');
