@@ -52,7 +52,16 @@ await cp(
 
 const indexPath = `${dist}/index.html`;
 const indexHtml = await readFile(indexPath, 'utf8');
-const builtIndexHtml = indexHtml
+const reactOwnedIndexHtml = indexHtml.replace(
+  /<div class="auth-view" id="login-view">[\s\S]*?<\/div>\s*<div class="login-security">/,
+  '<div class="auth-view" id="login-view"></div>\n\n        <div class="login-security">',
+);
+
+if (reactOwnedIndexHtml === indexHtml) {
+  throw new Error('Não foi possível isolar o ponto de montagem React do login.');
+}
+
+const builtIndexHtml = reactOwnedIndexHtml
   .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
   .replace('</head>', `  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
@@ -76,6 +85,13 @@ const builtIndexHtml = indexHtml
   .replace(/page-init-1\.js(?:\?v=[^"']+)?/g, `page-init-1.js?v=${buildVersion}`)
   .replace(/page-init-2\.js(?:\?v=[^"']+)?/g, `page-init-2.js?v=${buildVersion}`)
   .replace(/(href|src)="(?!https?:|\/\/|\/|#|mailto:|data:)([^"]+)"/g, '$1="/$2"');
+
+if (/id="task-only-login"|id="google-login"|data-auth-provider="google"/.test(builtIndexHtml)) {
+  throw new Error('O artefato final ainda contém implementação legada de login.');
+}
+if (!/<div class="auth-view" id="login-view"><\/div>/.test(builtIndexHtml)) {
+  throw new Error('O artefato final deve conter somente o mount React do login.');
+}
 
 await writeFile(indexPath, builtIndexHtml, 'utf8');
 await writeFile(`${dist}/mba-build-sha.txt`, `${buildVersion}\n`, 'utf8');
