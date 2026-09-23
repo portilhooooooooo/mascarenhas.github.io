@@ -1,52 +1,220 @@
-#login-view .react-login-view{
-  width:100%;
-  display:grid;
-  justify-items:center;
-  gap:0;
+body[data-react-login="true"] .login-screen{
+  min-height:100dvh;
+  display:block;
+  padding:0;
+  background:var(--bg,#f8fafc);
 }
-#login-view .react-login-view h1{
+body[data-react-login="true"] .login-panel,
+body[data-react-login="true"] .login-box,
+body[data-react-login="true"] #login-view{
+  width:100%;
+  min-height:100dvh;
+  display:block;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  text-align:left;
+}
+body[data-react-login="true"] .login-brand,
+body[data-react-login="true"] .login-divider,
+body[data-react-login="true"] .login-security,
+body[data-react-login="true"] #login-error{
+  display:none!important;
+}
+
+#login-view .react-login-view{
+  --login-accent:#142b67;
+  --login-accent-hover:#0f2254;
+  --login-accent-soft:#eef2f8;
+  min-height:100dvh;
+  display:grid;
+  grid-template-rows:52px minmax(0,1fr);
+  color:var(--ink,#0f172a);
+  background:
+    radial-gradient(620px 340px at 15% -10%,rgba(20,43,103,.055),transparent 68%),
+    var(--bg,#f8fafc);
+}
+#login-view .react-login-header{
+  height:52px;
+  display:flex;
+  align-items:center;
+  padding:0 16px;
+  border-bottom:1px solid var(--line,#e2e8f0);
+  background:rgba(255,255,255,.74);
+  backdrop-filter:blur(10px);
+}
+#login-view .react-login-brand{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:var(--ink,#0f172a);
+  font-size:13.5px;
+  font-weight:500;
+  letter-spacing:-.02em;
+  white-space:nowrap;
+}
+#login-view .react-login-brand img{
+  width:28px;
+  height:28px;
+  display:block;
+  object-fit:contain;
+}
+#login-view .react-login-main{
+  min-height:0;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:clamp(72px,11vh,112px) 24px 48px;
+}
+#login-view .react-login-access{
+  width:min(400px,100%);
+}
+#login-view .react-login-access h1{
   margin:0;
   color:var(--ink,#0f172a);
-  font-size:18px;
+  font-size:24px;
   font-weight:600;
-  letter-spacing:-.015em;
+  line-height:1.2;
+  letter-spacing:-.025em;
 }
-#login-view .react-login-view p{
-  margin:7px 0 22px;
+#login-view .react-login-subtitle{
+  margin:7px 0 28px;
   color:var(--muted,#475569);
-  font-size:12.5px;
+  font-size:13px;
   line-height:1.55;
-  text-align:center;
 }
-#login-view .microsoft-login{
+#login-view .react-login-form{
+  display:grid;
+}
+#login-view .react-login-field{
+  display:grid;
+  gap:7px;
+  color:var(--ink,#0f172a);
+  font-size:12px;
+  font-weight:500;
+}
+#login-view .react-login-field input{
   width:100%;
-  height:42px;
-  display:flex;
+  height:44px;
+  padding:0 13px;
+  border:1px solid var(--line,#e2e8f0);
+  border-radius:8px;
+  background:var(--surface,#fff);
+  color:var(--ink,#0f172a);
+  font-size:13px;
+  outline:0;
+  transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
+}
+#login-view .react-login-field input::placeholder{
+  color:var(--muted-soft,#94a3b8);
+}
+#login-view .react-login-field input:focus{
+  border-color:var(--login-accent);
+  box-shadow:0 0 0 3px var(--login-accent-soft);
+}
+#login-view .react-login-field input:disabled{
+  cursor:wait;
+  background:#f8fafc;
+}
+#login-view .react-login-primary,
+#login-view .react-login-corporate{
+  width:100%;
+  height:44px;
+  display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:10px;
-  padding:0 14px;
-  border:1px solid var(--line,#e2e8f0);
   border-radius:8px;
-  background:#fff;
-  color:var(--ink,#0f172a);
   font:600 12.5px/1 Inter,ui-sans-serif,system-ui,sans-serif;
   cursor:pointer;
   transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .1s ease;
 }
-#login-view .microsoft-login:hover{
-  border-color:var(--line-strong,#cbd5e1);
-  background:var(--bg,#f8fafc);
+#login-view .react-login-primary{
+  margin-top:12px;
+  border:1px solid var(--login-accent);
+  background:var(--login-accent);
+  color:#fff;
 }
-#login-view .microsoft-login:focus-visible{
+#login-view .react-login-primary:hover:not(:disabled){
+  border-color:var(--login-accent-hover);
+  background:var(--login-accent-hover);
+}
+#login-view .react-login-corporate{
+  border:1px solid var(--line,#e2e8f0);
+  background:var(--surface,#fff);
+  color:var(--ink,#0f172a);
+  font-weight:500;
+}
+#login-view .react-login-corporate:hover:not(:disabled){
+  border-color:#b9c3d4;
+  background:#fff;
+  color:var(--login-accent);
+}
+#login-view .react-login-primary:focus-visible,
+#login-view .react-login-corporate:focus-visible{
   outline:0;
-  border-color:var(--accent,#2563eb);
-  box-shadow:0 0 0 3px var(--accent-soft,#eff6ff);
+  border-color:var(--login-accent);
+  box-shadow:0 0 0 3px var(--login-accent-soft);
 }
-#login-view .microsoft-login:active{transform:translateY(1px)}
-#login-view .microsoft-login:disabled{
+#login-view .react-login-primary:active:not(:disabled),
+#login-view .react-login-corporate:active:not(:disabled){
+  transform:translateY(1px);
+}
+#login-view .react-login-primary:disabled,
+#login-view .react-login-corporate:disabled{
   cursor:wait;
-  opacity:.68;
+  opacity:.64;
   transform:none;
 }
-#login-view .microsoft-login svg{width:16px;height:16px;flex:0 0 16px}
+#login-view .react-login-corporate svg{
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
+}
+#login-view .react-login-divider{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:20px 0;
+  color:var(--muted-soft,#94a3b8);
+  font-size:11px;
+}
+#login-view .react-login-divider::before,
+#login-view .react-login-divider::after{
+  content:"";
+  height:1px;
+  flex:1;
+  background:var(--line,#e2e8f0);
+}
+#login-view .react-login-error{
+  width:100%;
+  margin-top:16px;
+  padding:11px 12px;
+  border:1px solid #f6d3d3;
+  border-radius:8px;
+  background:var(--danger-soft,#fef2f2);
+  color:#a52121;
+  font-size:11.5px;
+  line-height:1.5;
+}
+#login-view .react-login-security{
+  margin:18px 0 0;
+  color:var(--muted-soft,#94a3b8);
+  font-size:11px;
+  line-height:1.4;
+  text-align:center;
+}
+
+@media(max-width:520px){
+  #login-view .react-login-header{padding:0 14px}
+  #login-view .react-login-main{padding:56px 20px 32px}
+  #login-view .react-login-access h1{font-size:22px}
+}
+@media(max-height:680px){
+  #login-view .react-login-main{padding-top:44px}
+  #login-view .react-login-subtitle{margin-bottom:20px}
+  #login-view .react-login-divider{margin:14px 0}
+  #login-view .react-login-security{margin-top:12px}
+}
