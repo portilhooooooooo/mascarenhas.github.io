@@ -13,6 +13,7 @@ const [
   pageInit,
   reactCompat,
   login,
+  loginCss,
   tasksApp,
   taskModel,
   taskRenderers,
@@ -28,6 +29,7 @@ const [
   readFile(new URL('../page-init-1.js', import.meta.url), 'utf8'),
   readFile(new URL('../react-compat.js', import.meta.url), 'utf8'),
   readFile(new URL('../src/login/main.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/login/login.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/TasksApp.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/model.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/renderers.tsx', import.meta.url), 'utf8'),
@@ -36,20 +38,39 @@ const [
 const packageJson = JSON.parse(packageText);
 
 assert.match(auth, /if \(microsoftLoginInFlight\) return;/, 'Microsoft login must be single-flight');
-assert.match(auth, /button\.disabled = busy;/, 'Microsoft login button must lock while starting OAuth');
-assert.match(auth, /dispatchModuleAuthentication\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
-assert.doesNotMatch(auth, /data-auth-provider="google"/, 'rendered login must not offer Google');
+assert.match(auth, /publishLoginState\(\{ busy: true, error: null \}\)/, 'auth must publish OAuth busy state without editing React DOM');
+assert.match(auth, /getLoginState/, 'React must be able to recover auth state even if auth initializes first');
+assert.match(auth, /mba:auth-state/, 'auth state changes must be emitted as events');
 assert.match(auth, /window\.MBA_AUTH = \{/, 'auth must expose an explicit service for the React login');
-assert.match(auth, /if \(!reactLoginEnabled\) renderMicrosoftOnlyLogin\(\);/, 'legacy auth must not own the React login DOM');
+assert.doesNotMatch(auth, /renderMicrosoftOnlyLogin/, 'auth must not render login markup');
+assert.doesNotMatch(auth, /getElementById\('microsoft-login'\)/, 'auth must not mutate the React login button');
+assert.doesNotMatch(auth, /getElementById\('login-error'\)/, 'auth must not own the visible login error box');
+assert.doesNotMatch(auth, /data-auth-provider="google"/, 'auth must not offer Google');
+assert.match(auth, /dispatchModuleAuthentication\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
 
 assert.match(pageInit, /window\.MBA_REACT_LOGIN = true;/, 'React login ownership must be declared before bootstrap');
 assert.match(pageInit, /window\.MBA_REACT_TASKS = true;/, 'React task ownership must be declared before bootstrap');
 assert.doesNotMatch(pageInit, /Continuar via Outlook/, 'page bootstrap must not rebuild the login');
 assert.match(config, /window\.MBA_REACT_LOGIN = true;/, 'config must declare React login ownership before auth.js');
 assert.match(config, /window\.MBA_REACT_TASKS = true;/, 'config must declare React task ownership before auth.js');
+
 assert.match(login, /MBA_AUTH\?\.startMicrosoftLogin/, 'React login must call the auth service directly');
+assert.match(login, /MBA_AUTH\?\.getLoginState/, 'React login must hydrate from the headless auth state');
+assert.match(login, /mba:auth-state/, 'React login must subscribe to auth state changes');
+assert.match(login, /useLayoutEffect/, 'React login must claim the surface before paint');
+assert.match(login, /id="login-display-email"/, 'corporate login must preserve the decorative e-mail field');
+assert.match(login, />Acessar</, 'corporate login must preserve the primary access action');
+assert.match(login, />Acesso Corporativo</, 'corporate login must preserve the secondary corporate access action');
+assert.match(login, /favicon\.svg\?v=20260917-exact-symbol/, 'login must use the same Mascarenhas symbol as the app shell');
+assert.doesNotMatch(login, /id="microsoft-login"/, 'React buttons must not expose a legacy DOM control point');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');
-assert.match(login, /useLayoutEffect/, 'React login must reveal its mount before paint');
+
+assert.match(loginCss, /--login-accent:#142b67/, 'login must use the corporate navy accent');
+assert.match(loginCss, /\.react-login-header/, 'login must include the shared top-brand header language');
+assert.match(loginCss, /\.react-login-main/, 'login must use the centered corporate workspace layout');
+assert.match(loginCss, /\.react-login-primary/, 'login must style the primary access action');
+assert.match(loginCss, /\.react-login-corporate/, 'login must style the Microsoft corporate action');
+assert.match(loginCss, /\.login-brand[\s\S]*display:none!important/, 'legacy login chrome must remain visually suppressed');
 
 assert.match(api, /sessionInvalidCodes = new Set\(\['AUTH_REQUIRED', 'SESSION_INVALID'\]\)/, 'logout must require an explicit session-invalid code');
 assert.match(api, /inFlightGets\.has\(path\)/, 'duplicate GETs must share one request');
