@@ -80,7 +80,8 @@ assert.match(api, /TASK_PROCESS_CACHE_MS = 15000/, 'task process queue must have
 assert.match(api, /comprovante_pagamento\|agreement\)-analysis/, 'agreement completion must invalidate the shared process cache');
 assert.match(api, /skip\|agreement-skip-next/, 'agreement skip must invalidate the shared process cache');
 
-assert.match(config, /MBA_API_BASE_URL = 'https:\/\/mba-backoffice-proxy-production\.up\.railway\.app'/, 'all non-mock runtimes must use the real Railway API');
+assert.match(config, /MBA_API_BASE_URL = 'https:\/\/api\.portilhobackoffice\.site'/, 'all non-mock runtimes must use the direct VPS API');
+assert.doesNotMatch(config, /mba-backoffice-proxy-production\.up\.railway\.app/, 'runtime config must not depend on Railway');
 assert.match(config, /MBA_LOCAL_PREVIEW = mbaIsLocal/, 'mock preview must remain restricted to localhost');
 assert.match(packageJson.scripts['dev:local'], /npm run build && vite preview/, 'localhost must build before serving');
 assert.match(packageJson.scripts['dev:local'], /--outDir dist/, 'localhost must serve the final dist artifact');
