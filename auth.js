@@ -5,11 +5,10 @@
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
   const oauthStartedAtKey = 'mba_oauth_started_at';
-  const errorBox = document.getElementById('login-error');
   const moduleActivationAt = new Map();
   const MODULE_REVALIDATE_MS = 30000;
-  const reactLoginEnabled = window.MBA_REACT_LOGIN === true;
   let microsoftLoginInFlight = false;
+  let loginState = { busy: false, error: null };
 
   const pagePermissionScopes = Object.freeze({
     dashboard: ['dashboard.view'],
@@ -55,29 +54,16 @@
     sessionStorage.removeItem(oauthStartedAtKey);
   };
 
-  const showError = message => {
-    if (!errorBox) return;
-    errorBox.textContent = message;
-    errorBox.style.display = 'block';
+  const publishLoginState = patch => {
+    loginState = { ...loginState, ...patch };
+    window.dispatchEvent(new CustomEvent('mba:auth-state', { detail: { ...loginState } }));
   };
 
-  const clearError = () => {
-    if (!errorBox) return;
-    errorBox.style.display = 'none';
-  };
+  const getLoginState = () => ({ ...loginState });
 
   const setAuthState = signedIn => {
     document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out');
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
-  };
-
-  const setMicrosoftLoginBusy = busy => {
-    const button = document.getElementById('microsoft-login');
-    if (!button) return;
-    button.disabled = busy;
-    button.setAttribute('aria-busy', String(busy));
-    const label = button.querySelector('span');
-    if (label) label.textContent = busy ? 'Entrando…' : (reactLoginEnabled ? 'Acesso Corporativo' : 'Entrar com Microsoft');
   };
 
   function applyBranding() {
@@ -89,43 +75,17 @@
     const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
     favicon.rel = 'icon';
     favicon.type = 'image/svg+xml';
-    favicon.href = '/favicon.svg?v=20260916-mascarenhas';
+    favicon.href = '/favicon.svg?v=20260917-exact-symbol';
     if (!favicon.parentNode) document.head.appendChild(favicon);
-
-    const brandMarkup = `
-      <img class="brand-symbol" src="/favicon.svg?v=20260916-mascarenhas" alt="" aria-hidden="true">
-      <span class="brand-word">Backoffice</span>
-    `;
-
-    const loginBrand = document.querySelector('.login-brand');
-    if (loginBrand) {
-      loginBrand.innerHTML = brandMarkup;
-      loginBrand.setAttribute('aria-label', 'Mascarenhas Backoffice');
-    }
 
     const appBrand = document.querySelector('.brand');
     if (appBrand) {
-      appBrand.innerHTML = brandMarkup;
+      appBrand.innerHTML = `
+        <img class="brand-symbol" src="/favicon.svg?v=20260917-exact-symbol" alt="" aria-hidden="true">
+        <span class="brand-word">Backoffice</span>
+      `;
       appBrand.setAttribute('aria-label', 'Mascarenhas Backoffice');
     }
-  }
-
-  function renderMicrosoftOnlyLogin() {
-    const view = document.getElementById('login-view');
-    if (!view) return;
-    view.innerHTML = `
-      <h1>Entrar</h1>
-      <p class="login-subtitle">Acesse com sua conta Microsoft.</p>
-      <button class="microsoft-login" id="microsoft-login" type="button" data-auth-provider="microsoft" aria-label="Entrar com Microsoft">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path fill="#f25022" d="M2 2h9v9H2z"/>
-          <path fill="#7fba00" d="M13 2h9v9h-9z"/>
-          <path fill="#00a4ef" d="M2 13h9v9H2z"/>
-          <path fill="#ffb900" d="M13 13h9v9h-9z"/>
-        </svg>
-        <span>Entrar com Microsoft</span>
-      </button>
-    `;
   }
 
   function enforceMicrosoftOnlyUserUI() {
@@ -144,7 +104,6 @@
   }
 
   applyBranding();
-  if (!reactLoginEnabled) renderMicrosoftOnlyLogin();
   enforceMicrosoftOnlyUserUI();
 
   function applyUser(user) {
@@ -260,7 +219,7 @@
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
     setAuthState(true);
-    clearError();
+    publishLoginState({ busy: false, error: null });
   }
 
   async function loadProfileWithRetry() {
@@ -338,6 +297,7 @@
         await loadProfileWithRetry();
       } else {
         setAuthState(false);
+        publishLoginState({ busy: false, error: null });
       }
     } catch (error) {
       const hasToken = Boolean(getStoredToken());
@@ -349,18 +309,27 @@
         clearStoredToken();
         window.MBA_CURRENT_USER = null;
         setAuthState(false);
-        showError(unauthorizedProfile
-          ? 'Seu usuário não possui acesso ativo ao Backoffice.'
-          : 'Sua sessão terminou. Entre novamente.');
+        publishLoginState({
+          busy: false,
+          error: unauthorizedProfile
+            ? 'Seu usuário não possui acesso ativo ao Backoffice.'
+            : 'Sua sessão terminou. Entre novamente.',
+        });
       } else if (hasToken) {
         setAuthState(false);
-        showError('Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.');
+        publishLoginState({
+          busy: false,
+          error: 'Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.',
+        });
       } else if (sessionStorage.getItem(oauthHandoffKey) && sessionStorage.getItem(oauthVerifierKey)) {
         setAuthState(false);
-        showError('Não foi possível concluir o acesso agora. Atualize a página para tentar novamente sem refazer o login da Microsoft.');
+        publishLoginState({
+          busy: false,
+          error: 'Não foi possível concluir o acesso agora. Atualize a página para tentar novamente sem refazer o login da Microsoft.',
+        });
       } else {
         setAuthState(false);
-        showError(error?.message || 'Não foi possível realizar o acesso.');
+        publishLoginState({ busy: false, error: error?.message || 'Não foi possível realizar o acesso.' });
       }
     }
   }
@@ -368,8 +337,7 @@
   async function startMicrosoftLogin() {
     if (microsoftLoginInFlight) return;
     microsoftLoginInFlight = true;
-    setMicrosoftLoginBusy(true);
-    clearError();
+    publishLoginState({ busy: true, error: null });
 
     try {
       const verifier = base64url(crypto.getRandomValues(new Uint8Array(48)));
@@ -394,25 +362,21 @@
     } catch (error) {
       clearOAuthFlow();
       microsoftLoginInFlight = false;
-      setMicrosoftLoginBusy(false);
-      showError(error?.message || 'Não foi possível iniciar o acesso com Microsoft.');
+      publishLoginState({ busy: false, error: error?.message || 'Não foi possível iniciar o acesso com Microsoft.' });
     }
   }
 
   window.MBA_AUTH = {
     ...(window.MBA_AUTH || {}),
     startMicrosoftLogin,
+    getLoginState,
   };
-
-  if (!reactLoginEnabled) {
-    document.getElementById('microsoft-login')?.addEventListener('click', startMicrosoftLogin);
-  }
 
   document.getElementById('logout-button')?.addEventListener('click', async () => {
     try {
       await window.MBA_API.request('/auth/session', { method: 'DELETE' });
     } catch (_) {
-      showError('Não foi possível confirmar a revogação no servidor.');
+      publishLoginState({ error: 'Não foi possível confirmar a revogação no servidor.' });
     } finally {
       clearStoredToken();
       clearOAuthFlow();
@@ -427,8 +391,9 @@
     clearOAuthFlow();
     moduleActivationAt.clear();
     window.MBA_CURRENT_USER = null;
+    microsoftLoginInFlight = false;
     setAuthState(false);
-    showError('Sua sessão terminou. Entre novamente.');
+    publishLoginState({ busy: false, error: 'Sua sessão terminou. Entre novamente.' });
   });
 
   initializeAuth();
