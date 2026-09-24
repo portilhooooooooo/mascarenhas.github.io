@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const tokenKey = 'mba_session_token';
+  const legacyTokenKey = 'mba_session_token';
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
   const oauthStartedAtKey = 'mba_oauth_started_at';
@@ -26,26 +26,9 @@
     'comprovante-execucao': [],
   });
 
-  const getStoredToken = () => {
-    const persistent = localStorage.getItem(tokenKey);
-    if (persistent) return persistent;
-
-    const legacy = sessionStorage.getItem(tokenKey);
-    if (legacy) {
-      localStorage.setItem(tokenKey, legacy);
-      sessionStorage.removeItem(tokenKey);
-    }
-    return legacy;
-  };
-
-  const setStoredToken = token => {
-    localStorage.setItem(tokenKey, token);
-    sessionStorage.removeItem(tokenKey);
-  };
-
-  const clearStoredToken = () => {
-    localStorage.removeItem(tokenKey);
-    sessionStorage.removeItem(tokenKey);
+  const purgeLegacySessionStorage = () => {
+    localStorage.removeItem(legacyTokenKey);
+    sessionStorage.removeItem(legacyTokenKey);
   };
 
   const clearOAuthFlow = () => {
@@ -266,7 +249,9 @@
     localStorage.removeItem('mba_temp_access');
     localStorage.removeItem('mba_temp_email');
     localStorage.removeItem('sb-REDACTED_SUPABASE_PROJECT-auth-token');
+    purgeLegacySessionStorage();
 
+    let completedHandoff = false;
     try {
       const fragment = new URLSearchParams(location.hash.slice(1));
       if (fragment.has('auth_handoff')) {
@@ -283,9 +268,8 @@
           throw new Error('Não foi possível concluir o acesso. Inicie o login novamente.');
         }
         try {
-          const result = await exchangeOAuthHandoff(code, verifier);
-          if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
-          setStoredToken(result.access_token);
+          await exchangeOAuthHandoff(code, verifier);
+          completedHandoff = true;
           clearOAuthFlow();
         } catch (error) {
           if ([401, 403, 422].includes(error?.status)) clearOAuthFlow();
@@ -293,20 +277,19 @@
         }
       }
 
-      if (getStoredToken()) {
-        await loadProfileWithRetry();
-      } else {
-        setAuthState(false);
-        publishLoginState({ busy: false, error: null });
-      }
+      // HttpOnly cookies are intentionally invisible to JavaScript. The only
+      // authoritative way to discover an existing session is asking the API.
+      await loadProfileWithRetry();
     } catch (error) {
-      const hasToken = Boolean(getStoredToken());
-      const invalidSession = error?.status === 401
-        && ['SESSION_INVALID', 'AUTH_REQUIRED'].includes(error?.code);
+      const unauthenticated = error?.status === 401
+        && ['AUTH_REQUIRED', 'SESSION_INVALID'].includes(error?.code);
       const unauthorizedProfile = error?.status === 403 && error?.code === 'PROFILE_NOT_AUTHORIZED';
 
-      if (invalidSession || unauthorizedProfile) {
-        clearStoredToken();
+      if (unauthenticated && !completedHandoff) {
+        window.MBA_CURRENT_USER = null;
+        setAuthState(false);
+        publishLoginState({ busy: false, error: null });
+      } else if (unauthenticated || unauthorizedProfile) {
         window.MBA_CURRENT_USER = null;
         setAuthState(false);
         publishLoginState({
@@ -314,12 +297,6 @@
           error: unauthorizedProfile
             ? 'Seu usuário não possui acesso ativo ao Backoffice.'
             : 'Sua sessão terminou. Entre novamente.',
-        });
-      } else if (hasToken) {
-        setAuthState(false);
-        publishLoginState({
-          busy: false,
-          error: 'Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.',
         });
       } else if (sessionStorage.getItem(oauthHandoffKey) && sessionStorage.getItem(oauthVerifierKey)) {
         setAuthState(false);
@@ -378,7 +355,7 @@
     } catch (_) {
       publishLoginState({ error: 'Não foi possível confirmar a revogação no servidor.' });
     } finally {
-      clearStoredToken();
+      purgeLegacySessionStorage();
       clearOAuthFlow();
       moduleActivationAt.clear();
       window.MBA_CURRENT_USER = null;
@@ -387,7 +364,7 @@
   });
 
   window.addEventListener('mba:session-expired', () => {
-    clearStoredToken();
+    purgeLegacySessionStorage();
     clearOAuthFlow();
     moduleActivationAt.clear();
     window.MBA_CURRENT_USER = null;
