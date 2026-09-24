@@ -121,3 +121,9 @@
 @media(max-width:1180px){#tarefas[data-react-tasks='true'] .tasks-react-root{padding-inline:22px}#tarefas[data-react-tasks='true'] .tasks-react-subnav{margin-inline:-22px}.tasks-workspace{grid-template-columns:280px minmax(0,1fr)}.task-option-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.tasks-workspace{grid-template-columns:1fr;min-height:0}.tasks-workspace-sidebar{position:static;height:auto;max-height:none}.tasks-execution-panel{position:static;height:auto;grid-template-rows:auto auto}.tasks-renderer-card{min-height:auto}.tasks-renderer-body{overflow:visible}.tasks-renderer-form{min-height:0}.tasks-execution-summary{grid-template-columns:1fr}.tasks-execution-summary>div+div{border-left:0;border-top:1px solid var(--mba-border,#e3eaf2)}.task-option-grid-3,.task-option-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){#tarefas[data-react-tasks='true'] .tasks-react-root{padding:16px 14px 22px}#tarefas[data-react-tasks='true'] .tasks-react-subnav{margin:-16px -14px 16px;padding-inline:14px}.tasks-management-header{flex-direction:column}.task-option-grid-2,.task-option-grid-3,.task-option-grid-4,.agreement-money-grid,.task-modal-grid,.task-participants{grid-template-columns:1fr}.task-option-grid[aria-label="liminar-decision"]{grid-template-columns:1fr}.task-renderer-footer{align-items:stretch;flex-direction:column-reverse}.task-renderer-footer button{width:100%}}
+
+
+/* Protocolo usa o mesmo workspace e os mesmos tokens visuais das demais tasks. */
+.protocol-document-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.protocol-collection-rule { color:var(--muted, #64748b); font-size:12px; margin-right:auto; }
+@media (max-width: 760px) { .protocol-document-grid { grid-template-columns:1fr; } }
