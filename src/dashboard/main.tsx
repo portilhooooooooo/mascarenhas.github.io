@@ -1,12 +1,13 @@
 import { StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
-import { ProtocolosPage } from './ProtocolosPage';
+import { ControladoriaPage } from './ControladoriaPage';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
 import './analytics.css';
 import './protocolos.css';
+import './controladoria.css';
 import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {
@@ -278,7 +279,7 @@ function mountProtocolosPage() {
   mount.className = 'protocolos-react-root';
   section.appendChild(mount);
   protocolosRoot = createRoot(mount);
-  protocolosRoot.render(<StrictMode><ProtocolosPage/></StrictMode>);
+  protocolosRoot.render(<StrictMode><ControladoriaPage/></StrictMode>);
 }
 
 function unmountProtocolosPage() {
