@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, FileText, Upload } from 'lucide-react';
+import { CheckCircle2, FileText, Upload } from 'lucide-react';
 import type { Task, TaskProcess } from './model';
 import { OptionGroup, type ApiRequest } from './renderers';
 import './protocolCollection.css';
@@ -258,41 +258,45 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
   return (
     <form className="task-renderer-form protocol-collection-form" onSubmit={submit}>
       <div className="protocol-collection-content">
-        {draft.mode === 'documents' ? (
-          <>
-            <section className="task-question protocol-title-block">
-              <h3>Coleta de documentos</h3>
-              <p>Anexe a defesa e o comprovante de protocolo.</p>
-            </section>
-            <div className="protocol-upload-stack">
-              <UploadField
-                label="DEFESA"
-                kind="defesa"
-                file={draft.defesa}
-                stage={draft.defesaStage}
-                busy={busy}
-                onSelect={stageDocument}
-              />
-              <UploadField
-                label="PROTOCOLO"
-                kind="protocolo"
-                file={draft.protocolo}
-                stage={draft.protocoloStage}
-                busy={busy}
-                onSelect={stageDocument}
-              />
-            </div>
-            <button
-              className="protocol-error-trigger"
-              type="button"
+        <section className="task-question protocol-title-block">
+          <h3>Coleta de documentos</h3>
+          <p>Anexe a defesa e o comprovante de protocolo.</p>
+        </section>
+
+        <div className="protocol-upload-stack">
+          <UploadField
+            label="DEFESA"
+            kind="defesa"
+            file={draft.defesa}
+            stage={draft.defesaStage}
+            busy={busy}
+            onSelect={stageDocument}
+          />
+          <UploadField
+            label="PROTOCOLO"
+            kind="protocolo"
+            file={draft.protocolo}
+            stage={draft.protocoloStage}
+            busy={busy}
+            onSelect={stageDocument}
+          />
+        </div>
+
+        <div className="task-option-grid protocol-error-choice" role="radiogroup" aria-label="Resultado da coleta">
+          <label className="task-option-card">
+            <input
+              type="radio"
+              name="protocol-collection-outcome"
+              value="error"
+              checked={draft.mode === 'error'}
               disabled={busy}
-              onClick={() => patchDraft({ mode: 'error' })}
-            >
-              <AlertCircle size={14} />
-              Não foi possível concluir a coleta
-            </button>
-          </>
-        ) : (
+              onChange={() => patchDraft({ mode: 'error' })}
+            />
+            <span><strong>Não foi possível realizar a coleta</strong></span>
+          </label>
+        </div>
+
+        {draft.mode === 'error' ? (
           <section className="protocol-error-panel">
             <div className="task-question">
               <h3>Por que a coleta não pôde ser concluída?</h3>
@@ -323,10 +327,11 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
               disabled={busy}
               onClick={() => patchDraft({ mode: 'documents' })}
             >
-              Voltar para os documentos
+              Voltar para a coleta de documentos
             </button>
           </section>
-        )}
+        ) : null}
+
         {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
       </div>
 
