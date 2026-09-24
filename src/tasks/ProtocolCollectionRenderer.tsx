@@ -35,7 +35,6 @@ const ERROR_REASONS = [
 
 const draftCache = new Map<string, Draft>();
 const LAST_ACTION_KEY = 'mba-protocol-last-action-at';
-const METRICS_KEY = 'mba-protocol-action-metrics-v1';
 
 function emptyDraft(): Draft {
   return {
@@ -59,14 +58,6 @@ function recordActionMetric(action: 'save' | 'error' | 'skip', processId: string
     interval_since_previous_ms: previous > 0 ? now - previous : null,
   };
   sessionStorage.setItem(LAST_ACTION_KEY, String(now));
-  try {
-    const current = JSON.parse(localStorage.getItem(METRICS_KEY) || '[]');
-    const rows = Array.isArray(current) ? current : [];
-    rows.push(metric);
-    localStorage.setItem(METRICS_KEY, JSON.stringify(rows.slice(-500)));
-  } catch (_error) {
-    // Métrica não bloqueia o fluxo operacional.
-  }
   window.dispatchEvent(new CustomEvent('mba:protocol-action-metric', { detail: metric }));
   return metric.client_action_at;
 }
@@ -249,8 +240,11 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     setBusy(true);
     setError(null);
     try {
-      recordActionMetric('skip', process.id);
-      await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      const clientActionAt = recordActionMetric('skip', process.id);
+      await api(`/api/task-processes/${process.id}/skip`, {
+        method: 'POST',
+        body: JSON.stringify({ client_action_at: clientActionAt }),
+      });
       onSkipped(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível pular o processo.');
