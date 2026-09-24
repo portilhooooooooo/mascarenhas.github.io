@@ -265,7 +265,6 @@
     sessionStorage.removeItem('mba_google_handoff');
     localStorage.removeItem('mba_temp_access');
     localStorage.removeItem('mba_temp_email');
-    localStorage.removeItem('sb-REDACTED_SUPABASE_PROJECT-auth-token');
 
     try {
       const fragment = new URLSearchParams(location.hash.slice(1));
