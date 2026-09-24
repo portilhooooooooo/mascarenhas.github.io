@@ -1,18 +1,29 @@
 .controladoria-page-react {
   width: 100%;
+}
+
+.controladoria-primary-subnav {
+  margin: -20px -32px 18px;
+  padding: 0 32px;
+}
+
+.controladoria-protocolos-view {
+  width: 100%;
   max-width: 1600px;
   margin: 0 auto;
 }
 
-.controladoria-primary-subnav {
-  margin-bottom: 18px;
+.controladoria-protocolos-view > .protocolos-page-react {
+  max-width: none;
+  margin: 0;
 }
 
 .controladoria-protocolos-view > .protocolos-page-react > .controladoria-subnav {
-  display: none;
+  display: none !important;
 }
 
 .controladoria-indicadores-view {
+  width: 100%;
   min-width: 0;
 }
 
@@ -77,5 +88,9 @@
 .controladoria-metabase-state.error svg { color: var(--mba-blue, #0b6ffb); }
 
 @media (max-width: 900px) {
+  .controladoria-primary-subnav {
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
   .controladoria-metabase-frame { min-height: 680px; }
 }
