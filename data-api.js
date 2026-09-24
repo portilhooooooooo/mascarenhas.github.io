@@ -2,7 +2,6 @@
   'use strict';
   const localHost = ['localhost', '127.0.0.1'].includes(location.hostname);
   const baseUrl = String(window.MBA_API_BASE_URL || '').trim().replace(/\/$/, '');
-  const tokenKey = 'mba_session_token';
   const preview = window.MBA_LOCAL_PREVIEW && localHost;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const transientStatuses = new Set([502, 503, 504]);
@@ -13,11 +12,6 @@
   const inFlightGets = new Map();
   const TASK_PROCESS_CACHE_MS = 15000;
 
-  const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
-  const clearStoredToken = () => {
-    localStorage.removeItem(tokenKey);
-    sessionStorage.removeItem(tokenKey);
-  };
   const cloneRows = rows => rows.map(row => ({ ...row }));
 
   function debugRequest(path, status, startedAt, attempt) {
@@ -117,11 +111,9 @@
     const headers = new Headers(options.headers || {});
     headers.set('Accept', 'application/json');
     if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-    const token = getStoredToken();
-    if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
-    const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
+    const requestOptions = { ...options, headers, credentials: 'include', redirect: 'error' };
+    const bootstrapping = document.body.classList.contains('auth-loading');
     const maxAttempts = bootstrapping ? 2 : 1;
     const requestUrl = baseUrl ? baseUrl + path : path;
     let lastError;
@@ -142,7 +134,6 @@
   }
 
   async function performRequest(path, options, method) {
-    const tokenBeforeRequest = getStoredToken();
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
     if (!response.ok) {
@@ -151,10 +142,9 @@
       error.status = response.status;
 
       const sessionInvalid = response.status === 401
-        && Boolean(tokenBeforeRequest)
+        && /^\/api\//.test(path)
         && sessionInvalidCodes.has(String(data?.code || ''));
       if (sessionInvalid && !document.body.classList.contains('auth-loading')) {
-        clearStoredToken();
         window.dispatchEvent(new CustomEvent('mba:session-expired', {
           detail: { code: data?.code },
         }));
@@ -213,7 +203,7 @@
     request,
     fetch: backendFetch,
     baseUrl,
-    getAccessToken: async () => getStoredToken(),
+    getAccessToken: async () => null,
   };
   window.MBA_AUTOMATION_API = window.MBA_API;
   window.MBA_TASK_IMPORT = { createTaskWithImportedProcesses };
