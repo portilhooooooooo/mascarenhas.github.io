@@ -233,12 +233,3 @@
 .protocolos-session-state.connected i { background: #12b76a; }
 .protocolos-session-state.authenticating { color: var(--mba-blue-dark); }
 .protocolos-session-state.authenticating i { background: var(--mba-blue); }
-
-/* Protocolos: leitura operacional migrou do React para Metabase. */
-.protocolos-metabase-panel { margin-top: 18px; border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; overflow: hidden; }
-.protocolos-metabase-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 18px 20px; border-bottom: 1px solid #e5e7eb; }
-.protocolos-metabase-head h2 { margin: 0; font-size: 16px; }
-.protocolos-metabase-head p { margin: 4px 0 0; color: #6b7280; font-size: 13px; }
-.protocolos-metabase-host { min-height: 760px; background: #fff; }
-.protocolos-metabase-host metabase-dashboard { display: block; width: 100%; min-height: 760px; }
-.protocolos-metabase-loading { min-height: 220px; display: flex; align-items: center; justify-content: center; gap: 10px; color: #6b7280; }
