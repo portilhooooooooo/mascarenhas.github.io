@@ -62,6 +62,7 @@ export const TASK_TYPE_LABELS: Record<string, string> = {
   citacao: 'Validação de Citação',
   protocolo: 'Protocolo',
   contestacao: 'Validação de Contestação',
+  defesa: 'Validação de Defesa',
   reagendamento: 'Validação de Reagendamento',
 };
 

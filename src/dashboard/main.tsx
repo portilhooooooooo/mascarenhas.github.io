@@ -223,19 +223,11 @@ function configureApplicationShell() {
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
-  const baseDados = buttons.find(button => button.textContent?.trim() === 'Documentos') ?? null;
-
   buttons.forEach(button => {
     const page = button.dataset.page ?? '';
     if (page && visiblePages.has(page)) {
       button.dataset.mbaHidden = 'false';
       labelNavItem(button, labels[page]);
-      return;
-    }
-    if (button === baseDados) {
-      button.dataset.mbaHidden = 'false';
-      labelNavItem(button, 'Base de dados');
-      button.title = 'Módulo reservado para o Metabase';
       return;
     }
     button.dataset.mbaHidden = 'true';
@@ -245,16 +237,10 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
-    baseDados,
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
-
-  const gestao = nav.querySelector<HTMLElement>('[data-page="dashboard"]');
-  gestao?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('mba:gestao-tab', { detail: { tab: 'carteira' } }));
-  });
 
   configureOperationSubnav();
 
@@ -322,7 +308,7 @@ function RootApp() {
     return () => cleanupBaseTaskImport();
   }, []);
 
-  return <GestaoProcessualPage initialTab="carteira"/>;
+  return <GestaoProcessualPage/>;
 }
 
 const root = document.getElementById('dashboard-root');

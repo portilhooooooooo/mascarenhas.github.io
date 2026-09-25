@@ -1,0 +1,249 @@
+.tasks-renderer-form.protocol-collection-form{
+  width:min(820px,100%);
+  height:100%;
+  margin:0 auto;
+  min-height:0;
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  gap:18px;
+}
+
+.protocol-collection-content{
+  display:grid;
+  align-content:start;
+  gap:18px;
+}
+
+.protocol-title-block{
+  gap:4px;
+}
+
+.task-question.protocol-title-block>p,
+.protocol-error-panel .task-question>p{
+  display:block;
+  margin:0;
+  color:#64748b;
+  font-size:10.5px;
+  font-weight:400;
+  line-height:1.45;
+}
+
+.protocol-upload-stack{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+.protocol-upload-field{
+  display:grid;
+  gap:6px;
+}
+
+.protocol-upload-heading{
+  display:flex;
+  align-items:center;
+  gap:7px;
+}
+
+.protocol-upload-heading>strong{
+  color:var(--mba-text,#0f1f3d);
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.025em;
+}
+
+.protocol-upload-heading>span{
+  color:#b91c1c;
+  font-size:9px;
+  font-weight:600;
+}
+
+.protocol-upload-control{
+  min-height:76px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 9px 8px 12px;
+  border:1px solid var(--mba-border,#e3eaf2);
+  border-radius:8px;
+  background:#fff;
+  transition:border-color .12s ease,background .12s ease,box-shadow .12s ease;
+}
+
+.protocol-upload-control:hover{
+  border-color:#cbd5e1;
+}
+
+.protocol-upload-control.dragging{
+  border-color:var(--mba-blue,#142b67);
+  background:var(--mba-blue-soft,#f2f5fb);
+}
+
+.protocol-upload-control.uploading{
+  border-color:#bfdbfe;
+  background:#f8fbff;
+}
+
+.protocol-upload-control.ready{
+  border-color:#bbf7d0;
+  background:#fbfffc;
+}
+
+.protocol-upload-control.error{
+  border-color:#fecaca;
+  background:#fffafa;
+}
+
+.protocol-upload-file{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  color:#64748b;
+}
+
+.protocol-upload-control.ready .protocol-upload-file{
+  color:#15803d;
+}
+
+.protocol-upload-control.error .protocol-upload-file{
+  color:#b91c1c;
+}
+
+.protocol-upload-file>div{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.protocol-upload-file strong{
+  overflow:hidden;
+  color:var(--mba-text,#0f1f3d);
+  font-size:10.5px;
+  font-weight:600;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.protocol-upload-file small{
+  overflow:hidden;
+  color:#8190a5;
+  font-size:9.5px;
+  font-weight:400;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.protocol-native-file{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  padding:0!important;
+  margin:-1px!important;
+  overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;
+  white-space:nowrap!important;
+  border:0!important;
+}
+
+.protocol-upload-button{
+  min-height:34px;
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0 11px;
+  font-size:10px;
+  white-space:nowrap;
+}
+
+.protocol-error-choice{
+  width:min(420px,100%);
+  grid-template-columns:minmax(0,1fr)!important;
+}
+
+.protocol-error-choice .task-option-card>span{
+  min-height:42px;
+}
+
+.protocol-back-link{
+  width:max-content;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#52647d;
+  font:600 10.5px/1.3 Inter,sans-serif;
+  cursor:pointer;
+}
+
+.protocol-back-link:hover{
+  color:var(--mba-blue,#142b67);
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+
+.protocol-back-link:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+.protocol-error-panel{
+  display:grid;
+  gap:12px;
+  padding-top:2px;
+}
+
+.protocol-error-panel .task-option-grid{
+  margin-top:2px;
+}
+
+.protocol-error-panel .task-option-card>span{
+  min-height:42px;
+  padding:7px 10px;
+}
+
+.protocol-error-panel .task-text-field textarea{
+  min-height:88px;
+}
+
+.protocol-workspace-footer{
+  position:static;
+  z-index:1;
+  margin-top:auto;
+  padding:14px 0 0;
+  border-top:1px solid var(--mba-border,#e3eaf2);
+  background:#fff;
+}
+
+.protocol-workspace-footer .secondary-button,
+.protocol-workspace-footer .primary-button{
+  min-width:142px;
+}
+
+.protocol-workspace-footer .primary-button:disabled{
+  opacity:.5;
+  cursor:not-allowed;
+}
+
+@media(max-width:680px){
+  .protocol-upload-stack{grid-template-columns:1fr;}
+  .protocol-upload-control{
+    align-items:stretch;
+    flex-direction:column;
+  }
+
+  .protocol-upload-button{
+    width:100%;
+    justify-content:center;
+  }
+
+  .protocol-error-choice{
+    width:100%;
+  }
+
+}

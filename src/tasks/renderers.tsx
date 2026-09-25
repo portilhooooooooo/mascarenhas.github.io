@@ -141,6 +141,185 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
   );
 }
 
+
+type DefenseIndication = {
+  provider?: string | null;
+  category?: string | null;
+  detected?: boolean | null;
+  matched_terms?: string[] | null;
+  evidence?: Record<string, any> | null;
+};
+
+type DefenseContext = {
+  indicios?: DefenseIndication[];
+  analysis?: {
+    decision?: string | null;
+    reason?: string | null;
+    fatal_deadline?: string | null;
+    notes?: string | null;
+  } | null;
+};
+
+type DefenseRendererProps = BaseRendererProps & {
+  onIndicationChange?: (label: string) => void;
+};
+
+function defenseProviderLabel(value: unknown) {
+  return String(value || '').toLowerCase() === 'datajud' ? 'DataJud' : 'Enter';
+}
+
+function defenseCategoryLabel(value: unknown) {
+  return String(value || '').toLowerCase() === 'merito' ? 'Mérito' : 'Suspensão';
+}
+
+function defenseIndicationLabel(context: DefenseContext | null) {
+  const indications = Array.isArray(context?.indicios) ? context!.indicios! : [];
+  const positives = indications.filter(item => item.detected === true);
+  if (positives.length) {
+    return [...new Set(positives.map(item => `${defenseCategoryLabel(item.category)} — ${defenseProviderLabel(item.provider)}`))].join(' · ');
+  }
+  const unavailable = indications
+    .filter(item => {
+      const evidence = item.evidence || {};
+      return Boolean(String(evidence.erro || evidence.error || '').trim());
+    })
+    .map(item => defenseProviderLabel(item.provider));
+  if (unavailable.length) return `Nenhum indício positivo · ${[...new Set(unavailable)].join(' + ')} sem resultado`;
+  return 'Nenhum indício positivo';
+}
+
+export function DefenseRenderer({ api, process, onCompleted, onSkipped, onIndicationChange }: DefenseRendererProps) {
+  const [decision, setDecision] = useState<string | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
+  const [fatalDeadline, setFatalDeadline] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDecision(null);
+    setReason(null);
+    setFatalDeadline('');
+    setNotes('');
+    setBusy(false);
+    setError(null);
+    onIndicationChange?.('Consultando Enter e DataJud…');
+
+    api(`/api/task-processes/${process.id}/defesa-context`)
+      .then((payload: DefenseContext) => {
+        if (cancelled) return;
+        onIndicationChange?.(defenseIndicationLabel(payload || null));
+        const analysis = payload?.analysis;
+        if (analysis) {
+          setDecision(analysis.decision || null);
+          setReason(analysis.reason || null);
+          setFatalDeadline(analysis.fatal_deadline || '');
+          setNotes(analysis.notes || '');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) onIndicationChange?.('Indícios indisponíveis');
+      });
+
+    return () => { cancelled = true; };
+  }, [api, process.id, onIndicationChange]);
+
+  const chooseDecision = (value: string) => {
+    setDecision(value);
+    setReason(null);
+    setFatalDeadline('');
+    setError(null);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!decision) return setError('Informe a situação da defesa.');
+    if (decision === 'apto' && !fatalDeadline) return setError('Informe o prazo fatal.');
+    if (decision === 'inapto' && !reason) return setError('Selecione a justificativa.');
+
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/task-processes/${process.id}/defesa-analysis`, {
+        method: 'POST',
+        body: JSON.stringify({
+          decision,
+          reason: decision === 'inapto' ? reason : null,
+          fatal_deadline: decision === 'apto' ? fatalDeadline : null,
+          notes: notes.trim() || null,
+        }),
+      });
+      onCompleted(process);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível salvar a análise de defesa.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const skip = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      onSkipped(process);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível pular o processo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form className="task-renderer-form defesa-renderer-form" onSubmit={submit}>
+      <section className="task-question">
+        <h3>Situação</h3>
+        <OptionGroup
+          name="defesa-decision"
+          value={decision}
+          onChange={chooseDecision}
+          disabled={busy}
+          options={[
+            { value: 'apto', label: 'Apto à defesa' },
+            { value: 'inapto', label: 'Inapto à defesa' },
+          ]}
+        />
+      </section>
+
+      {decision === 'apto' ? <label className="task-text-field defesa-fatal-field">
+        <span>Prazo fatal <b>(obrigatório)</b></span>
+        <input type="date" value={fatalDeadline} disabled={busy} onChange={event => setFatalDeadline(event.target.value)} />
+      </label> : null}
+
+      {decision === 'inapto' ? <section className="task-question task-question-nested">
+        <h3>Justificativa</h3>
+        <OptionGroup
+          name="defesa-reason"
+          value={reason}
+          onChange={setReason}
+          disabled={busy}
+          options={[
+            { value: 'suspenso', label: 'Suspenso' },
+            { value: 'turma_recursal', label: 'Turma Recursal' },
+            { value: 'defesa_anterior', label: 'Defesa já apresentada' },
+            { value: 'outros', label: 'Outros' },
+          ]}
+        />
+      </section> : null}
+
+      <label className="task-text-field">
+        <span>Observação <small>(opcional)</small></span>
+        <textarea value={notes} maxLength={1000} rows={5} disabled={busy} onChange={event => setNotes(event.target.value)} placeholder="Registre contexto relevante para a decisão da Controladoria..." />
+        <em>{notes.length}/1000</em>
+      </label>
+
+      <ErrorMessage message={error} />
+      <RendererFooter busy={busy} onSkip={skip} />
+    </form>
+  );
+}
+
 export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRendererProps) {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [paidReceipt, setPaidReceipt] = useState<string | null>(null);
@@ -461,8 +640,12 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
   const offer = useMemo(() => {
     const suggested = moneyNumber(suggestedAmount);
     const provision = Number(agreement?.provision_amount);
-    return Number.isFinite(suggested) && Number.isFinite(provision) ? Math.min(suggested, provision) : null;
+    if (!Number.isFinite(provision)) return null;
+    return Number.isFinite(suggested) ? Math.min(suggested, provision) : provision;
   }, [suggestedAmount, agreement?.provision_amount]);
+
+  const resultLabel = ineligibleReason ? 'Inapto para acordo' : fullyEligible ? 'Apto para acordo' : 'Em análise';
+  const resultTone = ineligibleReason ? 'ineligible' : fullyEligible ? 'eligible' : 'pending';
 
   const setNextAgreement = (next: TaskProcess | null) => {
     setAgreement(next);
@@ -496,7 +679,9 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
       payload.product = product;
       const typed = moneyNumber(suggestedAmount);
       const provision = Number(agreement.provision_amount);
-      payload.suggested_amount = Number.isFinite(typed) && Number.isFinite(provision) ? String(Math.min(typed, provision)) : moneyToApi(suggestedAmount);
+      payload.suggested_amount = Number.isFinite(provision)
+        ? String(Number.isFinite(typed) ? Math.min(typed, provision) : provision)
+        : moneyToApi(suggestedAmount);
       payload.outstanding_balance = moneyToApi(outstandingBalance);
 
       if (!payload.root_cause || payload.has_obf === null || (payload.has_obf && !payload.obf_type) || !payload.product || !payload.suggested_amount || !payload.outstanding_balance) {
@@ -552,7 +737,7 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
 
   return (
     <form className="task-renderer-form" onSubmit={submit}>
-      {agreement ? <div className="agreement-context"><span>Provisão</span><strong>{currency(agreement.provision_amount)}</strong></div> : null}
+      {agreement ? <div className="agreement-context"><div><span>Provisão</span><strong>{currency(agreement.provision_amount)}</strong></div><div><span>Valor a ofertar</span><strong>{currency(offer)}</strong></div><div><span>Resultado</span><strong className={resultTone}>{resultLabel}</strong></div></div> : null}
 
       <section className="task-question">
         <h3>Já possui acordo?</h3>
@@ -574,11 +759,10 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
           {hasObfBool === true ? <label className="task-select-field"><span>Tipo de OBF</span><select value={obfType} disabled={busy} onChange={event => setObfType(event.target.value)}><option value="">Selecione</option>{OBF_TYPES.map(([optionValue, label]) => <option value={optionValue} key={optionValue}>{label}</option>)}</select>{obfType ? <small>{OBLIGATION_PREVIEW[obfType]}</small> : null}</label> : null}
           <label className="task-select-field"><span>Produto</span><select value={product} disabled={busy} onChange={event => setProduct(event.target.value)}><option value="">Selecione</option>{PRODUCTS.map(([optionValue, label]) => <option value={optionValue} key={optionValue}>{label}</option>)}</select></label>
           <div className="agreement-money-grid">
-            <label className="task-text-field"><span>Valor sugerido</span><input value={suggestedAmount} inputMode="decimal" disabled={busy} onChange={event => setSuggestedAmount(event.target.value)} placeholder="0,00" />{offer !== null ? <small>Valor à ofertar: {currency(offer)}</small> : null}</label>
+            <label className="task-text-field"><span>Valor sugerido</span><input value={suggestedAmount} inputMode="decimal" disabled={busy} onChange={event => setSuggestedAmount(event.target.value)} placeholder="0,00" /><small>Preencha apenas se a oferta puder ser inferior à provisão.</small></label>
             <label className="task-text-field"><span>Saldo devedor</span><input value={outstandingBalance} inputMode="decimal" disabled={busy} onChange={event => setOutstandingBalance(event.target.value)} placeholder="0,00" />{balanceExceeded ? <small className="field-danger">Saldo acima de R$ 15.000,00 torna o processo inapto.</small> : null}</label>
           </div>
           {fullyEligible ? <section className="task-question task-question-nested"><h3>Enviado para a plataforma?</h3><OptionGroup name="sent-platform" value={sentToPlatform} onChange={setSentToPlatform} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
-          {fullyEligible ? <div className="agreement-result agreement-result-eligible"><strong>Apto para acordo</strong><span>Valor à ofertar: {currency(offer)}</span></div> : null}
         </div>
       ) : null}
 
