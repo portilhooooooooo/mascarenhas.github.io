@@ -141,6 +141,228 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
   );
 }
 
+
+type DefenseIndication = {
+  provider?: string | null;
+  category?: string | null;
+  detected?: boolean | null;
+  matched_terms?: string[] | null;
+  evidence?: Record<string, any> | null;
+  job_id?: string | null;
+  detected_at?: string | null;
+};
+
+type DefenseContext = {
+  process?: TaskProcess;
+  indicios?: DefenseIndication[];
+  analysis?: {
+    decision?: string | null;
+    reason?: string | null;
+    fatal_deadline?: string | null;
+    notes?: string | null;
+  } | null;
+};
+
+function defenseProviderLabel(value: unknown) {
+  return String(value || '').toLowerCase() === 'datajud' ? 'DataJud' : 'Enter';
+}
+
+function defenseCategoryLabel(value: unknown) {
+  return String(value || '').toLowerCase() === 'merito' ? 'Mérito' : 'Suspensão';
+}
+
+function indicationError(indication: DefenseIndication) {
+  const evidence = indication.evidence || {};
+  return String(evidence.erro || evidence.error || '').trim() || null;
+}
+
+function DefenseIndications({ context, loading, error }: { context: DefenseContext | null; loading: boolean; error: string | null }) {
+  const indications = Array.isArray(context?.indicios) ? context!.indicios! : [];
+  const relevant = indications.filter(indication => indication.detected || indicationError(indication));
+
+  return (
+    <aside className="defesa-indicios-panel" aria-label="Indícios processuais">
+      <header>
+        <div><small>APOIO À ANÁLISE</small><h3>Indícios processuais</h3></div>
+        <span>Enter + DataJud</span>
+      </header>
+      <p className="defesa-indicios-help">Os providers apenas sinalizam ocorrências. A classificação final continua sendo da Controladoria.</p>
+      {loading ? <div className="defesa-indicios-state">Consultando indícios…</div> : null}
+      {!loading && error ? <div className="defesa-indicios-state error">{error}</div> : null}
+      {!loading && !error && !relevant.length ? <div className="defesa-indicios-state clear">Nenhum indício localizado para este processo.</div> : null}
+      {!loading && !error && relevant.length ? <div className="defesa-indicios-list">{relevant.map((indication, index) => {
+        const provider = defenseProviderLabel(indication.provider);
+        const category = defenseCategoryLabel(indication.category);
+        const terms = Array.isArray(indication.matched_terms) ? [...new Set(indication.matched_terms.filter(Boolean))] : [];
+        const evidence = indication.evidence || {};
+        const techError = indicationError(indication);
+        const resumed = evidence.retomada_posterior === true;
+        const movement = String(evidence.movimento || '').trim();
+        return (
+          <article className={`defesa-indicio-card ${techError ? 'technical-error' : indication.detected ? 'detected' : ''}`} key={`${indication.provider}-${indication.category}-${index}`}>
+            <div className="defesa-indicio-heading"><span>{provider}</span><strong>{category}</strong></div>
+            {techError ? <p>Consulta técnica sem conclusão: {techError}</p> : null}
+            {!techError && terms.length ? <div className="defesa-indicio-terms">{terms.map(term => <span key={term}>{term}</span>)}</div> : null}
+            {!techError && movement ? <p><b>Movimento:</b> {movement}</p> : null}
+            {!techError && resumed ? <p className="defesa-indicio-resumed">Há indício de retomada posterior. Validar antes de classificar como suspenso.</p> : null}
+          </article>
+        );
+      })}</div> : null}
+    </aside>
+  );
+}
+
+export function DefenseRenderer({ api, process, onCompleted, onSkipped }: BaseRendererProps) {
+  const [decision, setDecision] = useState<string | null>(null);
+  const [reason, setReason] = useState<string | null>(null);
+  const [fatalDeadline, setFatalDeadline] = useState('');
+  const [notes, setNotes] = useState('');
+  const [context, setContext] = useState<DefenseContext | null>(null);
+  const [contextLoading, setContextLoading] = useState(true);
+  const [contextError, setContextError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDecision(null);
+    setReason(null);
+    setFatalDeadline('');
+    setNotes('');
+    setBusy(false);
+    setError(null);
+    setContext(null);
+    setContextLoading(true);
+    setContextError(null);
+
+    api(`/api/task-processes/${process.id}/defesa-context`)
+      .then((payload: DefenseContext) => {
+        if (cancelled) return;
+        setContext(payload || null);
+        const analysis = payload?.analysis;
+        if (analysis) {
+          setDecision(analysis.decision || null);
+          setReason(analysis.reason || null);
+          setFatalDeadline(analysis.fatal_deadline || '');
+          setNotes(analysis.notes || '');
+        }
+      })
+      .catch((cause: any) => {
+        if (!cancelled) setContextError(cause?.message || 'Não foi possível carregar os indícios.');
+      })
+      .finally(() => { if (!cancelled) setContextLoading(false); });
+
+    return () => { cancelled = true; };
+  }, [api, process.id]);
+
+  const chooseDecision = (value: string) => {
+    setDecision(value);
+    setReason(null);
+    setFatalDeadline('');
+    setError(null);
+  };
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!decision) {
+      setError('Informe se o processo está apto ou inapto à defesa.');
+      return;
+    }
+    if (decision === 'apto' && !fatalDeadline) {
+      setError('Informe o prazo fatal para apresentação da defesa.');
+      return;
+    }
+    if (decision === 'inapto' && !reason) {
+      setError('Selecione o motivo da inaptidão.');
+      return;
+    }
+
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/task-processes/${process.id}/defesa-analysis`, {
+        method: 'POST',
+        body: JSON.stringify({
+          decision,
+          reason: decision === 'inapto' ? reason : null,
+          fatal_deadline: decision === 'apto' ? fatalDeadline : null,
+          notes: notes.trim() || null,
+        }),
+      });
+      onCompleted(process);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível salvar a análise de defesa.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const skip = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      onSkipped(process);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível pular o processo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="defesa-renderer-layout">
+      <form className="task-renderer-form defesa-renderer-form" onSubmit={submit}>
+        <section className="task-question">
+          <h3>Situação para apresentação de defesa</h3>
+          <OptionGroup
+            name="defesa-decision"
+            value={decision}
+            onChange={chooseDecision}
+            disabled={busy}
+            options={[
+              { value: 'apto', label: 'Apto à defesa' },
+              { value: 'inapto', label: 'Inapto à defesa' },
+            ]}
+          />
+        </section>
+
+        {decision === 'apto' ? <label className="task-text-field">
+          <span>Prazo fatal <b>(obrigatório)</b></span>
+          <input type="date" value={fatalDeadline} disabled={busy} onChange={event => setFatalDeadline(event.target.value)} />
+          <small>Informe o prazo fatal para apresentação desta defesa.</small>
+        </label> : null}
+
+        {decision === 'inapto' ? <section className="task-question task-question-nested">
+          <h3>Motivo da inaptidão</h3>
+          <OptionGroup
+            name="defesa-reason"
+            value={reason}
+            onChange={setReason}
+            disabled={busy}
+            options={[
+              { value: 'suspenso', label: 'Suspenso' },
+              { value: 'turma_recursal', label: 'Turma Recursal' },
+              { value: 'defesa_anterior', label: 'Defesa anterior' },
+              { value: 'outros', label: 'Outros' },
+            ]}
+          />
+        </section> : null}
+
+        <label className="task-text-field">
+          <span>Observação <small>(opcional)</small></span>
+          <textarea value={notes} maxLength={1000} rows={5} disabled={busy} onChange={event => setNotes(event.target.value)} placeholder="Registre contexto relevante para a decisão da Controladoria..." />
+          <em>{notes.length}/1000</em>
+        </label>
+
+        <ErrorMessage message={error} />
+        <RendererFooter busy={busy} onSkip={skip} />
+      </form>
+      <DefenseIndications context={context} loading={contextLoading} error={contextError} />
+    </div>
+  );
+}
+
 export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRendererProps) {
   const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [paidReceipt, setPaidReceipt] = useState<string | null>(null);

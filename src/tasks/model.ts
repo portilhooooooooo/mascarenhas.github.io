@@ -62,6 +62,7 @@ export const TASK_TYPE_LABELS: Record<string, string> = {
   citacao: 'Validação de Citação',
   protocolo: 'Protocolo',
   contestacao: 'Validação de Contestação',
+  defesa: 'Validação de Defesa',
   reagendamento: 'Validação de Reagendamento',
 };
 
@@ -160,6 +161,7 @@ export function indicationLabel(task: Task, process: TaskProcess) {
   const initial = normalize(process.initial_status);
   if (paymentLabels[initial]) return paymentLabels[initial];
   if (normalize(task.type) === 'liminar') return 'Pedido de tutela/liminar';
+  if (normalize(task.type) === 'defesa') return 'Indícios de Enter e DataJud';
   return 'Não informado';
 }
 

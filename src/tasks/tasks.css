@@ -127,3 +127,29 @@
 .protocol-document-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .protocol-collection-rule { color:var(--muted, #64748b); font-size:12px; margin-right:auto; }
 @media (max-width: 760px) { .protocol-document-grid { grid-template-columns:1fr; } }
+
+/* Defesa / Contestação */
+.defesa-renderer-layout{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,34%);gap:16px;align-items:start}
+.defesa-renderer-form{min-height:100%}
+.defesa-indicios-panel{position:sticky;top:0;display:grid;gap:10px;padding:13px;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:#f8fafc}
+.defesa-indicios-panel>header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.defesa-indicios-panel>header small{display:block;margin-bottom:3px;color:#94a3b8;font-size:8px;font-weight:700;letter-spacing:.055em}
+.defesa-indicios-panel>header h3{margin:0;color:var(--mba-text,#0f1f3d);font-size:12px;font-weight:680}
+.defesa-indicios-panel>header>span{padding:4px 7px;border:1px solid #dbe4f0;border-radius:999px;background:#fff;color:#64748b;font-size:8.5px;font-weight:700;white-space:nowrap}
+.defesa-indicios-help{margin:0;color:#64748b;font-size:9.5px;line-height:1.45}
+.defesa-indicios-list{display:grid;gap:7px}
+.defesa-indicio-card{display:grid;gap:7px;padding:10px;border:1px solid #e2e8f0;border-radius:7px;background:#fff}
+.defesa-indicio-card.detected{border-color:#cbd5e1;box-shadow:inset 2px 0 0 var(--mba-blue,#142b67)}
+.defesa-indicio-card.technical-error{border-color:#fed7aa;background:#fffaf5;box-shadow:inset 2px 0 0 #ea580c}
+.defesa-indicio-heading{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.defesa-indicio-heading span{color:var(--mba-blue,#142b67);font-size:9px;font-weight:750;text-transform:uppercase}
+.defesa-indicio-heading strong{color:#475569;font-size:9.5px;font-weight:650}
+.defesa-indicio-card p{margin:0;color:#64748b;font-size:9.5px;line-height:1.45}
+.defesa-indicio-card p b{color:#475569;font-weight:650}
+.defesa-indicio-terms{display:flex;flex-wrap:wrap;gap:5px}
+.defesa-indicio-terms span{padding:3px 6px;border-radius:5px;background:var(--mba-blue-soft,#f2f5fb);color:var(--mba-blue,#142b67);font-size:8.5px;font-weight:650}
+.defesa-indicio-resumed{padding:6px 7px;border-radius:5px;background:#fff7ed;color:#9a3412!important}
+.defesa-indicios-state{padding:12px 10px;border:1px dashed #cbd5e1;border-radius:7px;background:#fff;color:#64748b;font-size:9.5px;text-align:center}
+.defesa-indicios-state.clear{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
+.defesa-indicios-state.error{border-color:#fed7aa;background:#fff7ed;color:#9a3412}
+@media(max-width:1040px){.defesa-renderer-layout{grid-template-columns:1fr}.defesa-indicios-panel{position:static;order:-1}}
