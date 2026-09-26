@@ -1,47 +1,10 @@
 import { LoaderCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ensureMetabaseEmbedScript, normalizeMetabaseInstanceUrl } from './metabaseEmbedRuntime';
 
 type EmbedConfig = { jwt: string; instance_url: string; expires_in?: number };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
-type GestaoWindow = Window & typeof globalThis & {
-  MBA_API?: BackofficeApi;
-  metabaseConfig?: { isGuest: boolean; instanceUrl: string };
-};
-
-let embedScriptPromise: Promise<void> | null = null;
-let embedInstanceUrl = '';
-
-function normalizeInstanceUrl(value: string) {
-  const target = new URL(value);
-  if (!['https:', 'http:'].includes(target.protocol)) throw new Error('Endereço do Metabase inválido.');
-  return target.href.replace(/\/$/, '');
-}
-
-function ensureMetabaseScript(instanceUrl: string) {
-  if (customElements.get('metabase-dashboard')) return Promise.resolve();
-  if (embedScriptPromise && embedInstanceUrl === instanceUrl) return embedScriptPromise;
-  const targetWindow = window as GestaoWindow;
-  targetWindow.metabaseConfig = { isGuest: true, instanceUrl };
-  embedInstanceUrl = instanceUrl;
-  embedScriptPromise = new Promise((resolve, reject) => {
-    document.querySelector('script[data-metabase-gestao]')?.remove();
-    const script = document.createElement('script');
-    script.defer = true;
-    script.src = `${instanceUrl}/app/embed.js`;
-    script.dataset.metabaseGestao = 'true';
-    script.addEventListener('load', async () => {
-      try {
-        await customElements.whenDefined('metabase-dashboard');
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
-    }, { once: true });
-    script.addEventListener('error', () => reject(new Error('Não foi possível carregar o Metabase.')), { once: true });
-    document.head.appendChild(script);
-  });
-  return embedScriptPromise;
-}
+type GestaoWindow = Window & typeof globalThis & { MBA_API?: BackofficeApi };
 
 export function MetabaseGestaoEmbed() {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -57,8 +20,8 @@ export function MetabaseGestaoEmbed() {
       if (!api) throw new Error('API indisponível.');
       const config = await api.request<EmbedConfig>('/api/analytics/metabase/embed');
       if (!config?.jwt || !config?.instance_url) throw new Error('Painel indisponível.');
-      const instanceUrl = normalizeInstanceUrl(config.instance_url);
-      await ensureMetabaseScript(instanceUrl);
+      const instanceUrl = normalizeMetabaseInstanceUrl(config.instance_url);
+      await ensureMetabaseEmbedScript(instanceUrl);
       if (!mountRef.current) return;
       mountRef.current.replaceChildren();
       const dashboard = document.createElement('metabase-dashboard');
