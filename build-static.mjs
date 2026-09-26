@@ -25,7 +25,6 @@ const files = [
   'payment-receipt.css',
   'protocolo.css',
   'config.js',
-  'mock-api.js',
   'data-api.js',
   'app.js',
   'react-compat.js',
@@ -56,7 +55,8 @@ const reactOwnedIndexHtml = indexHtml
     /<div class="auth-view" id="login-view">[\s\S]*?<\/div>\s*<div class="login-security">/,
     '<div class="auth-view" id="login-view"></div>\n\n        <div class="login-security">',
   )
-  .replace(/\s*<script src="\/?security-ui\.js(?:\?v=[^"]+)?"><\/script>/g, '');
+  .replace(/\s*<script src="\/?security-ui\.js(?:\?v=[^"]+)?"><\/script>/g, '')
+  .replace(/\s*<script src="\/?mock-api\.js(?:\?v=[^"]+)?"><\/script>/g, '');
 
 if (reactOwnedIndexHtml === indexHtml) {
   throw new Error('Não foi possível isolar o ponto de montagem React do login.');
@@ -75,7 +75,6 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/dashboard-react\.css\?v=[^"']+/g, `dashboard-react.css?v=${buildVersion}`)
   .replace(/dashboard-react\.js\?v=[^"']+/g, `dashboard-react.js?v=${buildVersion}`)
   .replace(/config\.js(?:\?v=[^"']+)?/g, `config.js?v=${buildVersion}`)
-  .replace(/mock-api\.js(?:\?v=[^"']+)?/g, `mock-api.js?v=${buildVersion}`)
   .replace(/data-api\.js(?:\?v=[^"']+)?/g, `data-api.js?v=${buildVersion}`)
   .replace(/auth\.js(?:\?v=[^"']+)?/g, `auth.js?v=${buildVersion}`)
   .replace(/app\.js(?:\?v=[^"']+)?/g, `app.js?v=${buildVersion}`)
@@ -92,8 +91,8 @@ if (/id="task-only-login"|id="google-login"|data-auth-provider="google"/.test(bu
 if (!/<div class="auth-view" id="login-view"><\/div>/.test(builtIndexHtml)) {
   throw new Error('O artefato final deve conter somente o mount React do login.');
 }
-if (/security-ui\.js|login-ui\.css/.test(builtIndexHtml)) {
-  throw new Error('O artefato final ainda referencia a implementação visual legada do login.');
+if (/security-ui\.js|login-ui\.css|mock-api\.js/.test(builtIndexHtml)) {
+  throw new Error('O artefato final ainda referencia implementação legada ou mock de API.');
 }
 
 await writeFile(indexPath, builtIndexHtml, 'utf8');
