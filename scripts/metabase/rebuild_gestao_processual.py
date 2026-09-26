@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Versioned Metabase definition for Gestão Processual.
 
-Default mode is plan-only. Use --apply explicitly with MB_URL, MB_SESSION and
-MB_DATABASE_ID to create a new dashboard. It never updates an existing dashboard.
+Gestão Processual is restricted to portfolio/process indicators. Operational
+results live in the Operação dashboard. Default mode is plan-only.
 """
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ import urllib.error
 import urllib.request
 
 DASHBOARD_NAME = "Gestão Processual"
-TABS = ["Carteira Processual", "Acordos", "Pagamentos"]
+TABS = ["Carteira Processual"]
 
 
-def card(tab, name, display, sql, row, col, size_x, size_y, settings=None):
+def card(name, display, sql, row, col, size_x, size_y, settings=None):
     return {
-        "tab": tab,
+        "tab": "Carteira Processual",
         "name": name,
         "display": display,
         "sql": sql.strip(),
@@ -31,29 +31,27 @@ def card(tab, name, display, sql, row, col, size_x, size_y, settings=None):
 
 
 CARDS = [
-    card("Carteira Processual", "Processos — Total", "scalar", """
-        SELECT COUNT(*) AS total FROM public.processos_carteira;
-    """, 0, 0, 6, 3),
-    card("Carteira Processual", "Processos — Ativos", "scalar", """
+    card("Processos — Total", "scalar", "SELECT COUNT(*) AS total FROM public.processos_carteira;", 0, 0, 6, 3),
+    card("Processos — Ativos", "scalar", """
         SELECT COUNT(*) AS ativos FROM public.processos_carteira
         WHERE lower(btrim(coalesce(situation_benner, ''))) = 'em andamento';
     """, 0, 6, 6, 3),
-    card("Carteira Processual", "Processos — Encerrados", "scalar", """
+    card("Processos — Encerrados", "scalar", """
         SELECT COUNT(*) AS encerrados FROM public.processos_carteira
         WHERE lower(btrim(coalesce(situation_benner, ''))) = 'encerrado';
     """, 0, 12, 6, 3),
-    card("Carteira Processual", "Processos — Aging médio ativos", "scalar", """
+    card("Processos — Aging médio ativos", "scalar", """
         SELECT ROUND(AVG(aging)::numeric, 1) AS aging_medio_dias
         FROM public.processos_carteira
         WHERE aging IS NOT NULL
           AND lower(btrim(coalesce(situation_benner, ''))) = 'em andamento';
     """, 0, 18, 6, 3),
-    card("Carteira Processual", "Processos — Aptos ao encerramento", "scalar", """
+    card("Processos — Aptos ao encerramento", "scalar", """
         SELECT COUNT(*) AS aptos_ao_encerramento
         FROM public.processos_carteira
         WHERE resolution IS NOT NULL AND btrim(resolution) <> '';
     """, 3, 0, 6, 3),
-    card("Carteira Processual", "Processos — Divergências CPJ x Benner", "scalar", """
+    card("Processos — Divergências CPJ x Benner", "scalar", """
         SELECT COUNT(*) AS divergencias
         FROM public.processos_carteira
         WHERE lower(btrim(coalesce(situation_cpj, ''))) = 'divergente'
@@ -61,19 +59,19 @@ CARDS = [
                AND btrim(coalesce(situation_benner, '')) <> ''
                AND lower(btrim(situation_cpj)) <> lower(btrim(situation_benner)));
     """, 3, 6, 6, 3),
-    card("Carteira Processual", "Processos — Aptos a arquivamento", "scalar", """
+    card("Processos — Aptos a arquivamento", "scalar", """
         SELECT COUNT(*) AS aptos_a_arquivamento
         FROM public.processos_carteira
         WHERE lower(btrim(coalesce(situation_benner, ''))) = 'encerrado'
           AND lower(btrim(coalesce(situation_cpj, ''))) = 'em andamento';
     """, 3, 12, 6, 3),
-    card("Carteira Processual", "Processos — Aging crítico 180+", "scalar", """
+    card("Processos — Aging crítico 180+", "scalar", """
         SELECT COUNT(*) AS aging_critico
         FROM public.processos_carteira
         WHERE coalesce(aging, 0) > 180
           AND lower(btrim(coalesce(situation_benner, ''))) = 'em andamento';
     """, 3, 18, 6, 3),
-    card("Carteira Processual", "Processos — Entradas x Encerramentos", "line", """
+    card("Processos — Entradas x Encerramentos", "line", """
         WITH meses AS (
           SELECT date_trunc('month', date)::date AS mes, COUNT(*)::bigint AS entradas, 0::bigint AS encerramentos
           FROM public.processos_carteira WHERE date IS NOT NULL GROUP BY 1
@@ -84,20 +82,20 @@ CARDS = [
         SELECT mes, SUM(entradas) AS entradas, SUM(encerramentos) AS encerramentos
         FROM meses GROUP BY mes ORDER BY mes;
     """, 6, 0, 16, 7),
-    card("Carteira Processual", "Processos — Situação Benner", "pie", """
+    card("Processos — Situação Benner", "pie", """
         SELECT coalesce(nullif(btrim(situation_benner), ''), 'Não informado') AS situacao,
                COUNT(*) AS processos
         FROM public.processos_carteira GROUP BY 1 ORDER BY processos DESC;
     """, 6, 16, 8, 7),
-    card("Carteira Processual", "Processos — Por produto", "bar", """
+    card("Processos — Por produto", "bar", """
         SELECT coalesce(nullif(btrim(product), ''), 'Não informado') AS produto, COUNT(*) AS processos
         FROM public.processos_carteira GROUP BY 1 ORDER BY processos DESC;
     """, 13, 0, 12, 7),
-    card("Carteira Processual", "Processos — Por UF", "bar", """
+    card("Processos — Por UF", "bar", """
         SELECT coalesce(nullif(btrim(state), ''), 'Não informado') AS uf, COUNT(*) AS processos
         FROM public.processos_carteira GROUP BY 1 ORDER BY processos DESC;
     """, 13, 12, 12, 7),
-    card("Carteira Processual", "Processos — Aging dos ativos", "bar", """
+    card("Processos — Aging dos ativos", "bar", """
         WITH base AS (
           SELECT CASE WHEN aging <= 0 THEN '0' WHEN aging <= 30 THEN '1–30'
                       WHEN aging <= 60 THEN '31–60' WHEN aging <= 90 THEN '61–90'
@@ -111,12 +109,12 @@ CARDS = [
         )
         SELECT faixa, COUNT(*) AS processos FROM base GROUP BY faixa, ordem ORDER BY ordem;
     """, 20, 0, 12, 7),
-    card("Carteira Processual", "Processos — Tipo de encerramento", "bar", """
+    card("Processos — Tipo de encerramento", "bar", """
         SELECT coalesce(nullif(btrim(resolution), ''), 'Sem classificação') AS encerramento,
                COUNT(*) AS processos
         FROM public.processos_carteira GROUP BY 1 ORDER BY processos DESC;
     """, 20, 12, 12, 7),
-    card("Carteira Processual", "Base — Processos", "table", """
+    card("Base — Processos", "table", """
         SELECT cnj AS "Processo", integration AS "Integração", date AS "Entrada", state AS "UF",
                product AS "Produto", aging AS "Aging", resolution AS "Encerramento",
                date_resolution AS "Data encerramento", situation_cpj AS "Situação CPJ",
@@ -124,88 +122,6 @@ CARDS = [
                bottleneck AS "Gargalo", updated_at AS "Atualizado em"
         FROM public.processos_carteira ORDER BY date DESC NULLS LAST;
     """, 27, 0, 24, 9),
-
-    card("Acordos", "Acordos — Total", "scalar", "SELECT COUNT(*) AS total FROM public.acordos_carteira;", 0, 0, 5, 3),
-    card("Acordos", "Acordos — Fechados", "scalar", """
-        SELECT COUNT(*) AS fechados FROM public.acordos_carteira WHERE situacao = 'Acordo Fechado';
-    """, 0, 5, 5, 3),
-    card("Acordos", "Acordos — Em negociação", "scalar", """
-        SELECT COUNT(*) AS em_negociacao FROM public.acordos_carteira WHERE situacao = 'Em negociação';
-    """, 0, 10, 5, 3),
-    card("Acordos", "Acordos — Recusados", "scalar", """
-        SELECT COUNT(*) AS recusados FROM public.acordos_carteira WHERE situacao = 'Acordo recusado';
-    """, 0, 15, 4, 3),
-    card("Acordos", "Acordos — Ticket médio", "scalar", """
-        SELECT ROUND(AVG(proposta)::numeric, 2) AS ticket_medio FROM public.acordos_carteira WHERE proposta IS NOT NULL;
-    """, 0, 19, 5, 3),
-    card("Acordos", "Acordos — Por situação", "bar", """
-        SELECT coalesce(nullif(btrim(situacao), ''), 'Não informado') AS situacao, COUNT(*) AS acordos
-        FROM public.acordos_carteira GROUP BY 1 ORDER BY acordos DESC;
-    """, 3, 0, 12, 7),
-    card("Acordos", "Acordos — Por tipo", "pie", """
-        SELECT coalesce(nullif(btrim(tipo), ''), 'Não informado') AS tipo, COUNT(*) AS acordos
-        FROM public.acordos_carteira GROUP BY 1 ORDER BY acordos DESC;
-    """, 3, 12, 12, 7),
-    card("Acordos", "Acordos — Por tarefa", "bar", """
-        SELECT coalesce(nullif(btrim(tarefa), ''), 'Não informado') AS tarefa, COUNT(*) AS acordos
-        FROM public.acordos_carteira GROUP BY 1 ORDER BY acordos DESC;
-    """, 10, 0, 12, 7),
-    card("Acordos", "Acordos — Por origem", "pie", """
-        SELECT coalesce(nullif(btrim(origem_acordo), ''), 'Não informado') AS origem, COUNT(*) AS acordos
-        FROM public.acordos_carteira GROUP BY 1 ORDER BY acordos DESC;
-    """, 10, 12, 12, 7),
-    card("Acordos", "Base — Acordos", "table", """
-        SELECT cnj AS "Processo", situacao AS "Situação", tipo AS "Tipo", tarefa AS "Tarefa",
-               proposta AS "Proposta", origem_acordo AS "Origem"
-        FROM public.acordos_carteira ORDER BY id DESC;
-    """, 17, 0, 24, 9),
-
-    card("Pagamentos", "Pagamentos — Total", "scalar", "SELECT COUNT(*) AS total FROM public.pagamentos;", 0, 0, 5, 3),
-    card("Pagamentos", "Pagamentos — Em aprovação", "scalar", """
-        SELECT COUNT(*) AS em_aprovacao FROM public.pagamentos WHERE situacao ILIKE 'Em aprovação%';
-    """, 0, 5, 5, 3),
-    card("Pagamentos", "Pagamentos — Liquidados", "scalar", """
-        SELECT COUNT(*) AS liquidados FROM public.pagamentos WHERE situacao = 'Liquidado';
-    """, 0, 10, 5, 3),
-    card("Pagamentos", "Pagamentos — Cancelados", "scalar", """
-        SELECT COUNT(*) AS cancelados FROM public.pagamentos WHERE situacao = 'Pagamento cancelado';
-    """, 0, 15, 4, 3),
-    card("Pagamentos", "Pagamentos — Ticket médio liquidado", "scalar", """
-        SELECT ROUND(AVG(valor)::numeric, 2) AS ticket_medio FROM public.pagamentos
-        WHERE situacao = 'Liquidado' AND valor IS NOT NULL;
-    """, 0, 19, 5, 3),
-    card("Pagamentos", "Pagamentos — Valor liquidado no tempo", "line", """
-        SELECT date_trunc('month', data_pagamento)::date AS mes, SUM(valor) AS valor_liquidado
-        FROM public.pagamentos WHERE situacao = 'Liquidado' AND data_pagamento IS NOT NULL
-        GROUP BY 1 ORDER BY 1;
-    """, 3, 0, 16, 7),
-    card("Pagamentos", "Pagamentos — Por situação", "pie", """
-        SELECT coalesce(nullif(btrim(situacao), ''), 'Não informado') AS situacao, COUNT(*) AS pagamentos
-        FROM public.pagamentos GROUP BY 1 ORDER BY pagamentos DESC;
-    """, 3, 16, 8, 7),
-    card("Pagamentos", "Pagamentos — Por tipo", "pie", """
-        SELECT coalesce(nullif(btrim(tipo_pagamento), ''), 'Não informado') AS tipo, COUNT(*) AS pagamentos
-        FROM public.pagamentos GROUP BY 1 ORDER BY pagamentos DESC;
-    """, 10, 0, 8, 7),
-    card("Pagamentos", "Pagamentos — Ticket médio por credenciado", "bar", """
-        SELECT coalesce(nullif(btrim(credenciado), ''), 'Não informado') AS credenciado,
-               ROUND(AVG(valor)::numeric, 2) AS ticket_medio
-        FROM public.pagamentos WHERE situacao = 'Liquidado' AND valor IS NOT NULL
-        GROUP BY 1 ORDER BY ticket_medio DESC LIMIT 20;
-    """, 10, 8, 8, 7),
-    card("Pagamentos", "Pagamentos — Tempo médio por credenciado", "bar", """
-        SELECT coalesce(nullif(btrim(credenciado), ''), 'Não informado') AS credenciado,
-               ROUND(AVG(tempo_pagamento_dias)::numeric, 1) AS dias
-        FROM public.pagamentos WHERE tempo_pagamento_dias IS NOT NULL
-        GROUP BY 1 ORDER BY dias DESC LIMIT 20;
-    """, 10, 16, 8, 7),
-    card("Pagamentos", "Base — Pagamentos", "table", """
-        SELECT pasta AS "Pasta", credenciado AS "Credenciado", situacao AS "Situação",
-               tipo_pagamento AS "Tipo", valor AS "Valor", data_aprovacao AS "Data aprovação",
-               data_pagamento AS "Data pagamento", tempo_pagamento_dias AS "Tempo pagamento (dias)",
-               solicitante AS "Solicitante", created_at AS "Criado em"
-        FROM public.pagamentos ORDER BY created_at DESC;
-    """, 17, 0, 24, 9),
 ]
 
 
@@ -245,7 +161,7 @@ def create_card(base_url, session, database_id, spec):
 def apply(base_url, session, database_id):
     dashboard = api("POST", base_url, session, "/api/dashboard", {
         "name": DASHBOARD_NAME,
-        "description": "Indicadores processuais consolidados. Fonte: Supabase/PostgreSQL.",
+        "description": "Indicadores da carteira processual. Resultados operacionais ficam no dashboard Operação.",
         "collection_id": None,
     })
     dashboard_id = dashboard["id"]
@@ -259,8 +175,7 @@ def apply(base_url, session, database_id):
             "dashboard_tab_id": tab_ids[spec["tab"]],
             "row": spec["row"], "col": spec["col"],
             "size_x": spec["size_x"], "size_y": spec["size_y"],
-            "parameter_mappings": [],
-            "visualization_settings": {},
+            "parameter_mappings": [], "visualization_settings": {},
         })
     api("PUT", base_url, session, f"/api/dashboard/{dashboard_id}", {
         "tabs": [{"id": tab_ids[name], "name": name, "position": i} for i, name in enumerate(TABS)],
@@ -275,11 +190,8 @@ def main():
     args = parser.parse_args()
     print(f"Dashboard: {DASHBOARD_NAME}")
     print(f"Tabs: {', '.join(TABS)}")
-    for tab in TABS:
-        names = [item["name"] for item in CARDS if item["tab"] == tab]
-        print(f"- {tab}: {len(names)} cards")
-        for name in names:
-            print(f"  - {name}")
+    for item in CARDS:
+        print(f"- {item['name']}")
     if not args.apply:
         print("\nPlan only. No Metabase resource was changed.")
         return
