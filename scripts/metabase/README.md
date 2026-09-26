@@ -14,7 +14,7 @@ Os indicadores do Backoffice ficam no Metabase. O frontend apenas hospeda embeds
 
 `patch_controladoria_indicadores.py` preserva o dashboard atual e adiciona:
 
-- **Protocolo**: total de minutos economizados somente em protocolos concluídos por automação, com `ERP_SUBMITTED` comprovado pelo worker. O baseline manual é 5 minutos por protocolo e o tempo real do worker é descontado.
+- **Protocolo**: total de minutos economizados somente em protocolos concluídos por automação, com `ERP_SUBMITTED` comprovado pelo worker. A economia operacional usa 5 minutos do fluxo manual menos 20 segundos de toque humano no fluxo automatizado, totalizando 280 segundos poupados por protocolo comprovado.
 - **Contestação**: Defesas recebidas, Análises pendentes, Aptos à defesa, Inaptos à defesa e distribuição de Prioridades (Urgente, Alta, Baixíssima).
 
 A regra de prioridade é operacional: **Urgente** quando o prazo operacional venceu ou vence hoje; **Alta** quando ainda há prazo e a origem Enter marca prioridade Alta; **Baixíssima** para os demais pendentes.
