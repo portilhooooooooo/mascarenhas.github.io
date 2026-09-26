@@ -30,7 +30,7 @@ for (const table of ['jobs', 'pagamentos', 'task_events', 'protocolo_events', 'd
 }
 
 assert.match(controladoriaPatch, /ERP_SUBMITTED/);
-assert.match(controladoriaPatch, /GREATEST\(300 - tempo_execucao_segundos, 0\)/);
+assert.match(controladoriaPatch, /COUNT\(\*\) \* \(300 - 20\) \/ 60\.0/);
 assert.match(controladoriaPatch, /origem_informacao = 'Worker'/);
 for (const label of ['Defesas recebidas', 'Análises pendentes', 'Aptos à defesa', 'Inaptos à defesa', 'Prioridades']) {
   assert.match(controladoriaPatch, new RegExp(label));
