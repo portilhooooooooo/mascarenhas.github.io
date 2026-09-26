@@ -16,13 +16,12 @@ PROTOCOL_CARD = {
     "name": "Protocolo — Minutos economizados",
     "display": "scalar",
     "sql": """
-        SELECT ROUND(SUM(GREATEST(300 - tempo_execucao_segundos, 0)) / 60.0, 1) AS minutos_economizados
+        SELECT ROUND(COUNT(*) * (300 - 20) / 60.0, 1) AS minutos_economizados
         FROM public.protocolo_indicadores_view
         WHERE modo_execucao = '100% automatizado'
           AND status_protocolo = 'Concluído'
           AND origem_informacao = 'Worker'
-          AND evento_fonte = 'ERP_SUBMITTED'
-          AND tempo_execucao_segundos IS NOT NULL;
+          AND evento_fonte = 'ERP_SUBMITTED';
     """,
     "row": 0, "col": 18, "size_x": 6, "size_y": 3,
 }
@@ -193,7 +192,7 @@ def main():
     print("- Contestação:")
     for spec in DEFENSE_CARDS:
         print(f"  - {spec['name']}")
-    print("\nEconomia considera somente ERP_SUBMITTED comprovado pelo worker e baseline manual de 5 minutos.")
+    print("\nEconomia: 5 min manuais - 20 s de toque humano atual = 280 s poupados por ERP_SUBMITTED comprovado pelo worker.")
     print("Prioridade: Urgente = prazo operacional vencido/hoje; Alta = prioridade Enter Alta futura; Baixíssima = demais pendentes.")
     if not args.apply:
         print("\nPlan only. No Metabase resource was changed.")
