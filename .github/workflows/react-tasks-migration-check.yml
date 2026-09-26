@@ -29,5 +29,10 @@ jobs:
       - name: Hardening checks
         run: npm run test:hardening
 
+      - name: Metabase architecture checks
+        run: |
+          npm run test:metabase
+          python3 -m py_compile scripts/metabase/*.py
+
       - name: Production build
         run: npm run build
