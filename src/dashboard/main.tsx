@@ -5,7 +5,6 @@ import { ControladoriaPage } from './ControladoriaPage';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
-import './analytics.css';
 import './protocolos.css';
 import './controladoria.css';
 import './ui-architecture.css';
@@ -168,7 +167,7 @@ function ensureOperationSubnav(pageId: string) {
   if (!section || section.querySelector('[data-mba-operation-subnav]')) return;
 
   const nav = document.createElement('nav');
-  nav.className = 'analytics-subnav mba-operation-subnav';
+  nav.className = 'mba-operation-subnav';
   nav.dataset.mbaOperationSubnav = 'true';
   nav.setAttribute('aria-label', 'Operação');
 
@@ -252,10 +251,6 @@ function configureApplicationShell() {
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
-  const gestao = nav.querySelector<HTMLElement>('[data-page="dashboard"]');
-  gestao?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('mba:gestao-tab', { detail: { tab: 'carteira' } }));
-  });
 
   configureOperationSubnav();
 
@@ -323,7 +318,7 @@ function RootApp() {
     return () => cleanupBaseTaskImport();
   }, []);
 
-  return <GestaoProcessualPage initialTab="carteira"/>;
+  return <GestaoProcessualPage/>;
 }
 
 const root = document.getElementById('dashboard-root');
