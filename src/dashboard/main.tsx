@@ -1,6 +1,7 @@
 import { StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
+import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
@@ -15,7 +16,6 @@ type DashboardWindow = Window & typeof globalThis & {
   showPage?: (page: string, updateRoute?: boolean) => void;
 };
 
-const OPERATION_PAGES = new Set(['pagamentos', 'acordos', 'tutelas', 'encerramentos']);
 const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao']);
 
 function labelNavItem(button: Element, label: string) {
@@ -143,7 +143,7 @@ function syncTopModuleFromActivePage() {
   const activePage = document.querySelector<HTMLElement>('main .page.active');
   if (!activePage?.id) return;
 
-  if (OPERATION_PAGES.has(activePage.id)) {
+  if (activePage.id === 'acordos') {
     setTopModuleActive('acordos');
     return;
   }
@@ -162,42 +162,6 @@ function syncTopModuleFromActivePage() {
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
 }
 
-function ensureOperationSubnav(pageId: string) {
-  const section = document.getElementById(pageId);
-  if (!section || section.querySelector('[data-mba-operation-subnav]')) return;
-
-  const nav = document.createElement('nav');
-  nav.className = 'mba-operation-subnav';
-  nav.dataset.mbaOperationSubnav = 'true';
-  nav.setAttribute('aria-label', 'Operação');
-
-  const modules = [
-    { page: 'pagamentos', label: 'Pagamentos' },
-    { page: 'acordos', label: 'Acordos' },
-    { page: 'tutelas', label: 'Liminar' },
-    { page: 'encerramentos', label: 'Encerramentos' },
-  ];
-
-  modules.forEach(module => {
-    if (!document.getElementById(module.page)) return;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = module.label;
-    button.classList.toggle('active', module.page === pageId);
-    button.addEventListener('click', () => {
-      (window as DashboardWindow).showPage?.(module.page);
-      setTopModuleActive('acordos');
-    });
-    nav.appendChild(button);
-  });
-
-  section.prepend(nav);
-}
-
-function configureOperationSubnav() {
-  OPERATION_PAGES.forEach(ensureOperationSubnav);
-}
-
 function configureApplicationShell() {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) {
@@ -206,7 +170,6 @@ function configureApplicationShell() {
   }
 
   if (nav.dataset.mbaModuleNav === 'true') {
-    configureOperationSubnav();
     configureProfileControl();
     syncTopModuleFromActivePage();
     return;
@@ -251,15 +214,56 @@ function configureApplicationShell() {
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
-
-  configureOperationSubnav();
-
   const observer = new MutationObserver(syncTopModuleFromActivePage);
   document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
     observer.observe(page, { attributes: true, attributeFilter: ['class'] });
   });
   syncTopModuleFromActivePage();
   configureProfileControl();
+}
+
+let operacaoRoot: Root | null = null;
+
+function mountOperacaoPage() {
+  const section = document.getElementById('acordos');
+  if (!section || operacaoRoot) return;
+  section.dataset.reactMounted = 'true';
+  section.classList.add('operacao-metabase-host');
+  section.replaceChildren();
+  const mount = document.createElement('div');
+  mount.className = 'operacao-react-root';
+  section.appendChild(mount);
+  operacaoRoot = createRoot(mount);
+  operacaoRoot.render(<StrictMode><OperacaoPage/></StrictMode>);
+}
+
+function unmountOperacaoPage() {
+  if (!operacaoRoot) return;
+  operacaoRoot.unmount();
+  operacaoRoot = null;
+  const section = document.getElementById('acordos');
+  if (section) {
+    delete section.dataset.reactMounted;
+    section.replaceChildren();
+  }
+}
+
+function syncOperacaoLifecycle() {
+  const section = document.getElementById('acordos');
+  const visible = section?.classList.contains('active') === true && !document.hidden;
+  if (visible) mountOperacaoPage();
+  else unmountOperacaoPage();
+}
+
+function configureOperacaoLifecycle() {
+  const section = document.getElementById('acordos');
+  if (!section) return;
+  const observer = new MutationObserver(syncOperacaoLifecycle);
+  observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('mba:authenticated', syncOperacaoLifecycle);
+  window.addEventListener('mba:session-expired', unmountOperacaoPage);
+  document.addEventListener('visibilitychange', syncOperacaoLifecycle);
+  syncOperacaoLifecycle();
 }
 
 let protocolosRoot: Root | null = null;
@@ -325,4 +329,5 @@ const root = document.getElementById('dashboard-root');
 if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
 createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
 mountTasksPage();
+configureOperacaoLifecycle();
 configureProtocolosLifecycle();
