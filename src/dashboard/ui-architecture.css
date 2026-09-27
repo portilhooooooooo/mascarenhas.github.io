@@ -1,9 +1,118 @@
 :root {
   --mba-subnav-height: 38px;
+  --mba-subnav-font-size: 11.5px;
+  --mba-subnav-gap: 20px;
   --mba-page-x: 24px;
   --mba-page-y: 14px;
   --mba-page-title: 20px;
   --mba-page-subtitle: 12px;
+}
+
+/*
+ * React module chrome
+ * -------------------
+ * Subnavigation must not depend on the page/component tree. Controladoria,
+ * Tarefas, Operacao and analytics views share the exact same geometry and
+ * typography even when their internal content is mounted by different React
+ * roots.
+ */
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) {
+  width: auto !important;
+  max-width: none !important;
+  height: var(--mba-subnav-height) !important;
+  min-height: var(--mba-subnav-height) !important;
+  display: flex !important;
+  align-items: stretch !important;
+  gap: var(--mba-subnav-gap) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--mba-border) !important;
+  background: #fff !important;
+  box-sizing: border-box;
+}
+
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) > button {
+  position: relative !important;
+  height: var(--mba-subnav-height) !important;
+  min-height: var(--mba-subnav-height) !important;
+  padding: 0 1px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--mba-text-2) !important;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: var(--mba-subnav-font-size) !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: -.005em !important;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) > button:hover:not(:disabled) {
+  color: var(--mba-text) !important;
+}
+
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) > button.active {
+  color: var(--mba-blue) !important;
+  font-weight: 600 !important;
+}
+
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) > button.active::after {
+  content: '' !important;
+  position: absolute !important;
+  right: 0 !important;
+  bottom: -1px !important;
+  left: 0 !important;
+  height: 2px !important;
+  border-radius: 2px 2px 0 0 !important;
+  background: var(--mba-blue) !important;
+}
+
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) > button:disabled {
+  color: var(--mba-muted) !important;
+  cursor: default !important;
+  opacity: .55 !important;
+}
+
+body :is(
+  .analytics-subnav,
+  .mba-operation-subnav,
+  .controladoria-subnav,
+  .tasks-react-subnav
+) > button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--mba-blue) 32%, transparent);
+  outline-offset: -2px;
 }
 
 /* Shared module architecture. The sidebar shell remains the primary navigation;
@@ -18,54 +127,21 @@
     padding: var(--mba-page-y) var(--mba-page-x) 24px;
   }
 
-  body .analytics-page > .analytics-subnav,
-  body .page > .mba-operation-subnav,
-  body .protocolos-page-react > .controladoria-subnav {
-    width: auto;
-    max-width: none;
-    height: var(--mba-subnav-height);
-    margin: calc(-1 * var(--mba-page-y)) calc(-1 * var(--mba-page-x)) 14px;
-    padding: 0 var(--mba-page-x);
-    display: flex;
-    align-items: stretch;
-    gap: 20px;
-    border-bottom: 1px solid var(--mba-border);
-    background: #fff;
+  /* Tarefas used a private 20/32px grid, which made its React subnav drift
+     from every other module. It now participates in the shared page grid. */
+  body #tarefas[data-react-tasks='true'] .tasks-react-root {
+    padding: var(--mba-page-y) var(--mba-page-x) 24px !important;
   }
 
-  body .analytics-page > .analytics-subnav button,
-  body .page > .mba-operation-subnav button,
-  body .protocolos-page-react > .controladoria-subnav button {
-    position: relative;
-    height: var(--mba-subnav-height);
-    padding: 0 1px;
-    border: 0;
-    background: transparent;
-    color: var(--mba-text-2);
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    font-size: 11.5px;
-    font-weight: 500;
-    line-height: 1;
-  }
-
-  body .analytics-page > .analytics-subnav button.active,
-  body .page > .mba-operation-subnav button.active,
-  body .protocolos-page-react > .controladoria-subnav button.active {
-    color: var(--mba-blue);
-    font-weight: 600;
-  }
-
-  body .analytics-page > .analytics-subnav button.active::after,
-  body .page > .mba-operation-subnav button.active::after,
-  body .protocolos-page-react > .controladoria-subnav button.active::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 2px;
-    border-radius: 2px 2px 0 0;
-    background: var(--mba-blue);
+  body :is(
+    .analytics-page > .analytics-subnav,
+    .page > .mba-operation-subnav,
+    .controladoria-page-react > .controladoria-primary-subnav,
+    .protocolos-page-react > .controladoria-subnav,
+    .tasks-react-root > .tasks-react-subnav
+  ) {
+    margin: calc(-1 * var(--mba-page-y)) calc(-1 * var(--mba-page-x)) 14px !important;
+    padding: 0 var(--mba-page-x) !important;
   }
 
   body .protocolos-page-react {
@@ -122,5 +198,26 @@
 @media (min-width: 981px) and (max-width: 1260px) {
   :root {
     --mba-page-x: 18px;
+  }
+}
+
+@media (max-width: 980px) {
+  body :is(
+    .analytics-subnav,
+    .mba-operation-subnav,
+    .controladoria-subnav,
+    .tasks-react-subnav
+  ) {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+
+  body :is(
+    .analytics-subnav,
+    .mba-operation-subnav,
+    .controladoria-subnav,
+    .tasks-react-subnav
+  )::-webkit-scrollbar {
+    display: none;
   }
 }
