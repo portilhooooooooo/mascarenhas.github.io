@@ -85,7 +85,7 @@
       return;
     }
 
-    const analysis = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:liminar|encerramento|bloqueio|citacao|comprovante_pagamento|agreement)-analysis$/);
+    const analysis = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:liminar|defesa|encerramento|bloqueio|citacao|comprovante_pagamento|agreement)-analysis$/);
     if (method === 'POST' && analysis) {
       const processId = analysis[1];
       const taskId = processToTask.get(processId);
