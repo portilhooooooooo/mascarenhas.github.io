@@ -14,9 +14,15 @@ type BaseRendererProps = {
   onSkipped: (process: TaskProcess) => void;
 };
 
+function defenseControlDeadline(task: Task, process: TaskProcess) {
+  const metadata = process.source_metadata || {};
+  return String(metadata.fatal_deadline || task.deadline_at || '').slice(0, 10) || null;
+}
+
 export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: BaseRendererProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const controlDeadline = defenseControlDeadline(task, process);
 
   const submit = async (draft: DefenseAnalysisDraft) => {
     setBusy(true);
@@ -25,7 +31,6 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
       const priorityLabel = draft.priority === 'altissima' ? 'Altíssima' : draft.priority === 'alta' ? 'Alta' : draft.priority === 'baixa' ? 'Baixa' : null;
       const criteriaText = draft.criteria.length ? ` Critérios: ${draft.criteria.map(item => `${item.type}=${item.date}`).join(', ')}.` : '';
       const notes = `Workflow Defesa V2. ${draft.situation}${criteriaText}`;
-      const controlDeadline = String(task.deadline_at || '').slice(0, 10) || null;
 
       await api(`/api/task-processes/${process.id}/defesa-analysis`, {
         method: 'POST',
@@ -64,8 +69,6 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
       setBusy(false);
     }
   };
-
-  const controlDeadline = String(task.deadline_at || '').slice(0, 10);
 
   return <DefenseAnalysisFlow
     cnj={process.case_number || 'Processo sem número'}
