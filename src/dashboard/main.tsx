@@ -8,6 +8,7 @@ import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
 import './protocolos.css';
 import './controladoria.css';
+import './defesas.css';
 import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {

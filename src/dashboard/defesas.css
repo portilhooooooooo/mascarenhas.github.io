@@ -1,0 +1,76 @@
+.defesas-analysis-page{width:100%;max-width:1500px;margin:0 auto;display:grid;gap:12px;color:var(--mba-text,#0f1f3d)}
+.defesas-analysis-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.defesas-analysis-header>div{min-width:0}
+.defesas-analysis-header span{display:block;margin-bottom:4px;color:var(--mba-blue,#142b67);font-size:9px;font-weight:750;letter-spacing:.105em}
+.defesas-analysis-header h1{margin:0;color:var(--mba-text,#0f1f3d);font-size:20px;font-weight:650;letter-spacing:-.025em}
+.defesas-analysis-header p{margin:5px 0 0;color:var(--mba-text-2,#52647d);font-size:11.5px;line-height:1.45}
+.defesas-reset{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.defesas-context-strip{display:grid;grid-template-columns:1.35fr .8fr .8fr;overflow:hidden;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:#fff}
+.defesas-context-strip>div{min-width:0;display:grid;gap:4px;padding:10px 14px}
+.defesas-context-strip>div+div{border-left:1px solid var(--mba-border,#e3eaf2)}
+.defesas-context-strip small{color:var(--mba-muted,#8190a5);font-size:8.5px;font-weight:700;letter-spacing:.055em}
+.defesas-context-strip strong{min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden;color:var(--mba-text,#0f1f3d);font-size:11.5px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+.defesas-analysis-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(330px,.75fr);gap:12px;align-items:start}
+.defesas-form-card,.defesas-result-card{border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:#fff}
+.defesas-form-card{overflow:hidden}
+.defesas-question{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;padding:16px 18px}
+.defesas-question+.defesas-question{border-top:1px solid var(--mba-border,#e3eaf2)}
+.defesas-question.nested{background:#fcfdff}
+.defesas-step{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--mba-border,#e3eaf2);border-radius:7px;background:#fff;color:var(--mba-blue,#142b67);font-size:9px;font-weight:750}
+.defesas-question-body{min-width:0;display:grid;gap:10px}
+.defesas-question-body h2{margin:2px 0 0;color:var(--mba-text,#0f1f3d);font-size:12.5px;font-weight:650;line-height:1.35}
+.defesas-question-body>p{margin:-3px 0 0;color:var(--mba-muted,#8190a5);font-size:9.7px;line-height:1.45}
+.defesa-binary-choice,.defesas-binary-choice{display:grid;grid-template-columns:repeat(2,minmax(0,140px));gap:8px}
+.defesa-binary-choice button,.defesas-binary-choice button{height:38px;border:1px solid var(--mba-border,#e3eaf2);border-radius:7px;background:#fff;color:var(--mba-text-2,#52647d);font:600 10.5px/1 Inter,sans-serif;cursor:pointer}
+.defesa-binary-choice button:hover,.defesas-binary-choice button:hover{border-color:#cbd5e1;background:#fbfdff;color:var(--mba-text,#0f1f3d)}
+.defesa-binary-choice button.active,.defesas-binary-choice button.active{border-color:#9fb0d1;background:var(--mba-blue-soft,#f2f5fb);box-shadow:inset 2px 0 0 var(--mba-blue,#142b67);color:var(--mba-blue,#142b67)}
+.defesas-priority-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.defesas-priority-grid button{min-height:52px;display:grid;place-content:center;gap:3px;padding:8px;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:#fff;color:var(--mba-text,#0f1f3d);text-align:center;cursor:pointer}
+.defesas-priority-grid button:hover{border-color:#cbd5e1;background:#fbfdff}
+.defesas-priority-grid button.active{border-color:#9fb0d1;background:var(--mba-blue-soft,#f2f5fb);box-shadow:inset 2px 0 0 var(--mba-blue,#142b67)}
+.defesas-priority-grid strong{font-size:10.8px;font-weight:680}
+.defesas-priority-grid span,.defesas-priority-grid small{color:var(--mba-muted,#8190a5);font-size:8.8px;font-weight:500}
+.defesas-priority-grid.compact button{min-height:38px;padding:5px}
+.defesas-priority-grid.compact strong{font-size:9.8px}
+.defesas-priority-grid.compact small{font-size:8px}
+.defesas-criteria-list{display:grid;gap:7px}
+.defesas-criterion{display:grid;grid-template-columns:minmax(0,1fr) 210px;align-items:center;gap:10px;min-height:46px;padding:7px 9px;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:#fff;transition:border-color .12s ease,background .12s ease}
+.defesas-criterion.selected{border-color:#cad5e4;background:#fbfdff}
+.defesas-criterion-toggle{min-width:0;height:30px;display:flex;align-items:center;gap:9px;padding:0 3px;border:0;background:transparent;color:var(--mba-text,#0f1f3d);font:600 10.5px/1.3 Inter,sans-serif;text-align:left;cursor:pointer}
+.defesas-checkbox{width:17px;height:17px;flex:0 0 17px;display:grid;place-items:center;border:1px solid #c7d2df;border-radius:4px;background:#fff;color:#fff}
+.defesas-criterion.selected .defesas-checkbox{border-color:var(--mba-blue,#142b67);background:var(--mba-blue,#142b67)}
+.defesas-criterion label{display:grid;grid-template-columns:auto minmax(126px,1fr);align-items:center;gap:8px;color:var(--mba-muted,#8190a5);font-size:8.8px;font-weight:600}
+.defesas-criterion input,.defesas-conclusion-grid input{height:34px;min-width:0;padding:0 8px;border:1px solid var(--mba-border,#e3eaf2);border-radius:7px;background:#fff;color:var(--mba-text,#0f1f3d);font:500 10px/1 Inter,sans-serif;outline:0}
+.defesas-criterion input:focus,.defesas-conclusion-grid input:focus{border-color:#9fb0d1;box-shadow:0 0 0 3px var(--mba-blue-soft,#f2f5fb)}
+.defesas-conclusion-grid{display:grid;grid-template-columns:minmax(180px,.55fr) minmax(0,1.45fr);gap:12px}
+.defesas-conclusion-grid>label,.defesas-conclusion-grid>div{display:grid;gap:7px}
+.defesas-conclusion-grid>label>span,.defesas-conclusion-grid>div>span{color:var(--mba-text-2,#52647d);font-size:9.5px;font-weight:650}
+.defesas-conclusion-grid>label input{height:40px}
+.defesas-reason-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.defesas-reason-grid button{min-height:42px;padding:8px 10px;border:1px solid var(--mba-border,#e3eaf2);border-radius:7px;background:#fff;color:var(--mba-text-2,#52647d);font:550 9.8px/1.35 Inter,sans-serif;text-align:left;cursor:pointer}
+.defesas-reason-grid button:hover{border-color:#cbd5e1;background:#fbfdff;color:var(--mba-text,#0f1f3d)}
+.defesas-reason-grid button.active{border-color:#9fb0d1;background:var(--mba-blue-soft,#f2f5fb);box-shadow:inset 2px 0 0 var(--mba-blue,#142b67);color:var(--mba-blue,#142b67);font-weight:650}
+.defesas-suspension-box{display:grid;gap:8px;padding:10px 11px;border:1px solid #dbe4f0;border-radius:8px;background:#f8fafc}
+.defesas-suspension-box>span{color:var(--mba-text-2,#52647d);font-size:9.5px;font-weight:650}
+.defesas-result-card{position:sticky;top:calc(var(--mba-topbar-height,52px) + 12px);overflow:hidden}
+.defesas-result-card>header{padding:15px 16px 13px;border-bottom:1px solid var(--mba-border,#e3eaf2);background:#f8fafc}
+.defesas-result-card>header>span{display:block;margin-bottom:4px;color:var(--mba-blue,#142b67);font-size:8.5px;font-weight:750;letter-spacing:.08em}
+.defesas-result-card h2{margin:0;color:var(--mba-text,#0f1f3d);font-size:14px;font-weight:680}
+.defesas-result-card header p{margin:4px 0 0;color:var(--mba-muted,#8190a5);font-size:9.5px;line-height:1.4}
+.defesas-result-card code{padding:1px 4px;border-radius:4px;background:#eef2f7;color:#475569;font-size:8.8px}
+.defesas-result-card dl{margin:0}
+.defesas-result-card dl>div{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;padding:11px 16px;border-bottom:1px solid #edf1f5}
+.defesas-result-card dt{color:var(--mba-muted,#8190a5);font-size:8.8px;font-weight:700;letter-spacing:.035em;text-transform:uppercase}
+.defesas-result-card dd{margin:0;color:var(--mba-text,#0f1f3d);font-size:10.5px;font-weight:600;line-height:1.45}
+.defesas-result-card .wide dd{font-weight:500}
+.defesas-result-pill{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;font-size:9px;font-weight:700}
+.defesas-result-pill.apto{background:#ecfdf5;color:#067647}
+.defesas-result-pill.inapto{background:#fef2f2;color:#b42318}
+.defesas-result-preview{margin:14px 16px;display:grid;gap:5px;padding:12px;border-radius:8px;background:#111827;color:#e5e7eb}
+.defesas-result-preview small{color:#93a4bb;font-size:8px;font-weight:700;letter-spacing:.055em}
+.defesas-result-preview strong{overflow:hidden;font-size:10.5px;font-weight:650;text-overflow:ellipsis;white-space:nowrap}
+.defesas-result-preview span{color:#cbd5e1;font-size:9.3px;line-height:1.5}
+.defesas-result-card>footer{padding:0 16px 15px}
+.defesas-result-card>footer span{display:block;padding:9px 10px;border-left:3px solid var(--mba-blue,#142b67);border-radius:6px;background:var(--mba-blue-soft,#f2f5fb);color:var(--mba-text-2,#52647d);font-size:9px;line-height:1.45}
+@media(max-width:1100px){.defesas-analysis-grid{grid-template-columns:1fr}.defesas-result-card{position:static}.defesas-context-strip{grid-template-columns:1fr 1fr}.defesas-context-strip>div:last-child{grid-column:1/-1;border-left:0;border-top:1px solid var(--mba-border,#e3eaf2)}}
+@media(max-width:760px){.defesas-analysis-header{align-items:stretch;flex-direction:column}.defesas-reset{width:max-content}.defesas-context-strip{grid-template-columns:1fr}.defesas-context-strip>div+div,.defesas-context-strip>div:last-child{grid-column:auto;border-left:0;border-top:1px solid var(--mba-border,#e3eaf2)}.defesas-question{grid-template-columns:1fr;padding:14px}.defesas-step{width:25px;height:25px}.defesas-priority-grid,.defesas-reason-grid,.defesas-conclusion-grid{grid-template-columns:1fr}.defesas-criterion{grid-template-columns:1fr}.defesas-criterion label{grid-template-columns:1fr}.defesa-binary-choice,.defesas-binary-choice{grid-template-columns:1fr 1fr}.defesas-result-card dl>div{grid-template-columns:92px minmax(0,1fr)}}
