@@ -17,6 +17,7 @@ const [
   tasksApp,
   taskModel,
   taskRenderers,
+  taskRenderersLegacy,
   tasksCss,
 ] = await Promise.all([
   readFile(new URL('../auth.js', import.meta.url), 'utf8'),
@@ -34,10 +35,12 @@ const [
   readFile(new URL('../src/tasks/TasksApp.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/model.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/renderers.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/tasks/renderersLegacy.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/tasks/tasks.css', import.meta.url), 'utf8'),
 ]);
 
 const packageJson = JSON.parse(packageText);
+const allTaskRenderers = `${taskRenderers}\n${taskRenderersLegacy}`;
 
 assert.match(auth, /if \(microsoftLoginInFlight\) return;/, 'Microsoft login must be single-flight');
 assert.match(auth, /publishLoginState\(\{ busy: true, error: null \}\)/, 'auth must publish OAuth busy state without editing React DOM');
@@ -117,12 +120,12 @@ assert.match(tasksApp, /processAssignedToUser\(task, process, user, manager\)/, 
 assert.match(tasksApp, /allAssignedTasks/, 'management must retain completed and inactive task visibility');
 assert.match(taskModel, /if \(priority === 'high'\) return 'urgent';/, 'urgency must come from explicit assignment priority');
 assert.doesNotMatch(taskModel, /deadline.*today.*urgent/i, 'today alone must not make a task urgent');
-assert.doesNotMatch(taskRenderers, /data-lucide/, 'answer cards must not use decorative icons');
-assert.match(taskRenderers, /workflow_version: 2/, 'payment renderer must use the current payment workflow contract');
-assert.match(taskRenderers, /agreement-skip-next/, 'agreement renderer must preserve the backend skip-next contract');
-assert.match(taskRenderers, /label: 'Não houve pedido'/, 'liminar must use the operational label Não houve pedido');
-assert.match(taskRenderers, /value: 'sem_decisao', label: 'Sem decisão'/, 'liminar must include Sem decisão as a distinct outcome');
-assert.match(taskRenderers, /sem_decisao[\s\S]*value: 'erro', label: 'Não foi possível analisar'/, 'liminar analysis failure must remain the final outcome');
+assert.doesNotMatch(allTaskRenderers, /data-lucide/, 'answer cards must not use decorative icons');
+assert.match(allTaskRenderers, /workflow_version: 2/, 'payment renderer must use the current payment workflow contract');
+assert.match(allTaskRenderers, /agreement-skip-next/, 'agreement renderer must preserve the backend skip-next contract');
+assert.match(allTaskRenderers, /label: 'Não houve pedido'/, 'liminar must use the operational label Não houve pedido');
+assert.match(allTaskRenderers, /value: 'sem_decisao', label: 'Sem decisão'/, 'liminar must include Sem decisão as a distinct outcome');
+assert.match(allTaskRenderers, /sem_decisao[\s\S]*value: 'erro', label: 'Não foi possível analisar'/, 'liminar analysis failure must remain the final outcome');
 assert.match(tasksCss, /task-option-grid\[aria-label="liminar-decision"\]\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/, 'liminar outcomes must render in pairs');
 
 console.log('hardening regression checks passed');
