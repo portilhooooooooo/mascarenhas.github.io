@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import './defenseAnalysisFlow.css';
 
 type YesNo = 'sim' | 'nao' | null;
@@ -182,9 +182,12 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
   const priorityLabel = PRIORITIES.find(item => item.value === result.priority)?.label || '—';
 
   return <form className="defesa-flow" onSubmit={submit}>
-    <div className="defesa-flow-context">
-      <div><small>FATAL CONTROLADORIA</small><strong><CalendarDays size={13}/>{formatDate(deadline)}</strong></div>
-      <div><small>ORIGEM</small><strong>Controladoria Enter</strong></div>
+    <div className="defesa-flow-result defesa-flow-result-top">
+      <div className="process"><small>PROCESSO</small><strong title={cnj}>{cnj}</strong><em>Fatal Controladoria · {formatDate(deadline)}</em></div>
+      <div><small>RESULTADO</small><strong className={result.status === 'Apto' ? 'apto' : result.status === 'Inapto' ? 'inapto' : ''}>{result.status}</strong></div>
+      <div><small>PRIORIDADE</small><strong>{priorityLabel}</strong></div>
+      <div><small>FATAL</small><strong>{formatDate(result.fatal)}</strong></div>
+      <div className="wide"><small>SITUAÇÃO</small><span title={result.situation}>{result.situation}</span></div>
     </div>
 
     <section className="defesa-flow-question">
@@ -202,13 +205,6 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
     </> : null}
 
     {deadlineCorrect === 'nao' && activeDefense === 'nao' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">03</div><div className="defesa-flow-question-body"><h3>Qual é a situação do processo?</h3><div className="defesa-flow-reasons"><button type="button" disabled={busy} className={reason === 'suspenso_irdr' || reason === 'suspenso_1414' ? 'active' : ''} onClick={() => { setSuspensionOpen(true); setReason(null); }}>Suspenso</button>{REASONS.map(item => <button type="button" disabled={busy} key={item.value} className={reason === item.value ? 'active' : ''} onClick={() => { setReason(item.value); setSuspensionOpen(false); setLocalError(null); }}>{item.label}</button>)}</div>{suspensionOpen ? <div className="defesa-flow-suspension"><span>Qual suspensão foi identificada?</span><div className="defesa-flow-binary"><button type="button" disabled={busy} className={reason === 'suspenso_irdr' ? 'active' : ''} onClick={() => setReason('suspenso_irdr')}>IRDR</button><button type="button" disabled={busy} className={reason === 'suspenso_1414' ? 'active' : ''} onClick={() => setReason('suspenso_1414')}>Tema 1414</button></div></div> : null}</div></section> : null}
-
-    <div className="defesa-flow-result">
-      <div><small>RESULTADO</small><strong className={result.status === 'Apto' ? 'apto' : result.status === 'Inapto' ? 'inapto' : ''}>{result.status}</strong></div>
-      <div><small>PRIORIDADE</small><strong>{priorityLabel}</strong></div>
-      <div><small>FATAL</small><strong>{formatDate(result.fatal)}</strong></div>
-      <div className="wide"><small>SITUAÇÃO</small><span>{result.situation}</span></div>
-    </div>
 
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
     <footer className="task-renderer-footer defesa-flow-footer"><button className="secondary-button" type="button" disabled={busy} onClick={() => void onSkip()}>Pular e voltar depois</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>
