@@ -6,3 +6,22 @@ dist/
 # Python helper artifacts
 __pycache__/
 *.py[cod]
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Certificates and private keys
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Common local secret/config artifacts
+*.secrets.*
+secrets/
+credentials/
