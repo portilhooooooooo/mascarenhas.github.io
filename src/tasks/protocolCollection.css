@@ -1,18 +1,17 @@
 .tasks-renderer-form.protocol-collection-form{
-  width:min(820px,100%);
+  width:100%;
   height:100%;
-  margin:0 auto;
   min-height:0;
   display:flex;
   flex:1;
   flex-direction:column;
-  gap:18px;
+  gap:12px;
 }
 
 .protocol-collection-content{
   display:grid;
   align-content:start;
-  gap:18px;
+  gap:14px;
 }
 
 .protocol-title-block{
@@ -31,8 +30,7 @@
 
 .protocol-upload-stack{
   display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:12px;
+  gap:10px;
 }
 
 .protocol-upload-field{
@@ -60,7 +58,7 @@
 }
 
 .protocol-upload-control{
-  min-height:76px;
+  min-height:54px;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -74,11 +72,6 @@
 
 .protocol-upload-control:hover{
   border-color:#cbd5e1;
-}
-
-.protocol-upload-control.dragging{
-  border-color:var(--mba-blue,#142b67);
-  background:var(--mba-blue-soft,#f2f5fb);
 }
 
 .protocol-upload-control.uploading{
@@ -214,10 +207,11 @@
 .protocol-workspace-footer{
   position:static;
   z-index:1;
-  margin-top:auto;
-  padding:14px 0 0;
+  margin:auto -20px -16px;
+  padding:12px 20px 16px;
   border-top:1px solid var(--mba-border,#e3eaf2);
   background:#fff;
+  box-shadow:0 -6px 18px rgba(15,31,61,.025);
 }
 
 .protocol-workspace-footer .secondary-button,
@@ -231,7 +225,6 @@
 }
 
 @media(max-width:680px){
-  .protocol-upload-stack{grid-template-columns:1fr;}
   .protocol-upload-control{
     align-items:stretch;
     flex-direction:column;
@@ -246,4 +239,7 @@
     width:100%;
   }
 
+  .protocol-workspace-footer{
+    margin:auto -20px -16px;
+  }
 }

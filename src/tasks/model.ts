@@ -161,6 +161,7 @@ export function indicationLabel(task: Task, process: TaskProcess) {
   const initial = normalize(process.initial_status);
   if (paymentLabels[initial]) return paymentLabels[initial];
   if (normalize(task.type) === 'liminar') return 'Pedido de tutela/liminar';
+  if (normalize(task.type) === 'defesa') return 'Indícios de Enter e DataJud';
   return 'Não informado';
 }
 

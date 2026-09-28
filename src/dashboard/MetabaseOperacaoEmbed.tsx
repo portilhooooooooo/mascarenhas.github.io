@@ -4,9 +4,9 @@ import { ensureMetabaseEmbedScript, normalizeMetabaseInstanceUrl } from './metab
 
 type EmbedConfig = { jwt: string; instance_url: string; expires_in?: number };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
-type GestaoWindow = Window & typeof globalThis & { MBA_API?: BackofficeApi };
+type OperacaoWindow = Window & typeof globalThis & { MBA_API?: BackofficeApi };
 
-export function MetabaseGestaoEmbed() {
+export function MetabaseOperacaoEmbed() {
   const mountRef = useRef<HTMLDivElement>(null);
   const refreshTimer = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,9 +16,9 @@ export function MetabaseGestaoEmbed() {
     setLoading(true);
     setError('');
     try {
-      const api = (window as GestaoWindow).MBA_API;
+      const api = (window as OperacaoWindow).MBA_API;
       if (!api) throw new Error('API indisponível.');
-      const config = await api.request<EmbedConfig>('/api/analytics/metabase/embed');
+      const config = await api.request<EmbedConfig>('/api/operacao/metabase/embed');
       if (!config?.jwt || !config?.instance_url) throw new Error('Painel indisponível.');
       const instanceUrl = normalizeMetabaseInstanceUrl(config.instance_url);
       await ensureMetabaseEmbedScript(instanceUrl);
@@ -33,7 +33,7 @@ export function MetabaseGestaoEmbed() {
       const refreshAfter = Math.max(300, Number(config.expires_in || 600) - 60);
       refreshTimer.current = window.setTimeout(() => void load(), refreshAfter * 1000);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a Gestão Processual.');
+      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a Operação.');
     } finally {
       setLoading(false);
     }
@@ -46,13 +46,13 @@ export function MetabaseGestaoEmbed() {
     };
   }, [load]);
 
-  return <section className="gestao-metabase-shell">
-    {error ? <div className="gestao-metabase-state error">
-      <strong>Não foi possível carregar a Gestão Processual</strong>
+  return <section className="operacao-metabase-shell">
+    {error ? <div className="operacao-metabase-state error">
+      <strong>Não foi possível carregar a Operação</strong>
       <span>{error}</span>
       <button type="button" onClick={() => void load()}><RefreshCw size={14}/>Tentar novamente</button>
     </div> : null}
-    {!error ? <div ref={mountRef} className="gestao-metabase-mount" /> : null}
-    {loading && !error ? <div className="gestao-metabase-loading"><LoaderCircle className="spin" size={20}/></div> : null}
+    {!error ? <div ref={mountRef} className="operacao-metabase-mount" /> : null}
+    {loading && !error ? <div className="operacao-metabase-loading"><LoaderCircle className="spin" size={20}/></div> : null}
   </section>;
 }

@@ -78,7 +78,6 @@ function UploadField({
   onSelect: (kind: DocumentKind, file: File | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const [dragging, setDragging] = useState(false);
   const status = stage === 'uploading'
     ? 'Enviando para a VPS…'
     : stage === 'ready'
@@ -93,23 +92,12 @@ function UploadField({
         <strong>{label}</strong>
         <span>obrigatório</span>
       </div>
-      <div
-        className={`protocol-upload-control ${stage} ${dragging ? 'dragging' : ''}`}
-        onDragEnter={event => { event.preventDefault(); if (!busy) setDragging(true); }}
-        onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true); }}
-        onDragLeave={event => { event.preventDefault(); setDragging(false); }}
-        onDrop={event => {
-          event.preventDefault();
-          setDragging(false);
-          if (busy || stage === 'uploading') return;
-          onSelect(kind, event.dataTransfer.files?.[0] || null);
-        }}
-      >
+      <div className={`protocol-upload-control ${stage}`}>
         <div className="protocol-upload-file">
           {stage === 'ready' ? <CheckCircle2 size={17} /> : <FileText size={17} />}
           <div>
             <strong>{file?.name || status}</strong>
-            <small>{file ? status : 'Clique para selecionar ou arraste o PDF aqui.'}</small>
+            <small>{file ? status : `Selecione o PDF de ${kind === 'defesa' ? 'defesa' : 'protocolo'}.`}</small>
           </div>
         </div>
         <input
@@ -177,7 +165,6 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     patchDraft({
       [kind]: file,
       [`${kind}Stage`]: 'uploading',
-      mode: 'documents',
     } as Partial<Draft>);
 
     const body = new FormData();
@@ -334,6 +321,14 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
               />
               <em>{draft.notes.length}/500</em>
             </label>
+            <button
+              className="protocol-back-link"
+              type="button"
+              disabled={busy}
+              onClick={() => patchDraft({ mode: 'documents' })}
+            >
+              Voltar para a coleta de documentos
+            </button>
           </section>
         ) : null}
 

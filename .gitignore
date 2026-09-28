@@ -3,6 +3,10 @@ node_modules/
 .build/
 dist/
 
+# Python helper artifacts
+__pycache__/
+*.py[cod]
+
 # Local environment / secrets
 .env
 .env.*
