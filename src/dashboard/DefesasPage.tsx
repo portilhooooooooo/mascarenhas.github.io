@@ -1,279 +1,91 @@
-import { useMemo, useState } from 'react';
-import { CalendarDays, Check, RotateCcw } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { CheckCircle2, FileSpreadsheet, RefreshCw, Search, ShieldCheck, UploadCloud, X } from 'lucide-react';
 
-type YesNo = 'sim' | 'nao' | null;
-type Priority = 'Altíssima' | 'Alta' | 'Baixa' | null;
-type Reason = 'suspenso_irdr' | 'suspenso_1414' | 'turma_recursal' | 'retorno_turma_recursal' | 'sentenca' | 'transito_julgado' | 'sem_citacao' | 'defesa_apresentada' | null;
-type CriterionKey = 'expedicao_dje' | 'dje_negativo' | 'expedicao_ar' | 'retorno_ar' | 'audiencia' | 'habilitacao';
-
-type Criterion = {
-  key: CriterionKey;
-  label: string;
-  dateLabel: string;
+type BatchStatus = 'aguardando' | 'saneado' | 'tarefa';
+type BatchRow = {
+  cnj: string;
+  fatal: string;
+  indications: string;
+  status: BatchStatus;
+  destination: string;
+  updatedAt: string;
 };
 
-const CRITERIA: Criterion[] = [
-  { key: 'expedicao_dje', label: 'Expedição de DJE', dateLabel: 'Expedido em' },
-  { key: 'dje_negativo', label: 'DJE Negativo', dateLabel: 'DJE negativo em' },
-  { key: 'expedicao_ar', label: 'Expedição de Carta AR', dateLabel: 'Carta AR expedida em' },
-  { key: 'retorno_ar', label: 'Retorno de Carta AR', dateLabel: 'Retorno da AR em' },
-  { key: 'audiencia', label: 'Audiência', dateLabel: 'Audiência agendada para' },
-  { key: 'habilitacao', label: 'Juntada de Habilitação', dateLabel: 'Habilitação realizada em' },
+const ROWS: BatchRow[] = [
+  { cnj: '0801001-11.2026.8.12.0001', fatal: '27/09/2026', indications: 'Sem divergência', status: 'saneado', destination: 'Resolvido em lote', updatedAt: '22:14' },
+  { cnj: '0801002-22.2026.8.12.0002', fatal: '28/09/2026', indications: 'Retorno AR · DataJud', status: 'tarefa', destination: 'Tarefa de Defesa', updatedAt: '22:13' },
+  { cnj: '0801003-33.2026.8.12.0003', fatal: '30/09/2026', indications: 'Tema 1414 · Enter', status: 'saneado', destination: 'Resolvido em lote', updatedAt: '22:12' },
+  { cnj: '0801004-44.2026.8.12.0004', fatal: '27/09/2026', indications: 'DJE · Enter', status: 'tarefa', destination: 'Tarefa de Defesa', updatedAt: '22:11' },
+  { cnj: '0801005-55.2026.8.12.0005', fatal: '28/09/2026', indications: 'Consulta pendente', status: 'aguardando', destination: 'Aguardando saneamento', updatedAt: '22:09' },
+  { cnj: '0801006-66.2026.8.12.0006', fatal: '01/10/2026', indications: 'Turma Recursal', status: 'saneado', destination: 'Resolvido em lote', updatedAt: '22:08' },
+  { cnj: '0801007-77.2026.8.12.0007', fatal: '28/09/2026', indications: 'Audiência · AR', status: 'tarefa', destination: 'Tarefa de Defesa', updatedAt: '22:07' },
+  { cnj: '0801008-88.2026.8.12.0008', fatal: '30/09/2026', indications: 'Sem citação expedida', status: 'saneado', destination: 'Resolvido em lote', updatedAt: '22:05' },
 ];
 
-const REASONS: Array<{ value: Exclude<Reason, null>; label: string }> = [
-  { value: 'turma_recursal', label: 'Processo está na Turma Recursal' },
-  { value: 'retorno_turma_recursal', label: 'Aguardando retorno da Turma Recursal aos autos' },
-  { value: 'sentenca', label: 'Processo tem sentença' },
-  { value: 'transito_julgado', label: 'Processo está com trânsito em julgado' },
-  { value: 'sem_citacao', label: 'Sem citação para defesa expedida' },
-  { value: 'defesa_apresentada', label: 'Já existe defesa apresentada' },
-];
-
-const SITUATION_BY_REASON: Record<Exclude<Reason, null>, string> = {
-  suspenso_irdr: 'Processo suspenso em razão do IRDR.',
-  suspenso_1414: 'Processo suspenso em razão do Tema 1414.',
-  turma_recursal: 'Processo está na Turma Recursal.',
-  retorno_turma_recursal: 'Processo estava na Turma Recursal, aguardando retorno aos autos.',
-  sentenca: 'Processo possui sentença.',
-  transito_julgado: 'Processo possui trânsito em julgado.',
-  sem_citacao: 'Processo sem citação para defesa expedida.',
-  defesa_apresentada: 'Já existe defesa apresentada nos autos.',
+const STATUS_META: Record<BatchStatus, { label: string; className: string }> = {
+  aguardando: { label: 'Aguardando', className: 'neutral' },
+  saneado: { label: 'Saneado', className: 'success' },
+  tarefa: { label: 'Para tarefa', className: 'blue' },
 };
-
-const PRIORITIES: Array<{ value: Exclude<Priority, null>; label: string; helper: string }> = [
-  { value: 'Altíssima', label: 'Altíssima', helper: 'Hoje' },
-  { value: 'Alta', label: 'Alta', helper: 'Amanhã' },
-  { value: 'Baixa', label: 'Baixa', helper: 'D+2 ou posterior' },
-];
-
-function formatDate(value: string) {
-  if (!value) return '—';
-  const [year, month, day] = value.split('-');
-  return `${day}/${month}/${year}`;
-}
-
-function naturalList(values: string[]) {
-  if (!values.length) return '';
-  if (values.length === 1) return values[0];
-  if (values.length === 2) return `${values[0]} e ${values[1]}`;
-  return `${values.slice(0, -1).join(', ')} e ${values[values.length - 1]}`;
-}
-
-function criterionPhrase(key: CriterionKey, value: string) {
-  const date = formatDate(value);
-  const phrases: Record<CriterionKey, string> = {
-    expedicao_dje: `expedição do DJE em ${date}`,
-    dje_negativo: `DJE negativo em ${date}`,
-    expedicao_ar: `Carta AR expedida em ${date}`,
-    retorno_ar: `retorno da Carta AR em ${date}`,
-    audiencia: `audiência agendada para ${date}`,
-    habilitacao: `habilitação realizada em ${date}`,
-  };
-  return phrases[key];
-}
-
-function BinaryChoice({ value, onChange }: { value: YesNo; onChange: (value: Exclude<YesNo, null>) => void }) {
-  return <div className="defesa-binary-choice">
-    {(['sim', 'nao'] as const).map(option => <button
-      key={option}
-      type="button"
-      className={value === option ? 'active' : ''}
-      onClick={() => onChange(option)}
-    >{option === 'sim' ? 'Sim' : 'Não'}</button>)}
-  </div>;
-}
 
 export function DefesasPage() {
-  const [cnj] = useState('0801009-99.2026.8.12.0009');
-  const [controlDeadline] = useState('2026-09-28');
-  const [deadlineCorrect, setDeadlineCorrect] = useState<YesNo>(null);
-  const [priority, setPriority] = useState<Priority>(null);
-  const [activeDefense, setActiveDefense] = useState<YesNo>(null);
-  const [correctFatal, setCorrectFatal] = useState('');
-  const [criteria, setCriteria] = useState<Record<CriterionKey, string>>({
-    expedicao_dje: '', dje_negativo: '', expedicao_ar: '', retorno_ar: '', audiencia: '', habilitacao: '',
-  });
-  const [criterionKeys, setCriterionKeys] = useState<CriterionKey[]>([]);
-  const [reason, setReason] = useState<Reason>(null);
-  const [suspended, setSuspended] = useState<YesNo>(null);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<'all' | BatchStatus>('all');
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  const completedCriteria = useMemo(
-    () => CRITERIA.filter(item => criterionKeys.includes(item.key) && Boolean(criteria[item.key])),
-    [criteria, criterionKeys],
-  );
+  const counts = useMemo(() => ({
+    all: ROWS.length,
+    aguardando: ROWS.filter(row => row.status === 'aguardando').length,
+    saneado: ROWS.filter(row => row.status === 'saneado').length,
+    tarefa: ROWS.filter(row => row.status === 'tarefa').length,
+  }), []);
 
-  const result = useMemo(() => {
-    if (deadlineCorrect === 'sim') {
-      return {
-        status: priority ? 'Apto' : '—',
-        priority: priority || '—',
-        situation: priority ? 'Prazo determinado pela Controladoria confirmado.' : 'Aguardando definição da prioridade.',
-        fatal: controlDeadline,
-      };
-    }
-    if (deadlineCorrect === 'nao' && activeDefense === 'sim') {
-      const phrases = completedCriteria.map(item => criterionPhrase(item.key, criteria[item.key]));
-      const criteriaComplete = criterionKeys.length > 0 && completedCriteria.length === criterionKeys.length;
-      return {
-        status: correctFatal && priority && criteriaComplete ? 'Apto' : '—',
-        priority: priority || '—',
-        situation: !criterionKeys.length
-          ? 'Aguardando os critérios utilizados para definição do prazo.'
-          : !criteriaComplete
-            ? 'Preencha as datas dos critérios selecionados.'
-            : `Prazo de defesa identificado com base em ${naturalList(phrases)}.`,
-        fatal: correctFatal,
-      };
-    }
-    if (deadlineCorrect === 'nao' && activeDefense === 'nao') {
-      return {
-        status: reason ? 'Inapto' : '—',
-        priority: '—',
-        situation: reason ? SITUATION_BY_REASON[reason] : 'Aguardando a situação processual.',
-        fatal: '',
-      };
-    }
-    return { status: '—', priority: '—', situation: 'Aguardando análise.', fatal: '' };
-  }, [activeDefense, completedCriteria, controlDeadline, correctFatal, criteria, criterionKeys, deadlineCorrect, priority, reason]);
+  const visibleRows = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return ROWS.filter(row => (status === 'all' || row.status === status) && (!term || row.cnj.toLowerCase().includes(term) || row.indications.toLowerCase().includes(term)));
+  }, [search, status]);
 
-  const reset = () => {
-    setDeadlineCorrect(null);
-    setPriority(null);
-    setActiveDefense(null);
-    setCorrectFatal('');
-    setCriteria({ expedicao_dje: '', dje_negativo: '', expedicao_ar: '', retorno_ar: '', audiencia: '', habilitacao: '' });
-    setCriterionKeys([]);
-    setReason(null);
-    setSuspended(null);
+  const previewImport = () => {
+    if (!file) return;
+    setFeedback(`${file.name} pronto para integração com o fluxo de importação em lote.`);
   };
 
-  const chooseDeadline = (value: Exclude<YesNo, null>) => {
-    setDeadlineCorrect(value);
-    setPriority(null);
-    setActiveDefense(null);
-    setCorrectFatal('');
-    setCriteria({ expedicao_dje: '', dje_negativo: '', expedicao_ar: '', retorno_ar: '', audiencia: '', habilitacao: '' });
-    setCriterionKeys([]);
-    setReason(null);
-    setSuspended(null);
-  };
-
-  const chooseActiveDefense = (value: Exclude<YesNo, null>) => {
-    setActiveDefense(value);
-    setPriority(null);
-    setCorrectFatal('');
-    setCriteria({ expedicao_dje: '', dje_negativo: '', expedicao_ar: '', retorno_ar: '', audiencia: '', habilitacao: '' });
-    setCriterionKeys([]);
-    setReason(null);
-    setSuspended(null);
-  };
-
-  const chooseReason = (value: Exclude<Reason, null>) => {
-    setReason(value);
-    setSuspended(null);
-  };
-
-  const toggleCriterion = (key: CriterionKey) => {
-    setCriterionKeys(current => current.includes(key) ? current.filter(item => item !== key) : [...current, key]);
-    if (criterionKeys.includes(key)) setCriteria(current => ({ ...current, [key]: '' }));
-  };
-
-  return <section className="defesas-analysis-page" aria-label="Análise de Defesas">
-    <header className="defesas-analysis-header">
-      <div>
-        <span>CONTROLADORIA · DEFESAS</span>
-        <h1>Análise de Defesas</h1>
-        <p>Valide o prazo informado pela Controladoria e registre a devolutiva oficial do processo.</p>
-      </div>
-      <button className="secondary-button defesas-reset" type="button" onClick={reset}><RotateCcw size={14}/>Limpar análise</button>
+  return <section className="defesas-batch-page" aria-label="Defesas em lote">
+    <header className="protocolos-header">
+      <div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Defesas</h1><p>Importe a base da Controladoria, acompanhe o saneamento automático e envie para Tarefas apenas os processos que exigem análise humana.</p></div>
+      <div className="protocolos-header-actions"><button className="protocolos-button secondary" type="button"><RefreshCw size={14}/>Atualizar</button></div>
     </header>
 
-    <div className="defesas-context-strip">
-      <div><small>PROCESSO</small><strong>{cnj}</strong></div>
-      <div><small>FATAL CONTROLADORIA</small><strong><CalendarDays size={13}/>{formatDate(controlDeadline)}</strong></div>
-      <div><small>ORIGEM</small><strong>Controladoria Enter</strong></div>
-    </div>
+    <section className="protocolos-intake-grid-react defesas-batch-intake">
+      <article className="protocolos-card protocolos-upload-card">
+        <header><span className="protocolos-card-icon"><FileSpreadsheet size={17}/></span><div><h3>Base de Controladoria</h3><p className="defesas-card-copy">XLSX com os processos encaminhados para validação de defesa.</p></div></header>
+        <div className="protocolos-upload-field">
+          <input ref={fileInput} type="file" accept=".xlsx,.xls" onChange={event => { setFile(event.target.files?.[0] || null); setFeedback(null); }}/>
+          {!file ? <button className="protocolos-modern-drop" type="button" onClick={() => fileInput.current?.click()}><span className="protocolos-drop-icon"><UploadCloud size={16}/></span><span className="protocolos-drop-copy"><strong>Selecionar base</strong><small>XLSX exportado pela Controladoria</small></span></button> : <div className="protocolos-selected-file"><span className="protocolos-file-icon"><FileSpreadsheet size={15}/></span><span className="protocolos-file-copy"><strong>{file.name}</strong><small>Arquivo pronto para importação</small></span><span className="protocolos-file-ready"><CheckCircle2 size={13}/>Pronto</span><button type="button" onClick={() => { setFile(null); setFeedback(null); if (fileInput.current) fileInput.current.value = ''; }}><X size={14}/></button></div>}
+        </div>
+        <footer className="protocolos-card-footer"><div className="protocolos-import-line"><strong>Última carga</strong><i>·</i><span>200 processos</span><i>·</i><span>27/09/2026</span></div><button className="protocolos-button primary" type="button" disabled={!file} onClick={previewImport}>Importar base</button></footer>
+        {feedback ? <p className="protocolos-feedback">{feedback}</p> : null}
+      </article>
 
-    <div className="defesas-analysis-grid">
-      <div className="defesas-form-card">
-        <section className="defesas-question">
-          <div className="defesas-step">01</div>
-          <div className="defesas-question-body">
-            <h2>O prazo determinado pela Controladoria está correto?</h2>
-            <BinaryChoice value={deadlineCorrect} onChange={chooseDeadline}/>
-          </div>
-        </section>
+      <article className="protocolos-card defesas-saneamento-card">
+        <header><span className="protocolos-card-icon"><ShieldCheck size={17}/></span><div><h3>Saneamento automático</h3><p className="defesas-card-copy">Enter + DataJud procuram indícios antes de criar uma tarefa humana.</p></div></header>
+        <div className="defesas-saneamento-grid"><div><small>RECEBIDOS</small><strong>200</strong></div><div><small>RESOLVIDOS NO LOTE</small><strong>142</strong></div><div><small>PARA TAREFA</small><strong>58</strong></div></div>
+        <div className="defesas-provider-line"><span><i className="success"/>Enter scraper</span><span><i className="success"/>DataJud</span><em>Fluxo ativo</em></div>
+      </article>
+    </section>
 
-        {deadlineCorrect === 'sim' ? <section className="defesas-question nested">
-          <div className="defesas-step">02</div>
-          <div className="defesas-question-body">
-            <h2>Qual a prioridade da defesa?</h2>
-            <div className="defesas-priority-grid">{PRIORITIES.map(item => <button key={item.value} type="button" className={priority === item.value ? 'active' : ''} onClick={() => setPriority(item.value)}><strong>{item.label}</strong><span>{item.helper}</span></button>)}</div>
-          </div>
-        </section> : null}
-
-        {deadlineCorrect === 'nao' ? <section className="defesas-question nested">
-          <div className="defesas-step">02</div>
-          <div className="defesas-question-body">
-            <h2>Esse processo tem citação para defesa correndo?</h2>
-            <BinaryChoice value={activeDefense} onChange={chooseActiveDefense}/>
-          </div>
-        </section> : null}
-
-        {deadlineCorrect === 'nao' && activeDefense === 'sim' ? <>
-          <section className="defesas-question nested">
-            <div className="defesas-step">03</div>
-            <div className="defesas-question-body">
-              <h2>Com qual critério você está se baseando?</h2>
-              <p>Selecione um ou mais critérios. Cada seleção abre sua respectiva data.</p>
-              <div className="defesas-criteria-list">{CRITERIA.map(item => {
-                const selected = criterionKeys.includes(item.key);
-                return <div className={`defesas-criterion ${selected ? 'selected' : ''}`} key={item.key}>
-                  <button type="button" className="defesas-criterion-toggle" onClick={() => toggleCriterion(item.key)}><span className="defesas-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>
-                  {selected ? <label><span>{item.dateLabel}</span><input type="date" value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}
-                </div>;
-              })}</div>
-            </div>
-          </section>
-
-          <section className="defesas-question nested compact-fields">
-            <div className="defesas-step">04</div>
-            <div className="defesas-question-body">
-              <h2>Defina a conclusão do prazo</h2>
-              <div className="defesas-conclusion-grid">
-                <label><span>Fatal correto</span><input type="date" value={correctFatal} onChange={event => setCorrectFatal(event.target.value)}/></label>
-                <div><span>Prioridade</span><div className="defesas-priority-grid compact">{PRIORITIES.map(item => <button key={item.value} type="button" className={priority === item.value ? 'active' : ''} onClick={() => setPriority(item.value)}><strong>{item.label}</strong><small>{item.helper}</small></button>)}</div></div>
-              </div>
-            </div>
-          </section>
-        </> : null}
-
-        {deadlineCorrect === 'nao' && activeDefense === 'nao' ? <section className="defesas-question nested">
-          <div className="defesas-step">03</div>
-          <div className="defesas-question-body">
-            <h2>Qual é a situação do processo?</h2>
-            <div className="defesas-reason-grid">
-              <button type="button" className={reason === 'suspenso_irdr' || reason === 'suspenso_1414' ? 'active' : ''} onClick={() => { setSuspended('sim'); setReason(null); }}>Suspenso</button>
-              {REASONS.map(item => <button type="button" key={item.value} className={reason === item.value ? 'active' : ''} onClick={() => chooseReason(item.value)}>{item.label}</button>)}
-            </div>
-            {suspended === 'sim' ? <div className="defesas-suspension-box"><span>Qual suspensão foi identificada?</span><div className="defesas-binary-choice"><button type="button" className={reason === 'suspenso_irdr' ? 'active' : ''} onClick={() => setReason('suspenso_irdr')}>IRDR</button><button type="button" className={reason === 'suspenso_1414' ? 'active' : ''} onClick={() => setReason('suspenso_1414')}>Tema 1414</button></div></div> : null}
-          </div>
-        </section> : null}
+    <section className="protocolos-card protocolos-workspace defesas-batch-workspace">
+      <header className="protocolos-workspace-head"><div><h2>Processos da base</h2><p>Visão operacional do saneamento antes do encaminhamento para Tarefas.</p></div></header>
+      <div className="protocolos-status-strip-react">
+        <button type="button" className={status === 'all' ? 'active' : ''} onClick={() => setStatus('all')}>Todos <strong>{counts.all}</strong></button>
+        <button type="button" className={`success ${status === 'saneado' ? 'active' : ''}`} onClick={() => setStatus('saneado')}>Saneados <strong>{counts.saneado}</strong></button>
+        <button type="button" className={`blue ${status === 'tarefa' ? 'active' : ''}`} onClick={() => setStatus('tarefa')}>Para tarefa <strong>{counts.tarefa}</strong></button>
+        <button type="button" className={status === 'aguardando' ? 'active' : ''} onClick={() => setStatus('aguardando')}>Aguardando <strong>{counts.aguardando}</strong></button>
       </div>
-
-      <aside className="defesas-result-card">
-        <header><span>DEVOLUTIVA OFICIAL</span><h2>Resultado final</h2><p>Prévia do registro que será consolidado em <code>defesa_analyses</code>.</p></header>
-        <dl>
-          <div><dt>CNJ</dt><dd>{cnj}</dd></div>
-          <div><dt>Resultado</dt><dd>{result.status === 'Apto' ? <span className="defesas-result-pill apto">Apto</span> : result.status === 'Inapto' ? <span className="defesas-result-pill inapto">Inapto</span> : '—'}</dd></div>
-          <div><dt>Prioridade</dt><dd>{result.priority}</dd></div>
-          <div className="wide"><dt>Situação</dt><dd>{result.situation}</dd></div>
-          <div><dt>Fatal</dt><dd>{result.fatal ? formatDate(result.fatal) : '—'}</dd></div>
-        </dl>
-        <div className="defesas-result-preview"><small>REGISTRO FINAL</small><strong>{cnj}</strong><span>{result.status} · {result.priority} · {result.situation} · {result.fatal ? formatDate(result.fatal) : '—'}</span></div>
-        <footer><span>Os critérios ficam estruturados internamente. A base final permanece limpa e padronizada.</span></footer>
-      </aside>
-    </div>
+      <div className="protocolos-toolbar"><label className="protocolos-search"><Search size={14}/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar CNJ ou indício"/></label></div>
+      <div className="protocolos-table-wrap"><table className="protocolos-table-react defesas-batch-table"><thead><tr><th>Processo</th><th>Fatal Controladoria</th><th>Indícios</th><th>Status</th><th>Destino</th><th>Atualizado</th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.cnj}><td><span className="protocolos-cnj">{row.cnj}</span></td><td><span className="protocolos-date">{row.fatal}</span></td><td><span className="protocolos-context">{row.indications}</span></td><td><span className={`protocolos-badge ${STATUS_META[row.status].className}`}>{STATUS_META[row.status].label}</span></td><td><strong className={row.status === 'tarefa' ? 'defesas-destination-task' : 'defesas-destination'}>{row.destination}</strong></td><td><span className="protocolos-date">{row.updatedAt}</span></td></tr>)}</tbody></table>{!visibleRows.length ? <div className="protocolos-empty"><strong>Nenhum processo neste filtro</strong><span>Ajuste a busca ou selecione outro status.</span></div> : null}</div>
+    </section>
   </section>;
 }
