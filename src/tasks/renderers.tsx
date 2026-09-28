@@ -35,7 +35,6 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
       await api(`/api/task-processes/${process.id}/defesa-analysis`, {
         method: 'POST',
         body: JSON.stringify({
-          workflow_version: 2,
           decision: draft.decision,
           reason: draft.decision === 'inapto' ? draft.reason : null,
           fatal_deadline: draft.decision === 'apto' ? draft.fatal_deadline : null,
