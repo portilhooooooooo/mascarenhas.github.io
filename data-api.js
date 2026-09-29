@@ -85,14 +85,15 @@
       return;
     }
 
-    const analysis = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:liminar|defesa|encerramento|bloqueio|citacao|comprovante_pagamento|agreement)-analysis$/);
-    if (method === 'POST' && analysis) {
-      const processId = analysis[1];
+    const completedProcess = path.match(/^\/api\/task-processes\/([^/?]+)\/(?:(?:liminar|defesa|encerramento|bloqueio|citacao|comprovante_pagamento|agreement)-analysis|protocol-collection(?:\/commit)?|protocol-collection-error)$/);
+    if (method === 'POST' && completedProcess) {
+      const processId = completedProcess[1];
       const taskId = processToTask.get(processId);
       const cached = taskId ? taskProcessCache.get(taskId) : null;
       if (cached) {
+        const serverProcess = data?.process && String(data.process.id) === processId ? data.process : null;
         cached.rows = cached.rows.map(row => row.id === processId
-          ? { ...row, status: 'completed', updated_at: new Date().toISOString() }
+          ? { ...row, ...(serverProcess || {}), status: serverProcess?.status || 'completed', updated_at: serverProcess?.updated_at || new Date().toISOString() }
           : row);
         cached.expiresAt = Date.now() + TASK_PROCESS_CACHE_MS;
       }
