@@ -28,25 +28,16 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
     setBusy(true);
     setError(null);
     try {
-      const priorityLabel = draft.priority === 'altissima' ? 'Altíssima' : draft.priority === 'alta' ? 'Alta' : draft.priority === 'baixa' ? 'Baixa' : null;
-      const criteriaText = draft.criteria.length ? ` Critérios: ${draft.criteria.map(item => `${item.type}=${item.date}`).join(', ')}.` : '';
-      const notes = `Workflow Defesa V2. ${draft.situation}${criteriaText}`;
-
       await api(`/api/task-processes/${process.id}/defesa-analysis`, {
         method: 'POST',
         body: JSON.stringify({
-          workflow_version: 2,
-          decision: draft.decision,
-          reason: draft.decision === 'inapto' ? draft.reason : null,
-          fatal_deadline: draft.decision === 'apto' ? draft.fatal_deadline : null,
-          priority: priorityLabel,
-          situation: draft.situation,
+          workflow_version: 3,
+          reason: draft.reason,
+          cpj_fatal_deadline: draft.deadline_correct ? null : draft.fatal_deadline,
           criteria: draft.criteria,
-          controladoria_deadline: controlDeadline,
           controladoria_deadline_correct: draft.deadline_correct,
           has_active_defense_deadline: draft.has_active_defense_deadline,
           analysis_origin: 'TASK',
-          notes,
         }),
       });
       onCompleted(process);

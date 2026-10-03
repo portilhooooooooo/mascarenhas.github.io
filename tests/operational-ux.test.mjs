@@ -32,9 +32,9 @@ try {
   await page.screenshot({ path: `${shots}/tasks-1600.png` });
 
   // A user can reach work beyond the first five records.
-  await page.getByRole('button', { name: 'Próximos', exact: true }).click();
-  await page.getByText('DEMO 0006 · SP', { exact: true }).first().waitFor();
-  await page.getByRole('button', { name: 'Anterior', exact: true }).click();
+  await page.locator('.tasks-process-item').filter({hasText:'DEMO 0006 · SP'}).click();
+  await page.getByRole('heading', {name:'DEMO 0006 · SP',exact:true}).waitFor();
+
 
   // Choosing an empty filter must not silently change the selected filter.
   const emptyFilter = page.getByRole('button', { name: 'Em atraso 0', exact: true });
@@ -74,7 +74,7 @@ try {
       if (options?.method === 'POST' && !path.endsWith('/next-agreement')) {
         const body = options.body instanceof FormData ? {document_type: options.body.get('document_type')} : JSON.parse(options.body || '{}');
         window.__uxSubmissions.push({path, body});
-        if (path.endsWith('/stage')) return {};
+        if (path.endsWith('/stage') || path.endsWith('/skip')) return {};
         throw new Error('Falha simulada: nenhum dado real foi gravado.');
       }
       return original(path, options);
@@ -84,11 +84,12 @@ try {
   const openScenario = async scenario => {
     await page.setViewportSize({width:1600,height:900});
     await page.goto(`http://127.0.0.1:5174/?scenario=${scenario}`);
-    await page.locator('.execution-brief').waitFor();
+    await page.locator('.execution-process-heading').waitFor();
     await installLocalCapture();
   };
+  const canvas = async () => page.locator('.tasks-workspace').evaluate(root => ({height:root.getBoundingClientRect().height, overflow:root.querySelector('.task-renderer-footer').getBoundingClientRect().bottom > root.getBoundingClientRect().bottom + 1 || [...root.querySelector('.tasks-renderer-body form').children].filter(e=>!e.classList.contains('task-renderer-footer') && e.getBoundingClientRect().width>0).some(e=>e.getBoundingClientRect().bottom>root.querySelector('.task-renderer-footer').getBoundingClientRect().top+1)}));
   await openScenario('liminar');
-  const liminarSubmit = page.getByRole('button', {name:'Registrar resultado e continuar',exact:true});
+  const liminarSubmit = page.getByRole('button', {name:'Salvar e próximo',exact:true});
   assert.equal(await liminarSubmit.isEnabled(), false);
   await page.getByText('Não foi possível analisar', {exact:true}).click();
   assert.equal(await liminarSubmit.isEnabled(), false);
@@ -106,7 +107,7 @@ try {
   await page.getByRole('radiogroup',{name:'manifested',exact:true}).getByText('Não',{exact:true}).click();
   await page.getByLabel('Justificativa', {exact:false}).fill('Comprovante localizado, manifestação pendente.');
   await page.getByRole('radiogroup',{name:'had-block',exact:true}).getByText('Não',{exact:true}).click();
-  await page.getByRole('button',{name:'Registrar análise e continuar',exact:true}).click();
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const payment = (await submissions())[0].body;
   assert.equal(payment.workflow_version,2);
@@ -118,25 +119,26 @@ try {
   await page.screenshot({path:`${shots}/payment-review.png`});
 
   await openScenario('defesa');
-  await page.locator('.defesa-flow-question').filter({hasText:'O fatal recebido corresponde'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
+  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Não',exact:true}).click();
+  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
   await page.getByRole('button',{name:'Processo tem sentença',exact:true}).click();
-  await page.getByRole('button',{name:'Registrar análise e continuar',exact:true}).click();
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const defense = (await submissions())[0].body;
-  assert.equal(defense.workflow_version,2);
-  assert.equal(defense.decision,'inapto');
+  assert.equal(defense.workflow_version,3);
+  assert.equal('decision' in defense,false);
+  assert.equal('priority' in defense,false);
   assert.equal(defense.reason,'sentenca');
-  assert.equal(defense.fatal_deadline,null);
+  assert.equal(defense.cpj_fatal_deadline,null);
   await page.locator('.execution-review').scrollIntoViewIfNeeded();
   await page.screenshot({path:`${shots}/defense-review.png`});
 
   await openScenario('protocolo');
-  assert.equal(await page.getByRole('button',{name:'Registrar coleta e continuar',exact:true}).isEnabled(),false);
+  assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),false);
   await page.getByText('Não consegui reunir os documentos',{exact:true}).click();
   await page.getByText('Defesa não localizada',{exact:true}).click();
   await page.getByRole('textbox',{name:/Justificativa/}).fill('Defesa não localizada na pasta do processo.');
-  await page.getByRole('button',{name:'Registrar impedimento e continuar',exact:true}).click();
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const collection = (await submissions())[0];
   assert.ok(collection.path.endsWith('/protocol-collection-error'));
@@ -145,7 +147,7 @@ try {
   const pdf = {name:'defesa-demo.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')};
   await page.locator('.protocol-native-file').nth(0).setInputFiles(pdf);
   await page.locator('.protocol-native-file').nth(1).setInputFiles({...pdf,name:'protocolo-demo.pdf'});
-  await page.getByRole('button',{name:'Registrar coleta e continuar',exact:true}).click();
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const docs = await submissions();
   assert.equal(docs[1].body.document_type,'DEFESA');
@@ -156,7 +158,7 @@ try {
 
   await openScenario('acordos');
   await page.getByRole('radiogroup',{name:'has-agreement',exact:true}).getByText('Sim',{exact:true}).click();
-  await page.getByRole('button',{name:'Registrar análise e continuar',exact:true}).click();
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const agreement = (await submissions())[0].body;
   assert.equal(agreement.has_agreement,true);
@@ -164,11 +166,60 @@ try {
   assert.equal(agreement.needs_support,false);
   await page.locator('.execution-review').scrollIntoViewIfNeeded();
   await page.screenshot({path:`${shots}/agreement-review.png`});
+
+
+  await openScenario('');
+  await page.getByRole('button',{name:'Pular esse prazo',exact:true}).click();
+  await page.getByRole('heading',{name:'DEMO 0002 · SP',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Próximos',exact:true}).click();
+  assert.equal(await page.locator('.tasks-process-item').last().locator('strong').textContent(),'DEMO 0001 · SP','Skipped item at the end of the global queue');
+
+  await openScenario('defesa');
+  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Sim',exact:true}).click();
+  assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),true);
+  assert.equal(await page.locator('.defesa-flow-priority').count(),0);
+  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Não',exact:true}).click();
+  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Sim',exact:true}).click();
+  for(const name of ['Expedição de DJE','DJE Negativo','Expedição de Carta AR','Retorno de Carta AR','Audiência','Juntada de Habilitação']) await page.getByRole('button',{name,exact:true}).click();
+  for(const input of await page.locator('.defesa-flow-criteria input').all()) await input.fill('2026-10-02');
+  await page.getByLabel('Fatal Real registrado no CPJ').fill('2026-10-10');
+  for(const width of [1920,1600,1366]) { await page.setViewportSize({width,height:900}); assert.equal((await canvas()).overflow,false,`All defense evidence fits at ${width}`); }
+  await page.setViewportSize({width:1600,height:900});
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
+  await page.getByRole('alert').waitFor();
+  const evidenceBody=(await submissions())[0].body;
+  assert.equal(evidenceBody.criteria.length,6);
+  assert.equal(evidenceBody.cpj_fatal_deadline,'2026-10-10');
+  assert.equal('priority' in evidenceBody,false);
+  await page.screenshot({path:`${shots}/defense-evidence.png`,fullPage:true});
+  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
+  await page.getByRole('button',{name:'Suspenso',exact:true}).click();
+  await page.getByRole('heading',{name:'4. Qual o tema da suspensão?',exact:true}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),false);
+  await page.getByRole('button',{name:'Tema 1414',exact:true}).click();
+  await page.screenshot({path:`${shots}/defense-suspension.png`,fullPage:true});
+  assert.equal((await canvas()).overflow,false);
+
+  await openScenario('acordos');
+  for(const [group,answer] of [['has-agreement','Não'],['has-judgment','Não'],['has-impediment','Não'],['has-defense','Sim'],['has-obf','Sim']]) await page.getByRole('radiogroup',{name:group,exact:true}).getByText(answer,{exact:true}).click();
+  await page.getByLabel('Causa raiz',{exact:false}).selectOption('alega_nao_fez');
+  await page.getByLabel('Tipo de OBF',{exact:false}).selectOption('nulidade');
+  await page.getByLabel('Produto',{exact:false}).selectOption('seguro');
+  await page.getByLabel('Valor sugerido',{exact:false}).fill('2000');
+  await page.getByLabel('Saldo devedor',{exact:false}).fill('1000');
+  await page.getByRole('radiogroup',{name:'sent-platform',exact:true}).getByText('Sim',{exact:true}).click();
+  await page.screenshot({path:`${shots}/agreement-full.png`,fullPage:true});
+  for(const width of [1920,1600,1366]) { await page.setViewportSize({width,height:900}); assert.equal((await canvas()).overflow,false,`Full agreement fits at ${width}`); }
+  await page.setViewportSize({width:1600,height:900});
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
+  await page.getByRole('alert').waitFor();
+  assert.equal((await canvas()).overflow,false,'Full agreement with save error fits');
+  await page.screenshot({path:`${shots}/agreement-full.png`,fullPage:true});
   for (const scenario of ['liminar','defesa','comprovante_pagamento','protocolo','acordos']) {
     for (const width of [1920,1600,1366,390]) {
       await page.setViewportSize({width,height:width===1920?1080:900});
       await page.goto(`http://127.0.0.1:5174/?scenario=${scenario}`);
-      await page.locator('.execution-brief').waitFor();
+      await page.locator('.execution-process-heading').waitFor();
       assert.equal(await page.locator('.workbench-header').count(),0,'Queue hero removed');
       assert.equal(await page.locator('.execution-process-heading p').count(),0,'Batch subtitle removed');
       assert.equal(await page.locator('#task-execution-review .execution-review').count(),1,'Review beneath process');
@@ -178,10 +229,21 @@ try {
         const heights=await page.locator('.tasks-workspace').evaluate(root => [root.querySelector('.tasks-workspace-sidebar').getBoundingClientRect().height,root.querySelector('.tasks-execution-panel').getBoundingClientRect().height]);
         assert.ok(Math.abs(heights[0]-heights[1])<2,'Queue and execution share height');
       }
-      await page.screenshot({path:`${shots}/${scenario}-${width}.png`});
+      if(width>=1024) { assert.equal((await canvas()).height,900); assert.equal((await canvas()).overflow,false); }
+      await page.screenshot({path:`${shots}/${scenario}-${width}.png`,fullPage:width>=1024});
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth>innerWidth),false,`${scenario} overflow at ${width}`);
     }
   }
+  await openScenario('comprovante_pagamento');
+  await page.getByRole('radiogroup',{name:'payment-status',exact:true}).getByText('Não foi pago',{exact:true}).click();
+  await page.getByRole('radiogroup',{name:'had-block',exact:true}).getByText('Não',{exact:true}).click();
+  await page.screenshot({path:`${shots}/payment-clean.png`,fullPage:true});
+  await openScenario('defesa');
+  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Não',exact:true}).click();
+  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
+  await page.getByRole('button',{name:'Suspenso',exact:true}).click();
+  await page.getByRole('button',{name:'Tema 1414',exact:true}).click();
+  await page.screenshot({path:`${shots}/defense-clean.png`,fullPage:true});
   assert.deepEqual(errors, [], 'No browser errors');
   assert.deepEqual(outbound, [], 'Demo must remain isolated from production');
   console.log('Operational UX interactions and responsive checks passed; no external requests.');

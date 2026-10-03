@@ -42,12 +42,12 @@ function ErrorMessage({ message }: { message: string | null }) {
   return message ? <p className="task-renderer-error" role="alert">{message}</p> : null;
 }
 
-function RendererFooter({ busy, onSkip, label = 'Registrar análise e continuar', ready = true }: { busy: boolean; onSkip: () => void; label?: string; ready?: boolean }) {
+function RendererFooter({ busy, onSkip, label = 'Salvar e próximo', ready = true }: { busy: boolean; onSkip: () => void; label?: string; ready?: boolean }) {
   return (
     <footer className="task-renderer-footer">
-      <button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>Deixar para depois</button>
-      <span className="execution-footer-hint">Revise suas respostas antes de salvar.</span>
-      <button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Registrando análise…' : label}</button>
+      <button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>Pular esse prazo</button>
+
+      <button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Salvando…' : label}</button>
     </footer>
   );
 }
@@ -142,7 +142,7 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
         ['Observações', notes.trim()],
       ]} pending={!decision ? 'Selecione o resultado encontrado para compor a análise.' : decision === 'erro' && !notes.trim() ? 'Descreva o que impediu a análise no campo Observações.' : null}/>
       <ErrorMessage message={error} />
-      <RendererFooter busy={busy} onSkip={skip} label="Registrar resultado e continuar" ready={Boolean(decision && (decision !== 'erro' || notes.trim()))} />
+      <RendererFooter busy={busy} onSkip={skip} label="Salvar e próximo" ready={Boolean(decision && (decision !== 'erro' || notes.trim()))} />
     </form>
   );
 }
@@ -797,8 +797,8 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
 
   return (
     <form className="task-renderer-form" onSubmit={submit}>
-      {agreement ? <div className="agreement-context"><span>Provisão</span><strong>{currency(agreement.provision_amount)}</strong></div> : null}
 
+      <div className="agreement-screening">
       <section className="task-question">
         <h3>1. Já existe acordo neste processo?</h3>
         <OptionGroup name="has-agreement" value={hasAgreement} onChange={value => { setHasAgreement(value); setHasJudgment(null); setHasImpediment(null); setHasDefense(null); }} disabled={busy} options={[
@@ -810,6 +810,7 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
       {hasAgreementBool === false && hasJudgmentBool === false ? <section className="task-question task-question-nested"><h3>3. Há Termo de Impedimento 12?</h3><OptionGroup name="has-impediment" value={hasImpediment} onChange={value => { setHasImpediment(value); setHasDefense(null); }} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
       {hasAgreementBool === false && hasJudgmentBool === false && hasImpedimentBool === false ? <section className="task-question task-question-nested"><h3>4. A defesa já foi apresentada nos autos?</h3><OptionGroup name="has-defense" value={hasDefense} onChange={setHasDefense} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
 
+      </div>
       {ineligibleReason ? <div className="agreement-result agreement-result-ineligible"><strong>Inapto para acordo</strong><span>{ineligibleReason}</span></div> : null}
 
       {preliminaryEligible ? (
@@ -830,6 +831,7 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
       <label className="task-check-field"><input type="checkbox" checked={needsSupport} disabled={busy} onChange={event => setNeedsSupport(event.target.checked)} /><span>Preciso de Apoio</span></label>
       <ErrorMessage message={error} />
       {agreement ? <DecisionReview rows={[
+        ['Provisão', currency(agreement.provision_amount)],
         ['Resultado', ineligibleReason ? 'Inapto para acordo' : fullyEligible ? 'Apto para acordo' : null],
         ['Fundamento', ineligibleReason],
         ['Valor a ofertar', preliminaryEligible && offer !== null ? currency(offer) : null],

@@ -115,7 +115,7 @@ assert.doesNotMatch(dashboard, /\nmountProtocolosPage\(\);\s*$/, 'Protocolos mus
 
 assert.match(reactCompat, /'tasks\.view': false/, 'legacy task bootstrap must be suppressed without changing the real user permission');
 assert.match(reactCompat, /tarefas\/comprovante-pagamento/, 'legacy task deep links must be normalized to the React workspace');
-assert.match(tasksApp, /const CACHE_SIZE = 5;/, 'the visible operator queue must stay at five items');
+assert.match(tasksApp, /filteredItems\.slice\(windowStart, windowStart \+ queueSize\)/, 'the visible operator queue must stay bounded by the workspace capacity');
 assert.match(tasksApp, /processAssignedToUser\(task, process, user, manager\)/, 'operators must not receive another participant process from a shared task');
 assert.match(tasksApp, /allAssignedTasks/, 'management must retain completed and inactive task visibility');
 assert.match(taskModel, /if \(priority === 'high'\) return 'urgent';/, 'urgency must come from explicit assignment priority');

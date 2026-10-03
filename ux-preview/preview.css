@@ -39,4 +39,4 @@
 .demo-control{padding-top:20px}.tasks-react-subnav{padding-inline:32px}@media(max-width:1260px) and (min-width:761px){.demo-control{padding-inline:22px}}@media(max-width:760px){.demo-control{padding-inline:16px}}
 
 .demo-notice{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:36px}.demo-scenario{display:flex;align-items:center;gap:8px;font-size:10px}.demo-scenario select{max-width:180px;border:1px solid #b5d3fc;background:#fff;border-radius:4px;color:#0759cc;font:500 10px Inter,sans-serif;padding:3px 6px}@media(max-width:600px){.demo-notice{flex-wrap:wrap}.demo-scenario select{max-width:180px}}
-#tarefas[data-react-tasks='true'] .tasks-workspace{--tasks-workspace-height:calc(100dvh - 246px)}
+#tarefas[data-react-tasks='true'] .tasks-workspace{--tasks-workspace-height:max(900px,calc(100dvh - 246px))}

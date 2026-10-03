@@ -1,68 +1,53 @@
-# Proposta de frontend — Tarefas e Controladoria
+# Tarefas e Controladoria — revisão de UX
 
-Branch de teste: `test/tasks-controladoria-ux`, baseada no frontend atual de `main` (2162b8c). Não há deploy, merge, alterações de autenticação, API, banco ou processos reais.
+Implementação na branch `dev/tasks-workspace`. Sem deploy, merge em main, alteração de autenticação ou gravação de processos reais.
 
-## Intenção
+## Workspace de tarefas
 
-Tarefas é o lugar para executar: selecionar processo → conferir evidências → registrar decisão. Controladoria é o lugar para acompanhar o fluxo e resolver impedimentos. A proposta preserva navegação horizontal, densidade operacional, cores e componentes existentes.
+Todos os tipos de tarefa usam a mesma área de execução no desktop: altura mínima de 900 px, ajustada apenas para viewports mais altos. Respostas condicionais não mudam o tamanho do workspace. Não há rolagem interna. Em resoluções menores que o conteúdo, apenas a página rola; no fallback móvel, o conteúdo segue o fluxo natural.
 
-## Mudanças implementadas
+O número do processo é seguido por pasta, indicação recebida e respostas da análise, sem o subtítulo do lote. Tutoriais, descrições de opções e legendas de perguntas foram removidos. A seleção e as ações usam o azul do tema `#142b67` e seus tokens existentes. Textos extensos nos indicadores usam elipse e título com o valor completo; permanecem legíveis no campo de edição.
 
-- **Minha fila** e **Gestão de lotes** distinguem execução individual de distribuição. Filtros horizontais liberam a coluna para processos. A seleção de um filtro vazio permanece explícita, e atualizar não redefine os filtros. Busca e navegação anterior/próximos permitem acessar registros além dos primeiros cinco.
-- **Protocolos:** revisão e falta de documentos ganham atalhos para a fila correspondente. Importações ficam em uma seção recolhível, preservando arquivos selecionados e retornos de importação. Estados do agente, nova tentativa autorizada pelo backend e regras de permissão permanecem existentes.
-- **Defesas:** destino é apresentado como próximo passo. Tabela com 25 linhas por página, busca identificada para acessibilidade e preservação dos últimos dados quando a atualização falha. “Fila carregada” indica o resultado da consulta, sem afirmar que o worker está saudável.
-- Ajustes de tipografia, densidade e responsividade restritos às telas operacionais. O módulo ainda não disponível de Liminar deixa de aparecer como aba desativada.
+A coluna da fila ocupa a mesma altura e apresenta a quantidade de processos que cabe nessa área, com paginação para os demais. “Pular esse prazo” chama o endpoint existente e envia o item para o final da fila exibida, incluindo outros tipos de tarefa. Essa ordem é preservada durante as atualizações da sessão. “Salvar e próximo” mantém as validações e os retornos de erro. Atualização por eventos do backend é uma etapa separada.
 
-## Prévia isolada
+## Defesa
+
+A data da Enter aparece uma única vez: “A Enter determinou que essa defesa deve ser apresentada em DD/MM/AAAA”. Não há indícios nem faixa repetida de Fatal Controladoria.
+
+1. O fatal da Enter está correto?
+2. Se não: existe prazo para apresentação de defesa em curso?
+3. Se sim: evidências e respectivas datas, com o Fatal Real observado no CPJ. Se não: motivo.
+4. Se suspenso: tema da suspensão.
+
+Prioridade e conclusão não são escolhidas pelo operador nem enviadas pelo frontend. O contrato V3 envia as respostas; a compatibilidade no backend está preparada na mesma branch do repositório `mba-backoffice-backend`. O servidor lê a data da Enter do contexto autorizado e usa o Fatal Real CPJ confirmado, sem recalcular pela data de AR, DJE ou audiência.
+
+Frontend e backend V3 precisam de homologação conjunta antes de promoção. A versão em execução na VPS continua com o contrato anterior. O suporte a Defesa do RPC já existente na VPS também é uma dependência da branch histórica do backend. Nenhuma migration foi executada.
+
+![Pagamento](execucao-tarefas.png)
+![Defesa](defesa-workspace.png)
+
+## Controladoria
+
+Preservadas as mudanças anteriores: atalhos por estado operacional, importações recolhíveis, filtros explícitos, busca/paginação de defesas e últimos dados preservados quando a atualização falha. Permissões, retries e estados continuam determinados pelo backend. A paginação visual não substitui a paginação de dados no servidor.
+
+## Prévia e validação
 
 ```bash
 npm ci
 npm run dev:ux
 ```
 
-Abra o endereço informado pelo Vite (porta 5174). A entrada `ux-preview/` monta os componentes reais com dados fictícios. Não importa configuração de API, login ou clientes de produção. Gravações e exportações são bloqueadas. `npm run build:ux` gera a demonstração em `.build/ux-preview`; ela não faz parte de `npm run build` nem do artefato de produção.
-
-![Tarefas](tarefas.png)
-![Controladoria](controladoria.png)
-![Defesas](defesas.png)
-
-## Validação
-
-- Build TypeScript/Vite do frontend e da prévia.
-- Checks existentes de hardening e arquitetura Metabase.
-- Teste de interação: navegação além de cinco processos, filtro vazio sem mudança silenciosa, busca, filtro de revisão, importação recolhível, troca de módulos e nova tentativa desativada sem permissão.
-- Renderização inspecionada em 1920×1080, 1600×900 e 1366×900; verificações adicionais em 768 e 390 pixels. Sem transbordamento horizontal da página. Tabelas mantêm rolagem própria.
-- Teste da prévia confirma ausência de erros JavaScript e de requisições externas.
-
-Para repetir a verificação visual com Chromium instalado:
+A entrada `ux-preview/` monta componentes reais com dados fictícios. Não importa login ou configuração da API real. O seletor “Fluxo da prévia” abre cada formulário. Gravações são bloqueadas; nos testes, POSTs são interceptados localmente para conferir contratos, falhas e retenção de respostas.
 
 ```bash
-npx playwright install chromium
+npm run build
+npm run test:hardening
+npm run test:metabase
 npm run test:ux
 ```
 
-Se houver um Chromium disponível por outro caminho, `UX_CHROMIUM_PATH=/caminho/chromium npm run test:ux` permite usá-lo. Capturas são gravadas em `.build/ux-qa`.
+Com outro Chromium, use `UX_CHROMIUM_PATH=/caminho/chromium npm run test:ux`. Capturas ficam em `.build/ux-qa`.
 
-## Limites e evolução seguinte
+Verificações: navegação e filtros; envio para o final da fila; formulários de Liminar, Defesa, Pagamento, Protocolo e Acordos; duas etapas de envio de PDFs; payloads; ausência de requisições externas e erros JavaScript. Área constante e ausência de sobreposição verificadas nos caminhos extensos de Defesa e Acordos em 1920, 1600 e 1366 px. Fallback móvel inspecionado em 390 px. Backend: testes de resolução e persistência com RPC substituído por mock.
 
-A plataforma pública abriu na tela de login, sem sessão disponível. Não foi validada a operação autenticada em ambiente de homologação nem medidas de latência com dados reais; a verificação usa componentes reais e fixtures.
-
-O serviço existente de Protocolos percorre páginas de API antes de filtrar no navegador; Tarefas hidrata os processos dos lotes e Defesas consulta os lotes de defesa. A paginação visual desta proposta não representa paginação completa no servidor. Próxima etapa técnica: contratos de busca, contagens e paginação no backend, mantendo autorização por usuário/carteira. Esta proposta não amplia esses downloads nem altera os contratos existentes.
-
-Os campos atuais de Defesas não fornecem um contrato consolidado de Fatal CPJ, divergência útil e fundamento da análise. Não foram inventados valores ou regras. A evolução adequada é expor essas evidências e o destino operacional via API para revisão no mesmo contexto.
-
-Não está liberada para produção: exige revisão do usuário e validação autenticada em homologação.
-
-## Remodelagem dos formulários — dev/tasks-workspace
-
-A execução individual de Liminar, Defesa, Comprovante de pagamento, Coleta de documentos e Acordos agora apresenta objetivo, contexto disponível, perguntas explicadas e resumo das respostas antes de registrar. As ações distinguem registrar análise, informar impedimento e deixar para depois. Falhas preservam as respostas; confirmações indicam a operação concluída. Campos, critérios de elegibilidade, cálculo existente e contratos de API foram preservados.
-
-Na prévia, o seletor “Fluxo da prévia” abre cada formulário com dados fictícios. O teste de UX também verifica bloqueio de respostas incompletas, retenção após falha simulada, payloads enviados e coleta de dois PDFs. As gravações são interceptadas localmente pelo teste, sem acesso à API real. Inspeção em desktop e notebook; verificações adicionais em celular. A validação autenticada em homologação continua pendente.
-
-![Execução de tarefas](execucao-tarefas.png)
-
-### Ajuste de espaço e rolagem
-
-Removidos o cabeçalho Minha fila/Atualizar fila e o subtítulo do lote. A revisão acompanha as respostas logo abaixo do processo; orientações podem ser abertas sob demanda. Todos os tipos usam a mesma largura e altura mínima de workspace, sem rolagem interna. Formulários extensos crescem no fluxo da página, estendendo também a coluna da fila. Não há altura máxima que corte campos. Atualização periódica ou por eventos do backend fica para implementação separada; não foi adicionado polling.
-
-Testes verificam ausência de áreas com rolagem interna e igualdade de altura entre fila e execução em desktop/notebook, além dos contratos de gravação. Capturas incluem 1920, 1600, 1366 e 390 pixels.
+A plataforma abriu sem sessão autenticada. A operação com dados reais em homologação permanece pendente.

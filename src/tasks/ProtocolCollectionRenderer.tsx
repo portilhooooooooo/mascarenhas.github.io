@@ -338,13 +338,13 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
       </div>
 
       <footer className="task-renderer-footer protocol-workspace-footer">
-        <button className="secondary-button" type="button" disabled={busy} onClick={skip}>Deixar para depois</button>
+        <button className="secondary-button" type="button" disabled={busy} onClick={skip}>Pular esse prazo</button>
         <button
           className="primary-button"
           type="submit"
           disabled={busy || (draft.mode === 'documents' ? !documentsReady : !draft.reason || !draft.notes.trim())}
         >
-          {busy ? 'Registrando…' : draft.mode === 'error' ? 'Registrar impedimento e continuar' : 'Registrar coleta e continuar'}
+          {busy ? 'Salvando…' : 'Salvar e próximo'}
         </button>
       </footer>
     </form>
