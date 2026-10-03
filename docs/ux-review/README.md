@@ -60,3 +60,9 @@ A execução individual de Liminar, Defesa, Comprovante de pagamento, Coleta de 
 Na prévia, o seletor “Fluxo da prévia” abre cada formulário com dados fictícios. O teste de UX também verifica bloqueio de respostas incompletas, retenção após falha simulada, payloads enviados e coleta de dois PDFs. As gravações são interceptadas localmente pelo teste, sem acesso à API real. Inspeção em desktop e notebook; verificações adicionais em celular. A validação autenticada em homologação continua pendente.
 
 ![Execução de tarefas](execucao-tarefas.png)
+
+### Ajuste de espaço e rolagem
+
+Removidos o cabeçalho Minha fila/Atualizar fila e o subtítulo do lote. A revisão acompanha as respostas logo abaixo do processo; orientações podem ser abertas sob demanda. Todos os tipos usam a mesma largura e altura mínima de workspace, sem rolagem interna. Formulários extensos crescem no fluxo da página, estendendo também a coluna da fila. Não há altura máxima que corte campos. Atualização periódica ou por eventos do backend fica para implementação separada; não foi adicionado polling.
+
+Testes verificam ausência de áreas com rolagem interna e igualdade de altura entre fila e execução em desktop/notebook, além dos contratos de gravação. Capturas incluem 1920, 1600, 1366 e 390 pixels.

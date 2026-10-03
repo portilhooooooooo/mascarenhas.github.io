@@ -12,3 +12,29 @@
 .tasks-workspace .tasks-process-item{min-height:78px;padding-block:10px}.controladoria-page-react .controladoria-protocolos-view{max-width:none}.controladoria-page-react .protocolos-page-react,.controladoria-page-react .protocolos-workspace{min-width:0}
 @media(max-width:1260px){.controladoria-page-react .controladoria-primary-subnav{margin-inline:-22px;padding-inline:22px}}
 @media(max-width:760px){.controladoria-page-react .controladoria-primary-subnav{margin-inline:-16px;padding-inline:16px}}
+
+/* One continuous execution surface. Long forms extend the page and both columns. */
+#tarefas[data-react-tasks='true'] .tasks-workspace{--tasks-workspace-height:calc(100dvh - 210px);grid-template-columns:290px minmax(0,1fr);min-height:var(--tasks-workspace-height);align-items:stretch}
+#tarefas[data-react-tasks='true'] .tasks-workspace-sidebar{position:static;height:auto;max-height:none;min-height:var(--tasks-workspace-height);overflow:visible}
+#tarefas[data-react-tasks='true'] .tasks-execution-panel{position:static;height:auto;min-height:var(--tasks-workspace-height);grid-template-rows:auto 1fr}
+#tarefas[data-react-tasks='true'] .tasks-process-list{overflow:visible;max-height:none}
+#tarefas[data-react-tasks='true'] .tasks-renderer-card{overflow:visible}
+#tarefas[data-react-tasks='true'] .execution-card .tasks-renderer-body{overflow:visible;display:flex;flex-direction:column;flex:1}
+#tarefas[data-react-tasks='true'] .execution-card .task-renderer-form,#tarefas[data-react-tasks='true'] .execution-card .defesa-flow{flex:1;min-height:0}
+#tarefas[data-react-tasks='true'] .execution-card .task-renderer-footer{position:static;margin-top:auto;bottom:auto}
+#task-execution-review .execution-review{margin:0 20px;padding:10px 0;border:0;border-bottom:1px solid #e3eaf2;border-radius:0;background:#fff}
+#task-execution-review .execution-review header{display:none}
+#task-execution-review .execution-review dl{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}
+#task-execution-review .execution-review dl>div{display:flex;gap:8px;font-size:12px}
+#task-execution-review .execution-review>p{margin-top:6px}
+#tarefas[data-react-tasks='true'] .execution-brief{gap:14px;padding-bottom:12px;margin-bottom:14px}
+#tarefas[data-react-tasks='true'] .execution-brief h3{font-size:14px}
+#tarefas[data-react-tasks='true'] .execution-card .task-option-card>span{min-height:52px}
+@media(max-width:900px){#tarefas[data-react-tasks='true'] .tasks-workspace{grid-template-columns:1fr}#tarefas[data-react-tasks='true'] .tasks-workspace-sidebar{min-height:0}#tarefas[data-react-tasks='true'] .tasks-execution-panel{min-height:var(--tasks-workspace-height)}}
+#tarefas[data-react-tasks='true'] .execution-brief{grid-template-columns:1fr;gap:10px}
+.execution-brief-objective summary{cursor:pointer;font-size:12px;font-weight:600;color:#0759cc}
+.execution-brief-objective p{margin-top:8px}
+#tarefas[data-react-tasks='true'] .execution-brief-evidence{padding:0;border:0}
+.execution-brief-evidence>small{display:none}
+#tarefas[data-react-tasks='true'] .execution-brief dl{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}
+#tarefas[data-react-tasks='true'] .execution-brief dl>div{display:flex;gap:8px}

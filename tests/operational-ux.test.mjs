@@ -165,10 +165,19 @@ try {
   await page.locator('.execution-review').scrollIntoViewIfNeeded();
   await page.screenshot({path:`${shots}/agreement-review.png`});
   for (const scenario of ['liminar','defesa','comprovante_pagamento','protocolo','acordos']) {
-    for (const width of [1920,1366,390]) {
+    for (const width of [1920,1600,1366,390]) {
       await page.setViewportSize({width,height:width===1920?1080:900});
       await page.goto(`http://127.0.0.1:5174/?scenario=${scenario}`);
       await page.locator('.execution-brief').waitFor();
+      assert.equal(await page.locator('.workbench-header').count(),0,'Queue hero removed');
+      assert.equal(await page.locator('.execution-process-heading p').count(),0,'Batch subtitle removed');
+      assert.equal(await page.locator('#task-execution-review .execution-review').count(),1,'Review beneath process');
+      const innerScroll = await page.locator('.tasks-workspace').evaluate(root => [...root.querySelectorAll('*')].filter(el => ['auto','scroll'].includes(getComputedStyle(el).overflowY) && el.scrollHeight>el.clientHeight+1).map(el=>el.className));
+      assert.deepEqual(innerScroll,[],`${scenario} has no nested scroll at ${width}`);
+      if(width>=1024){
+        const heights=await page.locator('.tasks-workspace').evaluate(root => [root.querySelector('.tasks-workspace-sidebar').getBoundingClientRect().height,root.querySelector('.tasks-execution-panel').getBoundingClientRect().height]);
+        assert.ok(Math.abs(heights[0]-heights[1])<2,'Queue and execution share height');
+      }
       await page.screenshot({path:`${shots}/${scenario}-${width}.png`});
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth>innerWidth),false,`${scenario} overflow at ${width}`);
     }
