@@ -1,3 +1,4 @@
+import './operationalWorkspace.css';
 import { protocolDetail, protocolStage, SESSION_LABELS } from './protocoloPresentation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -442,17 +443,11 @@ export function ProtocolosPage() {
   const sessionBusy = ['starting', 'authenticating', 'connected', 'in_use'].includes(sessionState);
 
   return <div className="protocolos-page-react">
-    <nav className="controladoria-subnav" aria-label="Módulos de Controladoria">
-      <button type="button" className="active">Protocolos</button>
-      <button type="button" disabled title="Módulo em preparação">Liminar</button>
-      <button type="button" disabled title="Módulo em preparação">Contestação</button>
-    </nav>
-
     <header className="protocolos-header">
       <div>
         <span className="protocolos-eyebrow">CONTROLADORIA</span>
         <h1>Protocolos</h1>
-        <p>Importe a base e acompanhe a execução dos protocolos.</p>
+        <p>Acompanhe a execução automática e resolva os casos que precisam de intervenção.</p>
       </div>
       <div className="protocolos-header-actions">
         <button type="button" className="protocolos-button secondary" onClick={handleDownload} disabled={downloadBusy}>
@@ -466,6 +461,10 @@ export function ProtocolosPage() {
 
     {error && <div className="protocolos-alert error"><AlertTriangle size={16}/><span>{error}</span><button type="button" onClick={() => setError('')}><X size={14}/></button></div>}
 
+    <div className="workbench-attention" aria-label="Pendências que exigem ação">
+      <button type="button" aria-pressed={view === 'ERRORS'} onClick={() => setView('ERRORS')}><span>Revisão necessária</span><strong>{loading && !summary ? '…' : number(viewCount(summary, items, 'ERRORS'))}</strong><small>Confira o motivo e a ação disponível →</small></button>
+      <button type="button" aria-pressed={view === 'MISSING_DOCUMENTS'} onClick={() => setView('MISSING_DOCUMENTS')}><span>Sem documentos</span><strong>{loading && !summary ? '…' : number(viewCount(summary, items, 'MISSING_DOCUMENTS'))}</strong><small>Localize os arquivos para liberar o fluxo →</small></button>
+    </div>
     <section className="protocolos-session-bar" aria-label="Sessão do agente de protocolo">
       <div className="protocolos-session-copy">
         <span>Sessão Enter</span>
@@ -484,7 +483,7 @@ export function ProtocolosPage() {
       </button>
     </section>
 
-    <section className="protocolos-intake-section">
+    <details className="protocolos-intake-section workbench-intake"><summary>Importar base e documentos <span>Abra para atualizar a entrada de dados</span></summary>
       <div className="protocolos-section-heading"><h2>Entrada de dados</h2></div>
       <div className="protocolos-intake-grid-react">
         <article className="protocolos-card protocolos-upload-card">
@@ -535,13 +534,13 @@ export function ProtocolosPage() {
           {documentsFeedback && <p className="protocolos-feedback">{documentsFeedback}</p>}
         </article>
       </div>
-    </section>
+    </details>
 
     <section className="protocolos-card protocolos-workspace">
       <header className="protocolos-workspace-head">
         <div>
-          <h2>Acompanhamento</h2>
-          <p>Acompanhe o andamento dos protocolos.</p>
+          <h2>Fila de protocolos</h2>
+          <p>Filtre pelo estado e confira o motivo antes de agir.</p>
         </div>
       </header>
 
@@ -562,7 +561,7 @@ export function ProtocolosPage() {
       </div>
 
       <div className="protocolos-toolbar">
-        <label className="protocolos-search"><Search size={15}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por CNJ, etapa ou motivo..."/></label>
+        <label className="protocolos-search"><Search size={15}/><input value={query} onChange={event => setQuery(event.target.value)} aria-label="Buscar protocolos" placeholder="Buscar por CNJ, etapa ou motivo..."/></label>
         <div className="protocolos-toolbar-actions">
           {isErrors && selectedRetryIds.size > 0 && <button
             type="button"

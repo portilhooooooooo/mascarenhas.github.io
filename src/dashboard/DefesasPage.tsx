@@ -1,3 +1,4 @@
+import './operationalWorkspace.css';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DatabaseZap, RefreshCw, Search, ShieldCheck } from 'lucide-react';
 
@@ -60,8 +61,8 @@ function routingStatus(process: ProcessRow): BatchStatus {
 
 function destination(status: BatchStatus) {
   if (status === 'saneado') return 'Resolvido em lote';
-  if (status === 'tarefa') return 'Tarefa de Defesa';
-  return 'Aguardando saneamento';
+  if (status === 'tarefa') return 'Validar em Tarefas';
+  return 'Aguardar análise do lote';
 }
 
 export function DefesasPage() {
@@ -69,6 +70,7 @@ export function DefesasPage() {
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'all' | BatchStatus>('all');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +111,6 @@ export function DefesasPage() {
       const syncTimes = nextRows.map(row => row.updatedAt).filter(Boolean).map(value => new Date(String(value)).getTime()).filter(Number.isFinite);
       setLastSyncAt(syncTimes.length ? new Date(Math.max(...syncTimes)).toISOString() : null);
     } catch (cause: any) {
-      setRows([]);
       setError(cause?.message || 'Não foi possível carregar o lote do Talisman.');
     } finally {
       setLoading(false);
@@ -134,9 +135,14 @@ export function DefesasPage() {
     return rows.filter(row => (status === 'all' || row.status === status) && (!term || `${row.cnj} ${row.responsible || ''} ${row.situation || ''} ${row.destination}`.toLowerCase().includes(term)));
   }, [rows, search, status]);
 
+  useEffect(() => setPage(1), [search, status]);
+  const pageCount = Math.max(1, Math.ceil(visibleRows.length / 25));
+  const currentPage = Math.min(page, pageCount);
+  const pagedRows = visibleRows.slice((currentPage - 1) * 25, currentPage * 25);
+
   return <section className="defesas-batch-page" aria-label="Defesas em lote">
     <header className="protocolos-header">
-      <div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Defesas</h1><p>Fila recebida automaticamente da Controladoria Enter pelo Talisman. O saneamento em lote resolve os casos objetivos e envia para Tarefas apenas o resíduo que exige validação humana.</p></div>
+      <div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Defesas</h1><p>Confira os prazos e o destino de cada defesa. Os casos que exigem validação individual seguem para Tarefas.</p></div>
       <div className="protocolos-header-actions"><button className="protocolos-button secondary" type="button" disabled={loading} onClick={() => void load()}><RefreshCw size={14}/>{loading ? 'Atualizando…' : 'Atualizar'}</button></div>
     </header>
 
@@ -149,7 +155,7 @@ export function DefesasPage() {
       <article className="protocolos-card defesas-saneamento-card">
         <header><span className="protocolos-card-icon"><ShieldCheck size={17}/></span><div><h3>Saneamento</h3><p>Roteamento do lote antes da execução individual.</p></div></header>
         <div className="defesas-saneamento-grid"><div><small>AGUARDANDO</small><strong>{counts.aguardando}</strong></div><div><small>SANEADOS</small><strong>{counts.saneado}</strong></div><div><small>PARA TAREFA</small><strong>{counts.tarefa}</strong></div></div>
-        <div className="defesas-provider-line"><span><i className={error ? '' : 'success'}/>{error ? 'Fonte indisponível' : 'Talisman ativo'}</span><em>{loading ? 'Sincronizando' : error ? 'Requer atenção' : 'Fluxo online'}</em></div>
+        <div className="defesas-provider-line"><span><i className={error ? '' : 'success'}/>{error ? 'Fonte indisponível' : 'Fila carregada'}</span><em>{loading ? 'Sincronizando' : error ? 'Requer atenção' : 'Consulta concluída'}</em></div>
       </article>
     </section>
 
@@ -161,9 +167,10 @@ export function DefesasPage() {
         <button type="button" className={`blue ${status === 'tarefa' ? 'active' : ''}`} onClick={() => setStatus('tarefa')}>Para tarefa <strong>{counts.tarefa}</strong></button>
         <button type="button" className={status === 'aguardando' ? 'active' : ''} onClick={() => setStatus('aguardando')}>Aguardando <strong>{counts.aguardando}</strong></button>
       </div>
-      <div className="protocolos-toolbar"><label className="protocolos-search"><Search size={14}/><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Buscar CNJ, responsável ou situação"/></label></div>
+      <div className="protocolos-toolbar"><label className="protocolos-search"><Search size={14}/><input value={search} onChange={event => setSearch(event.target.value)} aria-label="Buscar defesas" placeholder="Buscar CNJ, responsável ou situação"/></label></div>
       {error ? <div className="defesas-live-error"><strong>Não foi possível atualizar a fila</strong><span>{error}</span><button type="button" className="secondary-button" onClick={() => void load()}>Tentar novamente</button></div> : null}
-      {!error ? <div className="protocolos-table-wrap"><table className="protocolos-table-react defesas-batch-table"><thead><tr><th>Processo</th><th>Fatal Controladoria</th><th>Prazo operacional</th><th>Responsável</th><th>Status</th><th>Destino</th><th>Atualizado</th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.id}><td><span className="protocolos-cnj">{row.cnj}</span>{row.situation ? <small className="defesas-row-situation">{row.situation}</small> : null}</td><td><span className="protocolos-date">{date(row.fatalDeadline)}</span></td><td><span className="protocolos-date">{date(row.operationalDeadline)}</span></td><td><span className="protocolos-context">{row.responsible || 'Sem responsável'}</span></td><td><span className={`protocolos-badge ${STATUS_META[row.status].className}`}>{STATUS_META[row.status].label}</span></td><td><strong className={row.status === 'tarefa' ? 'defesas-destination-task' : 'defesas-destination'}>{row.destination}</strong></td><td><span className="protocolos-date">{timestamp(row.updatedAt)}</span></td></tr>)}</tbody></table>{!loading && !visibleRows.length ? <div className="protocolos-empty"><strong>Nenhum processo neste filtro</strong><span>{rows.length ? 'Ajuste a busca ou selecione outro status.' : 'Aguardando processos ativos do Talisman.'}</span></div> : null}{loading && !rows.length ? <div className="protocolos-empty"><strong>Carregando fila</strong><span>Consultando o lote sincronizado pelo Talisman.</span></div> : null}</div> : null}
+      {<div className="protocolos-table-wrap"><table className="protocolos-table-react defesas-batch-table"><thead><tr><th>Processo</th><th>Fatal Controladoria</th><th>Prazo operacional</th><th>Responsável</th><th>Status</th><th>Próximo passo</th><th>Atualizado</th></tr></thead><tbody>{pagedRows.map(row => <tr key={row.id}><td><span className="protocolos-cnj">{row.cnj}</span>{row.situation ? <small className="defesas-row-situation">{row.situation}</small> : null}</td><td><span className="protocolos-date">{date(row.fatalDeadline)}</span></td><td><span className="protocolos-date">{date(row.operationalDeadline)}</span></td><td><span className="protocolos-context">{row.responsible || 'Sem responsável'}</span></td><td><span className={`protocolos-badge ${STATUS_META[row.status].className}`}>{STATUS_META[row.status].label}</span></td><td><strong className={row.status === 'tarefa' ? 'defesas-destination-task' : 'defesas-destination'}>{row.destination}</strong></td><td><span className="protocolos-date">{timestamp(row.updatedAt)}</span></td></tr>)}</tbody></table>{!loading && !visibleRows.length ? <div className="protocolos-empty"><strong>Nenhum processo neste filtro</strong><span>{rows.length ? 'Ajuste a busca ou selecione outro status.' : 'Aguardando processos ativos do Talisman.'}</span></div> : null}{loading && !rows.length ? <div className="protocolos-empty"><strong>Carregando fila</strong><span>Consultando o lote sincronizado pelo Talisman.</span></div> : null}</div>}
+      {visibleRows.length > 0 ? <footer className="protocolos-pagination"><span>{(currentPage - 1) * 25 + 1}–{Math.min(currentPage * 25, visibleRows.length)} de {visibleRows.length}</span><div className="protocolos-pagination-controls"><button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>Anterior</button><span>Página {currentPage} de {pageCount}</span><button type="button" disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>Próxima</button></div></footer> : null}
     </section>
   </section>;
 }
