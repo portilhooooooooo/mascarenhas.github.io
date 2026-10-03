@@ -11,7 +11,6 @@ export function ControladoriaPage() {
   return <div className="controladoria-page-react">
     <nav className="controladoria-subnav controladoria-primary-subnav" aria-label="Módulos de Controladoria">
       <button type="button" className={view === 'protocolos' ? 'active' : ''} onClick={() => setView('protocolos')}>Protocolos</button>
-      <button type="button" disabled title="Módulo em preparação">Liminar</button>
       <button type="button" className={view === 'defesas' ? 'active' : ''} onClick={() => setView('defesas')}>Defesas</button>
       <button type="button" className={view === 'indicadores' ? 'active' : ''} onClick={() => setView('indicadores')}>Indicadores</button>
     </nav>
