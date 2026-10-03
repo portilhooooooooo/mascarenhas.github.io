@@ -52,3 +52,11 @@ O serviço existente de Protocolos percorre páginas de API antes de filtrar no 
 Os campos atuais de Defesas não fornecem um contrato consolidado de Fatal CPJ, divergência útil e fundamento da análise. Não foram inventados valores ou regras. A evolução adequada é expor essas evidências e o destino operacional via API para revisão no mesmo contexto.
 
 Não está liberada para produção: exige revisão do usuário e validação autenticada em homologação.
+
+## Remodelagem dos formulários — dev/tasks-workspace
+
+A execução individual de Liminar, Defesa, Comprovante de pagamento, Coleta de documentos e Acordos agora apresenta objetivo, contexto disponível, perguntas explicadas e resumo das respostas antes de registrar. As ações distinguem registrar análise, informar impedimento e deixar para depois. Falhas preservam as respostas; confirmações indicam a operação concluída. Campos, critérios de elegibilidade, cálculo existente e contratos de API foram preservados.
+
+Na prévia, o seletor “Fluxo da prévia” abre cada formulário com dados fictícios. O teste de UX também verifica bloqueio de respostas incompletas, retenção após falha simulada, payloads enviados e coleta de dois PDFs. As gravações são interceptadas localmente pelo teste, sem acesso à API real. Inspeção em desktop e notebook; verificações adicionais em celular. A validação autenticada em homologação continua pendente.
+
+![Execução de tarefas](execucao-tarefas.png)

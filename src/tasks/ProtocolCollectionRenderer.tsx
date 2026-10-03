@@ -3,6 +3,7 @@ import { CheckCircle2, FileText, Upload } from 'lucide-react';
 import type { Task, TaskProcess } from './model';
 import { OptionGroup, type ApiRequest } from './renderers';
 import './protocolCollection.css';
+import { DecisionReview } from './TaskExecution';
 
 type Props = {
   api: ApiRequest;
@@ -79,7 +80,7 @@ function UploadField({
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const status = stage === 'uploading'
-    ? 'Enviando para a VPS…'
+    ? 'Enviando documento…'
     : stage === 'ready'
       ? 'Pronto para concluir'
       : stage === 'error'
@@ -177,7 +178,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     } catch (cause: any) {
       if (generations.current[kind] !== generation) return;
       patchDraft({ [`${kind}Stage`]: 'error' } as Partial<Draft>);
-      setError(cause?.message || 'Não foi possível preparar o documento na VPS.');
+      setError(cause?.message || 'Não foi possível enviar o documento. Tente selecionar o arquivo novamente.');
     }
   };
 
@@ -216,7 +217,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     }
 
     if (draft.defesaStage !== 'ready' || draft.protocoloStage !== 'ready') {
-      setError('Aguarde o envio da DEFESA e do PROTOCOLO para a VPS.');
+      setError('Aguarde a confirmação de envio dos dois documentos antes de concluir.');
       return;
     }
 
@@ -259,13 +260,13 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     <form className="task-renderer-form protocol-collection-form" onSubmit={submit}>
       <div className="protocol-collection-content">
         <section className="task-question protocol-title-block">
-          <h3>Coleta de documentos</h3>
-          <p>Anexe a defesa e o comprovante de protocolo.</p>
+          <h3>1. Confira e anexe os arquivos</h3>
+          <p>Os dois documentos precisam estar enviados antes de registrar a coleta.</p>
         </section>
 
         <div className="protocol-upload-stack">
           <UploadField
-            label="DEFESA"
+            label="1. Defesa"
             kind="defesa"
             file={draft.defesa}
             stage={draft.defesaStage}
@@ -273,7 +274,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
             onSelect={stageDocument}
           />
           <UploadField
-            label="PROTOCOLO"
+            label="2. Comprovante de protocolo"
             kind="protocolo"
             file={draft.protocolo}
             stage={draft.protocoloStage}
@@ -292,7 +293,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
               disabled={busy}
               onChange={() => patchDraft({ mode: 'error' })}
             />
-            <span><strong>Não foi possível realizar a coleta</strong></span>
+            <span><strong>Não consegui reunir os documentos</strong><small>Informe o motivo e a justificativa para registrar o impedimento.</small></span>
           </label>
         </div>
 
@@ -332,17 +333,18 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
           </section>
         ) : null}
 
+        <DecisionReview title={draft.mode === 'error' ? 'Confira o impedimento' : 'Confira os documentos'} rows={draft.mode === 'error' ? [['Motivo', ERROR_REASONS.find(reason => reason.value === draft.reason)?.label], ['Justificativa', draft.notes.trim()]] : [['Defesa', draft.defesaStage === 'ready' ? draft.defesa?.name : null], ['Comprovante de protocolo', draft.protocoloStage === 'ready' ? draft.protocolo?.name : null]]} pending={draft.mode === 'error' ? !draft.reason || !draft.notes.trim() ? 'Selecione o motivo e descreva o impedimento.' : null : !documentsReady ? 'Anexe os dois PDFs e aguarde a confirmação de envio.' : null}/>
         {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
       </div>
 
       <footer className="task-renderer-footer protocol-workspace-footer">
-        <button className="secondary-button" type="button" disabled={busy} onClick={skip}>Pular e voltar depois</button>
+        <button className="secondary-button" type="button" disabled={busy} onClick={skip}>Deixar para depois</button>
         <button
           className="primary-button"
           type="submit"
-          disabled={busy || (draft.mode === 'documents' && !documentsReady)}
+          disabled={busy || (draft.mode === 'documents' ? !documentsReady : !draft.reason || !draft.notes.trim())}
         >
-          {busy ? 'Salvando…' : 'Salvar e próximo'}
+          {busy ? 'Registrando…' : draft.mode === 'error' ? 'Registrar impedimento e continuar' : 'Registrar coleta e continuar'}
         </button>
       </footer>
     </form>

@@ -1,5 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Task, TaskProcess } from './model';
+import { DecisionReview } from './TaskExecution';
 
 export type ApiRequest = (path: string, options?: RequestInit) => Promise<any>;
 
@@ -41,11 +42,12 @@ function ErrorMessage({ message }: { message: string | null }) {
   return message ? <p className="task-renderer-error" role="alert">{message}</p> : null;
 }
 
-function RendererFooter({ busy, onSkip }: { busy: boolean; onSkip: () => void }) {
+function RendererFooter({ busy, onSkip, label = 'Registrar análise e continuar', ready = true }: { busy: boolean; onSkip: () => void; label?: string; ready?: boolean }) {
   return (
     <footer className="task-renderer-footer">
-      <button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>Pular e voltar depois</button>
-      <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button>
+      <button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>Deixar para depois</button>
+      <span className="execution-footer-hint">Revise suas respostas antes de salvar.</span>
+      <button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Registrando análise…' : label}</button>
     </footer>
   );
 }
@@ -113,7 +115,7 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
   return (
     <form className="task-renderer-form" onSubmit={submit}>
       <section className="task-question">
-        <h3>Qual foi o resultado do pedido de tutela?</h3>
+        <h3>1. O que você encontrou nos autos?</h3>
         <p>Selecione a opção que melhor descreve a decisão encontrada.</p>
         <OptionGroup
           name="liminar-decision"
@@ -135,8 +137,12 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
         <textarea value={notes} maxLength={500} rows={4} disabled={busy} onChange={event => setNotes(event.target.value)} placeholder="Adicione observações relevantes para a análise..." />
         <em>{notes.length}/500</em>
       </label>
+      <DecisionReview rows={[
+        ['Resultado', ({deferida:'Tutela deferida',indeferida:'Tutela indeferida',nao_solicitada:'Não houve pedido de tutela',com_sentenca:'Processo com sentença',sem_decisao:'Pedido sem decisão',erro:'Não foi possível analisar'} as Record<string,string>)[decision || '']],
+        ['Observações', notes.trim()],
+      ]} pending={!decision ? 'Selecione o resultado encontrado para compor a análise.' : decision === 'erro' && !notes.trim() ? 'Descreva o que impediu a análise no campo Observações.' : null}/>
       <ErrorMessage message={error} />
-      <RendererFooter busy={busy} onSkip={skip} />
+      <RendererFooter busy={busy} onSkip={skip} label="Registrar resultado e continuar" ready={Boolean(decision && (decision !== 'erro' || notes.trim()))} />
     </form>
   );
 }
@@ -478,10 +484,12 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
     }
   };
 
+  const analysisReady = (() => { try { buildPayload(); return true; } catch { return false; } })();
+
   return (
     <form className="task-renderer-form" onSubmit={submit}>
       <section className="task-question">
-        <h3>Foi pago?</h3>
+        <h3>1. O pagamento foi efetivado?</h3>
         <p>Confirme se o pagamento foi efetivado.</p>
         <OptionGroup name="payment-status" value={paymentStatus} onChange={choosePaymentStatus} disabled={busy} options={[
           { value: 'pago', label: 'Foi pago', description: 'Pagamento efetivado' },
@@ -491,7 +499,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
 
       {paymentStatus === 'pago' ? (
         <section className="task-question task-question-nested">
-          <h3>Situação do comprovante</h3>
+          <h3>2. Você localizou o comprovante?</h3>
           <OptionGroup name="paid-receipt" value={paidReceipt} onChange={value => { setPaidReceipt(value); setManifested(null); setManifestationReason(''); }} disabled={busy} options={[
             { value: 'com_comprovante', label: 'Com comprovante', description: 'Comprovante localizado' },
             { value: 'sem_comprovante', label: 'Sem comprovante', description: 'Comprovante não localizado' },
@@ -501,7 +509,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
 
       {paymentStatus === 'pago' && paidReceipt === 'com_comprovante' ? (
         <section className="task-question task-question-nested">
-          <h3>Manifestado nos autos?</h3>
+          <h3>3. O comprovante já foi apresentado nos autos?</h3>
           <OptionGroup name="manifested" value={manifested} onChange={value => { setManifested(value); if (value === 'true') setManifestationReason(''); }} disabled={busy} options={[
             { value: 'true', label: 'Sim', description: 'Já foi manifestado nos autos' },
             { value: 'false', label: 'Não', description: 'Ainda não foi manifestado' },
@@ -519,7 +527,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
 
       {paymentStatus === 'nao_pago' ? (
         <section className="task-question task-question-nested">
-          <h3>Situação do pagamento</h3>
+          <h3>2. Em que situação está o pagamento?</h3>
           <OptionGroup name="unpaid-status" value={unpaidStatus} onChange={value => { setUnpaidStatus(value); setRequestedAgain(null); }} disabled={busy} options={[
             { value: 'em_aprovacao', label: 'Em aprovação', description: 'Aguardando análise do banco' },
             { value: 'erro_emissao', label: 'Erro na emissão', description: 'Falha na geração do pagamento' },
@@ -530,7 +538,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
 
       {paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? (
         <section className="task-question task-question-nested">
-          <h3>Solicitado novamente?</h3>
+          <h3>3. Já houve uma nova solicitação?</h3>
           <OptionGroup name="requested-again" value={requestedAgain} onChange={setRequestedAgain} disabled={busy} options={[
             { value: 'true', label: 'Sim', description: 'Pagamento solicitado novamente' },
             { value: 'false', label: 'Não', description: 'Não houve nova solicitação' },
@@ -539,15 +547,24 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
       ) : null}
 
       <section className="task-question task-question-nested">
-        <h3>Houve bloqueio?</h3>
+        <h3>Houve bloqueio relacionado ao pagamento?</h3>
         <OptionGroup name="had-block" value={hadBlock} onChange={setHadBlock} disabled={busy} options={[
           { value: 'true', label: 'Sim', description: 'Foi identificado bloqueio relacionado' },
           { value: 'false', label: 'Não', description: 'Não foi identificado bloqueio' },
         ]} />
       </section>
 
+      <DecisionReview rows={[
+        ['Pagamento', paymentStatus === 'pago' ? 'Efetivado' : paymentStatus === 'nao_pago' ? 'Não efetivado' : null],
+        ['Comprovante', paidReceipt === 'com_comprovante' ? 'Localizado' : paidReceipt === 'sem_comprovante' ? 'Não localizado' : null],
+        ['Apresentado nos autos', manifested === 'true' ? 'Sim' : manifested === 'false' ? 'Não' : null],
+        ['Justificativa', manifestationReason.trim()],
+        ['Situação', ({em_aprovacao:'Em aprovação',erro_emissao:'Erro na emissão',negado_banco:'Negado pelo banco'} as Record<string,string>)[unpaidStatus || '']],
+        ['Nova solicitação', requestedAgain === 'true' ? 'Sim' : requestedAgain === 'false' ? 'Não' : null],
+        ['Bloqueio', hadBlock === 'true' ? 'Identificado' : hadBlock === 'false' ? 'Não identificado' : null],
+      ]} pending={!paymentStatus ? 'Comece pela confirmação do pagamento.' : hadBlock === null ? 'Informe também se houve bloqueio.' : paymentStatus === 'pago' && (!paidReceipt || (paidReceipt === 'com_comprovante' && (manifested === null || (manifested === 'false' && !manifestationReason.trim())))) ? 'Complete a conferência do comprovante e da manifestação.' : paymentStatus === 'nao_pago' && (!unpaidStatus || (unpaidStatus !== 'em_aprovacao' && requestedAgain === null)) ? 'Complete a situação do pagamento e da nova solicitação, quando necessária.' : null}/>
       <ErrorMessage message={error} />
-      <RendererFooter busy={busy} onSkip={skip} />
+      <RendererFooter busy={busy} onSkip={skip} ready={analysisReady} />
     </form>
   );
 }
@@ -671,6 +688,12 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
   const preliminaryEligible = hasAgreementBool === false && hasJudgmentBool === false && hasImpedimentBool === false && hasDefenseBool === true;
   const fullyEligible = preliminaryEligible && Number.isFinite(balance) && balance <= 15000;
 
+  const agreementReady = hasAgreementBool !== null
+    && (hasAgreementBool || hasJudgmentBool !== null)
+    && (hasAgreementBool || hasJudgmentBool || hasImpedimentBool !== null)
+    && (hasAgreementBool || hasJudgmentBool || hasImpedimentBool || hasDefenseBool !== null)
+    && (!preliminaryEligible || Boolean(rootCause && hasObfBool !== null && (!hasObfBool || obfType) && product && moneyToApi(suggestedAmount) && moneyToApi(outstandingBalance) && (!fullyEligible || sentToPlatform !== null)));
+
   const ineligibleReason = useMemo(() => {
     if (hasAgreementBool === true) return 'Já possui acordo.';
     if (hasJudgmentBool === true) return 'Possui sentença.';
@@ -777,15 +800,15 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
       {agreement ? <div className="agreement-context"><span>Provisão</span><strong>{currency(agreement.provision_amount)}</strong></div> : null}
 
       <section className="task-question">
-        <h3>Já possui acordo?</h3>
+        <h3>1. Já existe acordo neste processo?</h3>
         <OptionGroup name="has-agreement" value={hasAgreement} onChange={value => { setHasAgreement(value); setHasJudgment(null); setHasImpediment(null); setHasDefense(null); }} disabled={busy} options={[
           { value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' },
         ]} />
       </section>
 
-      {hasAgreementBool === false ? <section className="task-question task-question-nested"><h3>Há sentença?</h3><OptionGroup name="has-judgment" value={hasJudgment} onChange={value => { setHasJudgment(value); setHasImpediment(null); setHasDefense(null); }} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
-      {hasAgreementBool === false && hasJudgmentBool === false ? <section className="task-question task-question-nested"><h3>Há Termo de Impedimento 12?</h3><OptionGroup name="has-impediment" value={hasImpediment} onChange={value => { setHasImpediment(value); setHasDefense(null); }} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
-      {hasAgreementBool === false && hasJudgmentBool === false && hasImpedimentBool === false ? <section className="task-question task-question-nested"><h3>Há defesa apresentada nos autos?</h3><OptionGroup name="has-defense" value={hasDefense} onChange={setHasDefense} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
+      {hasAgreementBool === false ? <section className="task-question task-question-nested"><h3>2. Já foi proferida sentença?</h3><OptionGroup name="has-judgment" value={hasJudgment} onChange={value => { setHasJudgment(value); setHasImpediment(null); setHasDefense(null); }} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
+      {hasAgreementBool === false && hasJudgmentBool === false ? <section className="task-question task-question-nested"><h3>3. Há Termo de Impedimento 12?</h3><OptionGroup name="has-impediment" value={hasImpediment} onChange={value => { setHasImpediment(value); setHasDefense(null); }} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
+      {hasAgreementBool === false && hasJudgmentBool === false && hasImpedimentBool === false ? <section className="task-question task-question-nested"><h3>4. A defesa já foi apresentada nos autos?</h3><OptionGroup name="has-defense" value={hasDefense} onChange={setHasDefense} disabled={busy} options={[{ value: 'true', label: 'Sim' }, { value: 'false', label: 'Não' }]} /></section> : null}
 
       {ineligibleReason ? <div className="agreement-result agreement-result-ineligible"><strong>Inapto para acordo</strong><span>{ineligibleReason}</span></div> : null}
 
@@ -806,11 +829,18 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
 
       <label className="task-check-field"><input type="checkbox" checked={needsSupport} disabled={busy} onChange={event => setNeedsSupport(event.target.checked)} /><span>Preciso de Apoio</span></label>
       <ErrorMessage message={error} />
-      {agreement ? <RendererFooter busy={busy} onSkip={skip} /> : null}
+      {agreement ? <DecisionReview rows={[
+        ['Resultado', ineligibleReason ? 'Inapto para acordo' : fullyEligible ? 'Apto para acordo' : null],
+        ['Fundamento', ineligibleReason],
+        ['Valor a ofertar', preliminaryEligible && offer !== null ? currency(offer) : null],
+        ['Enviado para a plataforma', fullyEligible && sentToPlatform !== null ? sentToPlatform === 'true' ? 'Sim' : 'Não' : null],
+        ['Apoio solicitado', needsSupport ? 'Sim' : 'Não'],
+      ]} pending={!agreementReady ? 'Complete as conferências e os dados obrigatórios para registrar a análise.' : null}/> : null}
+      {agreement ? <RendererFooter busy={busy} onSkip={skip} ready={agreementReady} /> : null}
     </form>
   );
 }
 
 export function UnsupportedRenderer({ task }: { task: Task }) {
-  return <div className="task-renderer-state"><strong>Fluxo ainda não definido para este tipo</strong><span>{task.type} permanece bloqueado para evitar registrar uma análise com critérios incorretos.</span></div>;
+  return <div className="task-renderer-state"><strong>Esta tarefa ainda não tem um formulário de análise</strong><span>Não é possível concluir este tipo de tarefa por aqui. Consulte a equipe responsável pelo fluxo.</span></div>;
 }

@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import './defenseAnalysisFlow.css';
+import { DecisionReview } from './TaskExecution';
 
 type YesNo = 'sim' | 'nao' | null;
 export type DefensePriority = 'altissima' | 'alta' | 'baixa';
@@ -98,7 +99,7 @@ function criterionPhrase(key: DefenseCriterionKey, value: string) {
 }
 
 function BinaryChoice({ value, onChange, disabled }: { value: YesNo; onChange: (value: Exclude<YesNo, null>) => void; disabled?: boolean }) {
-  return <div className="defesa-flow-binary">{(['sim', 'nao'] as const).map(option => <button type="button" key={option} disabled={disabled} className={value === option ? 'active' : ''} onClick={() => onChange(option)}>{option === 'sim' ? 'Sim' : 'Não'}</button>)}</div>;
+  return <div className="defesa-flow-binary">{(['sim', 'nao'] as const).map(option => <button type="button" key={option} disabled={disabled} aria-pressed={value === option} className={value === option ? 'active' : ''} onClick={() => onChange(option)}>{option === 'sim' ? 'Sim' : 'Não'}</button>)}</div>;
 }
 
 export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error = null, onSubmit, onSkip }: Props) {
@@ -182,31 +183,32 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
   const priorityLabel = PRIORITIES.find(item => item.value === result.priority)?.label || '—';
 
   return <form className="defesa-flow" onSubmit={submit}>
-    <div className="defesa-flow-result defesa-flow-result-top">
-      <div className="process"><small>PROCESSO</small><strong title={cnj}>{cnj}</strong><em>Fatal Controladoria · {formatDate(deadline)}</em></div>
-      <div><small>RESULTADO</small><strong className={result.status === 'Apto' ? 'apto' : result.status === 'Inapto' ? 'inapto' : ''}>{result.status}</strong></div>
-      <div><small>PRIORIDADE</small><strong>{priorityLabel}</strong></div>
-      <div><small>FATAL</small><strong>{formatDate(result.fatal)}</strong></div>
-      <div className="wide"><small>SITUAÇÃO</small><span title={result.situation}>{result.situation}</span></div>
-    </div>
+    <div className="defesa-deadline-reference"><span>Fatal recebido da Controladoria</span><strong>{formatDate(deadline)}</strong><small>Compare com o registro do CPJ antes de responder.</small></div>
 
     <section className="defesa-flow-question">
       <div className="defesa-flow-step">01</div>
-      <div className="defesa-flow-question-body"><h3>O prazo determinado pela Controladoria está correto?</h3><BinaryChoice value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></div>
+      <div className="defesa-flow-question-body"><h3>O fatal recebido corresponde ao prazo correto?</h3><p>Confira o Fatal Real no CPJ e a situação do processo.</p><BinaryChoice value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></div>
     </section>
 
     {deadlineCorrect === 'sim' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">02</div><div className="defesa-flow-question-body"><h3>Qual a prioridade da defesa?</h3><div className="defesa-flow-priority">{PRIORITIES.map(item => <button type="button" disabled={busy} key={item.value} className={priority === item.value ? 'active' : ''} onClick={() => { setPriority(item.value); setLocalError(null); }}><strong>{item.label}</strong><span>{item.helper}</span></button>)}</div></div></section> : null}
 
-    {deadlineCorrect === 'nao' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">02</div><div className="defesa-flow-question-body"><h3>Esse processo tem citação para defesa correndo?</h3><BinaryChoice value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></div></section> : null}
+    {deadlineCorrect === 'nao' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">02</div><div className="defesa-flow-question-body"><h3>Existe prazo de defesa em curso?</h3><p>Confirme nos autos se há citação e prazo ativo para apresentar defesa.</p><BinaryChoice value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></div></section> : null}
 
     {deadlineCorrect === 'nao' && activeDefense === 'sim' ? <>
-      <section className="defesa-flow-question nested"><div className="defesa-flow-step">03</div><div className="defesa-flow-question-body"><h3>Com qual critério você está se baseando?</h3><p>Selecione um ou mais critérios. Cada seleção abre sua respectiva data.</p><div className="defesa-flow-criteria">{CRITERIA.map(item => { const selected = criterionKeys.includes(item.key); return <div className={`defesa-flow-criterion ${selected ? 'selected' : ''}`} key={item.key}><button type="button" disabled={busy} onClick={() => toggleCriterion(item.key)}><span className="defesa-flow-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>{selected ? <label><span>{item.dateLabel}</span><input type="date" disabled={busy} value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}</div>; })}</div></div></section>
-      <section className="defesa-flow-question nested"><div className="defesa-flow-step">04</div><div className="defesa-flow-question-body"><h3>Defina a conclusão do prazo</h3><div className="defesa-flow-conclusion"><label><span>Fatal correto</span><input type="date" disabled={busy} value={correctFatal} onChange={event => setCorrectFatal(event.target.value)}/></label><div><span>Prioridade</span><div className="defesa-flow-priority compact">{PRIORITIES.map(item => <button type="button" disabled={busy} key={item.value} className={priority === item.value ? 'active' : ''} onClick={() => setPriority(item.value)}><strong>{item.label}</strong><small>{item.helper}</small></button>)}</div></div></div></div></section>
+      <section className="defesa-flow-question nested"><div className="defesa-flow-step">03</div><div className="defesa-flow-question-body"><h3>Quais evidências confirmam o prazo?</h3><p>Selecione as evidências encontradas e informe as datas. Elas documentam a conferência; o fatal deve ser confirmado no CPJ.</p><div className="defesa-flow-criteria">{CRITERIA.map(item => { const selected = criterionKeys.includes(item.key); return <div className={`defesa-flow-criterion ${selected ? 'selected' : ''}`} key={item.key}><button type="button" disabled={busy} onClick={() => toggleCriterion(item.key)}><span className="defesa-flow-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>{selected ? <label><span>{item.dateLabel}</span><input type="date" disabled={busy} value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}</div>; })}</div></div></section>
+      <section className="defesa-flow-question nested"><div className="defesa-flow-step">04</div><div className="defesa-flow-question-body"><h3>Defina a conclusão do prazo</h3><div className="defesa-flow-conclusion"><label><span>Fatal Real confirmado no CPJ</span><input type="date" disabled={busy} value={correctFatal} onChange={event => setCorrectFatal(event.target.value)}/></label><div><span>Prioridade</span><div className="defesa-flow-priority compact">{PRIORITIES.map(item => <button type="button" disabled={busy} key={item.value} className={priority === item.value ? 'active' : ''} onClick={() => setPriority(item.value)}><strong>{item.label}</strong><small>{item.helper}</small></button>)}</div></div></div></div></section>
     </> : null}
 
     {deadlineCorrect === 'nao' && activeDefense === 'nao' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">03</div><div className="defesa-flow-question-body"><h3>Qual é a situação do processo?</h3><div className="defesa-flow-reasons"><button type="button" disabled={busy} className={reason === 'suspenso_irdr' || reason === 'suspenso_1414' ? 'active' : ''} onClick={() => { setSuspensionOpen(true); setReason(null); }}>Suspenso</button>{REASONS.map(item => <button type="button" disabled={busy} key={item.value} className={reason === item.value ? 'active' : ''} onClick={() => { setReason(item.value); setSuspensionOpen(false); setLocalError(null); }}>{item.label}</button>)}</div>{suspensionOpen ? <div className="defesa-flow-suspension"><span>Qual suspensão foi identificada?</span><div className="defesa-flow-binary"><button type="button" disabled={busy} className={reason === 'suspenso_irdr' ? 'active' : ''} onClick={() => setReason('suspenso_irdr')}>IRDR</button><button type="button" disabled={busy} className={reason === 'suspenso_1414' ? 'active' : ''} onClick={() => setReason('suspenso_1414')}>Tema 1414</button></div></div> : null}</div></section> : null}
 
+    <DecisionReview rows={[
+      ['Conclusão', result.status === '—' ? null : result.status === 'Apto' ? 'Apto à defesa' : 'Inapto à defesa'],
+      ['Fatal recebido', deadline ? formatDate(deadline) : null],
+      ['Fatal confirmado', result.fatal ? formatDate(result.fatal) : null],
+      ['Prioridade', result.priority ? priorityLabel : null],
+      ['Situação', result.status !== '—' ? result.situation : null],
+    ]} pending={result.status === '—' ? result.situation : null}/>
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <footer className="task-renderer-footer defesa-flow-footer"><button className="secondary-button" type="button" disabled={busy} onClick={() => void onSkip()}>Pular e voltar depois</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>
+    <footer className="task-renderer-footer defesa-flow-footer"><button className="secondary-button" type="button" disabled={busy} onClick={() => void onSkip()}>Deixar para depois</button><button className="primary-button" type="submit" disabled={busy || result.status === '—' || (deadlineCorrect === 'sim' && !deadline)}>{busy ? 'Registrando análise…' : 'Registrar análise e continuar'}</button></footer>
   </form>;
 }
