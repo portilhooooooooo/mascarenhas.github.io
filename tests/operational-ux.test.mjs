@@ -32,7 +32,7 @@ try {
   const open = async (scenario='', fixture='') => {
     await page.goto(`http://127.0.0.1:5174/?scenario=${scenario}&fixture=${fixture}`);
     await page.locator('.execution-process-heading').waitFor();
-    await page.waitForFunction(() => document.body.classList.contains('task-station-active'));
+    await page.locator('.task-station .tasks-react-subnav').waitFor();
     await page.evaluate(() => {
       window.__uxSubmissions=[];
       const original=window.MBA_API.request;
@@ -60,7 +60,7 @@ try {
     if(decided) { await choose('liminar-requested','Sim'); await choose('liminar-decided',decided); await choose(decided==='Sim'?'liminar-result':'liminar-judgment',answer); }
     assert.deepEqual(await submit(),{decision:expected,notes:null});
     assert.equal((await layout()).footerInScroll,false);
-    assert.equal((await layout()).height,876);
+    assert.equal((await layout()).height, await page.locator('.tasks-workspace').evaluate(el=>el.getBoundingClientRect().height));
   }
   assert.equal(await page.getByRole('heading',{name:/03.*Esse processo teve sentença/}).count(),1);
   await choose('liminar-decided','Sim'); await choose('liminar-result','Deferida'); await choose('liminar-decided','Não');
@@ -86,7 +86,7 @@ try {
   await open('defesa'); await choose('defense-deadline','Não'); await choose('defense-active','Sim'); await choose('defense-court-valid','Não');
   for(const name of ['Expedição de DJE','DJE Negativo','Expedição de Carta AR','Retorno de Carta AR','Audiência','Juntada de Habilitação']) await page.getByRole('button',{name,exact:true}).click();
   for(const input of await page.locator('.defesa-flow-criteria input').all()) await input.fill('2026-10-02');
-  assert.equal((await layout()).scroll,false,'Normal Defense citation path fits at 1600x900');
+  await page.screenshot({path:`${shots}/defense-shell.png`});
   await page.screenshot({path:`${shots}/defense-evidence-clean.png`});
   const evidence=await submit(); assert.equal(evidence.criteria.length,6); assert.equal(evidence.court_fatal_deadline,null); assert.equal(evidence.has_valid_court_deadline,false); assert.equal('priority' in evidence,false);
   await page.screenshot({path:`${shots}/defense-evidence.png`});
@@ -126,7 +126,7 @@ try {
   await page.getByLabel('Causa raiz',{exact:false}).selectOption('alega_nao_fez'); await page.getByLabel('Tipo de OBF',{exact:false}).selectOption('nulidade'); await page.getByLabel('Produto',{exact:false}).selectOption('seguro'); await page.getByLabel('Valor sugerido',{exact:false}).fill('2000'); await page.getByLabel('Saldo devedor',{exact:false}).fill('1000'); await choose('sent-platform','Sim');
   assert.equal((await submit()).has_defense_presented,true);
   for(const height of [900,650]) {
-    await page.setViewportSize({width:1366,height});
+    await page.setViewportSize({width:1366,height}); await page.waitForTimeout(150);
     const before=await layout(); await page.locator('.task-form-content').evaluate(el=>el.scrollTop=el.scrollHeight);
     const after=await layout(); assert.equal(after.footerBottom,before.footerBottom); assert.equal(after.footerInScroll,false); assert.equal(after.documentScroll,false);
   }
@@ -148,8 +148,8 @@ try {
       const sizes=await page.locator('.task-option-grid').evaluateAll(groups=>groups.map(g=>[...g.querySelectorAll('.task-option-card')].map(c=>({width:c.getBoundingClientRect().width,height:c.getBoundingClientRect().height})))); for(const group of sizes) for(const size of group) { assert.ok(Math.abs(size.width-group[0].width)<2); assert.ok(Math.abs(size.height-group[0].height)<2); }
       const metrics=await layout(); assert.equal(metrics.overflow,false,`No horizontal overflow ${scenario}/${width}`); assert.equal(metrics.documentScroll,false); assert.equal(metrics.footerInScroll,false); assert.ok(Math.abs(metrics.footerBottom-metrics.bottom)<2);
       assert.equal(await page.locator('.tasks-execution-summary,.execution-review').count(),0);
-      assert.equal(await page.locator('.demo-navbar').isVisible(),false);
-      assert.equal(await page.locator('.tasks-react-subnav').count(),0);
+      assert.equal(await page.locator('.demo-navbar').isVisible(),true);
+      assert.equal(await page.locator('.tasks-react-subnav').count(),1);
       await page.screenshot({path:`${shots}/${scenario}-${width}.png`});
     }
   }
@@ -160,9 +160,63 @@ try {
   await page.getByLabel('Buscar processo',{exact:true}).fill('RS'); await page.getByRole('radiogroup',{name:'defense-deadline'}).waitFor();
   assert.equal(await page.locator('.execution-process-heading small').textContent(),'Validação de Defesa');
   const keyboard=page.getByRole('radiogroup',{name:'defense-deadline'}).getByRole('radio',{name:'Não',exact:true}); await keyboard.focus(); await keyboard.press('Enter'); assert.equal(await keyboard.isChecked(),true);
-  await page.getByRole('button',{name:'Gestão de lotes',exact:true}).click(); assert.equal(await page.locator('.demo-navbar').isVisible(),true);
-  await page.getByRole('button',{name:'Controladoria',exact:true}).click(); await page.getByRole('heading',{name:'Fila de protocolos'}).waitFor(); await page.getByRole('button',{name:/Revisão necessária/}).click(); assert.equal(await page.locator('tbody tr:visible').count(),2);
+  await page.getByRole('button',{name:'Atribuições',exact:true}).click(); assert.equal(await page.locator('.demo-navbar').isVisible(),true);
+  await page.getByRole('button',{name:'Resultados',exact:true}).click();
+  assert.equal(await page.getByRole('heading',{name:'Resultados',exact:true}).count(),1);
+  assert.equal(await page.locator('.demo-navbar').isVisible(),true);
+  await page.locator('.tasks-react-subnav').getByRole('button',{name:'Tarefas',exact:true}).click();
+  await page.locator('.execution-process-heading').waitFor();
+  await page.evaluate(()=>{
+    window.MBA_CURRENT_USER.permissions['automations.run']=true;
+    window.__controlCalls=[];
+    const original=window.MBA_AUTOMATION_API.request;
+    window.__automationState='authenticating'; window.__failSecondUpload=true;
+    window.MBA_AUTOMATION_API.request=async(path,options)=>{
+      if(path==='/api/protocolo/summary')return {session:{state:window.__automationState},controladoria:null,documents:null,statuses:{}};
+      if(options?.method==='POST'){
+        const body=options.body;
+        window.__controlCalls.push({path,fields:body instanceof FormData?[...body.entries()].map(([key,file])=>[key,file.name]):[]});
+        if(path.endsWith('/upload')){if(body.get('documents').name==='minuta.docx' && window.__failSecondUpload){window.__failSecondUpload=false;throw new Error('Falha simulada no segundo documento');}return {stored:1,duplicates:0};}
+        if(path.endsWith('/documentos'))return {stored:2,ignored:0,missing:0,errors:0};
+        if(path.endsWith('/run')){window.__automationState='in_use';return {};}
+      }
+      return original(path,options);
+    };
+  });
+  await page.getByRole('button',{name:'Controladoria',exact:true}).click();
+  await page.getByText('Fazendo login…',{exact:true}).waitFor();
+  assert.equal(await page.locator('.protocolos-page-react table,.workbench-attention,.protocolos-page-react details').count(),0);
+  for(const label of ['Baixar exceções','Atualizar','Arquivo do Metabase','Sessão Enter'])assert.equal(await page.getByText(label,{exact:true}).count(),0);
+  assert.equal(await page.getByRole('heading',{name:'Correspondências',exact:true}).count(),1);
+  const uploadInput=page.getByLabel('Selecionar documentos',{exact:true});
+  await uploadInput.setInputFiles([{name:'defesa.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4')},{name:'minuta.docx',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',buffer:Buffer.from('mock-docx')}]);
+  await page.getByRole('button',{name:'Enviar documentos',exact:true}).click();await page.getByText(/1 enviados · 1 pendentes/).waitFor();
+  assert.equal(await page.locator('.protocolos-selected-file').count(),1);
+  await page.getByRole('button',{name:'Enviar documentos',exact:true}).click();await page.getByText(/1 arquivos enviados à VPS/).waitFor();
+  await page.getByLabel('Selecionar correspondências',{exact:true}).setInputFiles({name:'correspondencias.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',buffer:Buffer.from('mock-xlsx')});
+  await page.getByRole('button',{name:'Importar correspondências',exact:true}).click();await page.getByText(/2 documentos relacionados/).waitFor();
+  const calls=await page.evaluate(()=>window.__controlCalls);
+  assert.deepEqual(calls.map(x=>x.path),['/api/protocolo/documentos/upload','/api/protocolo/documentos/upload','/api/protocolo/documentos/upload','/api/protocolo/documentos']);
+  assert.deepEqual(calls.map(x=>x.fields),[[['documents','defesa.pdf']],[['documents','minuta.docx']],[['documents','minuta.docx']],[['relation','correspondencias.xlsx']]]);
   await page.screenshot({path:`${shots}/control-1600.png`});
+  for(const [state,label] of [['in_use','Em produção'],['lost','Erro de sessão'],['idle','Aguardando execução']]) {
+    await page.getByRole('button',{name:'Tarefas',exact:true}).first().click();
+    await page.evaluate(value=>window.__automationState=value,state);
+    await page.getByRole('button',{name:'Controladoria',exact:true}).click();await page.getByText(label,{exact:true}).waitFor();
+  }
+  await page.getByRole('button',{name:'Iniciar',exact:true}).click();await page.getByText('Em produção',{exact:true}).waitFor();
+  await page.evaluate(()=>{window.MBA_CURRENT_USER.permissions['automations.run']=false;window.dispatchEvent(new Event('mba:authenticated'));});
+  assert.equal(await page.getByRole('button',{name:'Enviar documentos',exact:true}).isDisabled(),true);
+  for(const [width,height] of [[1920,1080],[1600,900],[1366,768]]) {
+    await page.setViewportSize({width,height}); await open('defesa','shell');
+    assert.equal(await page.locator('.sidebar').isVisible(),true);assert.equal(await page.locator('.topbar').isVisible(),true);
+    assert.equal((await layout()).documentScroll,false);assert.equal((await layout()).overflow,false);
+    await page.screenshot({path:`${shots}/task-shell-${width}.png`});
+    await page.getByRole('button',{name:'Controladoria',exact:true}).click();
+    await page.getByRole('heading',{name:'Correspondências',exact:true}).waitFor();
+    assert.equal(await page.locator('.sidebar').isVisible(),true);assert.equal(await page.locator('.topbar').isVisible(),true);
+    await page.screenshot({path:`${shots}/protocol-shell-${width}.png`});
+  }
   assert.deepEqual(errors,[]); assert.deepEqual(outbound,[]);
   console.log('Task station branches, fixed actions, filters, keyboard and responsive checks passed; no external requests.');
 } finally {

@@ -233,3 +233,9 @@
 .protocolos-session-state.connected i { background: #12b76a; }
 .protocolos-session-state.authenticating { color: var(--mba-blue-dark); }
 .protocolos-session-state.authenticating i { background: var(--mba-blue); }
+
+.protocolos-upload-selection{max-height:200px;overflow-y:auto;display:grid;gap:6px}
+.protocolos-upload-selection .protocolos-selected-file{margin-top:0}
+.protocolos-page-react .protocolos-intake-grid-react{align-items:start}
+.protocolos-session-state.error,.protocolos-session-state.lost{color:var(--mba-red,#ef4444)}
+.protocolos-session-state.error i,.protocolos-session-state.lost i{background:var(--mba-red,#ef4444)}

@@ -9,6 +9,7 @@ import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
 import '@fontsource/inter/latin-600.css';
 import '@fontsource/inter/latin-700.css';
+import '../src/dashboard/shell.css';
 import './preview.css';
 
 // Isolated demonstration. This entry never imports config, auth, or the live API.
@@ -16,6 +17,7 @@ const defaultTasks = [
   {id:'demo-liminar',type:'liminar',title:'Validação de liminares',priority:'high',status:'pending',total_processes:8,completed_processes:1,responsible_name:'Equipe operacional'},
   {id:'demo-defesa',type:'defesa',title:'Análise de defesas',source:'automation',priority:'medium',status:'pending',total_processes:6,completed_processes:0,deadline_at:'2026-10-15T16:00:00-04:00'},
 ];
+const shellFixture = new URLSearchParams(location.search).get('fixture') === 'shell';
 const stateFixture = new URLSearchParams(location.search).get('fixture') === 'states';
 const scenario = new URLSearchParams(location.search).get('scenario') || '';
 const scenarioTasks = [
@@ -48,6 +50,6 @@ const request = async (path:string,options?:RequestInit) => {
 Object.assign(window,{MBA_CURRENT_USER:{id:'demo-user',is_master_admin:true,permissions:{'tasks.view':true,'tasks.manage':true,'automations.view':true,'automations.run':false}},MBA_API:{request},MBA_AUTOMATION_API:{request,fetch:async()=>{throw new Error('Exportação desativada nesta prévia.');}}});
 function Preview(){
   const [page,setPage]=useState<'tasks'|'control'>('tasks');
-  return <><div className="demo-notice">PROPOSTA EM TESTE · Dados fictícios · Nenhuma conexão com produção <label className="demo-scenario">Fluxo da prévia<select value={scenario} onChange={event => { location.search = event.target.value ? `?scenario=${event.target.value}` : ''; }}><option value="">Fila geral</option><option value="liminar">Liminar</option><option value="defesa">Defesa</option><option value="comprovante_pagamento">Comprovante de pagamento</option><option value="protocolo">Coleta de documentos</option><option value="acordos">Acordos</option></select></label></div><header className="demo-navbar"><div className="demo-brand"><b>MBA</b> Backoffice</div><nav aria-label="Navegação principal"><span>Gestão Processual</span><span>Operação</span><button aria-current={page==='control'?'page':undefined} onClick={()=>setPage('control')}>Controladoria</button><span>Automações</span><button aria-current={page==='tasks'?'page':undefined} onClick={()=>setPage('tasks')}>Tarefas</button></nav><span className="demo-profile">GP</span></header><div id="tarefas" data-react-tasks="true" className={page==='tasks'?'active':''} hidden={page!=='tasks'}><TasksApp/></div>{page==='control'?<div className="demo-control"><ControladoriaPage/></div>:null}</>;
+  return <>{shellFixture?<aside className="sidebar"><div className="sidebar-head"><strong>MBA Backoffice</strong></div><nav aria-label="Menu lateral"><span className="nav-item">Início</span><span className="nav-item">Operação</span><span className="nav-item active">Tarefas</span></nav></aside>:null}<div className={shellFixture?"main-area":""}><div className="demo-notice">PROPOSTA EM TESTE · Dados fictícios · Nenhuma conexão com produção <label className="demo-scenario">Fluxo da prévia<select value={scenario} onChange={event => { location.search = event.target.value ? `?scenario=${event.target.value}` : ''; }}><option value="">Fila geral</option><option value="liminar">Liminar</option><option value="defesa">Defesa</option><option value="comprovante_pagamento">Comprovante de pagamento</option><option value="protocolo">Coleta de documentos</option><option value="acordos">Acordos</option></select></label></div><header className={`demo-navbar ${shellFixture?"topbar":""}`}><div className="demo-brand"><b>MBA</b> Backoffice</div><nav aria-label="Navegação principal"><span>Gestão Processual</span><span>Operação</span><button aria-current={page==='control'?'page':undefined} onClick={()=>setPage('control')}>Controladoria</button><span>Automações</span><button aria-current={page==='tasks'?'page':undefined} onClick={()=>setPage('tasks')}>Tarefas</button></nav><span className="demo-profile">GP</span></header><div id="tarefas" data-react-tasks="true" className={page==='tasks'?'active':''} hidden={page!=='tasks'}><TasksApp/></div>{page==='control'?<div className="demo-control"><ControladoriaPage/></div>:null}</div></>;
 }
 createRoot(document.getElementById('root')!).render(<Preview/>);

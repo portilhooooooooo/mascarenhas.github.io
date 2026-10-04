@@ -181,3 +181,10 @@ export async function downloadProtocoloExceptions(): Promise<void> {
   link.remove();
   URL.revokeObjectURL(url);
 }
+
+export interface DocumentUploadResult { stored: number; duplicates: number; }
+export async function uploadProtocolDocuments(files: File[]): Promise<DocumentUploadResult> {
+  const body = new FormData();
+  files.forEach(file => body.append('documents', file));
+  return api().request<DocumentUploadResult>('/api/protocolo/documentos/upload', {method:'POST',body});
+}

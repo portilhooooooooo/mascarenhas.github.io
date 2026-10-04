@@ -1,10 +1,6 @@
-/* Execution-only shell. Other modules retain the application navigation. */
-body.task-station-active{overflow:hidden}
-body.task-station-active .sidebar,body.task-station-active .topbar,body.task-station-active .demo-navbar,body.task-station-active .demo-notice{display:none}
-body.task-station-active .main-area,body.task-station-active .app-shell.sidebar-collapsed .main-area{margin:0;width:100%;padding:0}
-body.task-station-active .content{padding:0;max-width:none}
-body.task-station-active #tarefas{margin:0;padding:0}
-#tarefas[data-react-tasks='true'] .tasks-react-root.task-station{height:100dvh;min-height:0;padding:12px;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+/* Fixed task workspace within the existing application navigation. */
+#tarefas{margin:0;padding:0}
+#tarefas[data-react-tasks='true'] .tasks-react-root.task-station{height:var(--task-station-height,calc(100dvh - 130px));min-height:0;padding:0;overflow:hidden;display:flex;flex-direction:column;gap:8px}
 #tarefas[data-react-tasks='true'] .task-station .tasks-workspace{height:auto;min-height:0;flex:1;grid-template-columns:270px minmax(0,1fr);gap:12px;align-items:stretch;overflow:hidden}
 #tarefas[data-react-tasks='true'] .task-station .tasks-workspace-sidebar,#tarefas[data-react-tasks='true'] .task-station .tasks-execution-panel{position:static;height:100%;min-height:0;overflow:hidden}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-section{padding:12px;overflow:hidden;gap:10px}
@@ -46,3 +42,6 @@ body.task-station-active #tarefas{margin:0;padding:0}
 #tarefas[data-react-tasks='true'] .task-station .execution-card .agreement-fields>.task-question{margin-block:10px}
 @media(max-width:900px){#tarefas[data-react-tasks='true'] .task-station .tasks-workspace{grid-template-columns:230px minmax(0,1fr)}}
 @media(max-width:600px){#tarefas[data-react-tasks='true'] .tasks-react-root.task-station{padding:8px}#tarefas[data-react-tasks='true'] .task-station .tasks-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:300px minmax(0,1fr);gap:8px}#tarefas[data-react-tasks='true'] .task-station .queue-station-controls{position:static;text-align:right}#tarefas[data-react-tasks='true'] .task-station .tasks-process-section{gap:6px}#tarefas[data-react-tasks='true'] .task-station .queue-station-filters{gap:8px}#tarefas[data-react-tasks='true'] .task-station .tasks-process-list{min-height:0}#tarefas[data-react-tasks='true'] .task-station .execution-process-heading{padding:10px 14px}#tarefas[data-react-tasks='true'] .task-station .execution-process-heading h2{font-size:17px}#tarefas[data-react-tasks='true'] .task-station .task-form-content{padding:14px;gap:16px}#tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer{padding:10px 14px}#tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer button{font-size:11px;padding-inline:10px}}
+
+#tarefas[data-react-tasks='true'] .task-station .tasks-react-subnav{flex:none;height:40px;margin:0;padding:0 12px}
+.tasks-results{padding:18px 0}.tasks-results h1{font-size:28px}.tasks-results p{font-size:13px;color:var(--mba-text-2,#52647d)}
