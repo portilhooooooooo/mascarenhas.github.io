@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import './defenseAnalysisFlow.css';
-import { TaskQuestion, TaskActionBar, OptionGroup } from './TaskQuestion';
+import { TaskQuestion, TaskActionBar, TaskForm, OptionGroup } from './TaskQuestion';
 
 type YesNo = 'sim' | 'nao' | null;
 export type DefensePriority = 'altissima' | 'alta' | 'baixa';
@@ -12,7 +12,8 @@ export type DefenseAnalysisDraft = {
   reason: DefenseReason | null;
   fatal_deadline: string | null;
   deadline_correct: boolean;
-  has_active_defense_deadline: boolean | null;
+  has_defense_order: boolean | null;
+  has_valid_court_deadline: boolean | null;
   criteria: Array<{ type: DefenseCriterionKey; date: string }>;
 };
 
@@ -66,6 +67,7 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
   const deadline = dateOnly(controlDeadline);
   const [deadlineCorrect, setDeadlineCorrect] = useState<YesNo>(null);
   const [activeDefense, setActiveDefense] = useState<YesNo>(null);
+  const [courtDeadlineValid, setCourtDeadlineValid] = useState<YesNo>(null);
   const [correctFatal, setCorrectFatal] = useState('');
   const [criteria, setCriteria] = useState<Record<DefenseCriterionKey, string>>(EMPTY_CRITERIA);
   const [criterionKeys, setCriterionKeys] = useState<DefenseCriterionKey[]>([]);
@@ -76,7 +78,7 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
   useEffect(() => {
     setDeadlineCorrect(null);
     setActiveDefense(null);
-    setCorrectFatal('');
+    setCourtDeadlineValid(null); setCorrectFatal('');
     setCriteria({ ...EMPTY_CRITERIA });
     setCriterionKeys([]);
     setReason(null);
@@ -88,14 +90,14 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
   const criteriaComplete = criterionKeys.length > 0 && completedCriteria.length === criterionKeys.length;
 
   const ready = deadlineCorrect === 'sim' ? Boolean(deadline)
-    : deadlineCorrect === 'nao' && (activeDefense === 'sim' ? Boolean(criteriaComplete && correctFatal) : activeDefense === 'nao' && Boolean(reason));
+    : deadlineCorrect === 'nao' && (activeDefense === 'sim' ? (courtDeadlineValid === 'sim' ? Boolean(correctFatal) : courtDeadlineValid === 'nao' && criteriaComplete) : activeDefense === 'nao' && Boolean(reason));
 
   const resetAfterDeadline = () => {
-    setActiveDefense(null); setCorrectFatal(''); setCriteria({ ...EMPTY_CRITERIA }); setCriterionKeys([]); setReason(null); setSuspensionOpen(false); setLocalError(null);
+    setActiveDefense(null); setCourtDeadlineValid(null); setCorrectFatal(''); setCriteria({ ...EMPTY_CRITERIA }); setCriterionKeys([]); setReason(null); setSuspensionOpen(false); setLocalError(null);
   };
 
   const chooseDeadline = (value: Exclude<YesNo, null>) => { setDeadlineCorrect(value); resetAfterDeadline(); };
-  const chooseActiveDefense = (value: Exclude<YesNo, null>) => { setActiveDefense(value); setCorrectFatal(''); setCriteria({ ...EMPTY_CRITERIA }); setCriterionKeys([]); setReason(null); setSuspensionOpen(false); setLocalError(null); };
+  const chooseActiveDefense = (value: Exclude<YesNo, null>) => { setActiveDefense(value); setCourtDeadlineValid(null); setCorrectFatal(''); setCriteria({ ...EMPTY_CRITERIA }); setCriterionKeys([]); setReason(null); setSuspensionOpen(false); setLocalError(null); };
   const toggleCriterion = (key: DefenseCriterionKey) => {
     setCriterionKeys(current => current.includes(key) ? current.filter(item => item !== key) : [...current, key]);
     if (criterionKeys.includes(key)) setCriteria(current => ({ ...current, [key]: '' }));
@@ -105,31 +107,34 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
     event.preventDefault();
     if (deadlineCorrect === null) return setLocalError('Informe se o fatal da Enter está correto.');
     if (deadlineCorrect === 'sim' && !deadline) return setLocalError('O prazo informado pela Enter não está disponível.');
-    if (deadlineCorrect === 'nao' && activeDefense === null) return setLocalError('Informe se existe prazo para apresentação de defesa em curso.');
-    if (deadlineCorrect === 'nao' && activeDefense === 'sim' && !criteriaComplete) return setLocalError('Selecione os critérios e informe as respectivas datas.');
-    if (deadlineCorrect === 'nao' && activeDefense === 'sim' && !correctFatal) return setLocalError('Informe o fatal correto.');
+    if (deadlineCorrect === 'nao' && activeDefense === null) return setLocalError('Informe se existe determinação para apresentação da defesa.');
+    if (deadlineCorrect === 'nao' && activeDefense === 'sim' && courtDeadlineValid === null) return setLocalError('Informe se há data fatal válida no tribunal.');
+    if (deadlineCorrect === 'nao' && activeDefense === 'sim' && courtDeadlineValid === 'nao' && !criteriaComplete) return setLocalError('Selecione os andamentos e informe as respectivas datas.');
+    if (deadlineCorrect === 'nao' && activeDefense === 'sim' && courtDeadlineValid === 'sim' && !correctFatal) return setLocalError('Informe o fatal determinado no expediente.');
     if (deadlineCorrect === 'nao' && activeDefense === 'nao' && !reason) return setLocalError('Informe a situação processual.');
 
     setLocalError(null);
     const apt = deadlineCorrect === 'sim' || activeDefense === 'sim';
     await onSubmit({
       reason: apt ? null : reason,
-      fatal_deadline: apt ? deadlineCorrect === 'sim' ? deadline : correctFatal : null,
+      fatal_deadline: apt ? deadlineCorrect === 'sim' ? deadline : courtDeadlineValid === 'sim' ? correctFatal : null : null,
       deadline_correct: deadlineCorrect === 'sim',
-      has_active_defense_deadline: deadlineCorrect === 'sim' ? true : activeDefense === 'sim',
+      has_defense_order: deadlineCorrect === 'sim' ? null : activeDefense === 'sim',
+      has_valid_court_deadline: deadlineCorrect === 'nao' && activeDefense === 'sim' ? courtDeadlineValid === 'sim' : null,
       criteria: completedCriteria.map(item => ({ type: item.key, date: criteria[item.key] })),
     });
   };
 
-  return <form className="defesa-flow" onSubmit={submit}>
-    <div className="defesa-enter-deadline"><small>PRAZO INFORMADO PELA ENTER</small><p>{deadline ? <>A Enter indicou <strong>{formatDate(deadline)}</strong> como data limite para apresentação desta defesa.</> : 'A Enter não informou a data para apresentação desta defesa.'}</p><p>Valide abaixo se o fatal informado está correto.</p></div>
-    <TaskQuestion number="01" question="O fatal da Enter está correto?"><BinaryChoice name="defense-deadline" value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></TaskQuestion>
+  return <TaskForm className="defesa-flow" onSubmit={submit}>
+    <div className="defesa-enter-deadline"><p>{deadline ? <>A Enter determinou que essa defesa deve ser apresentada em <strong>{formatDate(deadline)}</strong>.</> : 'A Enter não informou a data para apresentação desta defesa.'}</p></div>
+    <TaskQuestion number="01" question="Você concorda que o fatal determinado está correto?"><BinaryChoice name="defense-deadline" value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></TaskQuestion>
 
-    {deadlineCorrect === 'nao' ? <TaskQuestion number="02" question="Existe prazo para apresentação de defesa em curso?"><BinaryChoice name="defense-active" value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></TaskQuestion> : null}
+    {deadlineCorrect === 'nao' ? <TaskQuestion number="02" question="Existe determinação para apresentação da defesa?"><BinaryChoice name="defense-active" value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></TaskQuestion> : null}
 
-    {deadlineCorrect === 'nao' && activeDefense === 'sim' ? <>
-      <TaskQuestion number="03" question="Selecione abaixo as evidências para o prazo de defesa."><div className="defesa-flow-criteria">{CRITERIA.map(item => { const selected = criterionKeys.includes(item.key); return <div className={`defesa-flow-criterion ${selected ? 'selected' : ''}`} key={item.key}><button type="button" disabled={busy} aria-pressed={selected} onClick={() => toggleCriterion(item.key)}><span className="defesa-flow-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>{selected ? <label><span>{item.dateLabel}</span><input type="date" disabled={busy} value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}</div>; })}</div></TaskQuestion>
-      <label className="task-text-field defense-cpj-evidence"><span>Fatal Real registrado no CPJ</span><input type="date" disabled={busy} value={correctFatal} onChange={event => setCorrectFatal(event.target.value)}/></label>
+    {deadlineCorrect === 'nao' && activeDefense === 'sim' ? <TaskQuestion number="03" question="Há data fatal válida no tribunal?"><BinaryChoice name="defense-court-valid" value={courtDeadlineValid} onChange={value => { setCourtDeadlineValid(value); setCorrectFatal(''); setCriteria({...EMPTY_CRITERIA}); setCriterionKeys([]); }} disabled={busy}/></TaskQuestion> : null}
+    {deadlineCorrect === 'nao' && activeDefense === 'sim' && courtDeadlineValid === 'sim' ? <TaskQuestion number="04" question="Qual o fatal determinado no expediente?"><label className="task-text-field defense-court-deadline"><span>Data fatal do expediente</span><input type="date" disabled={busy} value={correctFatal} onChange={event => setCorrectFatal(event.target.value)}/></label></TaskQuestion> : null}
+    {deadlineCorrect === 'nao' && activeDefense === 'sim' && courtDeadlineValid === 'nao' ? <>
+      <TaskQuestion number="04" question="Selecione abaixo quais foram os andamentos da citação"><div className="defesa-flow-criteria">{CRITERIA.map(item => { const selected = criterionKeys.includes(item.key); return <div className={`defesa-flow-criterion ${selected ? 'selected' : ''}`} key={item.key}><button type="button" disabled={busy} aria-pressed={selected} onClick={() => toggleCriterion(item.key)}><span className="defesa-flow-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>{selected ? <label><span>{item.dateLabel}</span><input type="date" disabled={busy} value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}</div>; })}</div></TaskQuestion>
     </> : null}
 
     {deadlineCorrect === 'nao' && activeDefense === 'nao' ? <>
@@ -139,5 +144,5 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
 
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
     <TaskActionBar busy={busy} ready={Boolean(ready)} onSkip={() => void onSkip()}/>
-  </form>;
+  </TaskForm>;
 }

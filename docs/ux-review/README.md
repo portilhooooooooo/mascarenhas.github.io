@@ -1,42 +1,40 @@
-# Workspace de tarefas — revisão de UX
+# Estação de tarefas — revisão de UX
 
-Alterações na branch `dev/tasks-workspace`, sem deploy ou alteração de produção.
+Frontend: `dev/tasks-workspace`. Backend: `main`. Nenhum deploy ou alteração no banco de produção.
 
-## Estrutura e perguntas
+## Estação
 
-Defesa, Liminar, Pagamento, Protocolo e Acordos compartilham o contexto do processo, `TaskQuestion`, opções de resposta e `TaskActionBar`. A largura e os espaçamentos são constantes; a altura acompanha o conteúdo. A barra de ações é sticky e mantém “Pular esse prazo” e “Salvar e próximo”. Não há rolagem interna do workspace. A fila ajusta a quantidade de itens ao conteúdo e mantém paginação.
+Workspace com altura da viewport igual para todas as tarefas. Navegação global e subnav são ocultadas somente durante execução; “Gestão de lotes” / “Voltar ao backoffice” restaura a navegação. Densidade ajustada com CSS, sem zoom.
 
-Removidos o card de concluídos/status/prazo, resumos de respostas, indícios e classificações apresentadas ao operador. Pasta e provisão continuam como dados do processo. O tipo exibido no cabeçalho deriva da tarefa ativa; o seletor foi identificado como “Filtrar tipo” para distinguir filtro de indicador.
+A fila tem situação e prioridade lado a lado, busca apenas por número do processo, paginação adaptada ao espaço e prioridades recebidas do backend. Pular manda o processo ao final da fila. Concluídos aparecem como consulta, sem formulário de execução.
 
-Perguntas condicionais usam o mesmo componente independente. Cards usam radios reais, suporte a teclado, foco visível e seleção com borda lateral além da cor azul do tema. Estados são isolados por tarefa/processo. Acordos preserva sua navegação controlada pelo backend, sem remontar o módulo ao receber o próximo processo. Em Protocolos apenas arquivos já enviados são preservados no cache; respostas e justificativas são reiniciadas.
+Conteúdo e ações têm containers separados. “Pular esse prazo” e “Salvar e próximo” ficam no rodapé, sempre na mesma posição. Há rolagem de conteúdo como fallback para telas menores ou formulários extensos; a página não rola. Cards de uma mesma pergunta têm dimensões iguais. Radios acessíveis, teclado e azul do tema compartilhados. Respostas filhas são limpas ao trocar de ramo e ao navegar entre processos.
 
-## Defesa e Liminar
+## Perguntas
 
-O fatal da Enter aparece em contexto compacto com data destacada. “Suspenso” fica selecionado imediatamente; o tema aparece como pergunta 04 independente. Trocar o motivo limpa o tema anterior.
+- Defesa: concordância com fatal da Enter → determinação judicial → fatal válido no tribunal → data do expediente ou andamentos da citação. Sem Fatal Real CPJ. Sem data válida, o frontend não inventa prazo; backend valida conclusão e prioridade.
+- Protocolos: Sim/Não para anexar defesa e protocolo. Sim abre os dois PDFs. Não oferece apenas defesa concluída externamente ou ainda não protocolada, sem justificativa.
+- Liminar: sentença numerada 03.
+- Comprovante: pagamento e localização do comprovante com Sim/Não; bloqueio numerado conforme o ramo. Sem pasta no contexto.
 
-Liminar segue exatamente a árvore solicitada: pedido de tutela → decisão judicial → deferida/indeferida; no ramo sem decisão, pergunta sobre sentença. Alterar respostas pai limpa respostas filhas. O adaptador preserva os resultados legados `nao_solicitada`, `deferida`, `indeferida`, `com_sentenca` e `sem_decisao`.
-
-O contrato de Defesa V3 da etapa anterior permanece: conclusão e prioridade são resolvidas no backend. Não houve alterações de API, banco, workers ou classificações nesta refatoração. Frontend e backend V3 precisam de homologação conjunta antes da promoção; não foi feito deploy.
-
-## Protocolos
-
-Justificativa aparece e é obrigatória somente para “Outro motivo”. Trocar de motivo limpa o texto. Para motivos predefinidos, o payload mantém o campo legado `notes` com o próprio rótulo do motivo, garantindo compatibilidade sem exigir texto do operador. Upload em duas etapas, PDF e commit permanecem intactos.
-
-![Pagamento](execucao-tarefas.png)
 ![Defesa](defesa-workspace.png)
+![Protocolos](protocolos-workspace.png)
+![Comprovante](execucao-tarefas.png)
 
-## Validação local
+## Backend e homologação
+
+Defesa V4 usa contexto autorizado e RPC atômica existente; V3 permanece compatível. Os dois novos motivos de Protocolo dispensam justificativa, mantendo validação dos clientes antigos.
+
+O formulário de Comprovante já enviava V2, enquanto a main aceitava somente V1. A correção preserva todas as respostas, inclusive manifestação e aprovação pendente, em um contrato V2 separado. A migração `20261004040000_task_payment_answers_v2.sql` foi somente versionada no backend: precisa ser aplicada e testada em homologação antes de deploy. O contrato V1 permanece intacto. Os relatórios que consumirem V2 devem usar `payment_receipt_answers_v2`; não se converte aprovação pendente em recusa bancária.
+
+## Validação
 
 ```bash
 npm run build
 npm run build:ux
 npm run test:hardening
 npm run test:metabase
-npm run test:ux
+UX_CHROMIUM_PATH=/caminho/chromium npm run test:ux
 ```
 
-Para Chromium alternativo: `UX_CHROMIUM_PATH=/caminho/chromium npm run test:ux`.
-
-A prévia usa componentes reais com dados fictícios, sem conexão com produção. Testes de interação cobrem os cinco ramos de Liminar, mudança de ramo, seleção/tema de suspensão, evidências de Defesa, envio dos formulários, justificativa condicional de Protocolo, PDFs, reset e navegação, teclado, responsividade e ausência de rolagem interna. Capturas em 1920, 1600, 1366 e 390 px ficam em `.build/ux-qa`.
-
-As verificações de envio interceptam as APIs localmente. Operação com dados reais em homologação continua pendente. Atualização por evento do backend fica para a etapa separada solicitada.
+Componentes reais com fixtures locais. Interações cobrem os ramos, payloads, limpeza de estado, PDF, filtros, consulta de concluídos, teclado, cards iguais, ações fora da rolagem e viewports 1920, 1600, 1366 e 390 px. APIs interceptadas, sem gravações reais. Backend: testes de respostas e integração com RPC simulada; SQL e PL/pgSQL analisados sintaticamente. Migração ainda não executada em Postgres. Atualização por evento fica para a etapa separada solicitada.

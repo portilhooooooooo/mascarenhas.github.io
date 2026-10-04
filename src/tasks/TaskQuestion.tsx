@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { Children, isValidElement, type FormHTMLAttributes, type ReactNode } from 'react';
 export function TaskQuestion({ number, question, children }: { number: string; question: string; children: ReactNode }) {
   return <section className="task-question"><h3><span className="task-question-number">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
@@ -41,3 +41,10 @@ export function OptionGroup({ name, value, onChange, options, disabled = false }
   );
 }
 
+
+export function TaskForm({ children, ...props }: FormHTMLAttributes<HTMLFormElement>) {
+  const items = Children.toArray(children);
+  const actions = items.filter(child => isValidElement(child) && child.type === TaskActionBar);
+  const content = items.filter(child => !isValidElement(child) || child.type !== TaskActionBar);
+  return <form {...props}><div className="task-form-content">{content}</div>{actions}</form>;
+}

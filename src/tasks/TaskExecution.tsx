@@ -4,7 +4,7 @@ import { taskTypeLabel, type Task, type TaskProcess } from './model';
 import './taskExecution.css';
 
 export function TaskBrief({ task, process }: { task: Task; process: TaskProcess }) {
-  return process.folder ? <section className="execution-brief" aria-label="Dados do processo"><dl><div><dt>Pasta</dt><dd>{process.folder}</dd></div></dl></section> : null;
+  return task.type !== 'comprovante_pagamento' && process.folder ? <section className="execution-brief" aria-label="Dados do processo"><dl><div><dt>Pasta</dt><dd>{process.folder}</dd></div></dl></section> : null;
 }
 
 export function ProcessHeading({ task, process }: { task: Task; process: TaskProcess }) {

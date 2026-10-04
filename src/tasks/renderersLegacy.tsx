@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import type { Task, TaskProcess } from './model';
-import { TaskQuestion, TaskActionBar, OptionGroup } from './TaskQuestion';
+import { TaskQuestion, TaskActionBar, TaskForm, OptionGroup } from './TaskQuestion';
 
 export type ApiRequest = (path: string, options?: RequestInit) => Promise<any>;
 
@@ -10,9 +10,6 @@ function ErrorMessage({ message }: { message: string | null }) {
   return message ? <p className="task-renderer-error" role="alert">{message}</p> : null;
 }
 
-function RendererFooter({ busy, onSkip, ready = true }: { busy: boolean; onSkip: () => void; label?: string; ready?: boolean }) {
-  return <TaskActionBar busy={busy} ready={ready} onSkip={onSkip}/>;
-}
 
 type BaseRendererProps = {
   api: ApiRequest;
@@ -72,14 +69,14 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
   };
 
   return (
-    <form className="task-renderer-form" onSubmit={submit}>
+    <TaskForm className="task-renderer-form" onSubmit={submit}>
       <TaskQuestion number="01" question="Há pedido de tutela antecipada na inicial desse processo?"><OptionGroup name="liminar-requested" value={requested} onChange={value => { setRequested(value); setDecided(null); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion>
       {requested === 'sim' ? <TaskQuestion number="02" question="A tutela de urgência já foi decidida pelo juiz?"><OptionGroup name="liminar-decided" value={decided} onChange={value => { setDecided(value); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
       {requested === 'sim' && decided === 'sim' ? <TaskQuestion number="03" question="Qual foi a decisão do juiz sobre a tutela de urgência?"><OptionGroup name="liminar-result" value={result} onChange={setResult} disabled={busy} options={[{value:'deferida',label:'Deferida'},{value:'indeferida',label:'Indeferida'}]}/></TaskQuestion> : null}
-      {requested === 'sim' && decided === 'nao' ? <TaskQuestion number="04" question="Esse processo teve sentença?"><OptionGroup name="liminar-judgment" value={judgment} onChange={setJudgment} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
+      {requested === 'sim' && decided === 'nao' ? <TaskQuestion number="03" question="Esse processo teve sentença?"><OptionGroup name="liminar-judgment" value={judgment} onChange={setJudgment} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
       <ErrorMessage message={error} />
-      <RendererFooter busy={busy} onSkip={skip} label="Salvar e próximo" ready={Boolean(decision)} />
-    </form>
+      <TaskActionBar busy={busy} onSkip={skip} ready={Boolean(decision)} />
+    </TaskForm>
   );
 }
 
@@ -202,20 +199,20 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
   const analysisReady = (() => { try { buildPayload(); return true; } catch { return false; } })();
 
   return (
-    <form className="task-renderer-form" onSubmit={submit}>
+    <TaskForm className="task-renderer-form" onSubmit={submit}>
       <TaskQuestion number="1" question="O pagamento foi efetivado?">
 
         <OptionGroup name="payment-status" value={paymentStatus} onChange={choosePaymentStatus} disabled={busy} options={[
-          { value: 'pago', label: 'Foi pago', description: 'Pagamento efetivado' },
-          { value: 'nao_pago', label: 'Não foi pago', description: 'Pagamento ainda não efetivado' },
+          { value: 'pago', label: 'Sim', description: 'Pagamento efetivado' },
+          { value: 'nao_pago', label: 'Não', description: 'Pagamento ainda não efetivado' },
         ]} />
       </TaskQuestion>
 
       {paymentStatus === 'pago' ? (
         <TaskQuestion number="2" question="Você localizou o comprovante?">
           <OptionGroup name="paid-receipt" value={paidReceipt} onChange={value => { setPaidReceipt(value); setManifested(null); setManifestationReason(''); }} disabled={busy} options={[
-            { value: 'com_comprovante', label: 'Com comprovante', description: 'Comprovante localizado' },
-            { value: 'sem_comprovante', label: 'Sem comprovante', description: 'Comprovante não localizado' },
+            { value: 'com_comprovante', label: 'Sim', description: 'Comprovante localizado' },
+            { value: 'sem_comprovante', label: 'Não', description: 'Comprovante não localizado' },
           ]} />
         </TaskQuestion>
       ) : null}
@@ -256,7 +253,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
         </TaskQuestion>
       ) : null}
 
-      <TaskQuestion number="4" question="Houve bloqueio relacionado ao pagamento?">
+      <TaskQuestion number={paymentStatus === 'pago' && paidReceipt === 'com_comprovante' || paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? '4' : paymentStatus ? '3' : '2'} question="Houve bloqueio relacionado ao pagamento?">
         <OptionGroup name="had-block" value={hadBlock} onChange={setHadBlock} disabled={busy} options={[
           { value: 'true', label: 'Sim', description: 'Foi identificado bloqueio relacionado' },
           { value: 'false', label: 'Não', description: 'Não foi identificado bloqueio' },
@@ -265,8 +262,8 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
 
 
       <ErrorMessage message={error} />
-      <RendererFooter busy={busy} onSkip={skip} ready={analysisReady} />
-    </form>
+      <TaskActionBar busy={busy} onSkip={skip} ready={analysisReady} />
+    </TaskForm>
   );
 }
 
@@ -493,7 +490,7 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
   if (!agreement && !error) return <div className="task-renderer-state"><strong>Fila concluída</strong><span>Não há outros acordos pendentes nesta tarefa.</span></div>;
 
   return (
-    <form className="task-renderer-form" onSubmit={submit}>
+    <TaskForm className="task-renderer-form" onSubmit={submit}>
 
       <div className="agreement-process-context">Provisão: {currency(agreement?.provision_amount)}</div><div className="agreement-screening">
       <TaskQuestion number="1" question="Já existe acordo neste processo?">
@@ -527,8 +524,8 @@ export function AgreementRenderer({ api, task, onServerProcess, onAgreementCompl
       <label className="task-check-field"><input type="checkbox" checked={needsSupport} disabled={busy} onChange={event => setNeedsSupport(event.target.checked)} /><span>Preciso de Apoio</span></label>
       <ErrorMessage message={error} />
 
-      {agreement ? <RendererFooter busy={busy} onSkip={skip} ready={agreementReady} /> : null}
-    </form>
+      {agreement ? <TaskActionBar busy={busy} onSkip={skip} ready={agreementReady} /> : null}
+    </TaskForm>
   );
 }
 

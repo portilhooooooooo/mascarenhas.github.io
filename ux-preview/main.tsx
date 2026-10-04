@@ -16,6 +16,7 @@ const defaultTasks = [
   {id:'demo-liminar',type:'liminar',title:'Validação de liminares',priority:'high',status:'pending',total_processes:8,completed_processes:1,responsible_name:'Equipe operacional'},
   {id:'demo-defesa',type:'defesa',title:'Análise de defesas',source:'automation',priority:'medium',status:'pending',total_processes:6,completed_processes:0,deadline_at:'2026-10-15T16:00:00-04:00'},
 ];
+const stateFixture = new URLSearchParams(location.search).get('fixture') === 'states';
 const scenario = new URLSearchParams(location.search).get('scenario') || '';
 const scenarioTasks = [
   {id:'demo-payment',type:'comprovante_pagamento',title:'Conferência de pagamentos',priority:'medium',status:'pending',total_processes:6,completed_processes:0},
@@ -24,7 +25,7 @@ const scenarioTasks = [
 ];
 const selectedScenario = [...defaultTasks,...scenarioTasks].find(task => task.type === scenario);
 const tasks = selectedScenario ? [{...selectedScenario,total_processes:24,completed_processes:0}] : defaultTasks;
-const processes = (id:string) => Array.from({length:selectedScenario?24:id==='demo-liminar'?7:6},(_,i)=>({id:`${id}-${i}`,task_id:id,case_number:`DEMO ${String(i+1).padStart(4,'0')} · ${id==='demo-liminar'?'SP':'RS'}`,party_name:'Parte demonstrativa',folder:'Pasta DEMO 1032',provision_amount:2500,status:'pending',position:i,indicio:id==='demo-liminar'?'Liminar deferida — conferir decisão':id==='demo-defesa'?'Divergência de prazo — conferir evidências':'Conferência operacional pendente',source:id==='demo-defesa'?'talisman_contestacao':'demo',source_metadata:{fatal_deadline:'2026-10-15',operational_deadline:'2026-10-10',responsible:'Equipe de Controladoria',routing_status:i%3===0?'human_review':i%3===1?'saneado':'aguardando'}}));
+const processes = (id:string) => Array.from({length:selectedScenario?24:id==='demo-liminar'?7:6},(_,i)=>({id:`${id}-${i}`,task_id:id,case_number:`DEMO ${String(i+1).padStart(4,'0')} · ${id==='demo-liminar'?'SP':'RS'}`,party_name:'Parte demonstrativa',folder:'Pasta DEMO 1032',provision_amount:2500,status:stateFixture && i===1?'completed':stateFixture && i===2?'error':'pending',priority:stateFixture?(i===3?'altissima':'baixa'):undefined,position:i,indicio:id==='demo-liminar'?'Liminar deferida — conferir decisão':id==='demo-defesa'?'Divergência de prazo — conferir evidências':'Conferência operacional pendente',source:id==='demo-defesa'?'talisman_contestacao':'demo',source_metadata:{fatal_deadline:'2026-10-15',operational_deadline:'2026-10-10',responsible:'Equipe de Controladoria',routing_status:i%3===0?'human_review':i%3===1?'saneado':'aguardando'}}));
 const items = [
   ['HUMAN_NECESSARY','RETRY_EXHAUSTED','Conferir o estado na Enter antes de repetir o envio',false],
   ['SEM_DOCUMENTOS','DOCUMENT_INTAKE','',false],

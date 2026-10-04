@@ -3,7 +3,7 @@ import { CheckCircle2, FileText, Upload } from 'lucide-react';
 import type { Task, TaskProcess } from './model';
 import { OptionGroup, type ApiRequest } from './renderers';
 import './protocolCollection.css';
-import { TaskQuestion, TaskActionBar } from './TaskQuestion';
+import { TaskQuestion, TaskActionBar, TaskForm } from './TaskQuestion';
 
 type Props = {
   api: ApiRequest;
@@ -21,17 +21,14 @@ type Draft = {
   protocolo: File | null;
   defesaStage: StageState;
   protocoloStage: StageState;
-  mode: 'documents' | 'error';
+  mode: 'documents' | 'error' | null;
   reason: string | null;
   notes: string;
 };
 
 const ERROR_REASONS = [
-  { value: 'DEFESA_AUSENTE', label: 'Defesa não localizada' },
-  { value: 'PROTOCOLO_AUSENTE', label: 'Protocolo não localizado' },
-  { value: 'TAREFA_INDEVIDA', label: 'Tarefa aberta indevidamente' },
-  { value: 'ARQUIVO_INVALIDO', label: 'Arquivo inválido' },
-  { value: 'OUTRO', label: 'Outro motivo' },
+  { value: 'DEFESA_CONCLUIDA_EXTERNAMENTE', label: 'A defesa foi concluída externamente' },
+  { value: 'AINDA_NAO_PROTOCOLADO', label: 'Ainda não foi protocolado nos autos' },
 ];
 
 const draftCache = new Map<string, Draft>();
@@ -43,7 +40,7 @@ function emptyDraft(): Draft {
     protocolo: null,
     defesaStage: 'idle',
     protocoloStage: 'idle',
-    mode: 'documents',
+    mode: null,
     reason: null,
     notes: '',
   };
@@ -124,19 +121,20 @@ function UploadField({
 }
 
 export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkipped }: Props) {
-  const [draft, setDraft] = useState<Draft>(() => ({ ...(draftCache.get(process.id) || emptyDraft()), mode: 'documents', reason: null, notes: '' }));
+  const [draft, setDraft] = useState<Draft>(() => ({ ...(draftCache.get(process.id) || emptyDraft()), mode: null, reason: null, notes: '' }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const generations = useRef<Record<DocumentKind, number>>({ defesa: 0, protocolo: 0 });
 
   useEffect(() => {
-    const cached: Draft = { ...(draftCache.get(process.id) || emptyDraft()), mode: 'documents', reason: null, notes: '' };
+    const cached: Draft = { ...(draftCache.get(process.id) || emptyDraft()), mode: null, reason: null, notes: '' };
     setDraft(cached);
     setBusy(false);
     setError(null);
   }, [process.id]);
 
   const patchDraft = (patch: Partial<Draft>) => {
+    setError(null);
     setDraft(current => {
       const next = { ...current, ...patch };
       draftCache.set(process.id, next);
@@ -186,13 +184,10 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     event.preventDefault();
     setError(null);
 
+    if (draft.mode === null) { setError('Informe se consegue anexar os documentos.'); return; }
     if (draft.mode === 'error') {
       if (!draft.reason) {
         setError('Selecione o motivo do erro.');
-        return;
-      }
-      if (draft.reason === 'OUTRO' && !draft.notes.trim()) {
-        setError('Justifique o erro antes de continuar.');
         return;
       }
       setBusy(true);
@@ -202,7 +197,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
           method: 'POST',
           body: JSON.stringify({
             reason: draft.reason,
-            notes: draft.reason === 'OUTRO' ? draft.notes.trim() : ERROR_REASONS.find(item => item.value === draft.reason)?.label || '',
+            notes: null,
             client_action_at: clientActionAt,
           }),
         });
@@ -257,10 +252,10 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
   const documentsReady = draft.defesaStage === 'ready' && draft.protocoloStage === 'ready';
 
   return (
-    <form className="task-renderer-form protocol-collection-form" onSubmit={submit}>
+    <TaskForm className="task-renderer-form protocol-collection-form" onSubmit={submit}>
       <div className="protocol-collection-content">
-        <TaskQuestion number="01" question="Reúna a defesa e o comprovante de protocolo">
-
+        <TaskQuestion number="01" question="Você consegue anexar a defesa e o protocolo na tarefa abaixo?"><OptionGroup name="protocol-can-attach" value={draft.mode === null ? null : draft.mode === 'documents' ? 'sim' : 'nao'} onChange={value => patchDraft({mode: value === 'sim' ? 'documents' : 'error', reason: null, notes: ''})} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]} disabled={busy}/></TaskQuestion>
+        {draft.mode === 'documents' ? (
         <div className="protocol-upload-stack">
           <UploadField
             label="Defesa"
@@ -280,22 +275,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
           />
         </div>
 
-        <div className="task-option-grid protocol-error-choice" role="radiogroup" aria-label="Resultado da coleta">
-          <label className="task-option-card">
-            <input
-              type="radio"
-              name="protocol-collection-outcome"
-              value="error"
-              checked={draft.mode === 'error'}
-              disabled={busy}
-              onChange={() => patchDraft({ mode: 'error' })}
-              onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); patchDraft({ mode: 'error' }); } }}
-            />
-            <span><strong>Não consegui reunir os documentos</strong><small>Informe o motivo e a justificativa para registrar o impedimento.</small></span>
-          </label>
-        </div>
-
-        </TaskQuestion>
+        ) : null}
         {draft.mode === 'error' ? (
           <section className="protocol-error-panel">
             <TaskQuestion number="02" question="Por que a coleta não pôde ser concluída?">
@@ -307,26 +287,6 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
                 disabled={busy}
               />
             </TaskQuestion>
-            {draft.reason === 'OUTRO' ? (<label className="task-text-field">
-              <span>Justificativa <b>(obrigatório)</b></span>
-              <textarea
-                value={draft.notes}
-                rows={4}
-                maxLength={500}
-                disabled={busy}
-                onChange={event => patchDraft({ notes: event.target.value })}
-                placeholder="Explique objetivamente por que a coleta não pôde ser concluída..."
-              />
-              <em>{draft.notes.length}/500</em>
-            </label>) : null}
-            <button
-              className="protocol-back-link"
-              type="button"
-              disabled={busy}
-              onClick={() => patchDraft({ mode: 'documents', reason: null, notes: '' })}
-            >
-              Voltar para a coleta de documentos
-            </button>
           </section>
         ) : null}
 
@@ -334,7 +294,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
         {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
       </div>
 
-      <TaskActionBar busy={busy} onSkip={() => void skip()} ready={draft.mode === 'documents' ? documentsReady : Boolean(draft.reason && (draft.reason !== 'OUTRO' || draft.notes.trim()))}/>
-    </form>
+      <TaskActionBar busy={busy} onSkip={() => void skip()} ready={draft.mode === 'documents' ? documentsReady : draft.mode === 'error' && Boolean(draft.reason)}/>
+    </TaskForm>
   );
 }

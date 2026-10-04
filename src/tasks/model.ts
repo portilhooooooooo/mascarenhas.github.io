@@ -192,7 +192,23 @@ export function compareTasks(a: Task, b: Task) {
   return String(a.id).localeCompare(String(b.id));
 }
 
+export function backendPriority(item: WorkItem) {
+  return normalize(item.process.priority || item.task.priority) || 'unspecified';
+}
+export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Altíssima', 'altíssima': 'Altíssima', highest: 'Altíssima', urgent: 'Altíssima', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Normal', baixa: 'Baixa', low: 'Baixa', unspecified: 'Não informada' };
+function priorityRank(item: WorkItem) {
+  const value = backendPriority(item);
+  return ['altissima','altíssima','highest','urgent'].includes(value) ? 0 : ['alta','high'].includes(value) ? 1 : ['media','média','medium','normal'].includes(value) ? 2 : ['baixa','low'].includes(value) ? 3 : 4;
+}
+export function processStatus(item: WorkItem, skipped = false) {
+  const status = normalize(item.process.status) || 'pending';
+  return skipped && !['completed','error','erro','failed'].includes(status) ? 'skipped' : status;
+}
+export const PROCESS_STATUS_LABELS: Record<string,string> = { pending:'Pendente', in_progress:'Em execução', waiting:'Aguardando', queued:'Na fila', created:'Pendente', completed:'Concluído', skipped:'Pulado', error:'Erro', erro:'Erro', failed:'Erro', cancelled:'Cancelado', inactive:'Inativo' };
+
 export function compareWorkItems(a: WorkItem, b: WorkItem) {
+  const priority = priorityRank(a) - priorityRank(b);
+  if (priority) return priority;
   const taskOrder = compareTasks(a.task, b.task);
   if (taskOrder) return taskOrder;
   const position = processPosition(a.process) - processPosition(b.process);

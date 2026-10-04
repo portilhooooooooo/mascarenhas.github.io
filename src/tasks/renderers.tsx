@@ -31,12 +31,13 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
       await api(`/api/task-processes/${process.id}/defesa-analysis`, {
         method: 'POST',
         body: JSON.stringify({
-          workflow_version: 3,
+          workflow_version: 4,
           reason: draft.reason,
-          cpj_fatal_deadline: draft.deadline_correct ? null : draft.fatal_deadline,
+          court_fatal_deadline: draft.deadline_correct ? null : draft.fatal_deadline,
           criteria: draft.criteria,
           controladoria_deadline_correct: draft.deadline_correct,
-          has_active_defense_deadline: draft.has_active_defense_deadline,
+          has_defense_order: draft.has_defense_order,
+          has_valid_court_deadline: draft.has_valid_court_deadline,
           analysis_origin: 'TASK',
         }),
       });
