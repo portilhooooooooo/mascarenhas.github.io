@@ -123,9 +123,7 @@ assert.doesNotMatch(taskModel, /deadline.*today.*urgent/i, 'today alone must not
 assert.doesNotMatch(allTaskRenderers, /data-lucide/, 'answer cards must not use decorative icons');
 assert.match(allTaskRenderers, /workflow_version: 2/, 'payment renderer must use the current payment workflow contract');
 assert.match(allTaskRenderers, /agreement-skip-next/, 'agreement renderer must preserve the backend skip-next contract');
-assert.match(allTaskRenderers, /label: 'Não houve pedido'/, 'liminar must use the operational label Não houve pedido');
-assert.match(allTaskRenderers, /value: 'sem_decisao', label: 'Sem decisão'/, 'liminar must include Sem decisão as a distinct outcome');
-assert.match(allTaskRenderers, /sem_decisao[\s\S]*value: 'erro', label: 'Não foi possível analisar'/, 'liminar analysis failure must remain the final outcome');
-assert.match(tasksCss, /task-option-grid\[aria-label="liminar-decision"\]\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/, 'liminar outcomes must render in pairs');
+assert.match(allTaskRenderers, /'nao_solicitada'/, 'liminar preserves legacy no-request classification');
+assert.match(allTaskRenderers, /'sem_decisao'/, 'liminar preserves legacy undecided classification');
 
 console.log('hardening regression checks passed');

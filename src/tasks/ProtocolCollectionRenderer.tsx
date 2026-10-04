@@ -3,7 +3,7 @@ import { CheckCircle2, FileText, Upload } from 'lucide-react';
 import type { Task, TaskProcess } from './model';
 import { OptionGroup, type ApiRequest } from './renderers';
 import './protocolCollection.css';
-import { DecisionReview } from './TaskExecution';
+import { TaskQuestion, TaskActionBar } from './TaskQuestion';
 
 type Props = {
   api: ApiRequest;
@@ -124,13 +124,13 @@ function UploadField({
 }
 
 export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkipped }: Props) {
-  const [draft, setDraft] = useState<Draft>(() => draftCache.get(process.id) || emptyDraft());
+  const [draft, setDraft] = useState<Draft>(() => ({ ...(draftCache.get(process.id) || emptyDraft()), mode: 'documents', reason: null, notes: '' }));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const generations = useRef<Record<DocumentKind, number>>({ defesa: 0, protocolo: 0 });
 
   useEffect(() => {
-    const cached = draftCache.get(process.id) || emptyDraft();
+    const cached: Draft = { ...(draftCache.get(process.id) || emptyDraft()), mode: 'documents', reason: null, notes: '' };
     setDraft(cached);
     setBusy(false);
     setError(null);
@@ -191,7 +191,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
         setError('Selecione o motivo do erro.');
         return;
       }
-      if (!draft.notes.trim()) {
+      if (draft.reason === 'OUTRO' && !draft.notes.trim()) {
         setError('Justifique o erro antes de continuar.');
         return;
       }
@@ -202,7 +202,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
           method: 'POST',
           body: JSON.stringify({
             reason: draft.reason,
-            notes: draft.notes.trim(),
+            notes: draft.reason === 'OUTRO' ? draft.notes.trim() : ERROR_REASONS.find(item => item.value === draft.reason)?.label || '',
             client_action_at: clientActionAt,
           }),
         });
@@ -259,14 +259,11 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
   return (
     <form className="task-renderer-form protocol-collection-form" onSubmit={submit}>
       <div className="protocol-collection-content">
-        <section className="task-question protocol-title-block">
-          <h3>1. Confira e anexe os arquivos</h3>
-          <p>Os dois documentos precisam estar enviados antes de registrar a coleta.</p>
-        </section>
+        <TaskQuestion number="01" question="Reúna a defesa e o comprovante de protocolo">
 
         <div className="protocol-upload-stack">
           <UploadField
-            label="1. Defesa"
+            label="Defesa"
             kind="defesa"
             file={draft.defesa}
             stage={draft.defesaStage}
@@ -274,7 +271,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
             onSelect={stageDocument}
           />
           <UploadField
-            label="2. Comprovante de protocolo"
+            label="Comprovante de protocolo"
             kind="protocolo"
             file={draft.protocolo}
             stage={draft.protocoloStage}
@@ -292,25 +289,25 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
               checked={draft.mode === 'error'}
               disabled={busy}
               onChange={() => patchDraft({ mode: 'error' })}
+              onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); patchDraft({ mode: 'error' }); } }}
             />
             <span><strong>Não consegui reunir os documentos</strong><small>Informe o motivo e a justificativa para registrar o impedimento.</small></span>
           </label>
         </div>
 
+        </TaskQuestion>
         {draft.mode === 'error' ? (
           <section className="protocol-error-panel">
-            <div className="task-question">
-              <h3>Por que a coleta não pôde ser concluída?</h3>
-              <p>Selecione o motivo e registre a justificativa.</p>
+            <TaskQuestion number="02" question="Por que a coleta não pôde ser concluída?">
               <OptionGroup
                 name="protocol-error-reason"
                 value={draft.reason}
-                onChange={reason => patchDraft({ reason })}
+                onChange={reason => patchDraft({ reason, notes: '' })}
                 options={ERROR_REASONS}
                 disabled={busy}
               />
-            </div>
-            <label className="task-text-field">
+            </TaskQuestion>
+            {draft.reason === 'OUTRO' ? (<label className="task-text-field">
               <span>Justificativa <b>(obrigatório)</b></span>
               <textarea
                 value={draft.notes}
@@ -321,32 +318,23 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
                 placeholder="Explique objetivamente por que a coleta não pôde ser concluída..."
               />
               <em>{draft.notes.length}/500</em>
-            </label>
+            </label>) : null}
             <button
               className="protocol-back-link"
               type="button"
               disabled={busy}
-              onClick={() => patchDraft({ mode: 'documents' })}
+              onClick={() => patchDraft({ mode: 'documents', reason: null, notes: '' })}
             >
               Voltar para a coleta de documentos
             </button>
           </section>
         ) : null}
 
-        <DecisionReview title={draft.mode === 'error' ? 'Confira o impedimento' : 'Confira os documentos'} rows={draft.mode === 'error' ? [['Motivo', ERROR_REASONS.find(reason => reason.value === draft.reason)?.label], ['Justificativa', draft.notes.trim()]] : [['Defesa', draft.defesaStage === 'ready' ? draft.defesa?.name : null], ['Comprovante de protocolo', draft.protocoloStage === 'ready' ? draft.protocolo?.name : null]]} pending={draft.mode === 'error' ? !draft.reason || !draft.notes.trim() ? 'Selecione o motivo e descreva o impedimento.' : null : !documentsReady ? 'Anexe os dois PDFs e aguarde a confirmação de envio.' : null}/>
+
         {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
       </div>
 
-      <footer className="task-renderer-footer protocol-workspace-footer">
-        <button className="secondary-button" type="button" disabled={busy} onClick={skip}>Pular esse prazo</button>
-        <button
-          className="primary-button"
-          type="submit"
-          disabled={busy || (draft.mode === 'documents' ? !documentsReady : !draft.reason || !draft.notes.trim())}
-        >
-          {busy ? 'Salvando…' : 'Salvar e próximo'}
-        </button>
-      </footer>
+      <TaskActionBar busy={busy} onSkip={() => void skip()} ready={draft.mode === 'documents' ? documentsReady : Boolean(draft.reason && (draft.reason !== 'OUTRO' || draft.notes.trim()))}/>
     </form>
   );
 }

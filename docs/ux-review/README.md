@@ -1,53 +1,42 @@
-# Tarefas e Controladoria — revisão de UX
+# Workspace de tarefas — revisão de UX
 
-Implementação na branch `dev/tasks-workspace`. Sem deploy, merge em main, alteração de autenticação ou gravação de processos reais.
+Alterações na branch `dev/tasks-workspace`, sem deploy ou alteração de produção.
 
-## Workspace de tarefas
+## Estrutura e perguntas
 
-Todos os tipos de tarefa usam a mesma área de execução no desktop: altura mínima de 900 px, ajustada apenas para viewports mais altos. Respostas condicionais não mudam o tamanho do workspace. Não há rolagem interna. Em resoluções menores que o conteúdo, apenas a página rola; no fallback móvel, o conteúdo segue o fluxo natural.
+Defesa, Liminar, Pagamento, Protocolo e Acordos compartilham o contexto do processo, `TaskQuestion`, opções de resposta e `TaskActionBar`. A largura e os espaçamentos são constantes; a altura acompanha o conteúdo. A barra de ações é sticky e mantém “Pular esse prazo” e “Salvar e próximo”. Não há rolagem interna do workspace. A fila ajusta a quantidade de itens ao conteúdo e mantém paginação.
 
-O número do processo é seguido por pasta, indicação recebida e respostas da análise, sem o subtítulo do lote. Tutoriais, descrições de opções e legendas de perguntas foram removidos. A seleção e as ações usam o azul do tema `#142b67` e seus tokens existentes. Textos extensos nos indicadores usam elipse e título com o valor completo; permanecem legíveis no campo de edição.
+Removidos o card de concluídos/status/prazo, resumos de respostas, indícios e classificações apresentadas ao operador. Pasta e provisão continuam como dados do processo. O tipo exibido no cabeçalho deriva da tarefa ativa; o seletor foi identificado como “Filtrar tipo” para distinguir filtro de indicador.
 
-A coluna da fila ocupa a mesma altura e apresenta a quantidade de processos que cabe nessa área, com paginação para os demais. “Pular esse prazo” chama o endpoint existente e envia o item para o final da fila exibida, incluindo outros tipos de tarefa. Essa ordem é preservada durante as atualizações da sessão. “Salvar e próximo” mantém as validações e os retornos de erro. Atualização por eventos do backend é uma etapa separada.
+Perguntas condicionais usam o mesmo componente independente. Cards usam radios reais, suporte a teclado, foco visível e seleção com borda lateral além da cor azul do tema. Estados são isolados por tarefa/processo. Acordos preserva sua navegação controlada pelo backend, sem remontar o módulo ao receber o próximo processo. Em Protocolos apenas arquivos já enviados são preservados no cache; respostas e justificativas são reiniciadas.
 
-## Defesa
+## Defesa e Liminar
 
-A data da Enter aparece uma única vez: “A Enter determinou que essa defesa deve ser apresentada em DD/MM/AAAA”. Não há indícios nem faixa repetida de Fatal Controladoria.
+O fatal da Enter aparece em contexto compacto com data destacada. “Suspenso” fica selecionado imediatamente; o tema aparece como pergunta 04 independente. Trocar o motivo limpa o tema anterior.
 
-1. O fatal da Enter está correto?
-2. Se não: existe prazo para apresentação de defesa em curso?
-3. Se sim: evidências e respectivas datas, com o Fatal Real observado no CPJ. Se não: motivo.
-4. Se suspenso: tema da suspensão.
+Liminar segue exatamente a árvore solicitada: pedido de tutela → decisão judicial → deferida/indeferida; no ramo sem decisão, pergunta sobre sentença. Alterar respostas pai limpa respostas filhas. O adaptador preserva os resultados legados `nao_solicitada`, `deferida`, `indeferida`, `com_sentenca` e `sem_decisao`.
 
-Prioridade e conclusão não são escolhidas pelo operador nem enviadas pelo frontend. O contrato V3 envia as respostas; a compatibilidade no backend está preparada na mesma branch do repositório `mba-backoffice-backend`. O servidor lê a data da Enter do contexto autorizado e usa o Fatal Real CPJ confirmado, sem recalcular pela data de AR, DJE ou audiência.
+O contrato de Defesa V3 da etapa anterior permanece: conclusão e prioridade são resolvidas no backend. Não houve alterações de API, banco, workers ou classificações nesta refatoração. Frontend e backend V3 precisam de homologação conjunta antes da promoção; não foi feito deploy.
 
-Frontend e backend V3 precisam de homologação conjunta antes de promoção. A versão em execução na VPS continua com o contrato anterior. O suporte a Defesa do RPC já existente na VPS também é uma dependência da branch histórica do backend. Nenhuma migration foi executada.
+## Protocolos
+
+Justificativa aparece e é obrigatória somente para “Outro motivo”. Trocar de motivo limpa o texto. Para motivos predefinidos, o payload mantém o campo legado `notes` com o próprio rótulo do motivo, garantindo compatibilidade sem exigir texto do operador. Upload em duas etapas, PDF e commit permanecem intactos.
 
 ![Pagamento](execucao-tarefas.png)
 ![Defesa](defesa-workspace.png)
 
-## Controladoria
-
-Preservadas as mudanças anteriores: atalhos por estado operacional, importações recolhíveis, filtros explícitos, busca/paginação de defesas e últimos dados preservados quando a atualização falha. Permissões, retries e estados continuam determinados pelo backend. A paginação visual não substitui a paginação de dados no servidor.
-
-## Prévia e validação
-
-```bash
-npm ci
-npm run dev:ux
-```
-
-A entrada `ux-preview/` monta componentes reais com dados fictícios. Não importa login ou configuração da API real. O seletor “Fluxo da prévia” abre cada formulário. Gravações são bloqueadas; nos testes, POSTs são interceptados localmente para conferir contratos, falhas e retenção de respostas.
+## Validação local
 
 ```bash
 npm run build
+npm run build:ux
 npm run test:hardening
 npm run test:metabase
 npm run test:ux
 ```
 
-Com outro Chromium, use `UX_CHROMIUM_PATH=/caminho/chromium npm run test:ux`. Capturas ficam em `.build/ux-qa`.
+Para Chromium alternativo: `UX_CHROMIUM_PATH=/caminho/chromium npm run test:ux`.
 
-Verificações: navegação e filtros; envio para o final da fila; formulários de Liminar, Defesa, Pagamento, Protocolo e Acordos; duas etapas de envio de PDFs; payloads; ausência de requisições externas e erros JavaScript. Área constante e ausência de sobreposição verificadas nos caminhos extensos de Defesa e Acordos em 1920, 1600 e 1366 px. Fallback móvel inspecionado em 390 px. Backend: testes de resolução e persistência com RPC substituído por mock.
+A prévia usa componentes reais com dados fictícios, sem conexão com produção. Testes de interação cobrem os cinco ramos de Liminar, mudança de ramo, seleção/tema de suspensão, evidências de Defesa, envio dos formulários, justificativa condicional de Protocolo, PDFs, reset e navegação, teclado, responsividade e ausência de rolagem interna. Capturas em 1920, 1600, 1366 e 390 px ficam em `.build/ux-qa`.
 
-A plataforma abriu sem sessão autenticada. A operação com dados reais em homologação permanece pendente.
+As verificações de envio interceptam as APIs localmente. Operação com dados reais em homologação continua pendente. Atualização por evento do backend fica para a etapa separada solicitada.

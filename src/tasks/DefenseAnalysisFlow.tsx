@@ -1,7 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import './defenseAnalysisFlow.css';
-import { DecisionReview } from './TaskExecution';
+import { TaskQuestion, TaskActionBar, OptionGroup } from './TaskQuestion';
 
 type YesNo = 'sim' | 'nao' | null;
 export type DefensePriority = 'altissima' | 'alta' | 'baixa';
@@ -58,8 +58,8 @@ function formatDate(value?: string | null) {
   return `${day}/${month}/${year}`;
 }
 
-function BinaryChoice({ value, onChange, disabled }: { value: YesNo; onChange: (value: Exclude<YesNo, null>) => void; disabled?: boolean }) {
-  return <div className="defesa-flow-binary">{(['sim', 'nao'] as const).map(option => <button type="button" key={option} disabled={disabled} aria-pressed={value === option} className={value === option ? 'active' : ''} onClick={() => onChange(option)}>{option === 'sim' ? 'Sim' : 'Não'}</button>)}</div>;
+function BinaryChoice({ value, onChange, disabled, name }: { value: YesNo; onChange: (value: Exclude<YesNo, null>) => void; disabled?: boolean; name: string }) {
+  return <OptionGroup name={name} value={value} onChange={next => onChange(next as Exclude<YesNo, null>)} disabled={disabled} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/>;
 }
 
 export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error = null, onSubmit, onSkip }: Props) {
@@ -122,28 +122,22 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
   };
 
   return <form className="defesa-flow" onSubmit={submit}>
-    <div className="defesa-enter-deadline">{deadline ? <>A Enter determinou que essa defesa deve ser apresentada em <strong>{formatDate(deadline)}</strong>.</> : 'A Enter não informou a data para apresentação desta defesa.'}</div>
+    <div className="defesa-enter-deadline"><small>PRAZO INFORMADO PELA ENTER</small><p>{deadline ? <>A Enter indicou <strong>{formatDate(deadline)}</strong> como data limite para apresentação desta defesa.</> : 'A Enter não informou a data para apresentação desta defesa.'}</p><p>Valide abaixo se o fatal informado está correto.</p></div>
+    <TaskQuestion number="01" question="O fatal da Enter está correto?"><BinaryChoice name="defense-deadline" value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></TaskQuestion>
 
-    <section className="defesa-flow-question">
-      <div className="defesa-flow-step">01</div>
-      <div className="defesa-flow-question-body"><h3>O fatal da Enter está correto?</h3><BinaryChoice value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></div>
-    </section>
-
-    {deadlineCorrect === 'nao' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">02</div><div className="defesa-flow-question-body"><h3>Existe prazo para apresentação de defesa em curso?</h3><BinaryChoice value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></div></section> : null}
+    {deadlineCorrect === 'nao' ? <TaskQuestion number="02" question="Existe prazo para apresentação de defesa em curso?"><BinaryChoice name="defense-active" value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></TaskQuestion> : null}
 
     {deadlineCorrect === 'nao' && activeDefense === 'sim' ? <>
-      <section className="defesa-flow-question nested"><div className="defesa-flow-step">03</div><div className="defesa-flow-question-body"><h3>Selecione abaixo as evidências para o prazo de defesa.</h3><div className="defesa-flow-criteria">{CRITERIA.map(item => { const selected = criterionKeys.includes(item.key); return <div className={`defesa-flow-criterion ${selected ? 'selected' : ''}`} key={item.key}><button type="button" disabled={busy} onClick={() => toggleCriterion(item.key)}><span className="defesa-flow-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>{selected ? <label><span>{item.dateLabel}</span><input type="date" disabled={busy} value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}</div>; })}</div></div></section>
+      <TaskQuestion number="03" question="Selecione abaixo as evidências para o prazo de defesa."><div className="defesa-flow-criteria">{CRITERIA.map(item => { const selected = criterionKeys.includes(item.key); return <div className={`defesa-flow-criterion ${selected ? 'selected' : ''}`} key={item.key}><button type="button" disabled={busy} aria-pressed={selected} onClick={() => toggleCriterion(item.key)}><span className="defesa-flow-checkbox">{selected ? <Check size={12}/> : null}</span><strong>{item.label}</strong></button>{selected ? <label><span>{item.dateLabel}</span><input type="date" disabled={busy} value={criteria[item.key]} onChange={event => setCriteria(current => ({ ...current, [item.key]: event.target.value }))}/></label> : null}</div>; })}</div></TaskQuestion>
       <label className="task-text-field defense-cpj-evidence"><span>Fatal Real registrado no CPJ</span><input type="date" disabled={busy} value={correctFatal} onChange={event => setCorrectFatal(event.target.value)}/></label>
     </> : null}
 
-    {deadlineCorrect === 'nao' && activeDefense === 'nao' ? <section className="defesa-flow-question nested"><div className="defesa-flow-step">03</div><div className="defesa-flow-question-body"><h3>Por quê?</h3><div className="defesa-flow-reasons"><button type="button" disabled={busy} className={reason === 'suspenso_irdr' || reason === 'suspenso_1414' ? 'active' : ''} onClick={() => { setSuspensionOpen(true); setReason(null); }}>Suspenso</button>{REASONS.map(item => <button type="button" disabled={busy} key={item.value} className={reason === item.value ? 'active' : ''} onClick={() => { setReason(item.value); setSuspensionOpen(false); setLocalError(null); }}>{item.label}</button>)}</div>{suspensionOpen ? <div className="defesa-flow-suspension"><h3>4. Qual o tema da suspensão?</h3><div className="defesa-flow-binary"><button type="button" disabled={busy} className={reason === 'suspenso_irdr' ? 'active' : ''} onClick={() => setReason('suspenso_irdr')}>IRDR</button><button type="button" disabled={busy} className={reason === 'suspenso_1414' ? 'active' : ''} onClick={() => setReason('suspenso_1414')}>Tema 1414</button></div></div> : null}</div></section> : null}
+    {deadlineCorrect === 'nao' && activeDefense === 'nao' ? <>
+      <TaskQuestion number="03" question="Por quê?"><OptionGroup name="defense-reason" value={suspensionOpen ? 'suspenso' : reason} onChange={value => { setSuspensionOpen(value === 'suspenso'); setReason(value === 'suspenso' ? null : value as DefenseReason); setLocalError(null); }} disabled={busy} options={[{value:'suspenso',label:'Suspenso'},...REASONS]}/></TaskQuestion>
+      {suspensionOpen ? <TaskQuestion number="04" question="Qual o tema da suspensão?"><OptionGroup name="defense-suspension" value={reason} onChange={value => setReason(value as DefenseReason)} disabled={busy} options={[{value:'suspenso_irdr',label:'IRDR'},{value:'suspenso_1414',label:'Tema 1414'}]}/></TaskQuestion> : null}
+    </> : null}
 
-    <DecisionReview rows={[
-      ['Fatal da Enter correto', deadlineCorrect === null ? null : deadlineCorrect === 'sim' ? 'Sim' : 'Não'],
-      ['Prazo em curso', deadlineCorrect === 'nao' && activeDefense !== null ? activeDefense === 'sim' ? 'Sim' : 'Não' : null],
-      ['Motivo', reason === 'suspenso_irdr' ? 'Suspenso — IRDR' : reason === 'suspenso_1414' ? 'Suspenso — Tema 1414' : REASONS.find(item => item.value === reason)?.label],
-    ]}/>
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <footer className="task-renderer-footer defesa-flow-footer"><button className="secondary-button" type="button" disabled={busy} onClick={() => void onSkip()}>Pular esse prazo</button><button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>
+    <TaskActionBar busy={busy} ready={Boolean(ready)} onSkip={() => void onSkip()}/>
   </form>;
 }

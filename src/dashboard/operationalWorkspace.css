@@ -39,9 +39,7 @@
 #tarefas[data-react-tasks='true'] .execution-brief dl{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}
 #tarefas[data-react-tasks='true'] .execution-brief dl>div{display:flex;gap:8px}
 
-/* All task types share the same canvas, including conditional paths. */
-#tarefas[data-react-tasks='true'] .tasks-workspace{--tasks-workspace-height:max(900px,calc(100dvh - 210px));height:var(--tasks-workspace-height);min-height:0}
-#tarefas[data-react-tasks='true'] .tasks-workspace-sidebar,#tarefas[data-react-tasks='true'] .tasks-execution-panel{height:100%;min-height:0;max-height:none}
+/* Shared execution controls. */
 #tarefas[data-react-tasks='true'] .tasks-process-item{min-height:76px;padding:12px 10px}
 #tarefas[data-react-tasks='true'] .tasks-process-list{gap:6px}
 #tarefas[data-react-tasks='true'] .tasks-execution-panel{grid-template-rows:auto minmax(0,1fr)}
@@ -79,3 +77,32 @@
 #tarefas[data-react-tasks='true'] .execution-card .task-renderer-form:has(.agreement-screening){gap:10px}
 #tarefas[data-react-tasks='true'] .execution-card .agreement-fields{gap:8px}
 #tarefas[data-react-tasks='true'] .execution-card .agreement-screening{gap:10px}
+/* Shared task structure; natural content height and one document scroll. */
+#tarefas[data-react-tasks='true'] .tasks-workspace{height:auto;min-height:0;align-items:start;--tasks-workspace-height:auto}
+#tarefas[data-react-tasks='true'] .tasks-workspace-sidebar,#tarefas[data-react-tasks='true'] .tasks-execution-panel{height:auto;min-height:0;overflow:visible}
+#tarefas[data-react-tasks='true'] .tasks-execution-panel{display:block}
+#tarefas[data-react-tasks='true'] .tasks-renderer-card{height:auto;min-height:0;overflow:visible}
+#tarefas[data-react-tasks='true'] .tasks-renderer-body{padding:24px;overflow:visible;display:block}
+#tarefas[data-react-tasks='true'] .execution-card .task-renderer-form,#tarefas[data-react-tasks='true'] .execution-card .defesa-flow{display:flex;flex-direction:column;gap:24px;min-height:0;margin:0;max-width:900px}
+#tarefas[data-react-tasks='true'] .execution-card .task-question{padding:0;margin:0;border:0;display:block}
+#tarefas[data-react-tasks='true'] .execution-card .task-question h3{display:flex;align-items:center;gap:12px;margin:0 0 14px;font-size:14px;line-height:1.5;font-weight:600;color:#0f1f3d}
+.task-question-number{display:inline-flex;flex:none;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:#f2f5fb;color:#142b67;font-size:11px;font-variant-numeric:tabular-nums}
+#tarefas[data-react-tasks='true'] .execution-card .task-question-body{margin:0;padding:0}
+#tarefas[data-react-tasks='true'] .execution-card .task-option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:780px}
+#tarefas[data-react-tasks='true'] .execution-card .task-option-card>span{min-height:46px;font-size:13px;border-radius:6px}
+#tarefas[data-react-tasks='true'] .execution-card .task-option-card input:focus-visible+span{outline:2px solid #142b67;outline-offset:3px}
+#tarefas[data-react-tasks='true'] .execution-card .task-renderer-footer{position:sticky;bottom:0;z-index:3;margin:0;padding:16px 0;background:#fff;border-top:1px solid #e3eaf2;flex:none}
+#tarefas[data-react-tasks='true'] .execution-card .agreement-screening{display:flex;flex-direction:column;gap:24px}
+#tarefas[data-react-tasks='true'] .execution-card .protocol-error-panel,#tarefas[data-react-tasks='true'] .execution-card .protocol-workspace-content{display:flex;flex-direction:column;gap:24px;padding:0;border:0;background:transparent}
+.defesa-enter-deadline small{font-size:10px;font-weight:600;letter-spacing:.06em;color:#52647d}.defesa-enter-deadline p{margin:6px 0;font-size:13px}
+#tarefas[data-react-tasks='true'] .tasks-process-list{overflow:visible;max-height:none}
+@media(max-width:600px){#tarefas[data-react-tasks='true'] .execution-card .task-option-grid{grid-template-columns:1fr}#tarefas[data-react-tasks='true'] .tasks-renderer-body{padding:18px}}
+#tarefas[data-react-tasks='true'] .execution-card .protocol-collection-content{display:flex;flex-direction:column;gap:24px}
+#tarefas[data-react-tasks='true'] .execution-card .protocol-error-choice{margin-top:14px}
+#tarefas[data-react-tasks='true'] .execution-card .defesa-flow-criterion{display:flex;flex-direction:column;align-items:stretch;gap:12px;border-radius:6px;padding:12px}
+#tarefas[data-react-tasks='true'] .execution-card .defesa-flow-criterion>button{min-height:24px;font-size:13px}
+#tarefas[data-react-tasks='true'] .execution-card .defesa-flow-criterion>button strong{font-size:12px}
+#tarefas[data-react-tasks='true'] .execution-card .defesa-flow-criterion label span{font-size:11px}
+#tarefas[data-react-tasks='true'] .execution-card .defesa-flow-criterion button:focus-visible{outline:2px solid #142b67;outline-offset:4px}
+#tarefas[data-react-tasks='true'] .execution-card .agreement-fields>.task-question{grid-column:1/-1;margin-block:16px}
+.agreement-process-context{font-size:12px;color:#52647d}

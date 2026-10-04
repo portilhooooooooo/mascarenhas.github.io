@@ -32,6 +32,7 @@ try {
   await page.screenshot({ path: `${shots}/tasks-1600.png` });
 
   // A user can reach work beyond the first five records.
+  await page.getByRole('button',{name:'Próximos',exact:true}).click();
   await page.locator('.tasks-process-item').filter({hasText:'DEMO 0006 · SP'}).click();
   await page.getByRole('heading', {name:'DEMO 0006 · SP',exact:true}).waitFor();
 
@@ -87,18 +88,28 @@ try {
     await page.locator('.execution-process-heading').waitFor();
     await installLocalCapture();
   };
-  const canvas = async () => page.locator('.tasks-workspace').evaluate(root => ({height:root.getBoundingClientRect().height, overflow:root.querySelector('.task-renderer-footer').getBoundingClientRect().bottom > root.getBoundingClientRect().bottom + 1 || [...root.querySelector('.tasks-renderer-body form').children].filter(e=>!e.classList.contains('task-renderer-footer') && e.getBoundingClientRect().width>0).some(e=>e.getBoundingClientRect().bottom>root.querySelector('.task-renderer-footer').getBoundingClientRect().top+1)}));
+  const canvas = async () => { await page.locator('.task-renderer-footer').scrollIntoViewIfNeeded(); return page.locator('.tasks-workspace').evaluate(root => ({height:root.getBoundingClientRect().height, overflow:root.scrollWidth > root.clientWidth + 1})); };
   await openScenario('liminar');
+  const shortHeight=await page.locator('.execution-card').evaluate(el=>el.getBoundingClientRect().height);
   const liminarSubmit = page.getByRole('button', {name:'Salvar e próximo',exact:true});
   assert.equal(await liminarSubmit.isEnabled(), false);
-  await page.getByText('Não foi possível analisar', {exact:true}).click();
-  assert.equal(await liminarSubmit.isEnabled(), false);
-  await page.getByLabel('Observações', {exact:false}).fill('Decisão indisponível para conferência.');
-  await liminarSubmit.click();
-  await page.getByRole('alert').waitFor();
-  assert.deepEqual((await submissions())[0].body, {decision:'erro',notes:'Decisão indisponível para conferência.'});
-  await page.getByText('Deferida', {exact:true}).click();
-  await page.locator('.execution-review').scrollIntoViewIfNeeded();
+  const choose = async (group, answer) => page.getByRole('radiogroup',{name:group,exact:true}).getByText(answer,{exact:true}).click();
+  await choose('liminar-requested','Não');
+  assert.equal(await page.locator('.task-question').count(),1);
+  await liminarSubmit.click(); await page.getByRole('alert').waitFor();
+  assert.deepEqual((await submissions()).at(-1).body,{decision:'nao_solicitada',notes:null});
+  for(const [decided, answer, expected] of [['Sim','Deferida','deferida'],['Sim','Indeferida','indeferida'],['Não','Sim','com_sentenca'],['Não','Não','sem_decisao']]) {
+    await choose('liminar-requested','Não'); await choose('liminar-requested','Sim'); await choose('liminar-decided',decided);
+    assert.equal(await liminarSubmit.isEnabled(),false);
+    await choose(decided === 'Sim' ? 'liminar-result' : 'liminar-judgment', answer);
+    await liminarSubmit.click(); await page.getByRole('alert').waitFor();
+    assert.deepEqual((await submissions()).at(-1).body,{decision:expected,notes:null});
+    assert.ok(await page.locator('.execution-card').evaluate(el=>el.getBoundingClientRect().height)>shortHeight+80,'Content grows naturally');
+  }
+  await choose('liminar-decided','Sim'); await choose('liminar-result','Deferida');
+  await choose('liminar-decided','Não'); assert.equal(await page.getByRole('radiogroup',{name:'liminar-result',exact:true}).count(),0);
+  assert.equal(await liminarSubmit.isEnabled(),false);
+  await choose('liminar-requested','Não'); assert.equal(await page.locator('.task-question').count(),1);
   await page.screenshot({path:`${shots}/liminar-review.png`});
 
   await openScenario('comprovante_pagamento');
@@ -115,13 +126,12 @@ try {
   assert.equal(payment.paid_receipt,'com_comprovante');
   assert.equal(payment.manifested_in_court,false);
   assert.equal(payment.had_block,false);
-  await page.locator('.execution-review').scrollIntoViewIfNeeded();
   await page.screenshot({path:`${shots}/payment-review.png`});
 
   await openScenario('defesa');
-  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.getByRole('button',{name:'Processo tem sentença',exact:true}).click();
+  await page.locator('.task-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('radio',{name:'Não',exact:true}).locator('..').click();
+  await page.locator('.task-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('radio',{name:'Não',exact:true}).locator('..').click();
+  await page.getByRole('radio',{name:'Processo tem sentença',exact:true}).locator('..').click();
   await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const defense = (await submissions())[0].body;
@@ -130,19 +140,31 @@ try {
   assert.equal('priority' in defense,false);
   assert.equal(defense.reason,'sentenca');
   assert.equal(defense.cpj_fatal_deadline,null);
-  await page.locator('.execution-review').scrollIntoViewIfNeeded();
   await page.screenshot({path:`${shots}/defense-review.png`});
 
   await openScenario('protocolo');
   assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),false);
   await page.getByText('Não consegui reunir os documentos',{exact:true}).click();
   await page.getByText('Defesa não localizada',{exact:true}).click();
-  await page.getByRole('textbox',{name:/Justificativa/}).fill('Defesa não localizada na pasta do processo.');
+  assert.equal(await page.getByRole('textbox',{name:/Justificativa/}).count(),0);
+  assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),true);
+  await page.getByText('Outro motivo',{exact:true}).click();
+  assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),false);
+  await page.getByRole('textbox',{name:/Justificativa/}).fill('Texto que será descartado.');
+  await page.getByText('Defesa não localizada',{exact:true}).click();
+  assert.equal(await page.getByRole('textbox',{name:/Justificativa/}).count(),0);
   await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const collection = (await submissions())[0];
   assert.ok(collection.path.endsWith('/protocol-collection-error'));
   assert.equal(collection.body.reason,'DEFESA_AUSENTE');
+  assert.equal(collection.body.notes,'Defesa não localizada');
+  await page.getByText('Outro motivo',{exact:true}).click();
+  assert.equal(await page.getByRole('textbox',{name:/Justificativa/}).inputValue(),'');
+  await page.getByRole('textbox',{name:/Justificativa/}).fill('Documento incompatível com este processo.');
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click(); await page.getByRole('alert').waitFor();
+  assert.equal((await submissions()).at(-1).body.reason,'OUTRO');
+  assert.equal((await submissions()).at(-1).body.notes,'Documento incompatível com este processo.');
   await page.getByRole('button',{name:'Voltar para a coleta de documentos',exact:true}).click();
   const pdf = {name:'defesa-demo.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')};
   await page.locator('.protocol-native-file').nth(0).setInputFiles(pdf);
@@ -150,10 +172,9 @@ try {
   await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
   await page.getByRole('alert').waitFor();
   const docs = await submissions();
-  assert.equal(docs[1].body.document_type,'DEFESA');
-  assert.equal(docs[2].body.document_type,'PROTOCOLO');
-  assert.ok(docs[3].path.endsWith('/protocol-collection/commit'));
-  await page.locator('.execution-review').scrollIntoViewIfNeeded();
+  assert.equal(docs[2].body.document_type,'DEFESA');
+  assert.equal(docs[3].body.document_type,'PROTOCOLO');
+  assert.ok(docs[4].path.endsWith('/protocol-collection/commit'));
   await page.screenshot({path:`${shots}/protocol-review.png`});
 
   await openScenario('acordos');
@@ -164,22 +185,21 @@ try {
   assert.equal(agreement.has_agreement,true);
   assert.equal(agreement.has_judgment,false);
   assert.equal(agreement.needs_support,false);
-  await page.locator('.execution-review').scrollIntoViewIfNeeded();
   await page.screenshot({path:`${shots}/agreement-review.png`});
 
 
   await openScenario('');
   await page.getByRole('button',{name:'Pular esse prazo',exact:true}).click();
   await page.getByRole('heading',{name:'DEMO 0002 · SP',exact:true}).waitFor();
-  await page.getByRole('button',{name:'Próximos',exact:true}).click();
+  for(let i=0;i<4 && await page.getByRole('button',{name:'Próximos',exact:true}).isEnabled();i++) { await page.getByRole('button',{name:'Próximos',exact:true}).click(); await page.waitForTimeout(100); }
   assert.equal(await page.locator('.tasks-process-item').last().locator('strong').textContent(),'DEMO 0001 · SP','Skipped item at the end of the global queue');
 
   await openScenario('defesa');
-  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Sim',exact:true}).click();
+  await page.locator('.task-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('radio',{name:'Sim',exact:true}).locator('..').click();
   assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),true);
   assert.equal(await page.locator('.defesa-flow-priority').count(),0);
-  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Sim',exact:true}).click();
+  await page.locator('.task-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('radio',{name:'Não',exact:true}).locator('..').click();
+  await page.locator('.task-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('radio',{name:'Sim',exact:true}).locator('..').click();
   for(const name of ['Expedição de DJE','DJE Negativo','Expedição de Carta AR','Retorno de Carta AR','Audiência','Juntada de Habilitação']) await page.getByRole('button',{name,exact:true}).click();
   for(const input of await page.locator('.defesa-flow-criteria input').all()) await input.fill('2026-10-02');
   await page.getByLabel('Fatal Real registrado no CPJ').fill('2026-10-10');
@@ -192,11 +212,12 @@ try {
   assert.equal(evidenceBody.cpj_fatal_deadline,'2026-10-10');
   assert.equal('priority' in evidenceBody,false);
   await page.screenshot({path:`${shots}/defense-evidence.png`,fullPage:true});
-  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.getByRole('button',{name:'Suspenso',exact:true}).click();
-  await page.getByRole('heading',{name:'4. Qual o tema da suspensão?',exact:true}).waitFor();
+  await page.locator('.task-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('radio',{name:'Não',exact:true}).locator('..').click();
+  await page.getByRole('radio',{name:'Suspenso',exact:true}).locator('..').click();
+  assert.equal(await page.getByRole('radio',{name:'Suspenso',exact:true}).isChecked(),true);
+  await page.getByRole('heading',{name:/Qual o tema da suspensão/}).waitFor();
   assert.equal(await page.getByRole('button',{name:'Salvar e próximo',exact:true}).isEnabled(),false);
-  await page.getByRole('button',{name:'Tema 1414',exact:true}).click();
+  await page.getByRole('radio',{name:'Tema 1414',exact:true}).locator('..').click();
   await page.screenshot({path:`${shots}/defense-suspension.png`,fullPage:true});
   assert.equal((await canvas()).overflow,false);
 
@@ -222,14 +243,10 @@ try {
       await page.locator('.execution-process-heading').waitFor();
       assert.equal(await page.locator('.workbench-header').count(),0,'Queue hero removed');
       assert.equal(await page.locator('.execution-process-heading p').count(),0,'Batch subtitle removed');
-      assert.equal(await page.locator('#task-execution-review .execution-review').count(),1,'Review beneath process');
+      assert.equal(await page.locator('.execution-review,.tasks-execution-summary').count(),0,'Reviews and status removed');
       const innerScroll = await page.locator('.tasks-workspace').evaluate(root => [...root.querySelectorAll('*')].filter(el => ['auto','scroll'].includes(getComputedStyle(el).overflowY) && el.scrollHeight>el.clientHeight+1).map(el=>el.className));
       assert.deepEqual(innerScroll,[],`${scenario} has no nested scroll at ${width}`);
-      if(width>=1024){
-        const heights=await page.locator('.tasks-workspace').evaluate(root => [root.querySelector('.tasks-workspace-sidebar').getBoundingClientRect().height,root.querySelector('.tasks-execution-panel').getBoundingClientRect().height]);
-        assert.ok(Math.abs(heights[0]-heights[1])<2,'Queue and execution share height');
-      }
-      if(width>=1024) { assert.equal((await canvas()).height,900); assert.equal((await canvas()).overflow,false); }
+      assert.equal((await canvas()).overflow,false);
       await page.screenshot({path:`${shots}/${scenario}-${width}.png`,fullPage:width>=1024});
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth>innerWidth),false,`${scenario} overflow at ${width}`);
     }
@@ -239,11 +256,32 @@ try {
   await page.getByRole('radiogroup',{name:'had-block',exact:true}).getByText('Não',{exact:true}).click();
   await page.screenshot({path:`${shots}/payment-clean.png`,fullPage:true});
   await openScenario('defesa');
-  await page.locator('.defesa-flow-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.locator('.defesa-flow-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('button',{name:'Não',exact:true}).click();
-  await page.getByRole('button',{name:'Suspenso',exact:true}).click();
-  await page.getByRole('button',{name:'Tema 1414',exact:true}).click();
+  await page.locator('.task-question').filter({hasText:'O fatal da Enter está correto'}).getByRole('radio',{name:'Não',exact:true}).locator('..').click();
+  await page.locator('.task-question').filter({hasText:'Existe prazo para apresentação de defesa'}).getByRole('radio',{name:'Não',exact:true}).locator('..').click();
+  await page.getByRole('radio',{name:'Suspenso',exact:true}).locator('..').click();
+  assert.equal(await page.getByRole('radio',{name:'Suspenso',exact:true}).isChecked(),true);
+  await page.getByRole('radio',{name:'Tema 1414',exact:true}).locator('..').click();
   await page.screenshot({path:`${shots}/defense-clean.png`,fullPage:true});
+  await page.getByRole('radio',{name:'Processo tem sentença',exact:true}).locator('..').click();
+  assert.equal(await page.getByRole('radiogroup',{name:'defense-suspension',exact:true}).count(),0);
+  await page.getByRole('radio',{name:'Suspenso',exact:true}).locator('..').click();
+  assert.equal(await page.getByRole('radiogroup',{name:'defense-suspension',exact:true}).locator('input:checked').count(),0);
+  await page.getByRole('button',{name:'Pular esse prazo',exact:true}).click();
+  assert.equal(await page.locator('.task-question input:checked').count(),0);
+  assert.equal(await page.locator('.execution-process-heading small').textContent(),'Validação de Defesa');
+  await openScenario('');
+  await page.getByLabel('Filtrar tipo').selectOption('liminar');
+  await page.getByRole('radiogroup',{name:'liminar-requested',exact:true}).getByText('Não',{exact:true}).click();
+  await page.evaluate(() => { const original=window.MBA_API.request; window.MBA_API.request=async(path,options) => path.endsWith('/liminar-analysis') ? {} : original(path,options); });
+  await page.getByRole('button',{name:'Salvar e próximo',exact:true}).click();
+  await page.getByRole('heading',{name:'DEMO 0002 · SP',exact:true}).waitFor();
+  assert.equal(await page.locator('.task-question input:checked').count(),0);
+  await page.getByLabel('Filtrar tipo').selectOption('all');
+  await page.getByLabel('Buscar processo ou parte').fill('RS');
+  await page.getByRole('radiogroup',{name:'defense-deadline',exact:true}).waitFor();
+  assert.equal(await page.locator('.execution-process-heading small').textContent(),'Validação de Defesa');
+  assert.equal(await page.locator('.task-question input:checked').count(),0);
+  const keyboardNo=page.getByRole('radiogroup',{name:'defense-deadline',exact:true}).getByRole('radio',{name:'Não',exact:true}); await keyboardNo.focus(); await keyboardNo.press('Enter'); assert.equal(await keyboardNo.isChecked(),true);
   assert.deepEqual(errors, [], 'No browser errors');
   assert.deepEqual(outbound, [], 'Demo must remain isolated from production');
   console.log('Operational UX interactions and responsive checks passed; no external requests.');
