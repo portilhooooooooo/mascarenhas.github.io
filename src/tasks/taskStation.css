@@ -45,3 +45,9 @@
 
 #tarefas[data-react-tasks='true'] .task-station .tasks-react-subnav{flex:none;height:40px;margin:0;padding:0 12px}
 .tasks-results{padding:18px 0}.tasks-results h1{font-size:28px}.tasks-results p{font-size:13px;color:var(--mba-text-2,#52647d)}
+
+/* Requested compact scale; task viewport measurements compensate for zoom. */
+.tasks-react-root { zoom: .9; }
+
+.queue-item-badges .tasks-state-pill.high { color:#142b67; background:#edf1f8; }
+.queue-item-badges .tasks-state-pill.normal { color:#4b5563; background:#f3f4f6; }

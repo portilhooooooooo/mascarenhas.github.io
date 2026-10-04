@@ -2,7 +2,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import { Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import {
   TASK_STATE_META,
-  backendPriority, PRIORITY_LABELS, processStatus, PROCESS_STATUS_LABELS,
+  backendPriority, processStatus,
   TASK_STATE_ORDER,
   canManageTasks,
   compareTasks,
@@ -232,7 +232,6 @@ export function TasksApp() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<'management' | 'execution' | 'results'>('execution');
-  const [selectedStatus, setSelectedStatus] = useState<TaskStatusFilter>('pending');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [search, setSearch] = useState('');
@@ -251,7 +250,7 @@ export function TasksApp() {
     const fit = () => {
       const padding = root.closest('.content');
       const bottom = padding ? parseFloat(getComputedStyle(padding).paddingBottom) : 12;
-      root.style.setProperty('--task-station-height', `${Math.max(280, window.innerHeight - root.getBoundingClientRect().top - bottom)}px`);
+      root.style.setProperty('--task-station-height', `${Math.max(280, (window.innerHeight - root.getBoundingClientRect().top - bottom) / 0.9)}px`);
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -270,8 +269,21 @@ export function TasksApp() {
   const relevantTasks = useMemo(() => allAssignedTasks.filter(isTaskActive), [allAssignedTasks]);
 
   useEffect(() => {
-    const onAuth = () => setUser(mbaWindow.MBA_CURRENT_USER || null);
+    const resetSession = () => {
+      refreshGeneration.current += 1;
+      processCache.current.clear();
+      inFlight.current.clear();
+      setTasks([]);
+      setActiveKey(null);
+      setDeferredKeys([]);
+      setProcessVersion(value => value + 1);
+    };
+    const onAuth = () => {
+      resetSession();
+      setUser(mbaWindow.MBA_CURRENT_USER || null);
+    };
     const onExpired = () => {
+      resetSession();
       setUser(null);
       setTasks([]);
       processCache.current.clear();
@@ -294,14 +306,16 @@ export function TasksApp() {
     if (!force && processCache.current.has(task.id)) return processCache.current.get(task.id) || [];
     if (inFlight.current.has(task.id)) return inFlight.current.get(task.id)!;
 
+    const sessionUserId = user?.id;
     const promise = apiRequest(`/api/tasks/${task.id}/processes`)
       .then(rows => {
+        if (mbaWindow.MBA_CURRENT_USER?.id !== sessionUserId) return [];
         const list = (Array.isArray(rows) ? rows : []).filter(process => processAssignedToUser(task, process, user, manager));
         processCache.current.set(task.id, list);
         setProcessVersion(value => value + 1);
         return list;
       })
-      .finally(() => inFlight.current.delete(task.id));
+      .finally(() => { if (inFlight.current.get(task.id) === promise) inFlight.current.delete(task.id); });
     inFlight.current.set(task.id, promise);
     return promise;
   }, [user, manager]);
@@ -322,6 +336,7 @@ export function TasksApp() {
     setLoadError(null);
     try {
       const rows = await apiRequest('/api/tasks');
+      if (refreshGeneration.current !== generation) return;
       const nextTasks = Array.isArray(rows) ? rows as Task[] : [];
       if (resetCache) {
         processCache.current.clear();
@@ -355,13 +370,14 @@ export function TasksApp() {
   useEffect(() => {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return;
     void loadTaskList(false);
-  }, [pageVisible, user?.id, user?.permissions?.['tasks.view']]);
+  }, [pageVisible, user]);
 
   useEffect(() => {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const rows = await apiRequest('/api/tasks');
+        if (mbaWindow.MBA_CURRENT_USER?.id !== user?.id) return;
         const freshTasks = Array.isArray(rows) ? rows as Task[] : [];
         setTasks(freshTasks);
         const activeTaskId = activeKey?.split(':')[0];
@@ -397,19 +413,19 @@ export function TasksApp() {
     return pendingCount(task);
   }, [processVersion]);
 
-  const statusOptions = useMemo(() => [...new Set(['pending','completed','skipped','error',...workItems.map(item => processStatus(item, deferredKeys.includes(workItemKey(item))))])], [workItems, deferredKeys]);
-  const priorityOptions = useMemo(() => [...new Set(workItems.map(backendPriority))], [workItems]);
+  const deadlineOptions = useMemo(() => [...new Set(workItems.filter(item => !['completed','cancelled','inactive'].includes(normalize(item.process.status))).map(item => normalize(item.task.type)))], [workItems]);
+  const situation = (item: WorkItem) => ['altissima','altíssima','urgent','urgente','high','alta'].includes(backendPriority(item)) ? 'high' : 'normal';
 
   const filteredItems = useMemo(() => workItems.filter(item => {
     const status = processStatus(item, deferredKeys.includes(workItemKey(item)));
-    if (selectedStatus !== 'all' && (selectedStatus === 'pending' ? ['completed','cancelled','inactive','error','erro','failed'].includes(status) : status !== selectedStatus)) return false;
-    if (selectedPriority !== 'all' && backendPriority(item) !== selectedPriority) return false;
+    if (!isTaskActive(item.task) || ['completed','cancelled','inactive'].includes(status)) return false;
+    if (selectedPriority !== 'all' && situation(item) !== selectedPriority) return false;
     if (selectedType !== 'all' && normalize(item.task.type) !== selectedType) return false;
     if (!search.trim()) return true;
     const number = String(item.process.case_number || '').toLowerCase();
     const needle = search.trim().toLowerCase();
     return number.includes(needle) || (/^[\d.\-\s]+$/.test(needle) && number.replace(/\D/g,'').includes(needle.replace(/\D/g,'')));
-  }), [workItems, selectedStatus, selectedPriority, selectedType, search, deferredKeys]);
+  }), [workItems, selectedPriority, selectedType, search, deferredKeys]);
 
   useEffect(() => {
     if (!pageVisible) return;
@@ -417,7 +433,7 @@ export function TasksApp() {
     if (!candidates.length) return;
     const generation = refreshGeneration.current;
     void hydrateInBackground(candidates, generation);
-  }, [pageVisible, selectedStatus, selectedType, allAssignedTasks, hydrateInBackground]);
+  }, [pageVisible, selectedType, allAssignedTasks, hydrateInBackground]);
 
   useEffect(() => {
     if (!filteredItems.length) {
@@ -427,7 +443,7 @@ export function TasksApp() {
     if (!activeKey || !filteredItems.some(item => workItemKey(item) === activeKey)) setActiveKey(workItemKey(filteredItems[0]));
   }, [filteredItems, activeKey]);
 
-  const activeItem = useMemo(() => workItems.find(item => workItemKey(item) === activeKey) || null, [workItems, activeKey]);
+  const activeItem = useMemo(() => filteredItems.find(item => workItemKey(item) === activeKey) || null, [filteredItems, activeKey]);
   const activeIndex = filteredItems.findIndex(item => workItemKey(item) === activeKey);
   const windowStart = activeIndex >= 0 ? Math.floor(activeIndex / queueSize) * queueSize : 0;
   const visibleItems = filteredItems.slice(windowStart, windowStart + queueSize);
@@ -523,7 +539,6 @@ export function TasksApp() {
   const executeTask = async (task: Task) => {
     if (!isTaskActive(task) || pendingCount(task) <= 0) return;
     setTab('execution');
-    setSelectedStatus('pending');
     setSelectedType(normalize(task.type));
     sessionStorage.setItem(LAST_TASK_TYPE_KEY, normalize(task.type));
     const rows = await hydrateTask(task);
@@ -561,7 +576,7 @@ export function TasksApp() {
 
       {loadError ? <div className="workbench-notice" role="alert"><span>Não foi possível atualizar a fila. {loadError}</span><button type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button></div> : null}
       {actionNotice ? <div className="execution-notification" role="status"><span>{actionNotice}</span><button type="button" aria-label="Fechar confirmação" onClick={() => setActionNotice(null)}>×</button></div> : null}
-      <section className="tasks-workspace"><aside className="tasks-workspace-sidebar"><section className="tasks-process-section"><div className="tasks-process-title"><strong>Processos da fila</strong><span>{filteredItems.length} carregados</span></div><div className="queue-station-filters"><label>Situação<select aria-label="Situação" value={selectedStatus} onChange={event => { setSelectedStatus(event.target.value); setActiveKey(null); }}><option value="all">Todos</option>{statusOptions.map(status => <option key={status} value={status}>{status === 'pending' ? 'Pendentes' : PROCESS_STATUS_LABELS[status] || status}</option>)}</select></label><label>Prioridade<select aria-label="Prioridade" value={selectedPriority} onChange={event => { setSelectedPriority(event.target.value); setActiveKey(null); }}><option value="all">Todas</option>{priorityOptions.map(priority => <option key={priority} value={priority}>{PRIORITY_LABELS[priority] || priority}</option>)}</select></label></div><label className="tasks-process-search"><Search size={14} /><input value={search} type="search" aria-label="Buscar processo" placeholder="Buscar processo" onChange={event => setSearch(event.target.value)} /></label><div className="tasks-process-list">{visibleItems.length ? visibleItems.map(item => { const state = processStatus(item, deferredKeys.includes(workItemKey(item))); const priority = backendPriority(item); return <button type="button" key={workItemKey(item)} className={`tasks-process-item ${workItemKey(item) === activeKey ? 'selected' : ''}`} onClick={() => selectItem(item)}><div><strong>{item.process.case_number || 'Processo sem número'}</strong><small>{taskTypeLabel(item.task.type)}</small></div><div className="queue-item-badges"><span className={`tasks-state-pill ${state}`}>{PROCESS_STATUS_LABELS[state] || state}</span>{priority !== 'unspecified' ? <small>{PRIORITY_LABELS[priority] || priority}</small> : null}</div></button>; }) : <div className="tasks-sidebar-empty">{loading ? 'Carregando fila…' : 'Nenhum processo neste filtro.'}</div>}</div><div className="workbench-queue-pagination"><button type="button" disabled={windowStart === 0} onClick={() => selectItem(filteredItems[Math.max(0, windowStart - queueSize)])}>Anterior</button><span>{filteredItems.length ? windowStart + 1 : 0}–{Math.min(windowStart + queueSize, filteredItems.length)}</span><button type="button" disabled={windowStart + queueSize >= filteredItems.length} onClick={() => selectItem(filteredItems[windowStart + queueSize])}>Próximos</button></div></section></aside><main className="tasks-execution-panel">{activeItem ? <><article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="tasks-renderer-body" key={normalize(activeItem.task.type) === 'acordos' ? `agreement:${activeItem.task.id}` : workItemKey(activeItem)}>{normalize(activeItem.process.status) === 'completed' ? <div className="tasks-renderer-state"><strong>Processo concluído</strong></div> : normalize(activeItem.task.type) === 'liminar' ? <LiminarRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'defesa' ? <DefenseRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div>}</main></section></> : null}
+      <section className="tasks-workspace"><aside className="tasks-workspace-sidebar"><section className="tasks-process-section"><div className="tasks-process-title"><strong>Processos da fila</strong><span>{filteredItems.length} carregados</span></div><div className="queue-station-filters"><label>Prazo<select aria-label="Prazo" value={selectedType} onChange={event => { setSelectedType(event.target.value); setActiveKey(null); }}><option value="all">Todos</option>{deadlineOptions.map(type => <option key={type} value={type}>{taskTypeLabel(type)}</option>)}</select></label><label>Situação<select aria-label="Situação" value={selectedPriority} onChange={event => { setSelectedPriority(event.target.value); setActiveKey(null); }}><option value="all">Todas</option><option value="high">Alta</option><option value="normal">Normal</option></select></label></div><label className="tasks-process-search"><Search size={14} /><input value={search} type="search" aria-label="Buscar processo" placeholder="Buscar processo" onChange={event => setSearch(event.target.value)} /></label><div className="tasks-process-list">{visibleItems.length ? visibleItems.map(item => { const priority = situation(item); return <button type="button" key={workItemKey(item)} className={`tasks-process-item ${workItemKey(item) === activeKey ? 'selected' : ''}`} onClick={() => selectItem(item)}><div><strong>{item.process.case_number || 'Processo sem número'}</strong><small>{taskTypeLabel(item.task.type)}</small></div><div className="queue-item-badges"><span className={`tasks-state-pill ${priority}`}>{priority === 'high' ? 'Alta' : 'Normal'}</span></div></button>; }) : <div className="tasks-sidebar-empty">{loading ? 'Carregando fila…' : 'Nenhum processo neste filtro.'}</div>}</div><div className="workbench-queue-pagination"><button type="button" disabled={windowStart === 0} onClick={() => selectItem(filteredItems[Math.max(0, windowStart - queueSize)])}>Anterior</button><span>{filteredItems.length ? windowStart + 1 : 0}–{Math.min(windowStart + queueSize, filteredItems.length)}</span><button type="button" disabled={windowStart + queueSize >= filteredItems.length} onClick={() => selectItem(filteredItems[windowStart + queueSize])}>Próximos</button></div></section></aside><main className="tasks-execution-panel">{activeItem ? <><article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="tasks-renderer-body" key={normalize(activeItem.task.type) === 'acordos' ? `agreement:${activeItem.task.id}` : workItemKey(activeItem)}>{normalize(activeItem.process.status) === 'completed' ? <div className="tasks-renderer-state"><strong>Processo concluído</strong></div> : normalize(activeItem.task.type) === 'liminar' ? <LiminarRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'defesa' ? <DefenseRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div>}</main></section></> : null}
 
     {createOpen ? <CreateTaskModal onClose={() => setCreateOpen(false)} onCreated={() => loadTaskList(true)} /> : null}
     {assignTask ? <AssignTaskModal task={assignTask} onClose={() => setAssignTask(null)} onAssigned={() => loadTaskList(true)} /> : null}

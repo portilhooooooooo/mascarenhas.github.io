@@ -125,22 +125,20 @@ export function canManageTasks(user: MbaUser | null) {
 }
 
 export function taskAssignedToUser(task: Task, user: MbaUser | null, manager: boolean) {
-  if (manager || !user?.id) return true;
+  if (!user?.id) return false;
+  if (user.is_master_admin || user.permissions?.['tasks.manage']) return true;
   if (Array.isArray(user.allowed_modules) && user.allowed_modules.length && !user.allowed_modules.includes(task.type)) return false;
 
-  const participants = Array.isArray(task.participant_user_ids) ? task.participant_user_ids : [];
-  const hasExplicitAssignment = Boolean(task.responsible_id) || participants.length > 0;
-  if (!hasExplicitAssignment) return true;
-  return String(task.responsible_id || '') === String(user.id)
-    || participants.some(id => String(id) === String(user.id));
+  // /api/tasks already authorizes the parent. A task can be returned solely
+  // because one of its processes is assigned to this user; filtering by the
+  // parent responsible/participants here would wrongly hide that process.
+  return true;
 }
 
 export function processAssignedToUser(task: Task, process: TaskProcess, user: MbaUser | null, manager: boolean) {
-  if (manager || !user?.id) return true;
-  if (process.assignee_id) return String(process.assignee_id) === String(user.id);
-  if (task.responsible_id) return String(task.responsible_id) === String(user.id);
-  const participants = Array.isArray(task.participant_user_ids) ? task.participant_user_ids : [];
-  return !participants.length || participants.some(id => String(id) === String(user.id));
+  if (!user?.id) return false;
+  if (user.is_master_admin || user.permissions?.['tasks.manage']) return true;
+  return Boolean(process.assignee_id) && String(process.assignee_id) === String(user.id);
 }
 
 export function indicationLabel(task: Task, process: TaskProcess) {

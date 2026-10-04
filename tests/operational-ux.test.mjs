@@ -133,12 +133,14 @@ try {
   await page.screenshot({path:`${shots}/agreement-full.png`});
 
   await page.setViewportSize({width:1600,height:900}); await open('liminar','states');
-  await page.getByLabel('Prioridade',{exact:true}).selectOption('altissima');
+  await page.getByLabel('Situação',{exact:true}).selectOption('high');
   await page.getByRole('heading',{name:'DEMO 0004 · SP',exact:true}).waitFor();
-  await page.getByLabel('Prioridade',{exact:true}).selectOption('all'); await page.getByLabel('Situação',{exact:true}).selectOption('completed');
-  await page.getByText('Processo concluído',{exact:true}).waitFor(); assert.equal(await save().count(),0);
-  await page.getByLabel('Situação',{exact:true}).selectOption('error'); assert.equal(await page.locator('.tasks-process-item').count(),1);
-  await page.getByLabel('Situação',{exact:true}).selectOption('pending'); await page.getByLabel('Buscar processo',{exact:true}).fill('Parte demonstrativa'); assert.equal(await page.locator('.tasks-process-item').count(),0);
+  assert.equal(await page.locator('.tasks-process-item').count(),1);
+  await page.getByLabel('Situação',{exact:true}).selectOption('normal');
+  assert.equal(await page.locator('.tasks-process-item').filter({hasText:'DEMO 0002'}).count(),0);
+  await page.getByLabel('Situação',{exact:true}).selectOption('all');
+  await page.getByLabel('Prazo',{exact:true}).selectOption('liminar');
+  await page.getByLabel('Buscar processo',{exact:true}).fill('Parte demonstrativa'); assert.equal(await page.locator('.tasks-process-item').count(),0);
   await page.getByLabel('Buscar processo',{exact:true}).fill('0004'); assert.equal(await page.locator('.tasks-process-item').count(),1);
   await page.getByLabel('Buscar processo',{exact:true}).fill('');
 
@@ -185,7 +187,9 @@ try {
   });
   await page.getByRole('button',{name:'Controladoria',exact:true}).click();
   await page.getByText('Fazendo login…',{exact:true}).waitFor();
-  assert.equal(await page.locator('.protocolos-page-react table,.workbench-attention,.protocolos-page-react details').count(),0);
+  assert.equal(await page.locator('.protocolos-page-react table').count(),1);
+  assert.equal(await page.locator('.workbench-attention,.protocolos-page-react details').count(),0);
+  assert.ok(await page.locator('.protocolos-page-react').evaluate(el=>el.querySelector('.protocolos-session-bar').getBoundingClientRect().bottom < el.querySelector('.protocolos-intake-grid-react').getBoundingClientRect().top));
   for(const label of ['Baixar exceções','Atualizar','Arquivo do Metabase','Sessão Enter'])assert.equal(await page.getByText(label,{exact:true}).count(),0);
   assert.equal(await page.getByRole('heading',{name:'Correspondências',exact:true}).count(),1);
   const uploadInput=page.getByLabel('Selecionar documentos',{exact:true});
@@ -202,7 +206,7 @@ try {
   for(const [state,label] of [['in_use','Em produção'],['lost','Erro de sessão'],['idle','Aguardando execução']]) {
     await page.getByRole('button',{name:'Tarefas',exact:true}).first().click();
     await page.evaluate(value=>window.__automationState=value,state);
-    await page.getByRole('button',{name:'Controladoria',exact:true}).click();await page.getByText(label,{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Controladoria',exact:true}).click();await page.getByRole('region',{name:'Status da automação'}).getByText(label,{exact:true}).waitFor();
   }
   await page.getByRole('button',{name:'Iniciar',exact:true}).click();await page.getByText('Em produção',{exact:true}).waitFor();
   await page.evaluate(()=>{window.MBA_CURRENT_USER.permissions['automations.run']=false;window.dispatchEvent(new Event('mba:authenticated'));});

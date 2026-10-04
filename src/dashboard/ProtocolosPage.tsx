@@ -1,7 +1,8 @@
 import './operationalWorkspace.css';
+import {ProtocolQueue} from './ProtocolQueue';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, FileSpreadsheet, Files, LoaderCircle, Play, UploadCloud, X } from 'lucide-react';
-import { getProtocoloSummary, importDocuments, startProtocoloRun, uploadProtocolDocuments, type ProtocoloSummary } from './protocoloService';
+import { getProtocoloItems, getProtocoloSummary, importDocuments, startProtocoloRun, uploadProtocolDocuments, type ProtocoloItem, type ProtocoloSummary } from './protocoloService';
 
 const number = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 const dateTime = (value?: string | null) => value && !Number.isNaN(new Date(value).getTime()) ? new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)) : 'Nenhuma importação';
@@ -35,6 +36,7 @@ function UploadField({files,onChange,documents=false,disabled=false}: {files:Fil
 }
 
 export function ProtocolosPage() {
+  const [items,setItems]=useState<ProtocoloItem[]>([]);
   const [summary,setSummary]=useState<ProtocoloSummary|null>(null);
   const [canView,setCanView]=useState(false),[canRun,setCanRun]=useState(false);
   const [loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -46,7 +48,7 @@ export function ProtocolosPage() {
   const refresh=useCallback(async()=>{
     if(inFlight.current) return;
     inFlight.current=true;
-    try {setSummary(await getProtocoloSummary());setError('');}
+    try {const [nextSummary,nextItems]=await Promise.all([getProtocoloSummary(),getProtocoloItems()]);setSummary(nextSummary);setItems(nextItems);setError('');}
     catch(cause){setSummary(current=>current?{...current,session:{state:'unknown'}}:null);setError(cause instanceof Error?cause.message:'Não foi possível consultar a automação.');}
     finally{inFlight.current=false;setLoading(false);}
   },[]);
@@ -92,6 +94,7 @@ export function ProtocolosPage() {
   return <div className="protocolos-page-react">
     <header className="protocolos-header"><div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Protocolos</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
+    <section className="protocolos-session-bar" aria-label="Status da automação"><div className="protocolos-session-copy"><span>Status da automação</span><strong className={`protocolos-session-state ${state}`} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong></div><button type="button" className="protocolos-button primary protocolos-start-button" disabled={!canRun||startBusy||busy||loading} onClick={()=>void start()}>{startBusy?<LoaderCircle className="spin" size={15}/>:<Play size={15}/>}Iniciar</button></section>
     <div className="protocolos-intake-grid-react">
       <article className="protocolos-card protocolos-upload-card"><header><span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span><h3>Correspondências</h3></header>
         <UploadField files={relation} onChange={setRelation} disabled={!canRun||relationBusy}/>
@@ -104,6 +107,7 @@ export function ProtocolosPage() {
         {uploadFeedback?<p className={`protocolos-feedback ${uploadError?'danger':''}`} role={uploadError?'alert':'status'}>{uploadFeedback}</p>:null}
       </article>
     </div>
-    <section className="protocolos-session-bar" aria-label="Status da automação"><div className="protocolos-session-copy"><span>Status da automação</span><strong className={`protocolos-session-state ${state}`} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong></div><button type="button" className="protocolos-button primary protocolos-start-button" disabled={!canRun||startBusy||busy||loading} onClick={()=>void start()}>{startBusy?<LoaderCircle className="spin" size={15}/>:<Play size={15}/>}Iniciar</button></section>
+
+    <ProtocolQueue summary={summary} items={items} loading={loading} canRun={canRun} refresh={refresh} setError={setError}/>
   </div>;
 }

@@ -106,3 +106,6 @@
 #tarefas[data-react-tasks='true'] .execution-card .defesa-flow-criterion button:focus-visible{outline:2px solid #142b67;outline-offset:4px}
 #tarefas[data-react-tasks='true'] .execution-card .agreement-fields>.task-question{grid-column:1/-1;margin-block:16px}
 .agreement-process-context{font-size:12px;color:#52647d}
+
+/* Requested compact scale; task viewport measurements compensate for zoom. */
+.protocolos-page-react { zoom: .9; }

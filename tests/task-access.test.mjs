@@ -1,0 +1,15 @@
+import ts from 'typescript';
+import {readFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const source=ts.transpile(await readFile(new URL('../src/tasks/model.ts',import.meta.url),'utf8'),{module:ts.ModuleKind.ESNext});
+const {processAssignedToUser,taskAssignedToUser}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const user={id:'alice',permissions:{'tasks.create':true,'tasks.assign':true}};
+assert.equal(processAssignedToUser({}, {assignee_id:'bob'},user,true),false);
+assert.equal(processAssignedToUser({}, {assignee_id:'alice'},user,true),true);
+assert.equal(processAssignedToUser({}, {},user,true),false);
+assert.equal(processAssignedToUser({}, {},null,true),false);
+assert.equal(taskAssignedToUser({},null,true),false);
+assert.equal(taskAssignedToUser({responsible_id:'bob'},user,false),true);
+assert.equal(processAssignedToUser({responsible_id:'bob'},{assignee_id:'alice'},user,false),true);
+assert.equal(processAssignedToUser({}, {assignee_id:'bob'},{id:'admin',permissions:{'tasks.manage':true}},true),true);
+console.log('Assignment and fail-closed identity checks passed');
