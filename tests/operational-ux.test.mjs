@@ -70,7 +70,7 @@ try {
 
   await open('defesa');
   await choose('defense-deadline','Sim');
-  const confirmed=await submit(); assert.equal(confirmed.workflow_version,4); assert.equal(confirmed.has_defense_order,null); assert.equal(confirmed.court_fatal_deadline,null);
+  const confirmed=await submit(); assert.equal(confirmed.workflow_version,5); assert.equal(confirmed.has_defense_order,null); assert.equal(confirmed.court_fatal_deadline,null);
   await choose('defense-deadline','Não'); await choose('defense-active','Não'); await choose('defense-reason','Suspenso');
   assert.equal(await page.getByRole('radio',{name:'Suspenso',exact:true}).isChecked(),true);
   assert.equal(await save().isEnabled(),false);
@@ -81,7 +81,8 @@ try {
   await choose('defense-reason','Suspenso'); assert.equal(await page.getByRole('radiogroup',{name:'defense-suspension'}).locator('input:checked').count(),0);
   await choose('defense-active','Sim'); await choose('defense-court-valid','Sim');
   assert.equal(await save().isEnabled(),false); await page.getByLabel('Data fatal do expediente').fill('2026-10-10');
-  const court=await submit(); assert.equal(court.court_fatal_deadline,'2026-10-10'); assert.equal(court.has_valid_court_deadline,true); assert.deepEqual(court.criteria,[]); assert.equal('cpj_fatal_deadline' in court,false);
+  await page.getByLabel('Data da audiência, se houver').fill('2026-10-09');
+  const court=await submit(); assert.equal(court.court_fatal_deadline,'2026-10-10'); assert.equal(court.has_valid_court_deadline,true); assert.deepEqual(court.criteria,[{type:'audiencia',date:'2026-10-09'}]); assert.equal('cpj_fatal_deadline' in court,false);
   await choose('defense-court-valid','Não'); assert.equal(await page.getByLabel('Data fatal do expediente').count(),0);
   await open('defesa'); await choose('defense-deadline','Não'); await choose('defense-active','Sim'); await choose('defense-court-valid','Não');
   for(const name of ['Expedição de DJE','DJE Negativo','Expedição de Carta AR','Retorno de Carta AR','Audiência','Juntada de Habilitação']) await page.getByRole('button',{name,exact:true}).click();
