@@ -16,3 +16,6 @@
 @media (max-width: 920px) {
   .operacao-single-intake { grid-template-columns: 1fr; }
 }
+.operacao-module-subnav button[aria-disabled='true'] { color: var(--mba-muted); cursor: default; }
+.operacao-module-subnav button[aria-disabled='true']:hover { color: var(--mba-muted); }
+.operacao-download-button { min-height: 34px; }
