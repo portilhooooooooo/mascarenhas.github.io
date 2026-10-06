@@ -10,7 +10,10 @@ const operacaoManifest = fs.readFileSync('scripts/metabase/rebuild_operacao.py',
 const controladoriaPatch = fs.readFileSync('scripts/metabase/patch_controladoria_indicadores.py', 'utf8');
 
 assert.match(gestaoPage, /MetabaseGestaoEmbed/);
-assert.match(operacaoPage, /MetabaseOperacaoEmbed/);
+assert.doesNotMatch(operacaoPage, /MetabaseOperacaoEmbed/);
+assert.match(operacaoPage, /operacaoPagamentosService/);
+assert.match(operacaoPage, /Pago com comprovante/);
+assert.match(operacaoPage, /Ação necessária/);
 assert.match(main, /OperacaoPage/);
 assert.doesNotMatch(main, /ensureOperationSubnav|mba-operation-subnav/);
 assert.doesNotMatch(main, /CarteiraProcessualPage|AcordosAnalyticsPage|PagamentosAnalyticsPage/);

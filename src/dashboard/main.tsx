@@ -229,7 +229,7 @@ function mountOperacaoPage() {
   const section = document.getElementById('acordos');
   if (!section || operacaoRoot) return;
   section.dataset.reactMounted = 'true';
-  section.classList.add('operacao-metabase-host');
+  section.classList.add('operacao-react-host');
   section.replaceChildren();
   const mount = document.createElement('div');
   mount.className = 'operacao-react-root';
@@ -251,8 +251,10 @@ function unmountOperacaoPage() {
 
 function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
+  const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  if (visible) mountOperacaoPage();
+  const allowed = user?.permissions?.['pagamentos.view'] === true;
+  if (visible && allowed) mountOperacaoPage();
   else unmountOperacaoPage();
 }
 

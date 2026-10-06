@@ -1,0 +1,18 @@
+.operacao-pagamentos-page { max-width: 1600px; margin: 0 auto; }
+.operacao-single-intake { grid-template-columns: minmax(0, 820px); }
+.operacao-card-subtitle { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 9.5px; line-height: 1.35; }
+.operacao-workspace { min-width: 0; }
+.operacao-pagamentos-table { min-width: 1180px; }
+.operacao-pagamentos-table td small { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 9.5px; line-height: 1.3; }
+.operacao-pagamentos-table td:first-child { min-width: 245px !important; }
+.operacao-cell-main { display: block; color: var(--mba-text); font-size: 10.5px; font-weight: 600; }
+.operacao-danger-copy { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b42318 !important; }
+.protocolos-badge.amber { background: #fffaeb; color: #b54708; }
+.protocolos-status-strip-react button.amber svg { color: #b54708; }
+.protocolos-status-strip-react button.active.amber { border-color: #fedf89; background: #fffaeb; color: #93370d; }
+.protocolos-status-strip-react button.active.amber strong { color: #93370d; }
+.protocolos-feedback.danger { color: #b42318; }
+.operacao-pagamentos-page .protocolos-session-copy > small { max-width: 760px; }
+@media (max-width: 920px) {
+  .operacao-single-intake { grid-template-columns: 1fr; }
+}
