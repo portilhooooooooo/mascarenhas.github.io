@@ -1,5 +1,5 @@
 .operacao-pagamentos-page { max-width: 1600px; margin: 0 auto; }
-.operacao-single-intake { grid-template-columns: minmax(0, 820px); }
+.operacao-single-intake { grid-template-columns: minmax(0, 1fr); width: 100%; }
 .operacao-card-subtitle { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 9.5px; line-height: 1.35; }
 .operacao-workspace { min-width: 0; }
 .operacao-pagamentos-table { min-width: 1180px; }
