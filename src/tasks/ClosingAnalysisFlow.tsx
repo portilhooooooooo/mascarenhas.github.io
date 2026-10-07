@@ -1,18 +1,24 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import './closingAnalysisFlow.css';
 import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 
 type YesNo = 'sim' | 'nao' | null;
-export type ClosingMerit = 'vitoria' | 'derrota';
+type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
+type AppealResult = 'provido' | 'improvido';
+type Appellant = 'banco' | 'autora';
+type FinalMerit = 'vitoria' | 'derrota' | 'extincao' | 'indeterminado';
 
 export type ClosingAnalysisDraft = {
-  workflow_version: 1;
-  first_instance_merit: ClosingMerit;
+  workflow_version: 2;
+  first_instance_merit: TrialResult;
   had_appeal: boolean;
   appeal_decided: boolean | null;
-  appeal_favorable_bank: boolean | null;
+  appeal_result: AppealResult | null;
+  appellant: Appellant | null;
+  appeal_deadline_open: boolean | null;
+  appeal_deadline_date: string | null;
+  transit_confirmed: boolean | null;
   transit_date: string | null;
-  no_transit: boolean;
   final_costs_paid: boolean | null;
   execution_requested: boolean | null;
   full_payment: boolean | null;
@@ -29,204 +35,289 @@ type Props = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function BinaryChoice({ value, onChange, disabled, name }: { value: YesNo; onChange: (value: Exclude<YesNo, null>) => void; disabled?: boolean; name: string }) {
-  return <OptionGroup name={name} value={value} onChange={next => onChange(next as Exclude<YesNo, null>)} disabled={disabled} options={[{ value: 'sim', label: 'Sim' }, { value: 'nao', label: 'Não' }]} />;
-}
-
-function dateUtc(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
-  const time = Date.UTC(year, month - 1, day);
-  const parsed = new Date(time);
-  if (parsed.getUTCFullYear() !== year || parsed.getUTCMonth() !== month - 1 || parsed.getUTCDate() !== day) return null;
-  return time;
-}
-
-function localTodayUtc() {
-  const now = new Date();
-  return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function daysSince(value: string) {
-  const time = dateUtc(value);
-  return time === null ? null : Math.floor((localTodayUtc() - time) / DAY_MS);
-}
-
-function addDays(value: string, days: number) {
-  const time = dateUtc(value);
-  if (time === null) return null;
-  return new Date(time + days * DAY_MS).toISOString().slice(0, 10);
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return '—';
-  const [year, month, day] = value.split('-');
-  return year && month && day ? `${day}/${month}/${year}` : value;
-}
-
 const OUTCOME_LABELS: Record<string, string> = {
   apto_vitoria: 'Apto ao encerramento — Vitória',
   apto_derrota_voluntaria: 'Apto ao encerramento — Derrota voluntária',
   apto_derrota: 'Apto ao encerramento — Derrota',
+  apto_extincao: 'Apto ao encerramento — Extinção',
   apto_pending_custas: 'Apto, pendente de custas finais',
-  inapto_recurso_pendente: 'Inapto — recurso pendente',
-  inapto_prazo_recursal: 'Inapto — ainda sem trânsito em julgado',
+  inapto_recurso_pendente: 'Inapto — apelação pendente',
+  inapto_prazo_recursal: 'Inapto — prazo recursal em aberto',
+  inapto_sem_transito: 'Inapto — ainda sem trânsito em julgado',
   inapto_aguardando_transito_60d: 'Inapto temporariamente — aguardando 60 dias do trânsito',
   inapto_execucao_pendente: 'Inapto — execução sem pagamento integral',
+  inapto_resultado_indeterminado: 'Inapto — resultado do recurso exige validação',
 };
 
-export function ClosingAnalysisFlow({ cnj, classifierClassification, busy = false, error = null, onSubmit, onSkip }: Props) {
-  const [firstMerit, setFirstMerit] = useState<ClosingMerit | null>(null);
+const SENTENCES = [
+  { value: 'procedente', label: 'Procedente' },
+  { value: 'parcialmente_procedente', label: 'Parcialmente procedente' },
+  { value: 'improcedente', label: 'Improcedente' },
+  { value: 'extincao', label: 'Extinção' },
+];
+
+function BinaryChoice({ name, value, disabled, onChange }: {
+  name: string; value: YesNo; disabled: boolean;
+  onChange: (value: Exclude<YesNo, null>) => void;
+}) {
+  return <OptionGroup name={name} value={value} disabled={disabled}
+    onChange={next => onChange(next as Exclude<YesNo, null>)}
+    options={[{ value: 'sim', label: 'Sim' }, { value: 'nao', label: 'Não' }]} />;
+}
+
+function dateAsUtc(value: string): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = +match[1], month = +match[2], day = +match[3];
+  const millis = Date.UTC(year, month - 1, day);
+  const date = new Date(millis);
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return millis;
+}
+
+function todayUtc(): number {
+  const values = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Campo_Grande', day: '2-digit', month: '2-digit', year: 'numeric',
+  }).formatToParts(new Date());
+  const part = (type: string) => Number(values.find(item => item.type === type)?.value);
+  return Date.UTC(part('year'), part('month') - 1, part('day'));
+}
+
+function daysElapsed(value: string) {
+  const time = dateAsUtc(value);
+  return time === null ? null : Math.floor((todayUtc() - time) / DAY_MS);
+}
+
+function afterDays(value: string, days: number) {
+  const time = dateAsUtc(value);
+  return time === null ? null : new Date(time + DAY_MS * days).toISOString().slice(0, 10);
+}
+
+function formatDate(value: string | null) {
+  if (!value) return '—';
+  const [year, month, day] = value.split('-');
+  return day && month && year ? day + '/' + month + '/' + year : value;
+}
+
+function asFinalResult(sentence: TrialResult): FinalMerit {
+  if (sentence === 'improcedente') return 'vitoria';
+  if (sentence === 'extincao') return 'extincao';
+  return 'derrota';
+}
+
+function DateAnswer({ name, label, value, onChange, disabled }: {
+  name: string; label: string; value: string; onChange: (value: string) => void; disabled: boolean;
+}) {
+  return <label className="closing-date-answer" htmlFor={name}>
+    <span>{label}</span>
+    <input id={name} name={name} type="date" value={value} disabled={disabled}
+      onChange={event => onChange(event.target.value)} />
+  </label>;
+}
+
+export function ClosingAnalysisFlow({
+  cnj, classifierClassification, busy = false, error = null, onSubmit, onSkip,
+}: Props) {
+  const [sentence, setSentence] = useState<TrialResult | null>(null);
   const [hadAppeal, setHadAppeal] = useState<YesNo>(null);
   const [appealDecided, setAppealDecided] = useState<YesNo>(null);
-  const [appealFavorable, setAppealFavorable] = useState<YesNo>(null);
+  const [appealResult, setAppealResult] = useState<AppealResult | null>(null);
+  const [appellant, setAppellant] = useState<Appellant | null>(null);
+  const [deadlineOpen, setDeadlineOpen] = useState<YesNo>(null);
+  const [deadlineDate, setDeadlineDate] = useState('');
+  const [transitConfirmed, setTransitConfirmed] = useState<YesNo>(null);
   const [transitDate, setTransitDate] = useState('');
-  const [noTransit, setNoTransit] = useState(false);
   const [costsPaid, setCostsPaid] = useState<YesNo>(null);
   const [executionRequested, setExecutionRequested] = useState<YesNo>(null);
   const [fullPayment, setFullPayment] = useState<YesNo>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const resetAfterAppeal = () => {
-    setAppealDecided(null); setAppealFavorable(null); setTransitDate(''); setNoTransit(false);
-    setCostsPaid(null); setExecutionRequested(null); setFullPayment(null); setLocalError(null);
+  const clearAfterTransit = () => {
+    setCostsPaid(null); setExecutionRequested(null); setFullPayment(null);
+    setLocalError(null);
   };
-  const resetAfterFinalMerit = () => {
-    setTransitDate(''); setNoTransit(false); setCostsPaid(null); setExecutionRequested(null); setFullPayment(null); setLocalError(null);
+  const clearTransit = () => {
+    setTransitConfirmed(null); setTransitDate(''); clearAfterTransit();
   };
-  const resetAfterTransit = () => {
-    setCostsPaid(null); setExecutionRequested(null); setFullPayment(null); setLocalError(null);
+  const clearAppeal = () => {
+    setAppealDecided(null); setAppealResult(null); setAppellant(null);
+    setDeadlineOpen(null); setDeadlineDate(''); clearTransit();
   };
-
   useEffect(() => {
-    setFirstMerit(null); setHadAppeal(null); setAppealDecided(null); setAppealFavorable(null);
-    setTransitDate(''); setNoTransit(false); setCostsPaid(null); setExecutionRequested(null);
-    setFullPayment(null); setLocalError(null);
+    setSentence(null); setHadAppeal(null); clearAppeal();
   }, [cnj]);
 
-  const finalMerit = useMemo<ClosingMerit | null>(() => {
-    if (!firstMerit || hadAppeal === null) return null;
-    if (hadAppeal === 'nao') return firstMerit;
-    if (appealDecided !== 'sim' || appealFavorable === null) return null;
-    return appealFavorable === 'sim' ? 'vitoria' : 'derrota';
-  }, [firstMerit, hadAppeal, appealDecided, appealFavorable]);
-
-  const transitAge = transitDate ? daysSince(transitDate) : null;
+  const appealPending = hadAppeal === 'sim' && appealDecided === 'nao';
+  const appealJudged = hadAppeal === 'sim'
+    && appealDecided === 'sim' && appealResult !== null && appellant !== null;
+  const noAppealReady = hadAppeal === 'nao' && deadlineOpen === 'nao';
+  const deadlineAge = deadlineDate ? daysElapsed(deadlineDate) : null;
+  const transitAge = transitDate ? daysElapsed(transitDate) : null;
+  const isMature = transitAge !== null && transitAge >= 60;
   const transitTooRecent = transitAge !== null && transitAge >= 0 && transitAge < 60;
-  const transitMature = transitAge !== null && transitAge >= 60;
-  const reopenAt = transitTooRecent ? addDays(transitDate, 60) : null;
 
-  const outcome = useMemo(() => {
-    if (hadAppeal === 'sim' && appealDecided === 'nao') return 'inapto_recurso_pendente';
-    if (!finalMerit) return null;
-    if (noTransit) return 'inapto_prazo_recursal';
-    if (!transitDate || transitAge === null || transitAge < 0) return null;
-    if (transitAge < 60) return 'inapto_aguardando_transito_60d';
-    if (costsPaid === null) return null;
-    if (costsPaid === 'nao') return 'apto_pending_custas';
-    if (finalMerit === 'vitoria') return 'apto_vitoria';
-    if (executionRequested === null) return null;
-    if (executionRequested === 'nao') return 'apto_derrota_voluntaria';
-    if (fullPayment === null) return null;
-    return fullPayment === 'sim' ? 'apto_derrota' : 'inapto_execucao_pendente';
-  }, [hadAppeal, appealDecided, finalMerit, noTransit, transitDate, transitAge, costsPaid, executionRequested, fullPayment]);
+  let finalMerit: FinalMerit | null = null;
+  if (sentence && noAppealReady) {
+    finalMerit = asFinalResult(sentence);
+  } else if (sentence && appealJudged) {
+    if (appealResult === 'improvido') {
+      finalMerit = asFinalResult(sentence);
+    } else if (sentence === 'extincao' || (sentence === 'parcialmente_procedente' && appellant === 'banco')) {
+      finalMerit = 'indeterminado';
+    } else {
+      finalMerit = appellant === 'banco' ? 'vitoria' : 'derrota';
+    }
+  }
 
-  const guidance = classifierClassification
-    ? `Identificamos que esse processo está apto ao encerramento por ${classifierClassification}.`
-    : 'Identificamos este processo para validação de encerramento.';
+  let outcome: string | null = null;
+  if (appealPending) {
+    outcome = 'inapto_recurso_pendente';
+  } else if (hadAppeal === 'nao' && deadlineOpen === 'sim') {
+    if (deadlineAge !== null && deadlineAge <= 0) outcome = 'inapto_prazo_recursal';
+  } else if (finalMerit === 'indeterminado') {
+    outcome = 'inapto_resultado_indeterminado';
+  } else if (finalMerit) {
+    if (transitConfirmed === 'nao') outcome = 'inapto_sem_transito';
+    else if (transitConfirmed === 'sim' && transitAge !== null && transitAge >= 0) {
+      if (transitAge < 60) outcome = 'inapto_aguardando_transito_60d';
+      else if (costsPaid === 'nao') outcome = 'apto_pending_custas';
+      else if (costsPaid === 'sim') {
+        if (finalMerit === 'vitoria') outcome = 'apto_vitoria';
+        else if (finalMerit === 'extincao') outcome = 'apto_extincao';
+        else if (executionRequested === 'nao') outcome = 'apto_derrota_voluntaria';
+        else if (executionRequested === 'sim' && fullPayment !== null) {
+          outcome = fullPayment === 'sim' ? 'apto_derrota' : 'inapto_execucao_pendente';
+        }
+      }
+    }
+  }
 
+  const reopenAt = transitTooRecent
+    ? afterDays(transitDate, 60)
+    : outcome === 'inapto_prazo_recursal' ? afterDays(deadlineDate, 1) : null;
+
+  const canAnswerTransit = finalMerit !== null && finalMerit !== 'indeterminado';
+  let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!firstMerit) return setLocalError('Informe o mérito do processo em 1ª instância.');
-    if (hadAppeal === null) return setLocalError('Informe se houve pedido de apelação.');
-    if (hadAppeal === 'sim' && appealDecided === null) return setLocalError('Informe se o colegiado já decidiu a apelação.');
-    if (hadAppeal === 'sim' && appealDecided === 'sim' && appealFavorable === null) return setLocalError('Informe se a decisão colegiada foi favorável ao banco.');
-
-    if (!(hadAppeal === 'sim' && appealDecided === 'nao')) {
-      if (!finalMerit) return setLocalError('Não foi possível determinar o mérito final.');
-      if (!transitDate && !noTransit) return setLocalError('Informe a data do trânsito em julgado ou marque que ele ainda não ocorreu.');
-      if (transitDate && (transitAge === null || transitAge < 0)) return setLocalError('A data do trânsito em julgado é inválida ou está no futuro.');
-      if (transitMature && costsPaid === null) return setLocalError('Informe se houve pagamento das custas finais.');
-      if (transitMature && costsPaid === 'sim' && finalMerit === 'derrota' && executionRequested === null) return setLocalError('Informe se houve pedido de execução.');
-      if (transitMature && costsPaid === 'sim' && finalMerit === 'derrota' && executionRequested === 'sim' && fullPayment === null) return setLocalError('Informe se houve pagamento integral do valor solicitado pela autora.');
+    if (!outcome || !sentence || hadAppeal === null) {
+      setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
+      return;
     }
-
     setLocalError(null);
     await onSubmit({
-      workflow_version: 1,
-      first_instance_merit: firstMerit,
+      workflow_version: 2,
+      first_instance_merit: sentence,
       had_appeal: hadAppeal === 'sim',
       appeal_decided: hadAppeal === 'sim' ? appealDecided === 'sim' : null,
-      appeal_favorable_bank: hadAppeal === 'sim' && appealDecided === 'sim' ? appealFavorable === 'sim' : null,
-      transit_date: transitDate || null,
-      no_transit: noTransit,
-      final_costs_paid: transitMature ? costsPaid === 'sim' : null,
-      execution_requested: transitMature && costsPaid === 'sim' && finalMerit === 'derrota' ? executionRequested === 'sim' : null,
-      full_payment: transitMature && costsPaid === 'sim' && finalMerit === 'derrota' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
+      appeal_result: hadAppeal === 'sim' && appealDecided === 'sim' ? appealResult : null,
+      appellant: hadAppeal === 'sim' && appealDecided === 'sim' ? appellant : null,
+      appeal_deadline_open: hadAppeal === 'nao' ? deadlineOpen === 'sim' : null,
+      appeal_deadline_date: hadAppeal === 'nao' && deadlineOpen === 'sim' ? deadlineDate : null,
+      transit_confirmed: canAnswerTransit ? transitConfirmed === 'sim' : null,
+      transit_date: canAnswerTransit && transitConfirmed === 'sim' ? transitDate : null,
+      final_costs_paid: canAnswerTransit && transitConfirmed === 'sim' && isMature ? costsPaid === 'sim' : null,
+      execution_requested: finalMerit === 'derrota' && isMature && costsPaid === 'sim'
+        ? executionRequested === 'sim' : null,
+      full_payment: finalMerit === 'derrota' && isMature && costsPaid === 'sim' && executionRequested === 'sim'
+        ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
     });
   };
 
   return <TaskForm className="closing-flow" onSubmit={submit}>
-    <div className="closing-guidance"><span>Orientação do classificador</span><strong>{guidance}</strong><small>A resposta final será determinada pelas validações abaixo.</small></div>
+    <section className={'closing-outcome closing-summary ' +
+      (outcome?.startsWith('apto_') ? 'positive' : outcome ? 'negative' : 'neutral')} aria-live="polite">
+      <span>Classificação final prevista</span>
+      <strong>{outcome ? OUTCOME_LABELS[outcome] : 'Aguardando validação das respostas'}</strong>
+      {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
+      {!outcome && classifierClassification ? <small>Indício do classificador: {classifierClassification}</small> : null}
+    </section>
 
-    <TaskQuestion number="01" question="Qual foi o mérito desse processo em 1ª instância?">
-      <OptionGroup name="closing-first-merit" value={firstMerit} disabled={busy} onChange={value => {
-        setFirstMerit(value as ClosingMerit); setHadAppeal(null); resetAfterAppeal();
-      }} options={[{ value: 'derrota', label: 'Derrota' }, { value: 'vitoria', label: 'Vitória' }]} />
+    <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença em 1ª instância?">
+      <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
+        options={SENTENCES} onChange={value => {
+          setSentence(value as TrialResult); setHadAppeal(null); clearAppeal();
+        }} />
     </TaskQuestion>
 
-    {firstMerit ? <TaskQuestion number="02" question="Esse processo teve pedido de apelação?">
-      <BinaryChoice name="closing-had-appeal" value={hadAppeal} disabled={busy} onChange={value => {
-        setHadAppeal(value); resetAfterAppeal();
+    {sentence ? <TaskQuestion number={String(++questionNumber)} question="Houve interposição de apelação?">
+      <BinaryChoice name="closing-appeal" value={hadAppeal} disabled={busy} onChange={value => {
+        setHadAppeal(value); clearAppeal();
       }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' ? <TaskQuestion number="03" question="O colegiado já decidiu sobre a apelação?">
+    {hadAppeal === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="O colegiado já julgou a apelação?">
       <BinaryChoice name="closing-appeal-decided" value={appealDecided} disabled={busy} onChange={value => {
-        setAppealDecided(value); setAppealFavorable(null); resetAfterFinalMerit();
+        setAppealDecided(value); setAppealResult(null); setAppellant(null); clearTransit();
       }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' && appealDecided === 'sim' ? <TaskQuestion number="03A" question="A decisão do colegiado foi favorável ao banco?">
-      <BinaryChoice name="closing-appeal-favorable" value={appealFavorable} disabled={busy} onChange={value => {
-        setAppealFavorable(value); resetAfterFinalMerit();
-      }} />
+    {hadAppeal === 'sim' && appealDecided === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da apelação?">
+      <OptionGroup name="closing-appeal-result" value={appealResult} disabled={busy}
+        options={[{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' }]}
+        onChange={value => { setAppealResult(value as AppealResult); setAppellant(null); clearTransit(); }} />
     </TaskQuestion> : null}
 
-    {finalMerit ? <TaskQuestion number="04" question="Quando foi expedida a certidão de trânsito em julgado?">
-      <div className="closing-transit-grid">
-        <label className="task-text-field"><span>Data da certidão</span><input type="date" value={transitDate} disabled={busy || noTransit} onChange={event => {
-          setTransitDate(event.target.value); setNoTransit(false); resetAfterTransit();
-        }} /></label>
-        <button type="button" className={`closing-no-transit ${noTransit ? 'active' : ''}`} disabled={busy} aria-pressed={noTransit} onClick={() => {
-          setNoTransit(current => !current); setTransitDate(''); resetAfterTransit();
-        }}><strong>Ainda não houve trânsito em julgado</strong><small>Use quando o processo ainda estiver em prazo recursal.</small></button>
-      </div>
-      {transitTooRecent ? <p className="closing-inline-note">O trânsito possui {transitAge} dia(s). O processo será devolvido para análise em <strong>{formatDate(reopenAt)}</strong>, quando completar 60 dias.</p> : null}
+    {hadAppeal === 'sim' && appealDecided === 'sim' && appealResult ? <TaskQuestion number={String(++questionNumber)} question="Quem interpôs a apelação?">
+      <OptionGroup name="closing-appellant" value={appellant} disabled={busy}
+        options={[{ value: 'banco', label: 'Banco' }, { value: 'autora', label: 'Parte autora' }]}
+        onChange={value => { setAppellant(value as Appellant); clearTransit(); }} />
     </TaskQuestion> : null}
 
-    {finalMerit && transitMature ? <TaskQuestion number="05" question="Houve o pagamento das custas finais?">
-      <BinaryChoice name="closing-costs-paid" value={costsPaid} disabled={busy} onChange={value => {
-        setCostsPaid(value); setExecutionRequested(null); setFullPayment(null); setLocalError(null);
-      }} />
+    {hadAppeal === 'nao' ? <TaskQuestion number={String(++questionNumber)} question="Há prazo para recorrer?">
+      <BinaryChoice name="closing-deadline-open" value={deadlineOpen} disabled={busy}
+        onChange={value => {
+          setDeadlineOpen(value); setDeadlineDate(''); clearTransit();
+        }} />
     </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && transitMature && costsPaid === 'sim' ? <TaskQuestion number="06" question="Houve pedido de execução?">
-      <BinaryChoice name="closing-execution-requested" value={executionRequested} disabled={busy} onChange={value => {
-        setExecutionRequested(value); setFullPayment(null); setLocalError(null);
-      }} />
+    {hadAppeal === 'nao' && deadlineOpen === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual é a data final do prazo recursal?">
+      <DateAnswer name="closing-deadline-date" label="Data final do prazo" value={deadlineDate}
+        disabled={busy} onChange={value => { setDeadlineDate(value); setLocalError(null); }} />
+      {deadlineAge !== null && deadlineAge > 0 ? <p className="closing-inline-note">
+        A data informada já passou. Confira se o prazo recursal continua aberto.
+      </p> : null}
     </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && transitMature && costsPaid === 'sim' && executionRequested === 'sim' ? <TaskQuestion number="07" question="Houve pagamento do valor integral solicitado pela autora?">
-      <BinaryChoice name="closing-full-payment" value={fullPayment} disabled={busy} onChange={value => { setFullPayment(value); setLocalError(null); }} />
+    {canAnswerTransit ? <TaskQuestion number={String(++questionNumber)} question="Esse processo já transitou em julgado?">
+      <BinaryChoice name="closing-transit-confirmed" value={transitConfirmed} disabled={busy}
+        onChange={value => { setTransitConfirmed(value); setTransitDate(''); clearAfterTransit(); }} />
     </TaskQuestion> : null}
 
-    {outcome ? <section className={`closing-outcome ${outcome.startsWith('apto_') ? 'positive' : 'negative'}`} aria-live="polite"><span>Classificação final prevista</span><strong>{OUTCOME_LABELS[outcome]}</strong>{outcome === 'inapto_aguardando_transito_60d' && reopenAt ? <small>Reanálise automática em {formatDate(reopenAt)}.</small> : null}</section> : null}
+    {canAnswerTransit && transitConfirmed === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Quando foi expedida a certidão de trânsito em julgado?">
+      <DateAnswer name="closing-transit-date" label="Data da certidão de trânsito em julgado"
+        value={transitDate} disabled={busy} onChange={value => {
+          setTransitDate(value); clearAfterTransit();
+        }} />
+      {transitTooRecent ? <p className="closing-inline-note">
+        O trânsito possui {transitAge} dia(s). Reanálise em {formatDate(reopenAt)}, após 60 dias.
+      </p> : null}
+    </TaskQuestion> : null}
+
+    {canAnswerTransit && transitConfirmed === 'sim' && isMature ?
+      <TaskQuestion number={String(++questionNumber)} question="Houve o pagamento das custas finais?">
+        <BinaryChoice name="closing-costs" value={costsPaid} disabled={busy} onChange={value => {
+          setCostsPaid(value); setExecutionRequested(null); setFullPayment(null); setLocalError(null);
+        }} />
+      </TaskQuestion> : null}
+
+    {finalMerit === 'derrota' && isMature && costsPaid === 'sim' ?
+      <TaskQuestion number={String(++questionNumber)} question="Houve pedido de execução?">
+        <BinaryChoice name="closing-execution" value={executionRequested} disabled={busy} onChange={value => {
+          setExecutionRequested(value); setFullPayment(null); setLocalError(null);
+        }} />
+      </TaskQuestion> : null}
+
+    {finalMerit === 'derrota' && isMature && costsPaid === 'sim' && executionRequested === 'sim' ?
+      <TaskQuestion number={String(++questionNumber)} question="Houve pagamento do valor integral solicitado pela autora?">
+        <BinaryChoice name="closing-payment" value={fullPayment} disabled={busy} onChange={value => {
+          setFullPayment(value); setLocalError(null);
+        }} />
+      </TaskQuestion> : null}
 
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome)} onSkip={() => void onSkip()} skipLabel="Pular esse processo" />
+    <TaskActionBar busy={busy} ready={Boolean(outcome)} onSkip={() => void onSkip()}
+      skipLabel="Pular esse processo" />
   </TaskForm>;
 }
