@@ -3,12 +3,14 @@ import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
+import { UsersPage } from './UsersPage';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
 import './protocolos.css';
 import './controladoria.css';
 import './defesas.css';
+import './users.css';
 import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {
@@ -316,6 +318,53 @@ function configureProtocolosLifecycle() {
   syncProtocolosLifecycle();
 }
 
+let usersRoot: Root | null = null;
+
+function mountUsersPage() {
+  const section = document.getElementById('usuarios');
+  if (!section || usersRoot) return;
+  section.dataset.reactMounted = 'true';
+  section.classList.add('users-react-host');
+  section.replaceChildren();
+  const mount = document.createElement('div');
+  mount.className = 'users-react-root';
+  section.appendChild(mount);
+  usersRoot = createRoot(mount);
+  usersRoot.render(<StrictMode><UsersPage /></StrictMode>);
+}
+
+function unmountUsersPage() {
+  if (!usersRoot) return;
+  usersRoot.unmount();
+  usersRoot = null;
+  const section = document.getElementById('usuarios');
+  if (section) {
+    delete section.dataset.reactMounted;
+    section.classList.remove('users-react-host');
+    section.replaceChildren();
+  }
+}
+
+function syncUsersLifecycle() {
+  const section = document.getElementById('usuarios');
+  const user = (window as DashboardWindow).MBA_CURRENT_USER;
+  const visible = section?.classList.contains('active') === true && !document.hidden;
+  const allowed = user?.permissions?.['users.view'] === true;
+  if (visible && allowed) mountUsersPage();
+  else unmountUsersPage();
+}
+
+function configureUsersLifecycle() {
+  const section = document.getElementById('usuarios');
+  if (!section) return;
+  const observer = new MutationObserver(syncUsersLifecycle);
+  observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('mba:authenticated', syncUsersLifecycle);
+  window.addEventListener('mba:session-expired', unmountUsersPage);
+  document.addEventListener('visibilitychange', syncUsersLifecycle);
+  syncUsersLifecycle();
+}
+
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
@@ -334,3 +383,4 @@ createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
 mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
+configureUsersLifecycle();
