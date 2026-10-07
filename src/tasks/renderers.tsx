@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
+import { ClosingAnalysisFlow, type ClosingAnalysisDraft } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
 
 export { AgreementRenderer, LiminarRenderer, OptionGroup, PaymentRenderer, UnsupportedRenderer } from './renderersLegacy';
@@ -71,3 +72,65 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
     onSkip={skip}
   />;
 }
+
+function closingClassifierClassification(task: Task, process: TaskProcess) {
+  const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
+  const raw = process.indicio
+    || process.indication
+    || process.indication_label
+    || metadata.classifier_classification
+    || metadata.classification
+    || metadata.classificacao
+    || metadata.resultado
+    || task.title;
+  const normalized = String(raw || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (normalized.includes('derrota voluntaria')) return 'Derrota voluntária';
+  if (normalized.includes('vitoria')) return 'Vitória';
+  if (normalized.includes('derrota')) return 'Derrota';
+  return null;
+}
+
+export function ClosingRenderer({ api, task, process, onCompleted, onSkipped }: BaseRendererProps) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const classifierClassification = closingClassifierClassification(task, process);
+
+  const submit = async (draft: ClosingAnalysisDraft) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/task-processes/${process.id}/encerramento-analysis`, {
+        method: 'POST',
+        body: JSON.stringify(draft),
+      });
+      onCompleted(process);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível salvar a análise de encerramento.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const skip = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      onSkipped(process);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível pular o processo.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return <ClosingAnalysisFlow
+    cnj={process.case_number || 'Processo sem número'}
+    classifierClassification={classifierClassification}
+    busy={busy}
+    error={error}
+    onSubmit={submit}
+    onSkip={skip}
+  />;
+}
+
