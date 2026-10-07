@@ -32,7 +32,31 @@ const TIPOS: Array<{ value: Classificacao; label: string }> = [
   { value: 'VITORIA', label: 'Vitória' },
   { value: 'EXTINCAO', label: 'Extinção' },
 ];
-const AGING = ['0–30d', '31–60d', '61–90d', '91–180d', '181+d'];
+const AGING = [
+  { faixa: '0 a 3 meses', tag: '0 A 3 MESES', tone: 'low' },
+  { faixa: '3 a 10 meses', tag: '3 A 10 MESES', tone: 'medium' },
+  { faixa: 'Mais de 10 meses', tag: 'MAIS DE 10 MESES', tone: 'high' },
+  { faixa: 'Sem tag / não reconhecida', tag: 'SEM TAG / NÃO RECONHECIDA', tone: 'untagged' },
+] as const;
+
+// Dados de exemplo apenas para homologação visual; jamais são gravados no backend.
+const DEMO_AGING: Dados['aging'] = [
+  { faixa: '0 a 3 meses', quantidade: 128 },
+  { faixa: '3 a 10 meses', quantidade: 342 },
+  { faixa: 'Mais de 10 meses', quantidade: 517 },
+  { faixa: 'Sem tag / não reconhecida', quantidade: 41 },
+];
+const DEMO_ANALYSTS: Analista[] = [
+  { id: 'demo-gabriel', nome: 'Gabriel', analisados: 43 },
+  { id: 'demo-elias', nome: 'Elias', analisados: 31 },
+  { id: 'demo-gessica', nome: 'Géssica', analisados: 26 },
+];
+const ANALYST_OPTIONS = [
+  { value: 'todos', label: 'Todos os analistas' },
+  { value: 'gabriel', label: 'Gabriel' },
+  { value: 'elias', label: 'Elias' },
+  { value: 'gessica', label: 'Géssica' },
+];
 const n = (value: number | null | undefined) => new Intl.NumberFormat('pt-BR').format(Number(value ?? 0));
 const brl = (value: number | null | undefined) =>
   value === null || value === undefined ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
@@ -41,10 +65,11 @@ function localDate(daysAgo: number) {
   date.setDate(date.getDate() - daysAgo);
   return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
 }
-async function getDashboard(carteira: string, tipo: Classificacao, periodo: string): Promise<Dados> {
+async function getDashboard(carteira: string, tipo: Classificacao, periodo: string, analista: string): Promise<Dados> {
   const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
   if (!api) throw new Error('A API do Backoffice não está disponível.');
   const params = new URLSearchParams({ carteira, tipo });
+  if (analista !== 'todos') params.set('analista', analista);
   if (periodo === '30') params.set('inicio', localDate(29));
   if (periodo === '90') params.set('inicio', localDate(89));
   return api.request<Dados>('/api/operacao/encerramentos/dashboard?' + params.toString());
@@ -101,49 +126,61 @@ function BrazilMap({ estados }: { estados: Estado[] }) {
     </div>
   </article>;
 }
-function AgingPanel({ rows }: { rows: Dados['aging'] }) {
+function AgingPanel({ rows, demo }: { rows: Dados['aging']; demo: boolean }) {
   const counts = new Map(rows.map(item => [item.faixa, Number(item.quantidade)]));
   const max = Math.max(1, ...Array.from(counts.values()));
   return <article className="closing-panel">
-    <div className="closing-panel-heading"><div><h2><Clock3 size={16}/> Aging das oportunidades</h2><p>Dias desde a entrada da pasta Benner.</p></div></div>
-    <div className="closing-bars">
-      {AGING.map(faixa => {
+    <div className="closing-panel-heading">
+      <div><h2><Clock3 size={16}/> Aging das oportunidades {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2>
+        <p>Faixas de idade pela entrada da pasta no Benner.</p>
+      </div>
+    </div>
+    <div className="closing-bars closing-aging-bars">
+      {AGING.map(({ faixa, tag, tone }) => {
         const value = counts.get(faixa) || 0;
-        return <div className="closing-bar-row" key={faixa}><span>{faixa}</span><div className="closing-bar-track"><div style={{ width: (value / max * 100) + '%' }}/></div><strong>{n(value)}</strong></div>;
+        return <div className="closing-bar-row" key={faixa}>
+          <span className={'closing-aging-tag ' + tone}>{tag}</span>
+          <div className="closing-bar-track"><div className={'closing-aging-fill ' + tone} style={{ width: (value / max * 100) + '%' }}/></div>
+          <strong>{n(value)}</strong>
+        </div>;
       })}
     </div>
   </article>;
 }
-function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
+function AnalystsPanel({ analysts, demo, selected }: { analysts: Analista[]; demo: boolean; selected: string }) {
   const max = Math.max(1, ...analysts.map(a => a.analisados));
   return <article className="closing-panel">
-    <div className="closing-panel-heading"><div><h2><UsersRound size={16}/> Produtividade dos analistas</h2><p>Processos únicos analisados hoje · horário de Campo Grande.</p></div></div>
+    <div className="closing-panel-heading"><div><h2><UsersRound size={16}/> Produtividade dos analistas {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2><p>Processos únicos analisados hoje · horário de Campo Grande.</p></div></div>
     {analysts.length ? <div className="closing-analysts">
       {analysts.map((a, index) => <div className="closing-analyst" key={a.id}>
         <span className="closing-rank">{index + 1}</span>
         <div><strong>{a.nome}</strong><div className="closing-analyst-bar"><span style={{width: (a.analisados / max * 100) + '%'}}/></div></div>
         <b>{n(a.analisados)}</b>
       </div>)}
-    </div> : <div className="closing-empty"><UsersRound size={22}/><strong>Sem análises registradas hoje</strong><p>A produtividade aparecerá após as primeiras conclusões da tarefa de Encerramentos.</p></div>}
+    </div> : <div className="closing-empty"><UsersRound size={22}/><strong>Sem análises registradas hoje</strong>
+      <p>{selected !== 'todos' ? 'O analista selecionado ainda não tem análises reais registradas hoje.' : 'A produtividade aparecerá após as primeiras conclusões da tarefa de Encerramentos.'}</p>
+    </div>}
   </article>;
 }
 export function EncerramentosPage() {
   const [carteira, setCarteira] = useState('Agibank Regular');
   const [tipo, setTipo] = useState<Classificacao>('TODOS');
   const [periodo, setPeriodo] = useState('all');
+  const [analista, setAnalista] = useState('todos');
+  const [demonstracao, setDemonstracao] = useState(true);
   const [data, setData] = useState<Dados | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getDashboard(carteira, tipo, periodo);
+      const result = await getDashboard(carteira, tipo, periodo, analista);
       setData(result);
       setError('');
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível consultar Encerramentos.');
     } finally { setLoading(false); }
-  }, [carteira, tipo, periodo]);
+  }, [carteira, tipo, periodo, analista]);
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
     const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, 60000);
@@ -151,10 +188,29 @@ export function EncerramentosPage() {
   }, [refresh]);
   const metrics = data?.indicadores;
   const mainMetric = metrics ? n(metrics.encontrados) : '—';
+  const analysts = demonstracao
+    ? DEMO_ANALYSTS.filter(item => analista === 'todos' || item.id === 'demo-' + analista)
+    : (data?.analistas || []);
+  const analysedCount = demonstracao
+    ? analysts.reduce((total, item) => total + item.analisados, 0)
+    : metrics?.analisados;
+  const analyzedDetail = demonstracao
+    ? 'Volume fictício para pré-visualização'
+    : analista !== 'todos'
+      ? 'Conclusões do analista selecionado hoje'
+      : 'Análises humanas registradas';
   return <div className="protocolos-page-react closing-page">
     <header className="protocolos-header closing-header">
-      <div><span className="protocolos-eyebrow">OPERAÇÃO · ENCERRAMENTOS</span><h1>Painel de encerramentos</h1></div>
-      <button type="button" className="protocolos-button secondary" onClick={() => void refresh()} disabled={loading}><RefreshCcw size={14} className={loading ? 'spin' : ''}/>Atualizar</button>
+      <div><span className="protocolos-eyebrow">GESTÃO PROCESSUAL · ENCERRAMENTOS</span><h1>Painel de encerramentos</h1></div>
+      <div className="closing-header-actions">
+        <label className="closing-preview-toggle">
+          <input type="checkbox" checked={demonstracao} onChange={event => setDemonstracao(event.target.checked)}/>
+          <span>Exibir demonstração</span>
+        </label>
+        <button type="button" className="protocolos-button secondary" onClick={() => void refresh()} disabled={loading}>
+          <RefreshCcw size={14} className={loading ? 'spin' : ''}/>Atualizar
+        </button>
+      </div>
     </header>
     <section className="closing-filters" aria-label="Filtros de Encerramentos">
       <label>Carteira<select value={carteira} onChange={event => setCarteira(event.target.value)}>
@@ -167,20 +223,26 @@ export function EncerramentosPage() {
       <label>Período da automação<select value={periodo} onChange={event => setPeriodo(event.target.value)}>
         <option value="all">Todo o histórico</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option>
       </select></label>
-      <small><CalendarDays size={13}/> Classificação mais recente por CNJ</small>
+      <label>Analista<select value={analista} onChange={event => setAnalista(event.target.value)}>
+        {ANALYST_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select></label>
+      <small><CalendarDays size={13}/> O filtro por analista se aplica à produtividade humana, não aos indícios automáticos.</small>
     </section>
+    {demonstracao ? <div className="closing-demo-notice" role="status">
+      <strong>Demonstração visual</strong> — Aging, produtividade, total de análises e aging médio exibem valores fictícios. Os resultados da automação, pagamentos e mapa continuam consultando os dados reais.
+    </div> : null}
     {error ? <div className="protocolos-alert error" role="alert"><AlertTriangle size={17}/>{error}{data ? ' · Exibindo última consulta válida.' : ''}</div> : null}
     <div className="closing-metrics" aria-busy={loading}>
       <Metric icon={SearchCheck} label="Encontrados pela automação" value={mainMetric} detail={metrics ? n(metrics.consultados) + ' processos consultados' : 'Aguardando API'}/>
-      <Metric icon={CheckCircle2} label="Processos analisados" value={metrics ? n(metrics.analisados) : '—'} detail="Análises humanas registradas"/>
+      <Metric icon={CheckCircle2} label="Processos analisados" value={analysedCount === undefined ? '—' : n(analysedCount)} detail={analyzedDetail}/>
       <Metric icon={Wallet} label="Ticket médio de perdas" value={brl(metrics?.ticket_medio)} detail={metrics ? n(metrics.ticket_amostra) + ' casos com pagamento liquidado' : 'Sem apuração'}/>
-      <Metric icon={Activity} label="Aging médio" value={metrics?.aging_medio == null ? '—' : n(Math.round(metrics.aging_medio)) + ' dias'} detail="Oportunidades aptas com entrada conhecida"/>
+      <Metric icon={Activity} label="Aging médio" value={demonstracao ? '276 dias' : metrics?.aging_medio == null ? '—' : n(Math.round(metrics.aging_medio)) + ' dias'} detail={demonstracao ? 'Média fictícia da demonstração' : 'Oportunidades aptas com entrada conhecida'}/>
     </div>
     <div className="closing-content-grid">
       <BrazilMap estados={data?.estados || []}/>
       <div className="closing-right-column">
-        <AgingPanel rows={data?.aging || []}/>
-        <AnalystsPanel analysts={data?.analistas || []}/>
+        <AgingPanel rows={demonstracao ? DEMO_AGING : (data?.aging || [])} demo={demonstracao}/>
+        <AnalystsPanel analysts={analysts} demo={demonstracao} selected={analista}/>
       </div>
     </div>
     <div className="closing-footer-row">
