@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, CalendarDays, CheckCircle2, Clock3, MapPinned,
 import { BRAZIL_STATES } from './brazilStates';
 import './encerramentos.css';
 
-type Classificacao = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'EXTINCAO' | 'INDETERMINADO';
+type Classificacao = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'EXTINCAO';
 type Faixa = 'alto' | 'medio' | 'baixo' | 'sem_amostra';
 type Indicadores = {
   consultados: number;
@@ -31,7 +31,6 @@ const TIPOS: Array<{ value: Classificacao; label: string }> = [
   { value: 'DERROTA', label: 'Derrota' },
   { value: 'VITORIA', label: 'Vitória' },
   { value: 'EXTINCAO', label: 'Extinção' },
-  { value: 'INDETERMINADO', label: 'Indeterminado' },
 ];
 const AGING = ['0–30d', '31–60d', '61–90d', '91–180d', '181+d'];
 const n = (value: number | null | undefined) => new Intl.NumberFormat('pt-BR').format(Number(value ?? 0));
@@ -186,7 +185,7 @@ export function EncerramentosPage() {
     </div>
     <div className="closing-footer-row">
       <div><strong>Composição das oportunidades</strong><span>{(data?.classificacoes || []).length ? data!.classificacoes.map(c => classLabel(c.tipo) + ': ' + n(c.quantidade)).join(' · ') : 'Nenhuma oportunidade com os filtros selecionados.'}</span></div>
-      <small>TKM = média de pagamentos liquidados por processo de derrota. Não inclui provisões, pagamentos pendentes nem classificações sem correspondência.</small>
+      <small>TKM = média de pagamentos liquidados por processo de derrota. Não inclui provisões nem pagamentos pendentes. Acordos e indeterminados estão fora das oportunidades aptas.</small>
     </div>
   </div>;
 }
