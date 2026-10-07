@@ -1,8 +1,17 @@
 const navItems = [...document.querySelectorAll('.nav-item')];
 const pages = [...document.querySelectorAll('.page')];
 
-const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', 'acordo-execucao': 'tarefas/acordos', 'comprovante-execucao': 'tarefas/comprovante-pagamento' };
+const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', usuarios: 'usuarios', 'acordo-execucao': 'tarefas/acordos', 'comprovante-execucao': 'tarefas/comprovante-pagamento' };
+
+function authorizedPageId(pageId) {
+  const target = document.getElementById(pageId);
+  const permission = target?.dataset.permission;
+  if (!permission) return pageId;
+  return window.MBA_CURRENT_USER?.permissions?.[permission] === true ? pageId : 'sem-acesso';
+}
+
 function showPage(pageId, updateRoute = true) {
+  pageId = authorizedPageId(pageId);
   pages.forEach((page) => page.classList.toggle('active', page.id === pageId));
   navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageId));
   if (updateRoute && pageRoutes[pageId]) {
@@ -786,7 +795,7 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
 
 window.addEventListener('mba:authenticated', (event) => {
   authenticatedUser = event.detail;
-  if (event.detail.permissions?.['users.view']) loadUsers();
+  // A gestão de usuários é carregada pelo módulo React somente quando a página é aberta.
   if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
   if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
   if (event.detail.permissions?.['tutelas.view'] || event.detail.permissions?.['automations.view']) loadTutelaCases().catch(() => {});
