@@ -57,6 +57,65 @@ const ANALYST_OPTIONS = [
   { value: 'elias', label: 'Elias' },
   { value: 'gessica', label: 'Géssica' },
 ];
+
+/**
+ * Base de demonstração isolada do resultado da API.
+ * Valores determinísticos e sintéticos: não representam produtividade nem
+ * perdas de clientes e nunca são enviados ou gravados no banco.
+ */
+function createDemoData(carteira: string, tipo: Classificacao, periodo: string): Dados {
+  const isEnter = carteira === 'Agibank Enter';
+  const seed = isEnter
+    ? [{ tipo: 'VITORIA', quantidade: 198 }, { tipo: 'DERROTA', quantidade: 255 },
+       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 140 }, { tipo: 'EXTINCAO', quantidade: 27 }]
+    : [{ tipo: 'VITORIA', quantidade: 330 }, { tipo: 'DERROTA', quantidade: 476 },
+       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 }, { tipo: 'EXTINCAO', quantidade: 32 }];
+  const factor = periodo === '30' ? 0.22 : periodo === '90' ? 0.56 : 1;
+  const all = seed.map(row => ({ ...row, quantidade: Math.max(1, Math.round(row.quantidade * factor)) }));
+  const classifications = tipo === 'TODOS' ? all : all.filter(row => row.tipo === tipo);
+  const found = classifications.reduce((total, row) => total + row.quantidade, 0);
+  const losses = classifications.filter(row => row.tipo === 'DERROTA' || row.tipo === 'DERROTA_VOLUNTARIA')
+    .reduce((total, row) => total + row.quantidade, 0);
+
+  const weights = BRAZIL_STATES.map((_, index) => 7 + (index * 11) % 23);
+  const totalWeight = weights.reduce((total, weight) => total + weight, 0);
+  let distributed = 0;
+  const states: Estado[] = BRAZIL_STATES.map((state, index) => {
+    const perdas = index === BRAZIL_STATES.length - 1
+      ? losses - distributed
+      : Math.floor(losses * weights[index] / totalWeight);
+    distributed += perdas;
+    const amostra = Math.min(perdas, Math.floor(perdas * (0.43 + (index % 4) * 0.08)));
+    const ticket = amostra >= 3 ? 5400 + (index * 1327) % 9800 : null;
+    return {
+      uf: state.uf, perdas, amostra, ticket_medio: ticket,
+      faixa: ticket === null ? 'sem_amostra' : ticket < 8500 ? 'baixo' : ticket < 11800 ? 'medio' : 'alto',
+    };
+  });
+  const sample = states.reduce((total, state) => total + (state.ticket_medio === null ? 0 : state.amostra), 0);
+  const ticketTotal = states.reduce((total, state) =>
+    total + (state.ticket_medio === null ? 0 : state.ticket_medio * state.amostra), 0);
+  const aging = DEMO_AGING.map(row => ({
+    ...row, quantidade: Math.floor(row.quantidade * found / 1028),
+  }));
+  aging[aging.length - 1].quantidade += found - aging.reduce((total, row) => total + row.quantidade, 0);
+
+  const dayFraction = Math.min(1, found / 180);
+  const analysts = DEMO_ANALYSTS.map(row => ({
+    ...row, analisados: Math.max(0, Math.round(row.analisados * dayFraction)),
+  }));
+  return {
+    carteira, tipo: tipo === 'TODOS' ? null : tipo,
+    indicadores: {
+      consultados: Math.round(found * 1.43), encontrados: found,
+      analisados: analysts.reduce((total, row) => total + row.analisados, 0),
+      ticket_medio: sample ? Math.round((ticketTotal / sample) * 100) / 100 : null,
+      ticket_amostra: sample, aging_medio: 276,
+    },
+    aging, estados: states, analistas: analysts, classificacoes: classifications,
+  };
+}
+
 const n = (value: number | null | undefined) => new Intl.NumberFormat('pt-BR').format(Number(value ?? 0));
 const brl = (value: number | null | undefined) =>
   value === null || value === undefined ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
@@ -83,14 +142,14 @@ function Metric({ label, value, detail, icon: Icon }: { label: string; value: st
     <small>{detail}</small>
   </article>;
 }
-function BrazilMap({ estados }: { estados: Estado[] }) {
+function BrazilMap({ estados, demo }: { estados: Estado[]; demo: boolean }) {
   const [selectedUf, setSelectedUf] = useState<string | null>(null);
   const byUf = useMemo(() => new Map(estados.map(estado => [estado.uf, estado])), [estados]);
   const chosen = BRAZIL_STATES.find(estado => estado.uf === selectedUf);
   const selected = chosen ? byUf.get(chosen.uf) : null;
   return <article className="closing-panel closing-map-panel">
     <div className="closing-panel-heading">
-      <div><h2><MapPinned size={16}/> Mapa de perdas por UF</h2><p>Ticket médio pago nas derrotas com pagamento liquidado identificado.</p></div>
+      <div><h2><MapPinned size={16}/> Mapa de perdas por UF {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2><p>Ticket médio pago nas derrotas com pagamento liquidado identificado.</p></div>
     </div>
     <div className="closing-map-layout">
       <svg className="closing-brazil-map" viewBox="0 0 690 690" role="img" aria-label="Mapa do Brasil por ticket médio de perdas">
@@ -186,10 +245,12 @@ export function EncerramentosPage() {
     const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, 60000);
     return () => window.clearInterval(timer);
   }, [refresh]);
-  const metrics = data?.indicadores;
+  const demoData = useMemo(() => createDemoData(carteira, tipo, periodo), [carteira, tipo, periodo]);
+  const displayedData = demonstracao ? demoData : data;
+  const metrics = displayedData?.indicadores;
   const mainMetric = metrics ? n(metrics.encontrados) : '—';
   const analysts = demonstracao
-    ? DEMO_ANALYSTS.filter(item => analista === 'todos' || item.id === 'demo-' + analista)
+    ? demoData.analistas.filter(item => analista === 'todos' || item.id === 'demo-' + analista)
     : (data?.analistas || []);
   const analysedCount = demonstracao
     ? analysts.reduce((total, item) => total + item.analisados, 0)
@@ -229,24 +290,24 @@ export function EncerramentosPage() {
       <small><CalendarDays size={13}/> O filtro por analista se aplica à produtividade humana, não aos indícios automáticos.</small>
     </section>
     {demonstracao ? <div className="closing-demo-notice" role="status">
-      <strong>Demonstração visual</strong> — Aging, produtividade, total de análises e aging médio exibem valores fictícios. Os resultados da automação, pagamentos e mapa continuam consultando os dados reais.
+      <strong>Demonstração — dados 100% fictícios.</strong> Todos os indicadores, o mapa, o ticket médio, o aging e a produtividade são exemplos para avaliação visual. Desative esta opção para consultar os resultados reais.
     </div> : null}
-    {error ? <div className="protocolos-alert error" role="alert"><AlertTriangle size={17}/>{error}{data ? ' · Exibindo última consulta válida.' : ''}</div> : null}
-    <div className="closing-metrics" aria-busy={loading}>
+    {!demonstracao && error ? <div className="protocolos-alert error" role="alert"><AlertTriangle size={17}/>{error}{data ? ' · Exibindo última consulta válida.' : ''}</div> : null}
+    <div className="closing-metrics" aria-busy={!demonstracao && loading}>
       <Metric icon={SearchCheck} label="Encontrados pela automação" value={mainMetric} detail={metrics ? n(metrics.consultados) + ' processos consultados' : 'Aguardando API'}/>
       <Metric icon={CheckCircle2} label="Processos analisados" value={analysedCount === undefined ? '—' : n(analysedCount)} detail={analyzedDetail}/>
-      <Metric icon={Wallet} label="Ticket médio de perdas" value={brl(metrics?.ticket_medio)} detail={metrics ? n(metrics.ticket_amostra) + ' casos com pagamento liquidado' : 'Sem apuração'}/>
+      <Metric icon={Wallet} label="Ticket médio de perdas" value={brl(metrics?.ticket_medio)} detail={metrics ? n(metrics.ticket_amostra) + (demonstracao ? ' casos fictícios com pagamento' : ' casos com pagamento liquidado') : 'Sem apuração'}/>
       <Metric icon={Activity} label="Aging médio" value={demonstracao ? '276 dias' : metrics?.aging_medio == null ? '—' : n(Math.round(metrics.aging_medio)) + ' dias'} detail={demonstracao ? 'Média fictícia da demonstração' : 'Oportunidades aptas com entrada conhecida'}/>
     </div>
     <div className="closing-content-grid">
-      <BrazilMap estados={data?.estados || []}/>
+      <BrazilMap estados={displayedData?.estados || []} demo={demonstracao}/>
       <div className="closing-right-column">
-        <AgingPanel rows={demonstracao ? DEMO_AGING : (data?.aging || [])} demo={demonstracao}/>
+        <AgingPanel rows={displayedData?.aging || []} demo={demonstracao}/>
         <AnalystsPanel analysts={analysts} demo={demonstracao} selected={analista}/>
       </div>
     </div>
     <div className="closing-footer-row">
-      <div><strong>Composição das oportunidades</strong><span>{(data?.classificacoes || []).length ? data!.classificacoes.map(c => classLabel(c.tipo) + ': ' + n(c.quantidade)).join(' · ') : 'Nenhuma oportunidade com os filtros selecionados.'}</span></div>
+      <div><strong>Composição das oportunidades</strong><span>{(displayedData?.classificacoes || []).length ? displayedData!.classificacoes.map(c => classLabel(c.tipo) + ': ' + n(c.quantidade)).join(' · ') : 'Nenhuma oportunidade com os filtros selecionados.'}</span></div>
       <small>TKM = média de pagamentos liquidados por processo de derrota. Não inclui provisões nem pagamentos pendentes. Acordos e indeterminados estão fora das oportunidades aptas.</small>
     </div>
   </div>;
