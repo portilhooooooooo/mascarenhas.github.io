@@ -1,0 +1,63 @@
+.operacao-module-shell{max-width:1650px;margin:0 auto;min-width:0}
+.operacao-module-shell>.mba-operation-subnav{margin:0 0 10px}
+.closing-page{max-width:1650px;margin:0 auto;min-width:0}
+.closing-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.closing-header .protocolos-button{white-space:nowrap}
+.closing-filters{display:flex;gap:12px;align-items:end;flex-wrap:wrap;padding:14px 16px;margin:0 0 15px;border:1px solid var(--mba-border);border-radius:10px;background:var(--mba-surface)}
+.closing-filters label{display:grid;gap:5px;min-width:185px;flex:1;color:var(--mba-text-2);font-size:11px;font-weight:600}
+.closing-filters select{min-height:36px;width:100%;border:1px solid var(--mba-border-strong);border-radius:7px;background:#fff;padding:0 9px;color:var(--mba-text);font-size:12px}
+.closing-filters small{display:inline-flex;align-items:center;gap:5px;color:var(--mba-muted);font-size:10px;padding:0 2px 8px}
+.closing-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.closing-metric{position:relative;min-width:0;background:var(--mba-surface);border:1px solid var(--mba-border);border-radius:10px;padding:17px;display:flex;flex-direction:column;gap:8px}
+.closing-metric-icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--mba-blue-soft);color:var(--mba-blue)}
+.closing-metric-label{font-size:12px;color:var(--mba-text-2)}
+.closing-metric strong{color:var(--mba-text);font-size:25px;letter-spacing:-.035em;line-height:1.1}
+.closing-metric small{font-size:10px;color:var(--mba-muted);line-height:1.35}
+.closing-content-grid{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(0,1fr);gap:14px;align-items:stretch}
+.closing-panel{padding:20px;border:1px solid var(--mba-border);border-radius:10px;background:var(--mba-surface);min-width:0}
+.closing-panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.closing-panel-heading h2{display:flex;align-items:center;gap:7px;margin:0;color:var(--mba-text);font-size:14px;font-weight:700}
+.closing-panel-heading p{font-size:11px;line-height:1.5;color:var(--mba-muted);margin:6px 0 0}
+.closing-map-layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(195px,.8fr);gap:13px;align-items:center}
+.closing-brazil-map{width:100%;height:auto;max-height:475px;display:block}
+.closing-uf{fill:#e5eaf1;stroke:#fff;stroke-width:1.7;cursor:pointer;transition:fill .16s,stroke .16s}
+.closing-uf.alto{fill:#e86b64}
+.closing-uf.medio{fill:#f1c75c}
+.closing-uf.baixo{fill:#67b998}
+.closing-uf.sem_amostra{fill:#e5eaf1}
+.closing-uf:hover,.closing-uf:focus-visible,.closing-uf.is-selected{stroke:var(--mba-blue);stroke-width:3.1;outline:none}
+.closing-map-info{min-width:0}
+.closing-map-legend{display:grid;gap:11px;font-size:11px;color:var(--mba-text-2);margin-bottom:22px}
+.closing-map-legend span{display:flex;align-items:center;gap:9px}
+.closing-map-legend i{display:block;width:13px;height:13px;border-radius:3px;flex:0 0 13px;background:#e5eaf1}
+.closing-map-legend i.alto{background:#e86b64}
+.closing-map-legend i.medio{background:#f1c75c}
+.closing-map-legend i.baixo{background:#67b998}
+.closing-map-highlight{padding:12px;border:1px solid var(--mba-border);border-radius:8px;background:var(--mba-subtle);display:grid;gap:8px}
+.closing-map-highlight span{font-size:11px;color:var(--mba-text-2);font-weight:600}
+.closing-map-highlight strong{font-size:21px;color:var(--mba-text);letter-spacing:-.025em}
+.closing-map-highlight small{font-size:10px;color:var(--mba-muted);line-height:1.45}
+.closing-map-method{font-size:10px;line-height:1.55;color:var(--mba-muted);margin:12px 0 0}
+.closing-right-column{display:grid;grid-template-rows:auto 1fr;gap:14px;min-width:0}
+.closing-bars{display:grid;gap:14px;padding:5px 0 2px}
+.closing-bar-row{display:grid;grid-template-columns:60px minmax(0,1fr) 54px;align-items:center;gap:9px;font-size:11px;color:var(--mba-text-2)}
+.closing-bar-row>strong{text-align:right;color:var(--mba-text);font-variant-numeric:tabular-nums;font-size:11px}
+.closing-bar-track,.closing-analyst-bar{height:8px;background:#edf1f6;border-radius:99px;overflow:hidden}
+.closing-bar-track>div,.closing-analyst-bar>span{display:block;height:100%;border-radius:inherit;background:#315a9d;min-width:0}
+.closing-analysts{display:grid;gap:12px}
+.closing-analyst{display:grid;grid-template-columns:25px minmax(0,1fr) 38px;gap:9px;align-items:center;font-size:11px}
+.closing-rank{height:23px;width:23px;border-radius:7px;background:var(--mba-blue-soft);color:var(--mba-blue);display:grid;place-items:center;font-weight:700}
+.closing-analyst>div{min-width:0}
+.closing-analyst strong{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;margin-bottom:6px;font-weight:600}
+.closing-analyst b{text-align:right;font-variant-numeric:tabular-nums}
+.closing-analyst-bar{height:6px}
+.closing-empty{min-height:165px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:8px;color:var(--mba-muted);padding:12px}
+.closing-empty strong{font-size:12px;color:var(--mba-text-2)}
+.closing-empty p{max-width:310px;font-size:11px;line-height:1.5;margin:0}
+.closing-footer-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:15px 2px;color:var(--mba-muted);font-size:11px}
+.closing-footer-row>div{display:grid;gap:6px;min-width:0;max-width:60%}
+.closing-footer-row strong{color:var(--mba-text-2);font-size:11px}
+.closing-footer-row small{max-width:40%;line-height:1.5;font-size:10px}
+@media(max-width:1250px){.closing-content-grid{grid-template-columns:1fr}.closing-right-column{grid-template-columns:1fr 1fr;grid-template-rows:1fr}.closing-map-layout{grid-template-columns:minmax(0,1fr) minmax(190px,.8fr)}}
+@media(max-width:800px){.closing-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-right-column{grid-template-columns:1fr}.closing-map-layout{grid-template-columns:1fr}.closing-brazil-map{max-width:470px;margin:auto}.closing-map-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-footer-row{display:block}.closing-footer-row>div,.closing-footer-row small{max-width:none}.closing-footer-row small{display:block;margin-top:10px}}
+@media(max-width:480px){.closing-metrics{grid-template-columns:1fr}.closing-filters label{min-width:100%}.closing-metric{padding:14px}.closing-panel{padding:14px}}
