@@ -264,7 +264,6 @@ export function TasksApp() {
   const manager = canManageTasks(user);
   const isMaster = Boolean(user?.is_master_admin);
   const canCreate = isMaster || user?.permissions?.['tasks.create'] === true;
-  const canAssign = isMaster || user?.permissions?.['tasks.assign'] === true;
   const canExecute = isMaster || user?.permissions?.['tasks.execute'] === true;
   const canManage = isMaster || user?.permissions?.['tasks.manage'] === true;
   const allAssignedTasks = useMemo(
