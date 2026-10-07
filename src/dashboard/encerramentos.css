@@ -61,3 +61,29 @@
 @media(max-width:1250px){.closing-content-grid{grid-template-columns:1fr}.closing-right-column{grid-template-columns:1fr 1fr;grid-template-rows:1fr}.closing-map-layout{grid-template-columns:minmax(0,1fr) minmax(190px,.8fr)}}
 @media(max-width:800px){.closing-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-right-column{grid-template-columns:1fr}.closing-map-layout{grid-template-columns:1fr}.closing-brazil-map{max-width:470px;margin:auto}.closing-map-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-footer-row{display:block}.closing-footer-row>div,.closing-footer-row small{max-width:none}.closing-footer-row small{display:block;margin-top:10px}}
 @media(max-width:480px){.closing-metrics{grid-template-columns:1fr}.closing-filters label{min-width:100%}.closing-metric{padding:14px}.closing-panel{padding:14px}}
+
+
+/* Gestão Processual: visualização de encerramentos e tag de idade padronizada */
+.gestao-processual-subnav{margin:0 0 13px;}
+.closing-header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.closing-preview-toggle{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--mba-text-2);font-weight:600;cursor:pointer;}
+.closing-preview-toggle input{accent-color:var(--mba-blue);width:14px;height:14px;}
+.closing-demo-notice{font-size:11px;color:#6f521d;background:#fff9ea;border:1px solid #f4dda8;border-radius:7px;padding:10px 13px;margin-bottom:14px;line-height:1.6;}
+.closing-demo-notice strong{font-weight:700;}
+.closing-demo-inline{font-size:9px;font-weight:700;color:#986713;background:#fff3ce;border-radius:4px;padding:3px 5px;}
+.closing-aging-bars{gap:15px;}
+.closing-aging-bars .closing-bar-row{grid-template-columns:180px minmax(0,1fr) 55px;min-width:0;}
+.closing-aging-tag{display:inline-flex;align-items:center;justify-self:start;border-radius:20px;padding:5px 11px;min-width:102px;font-size:9.5px;font-weight:700;letter-spacing:.045em;white-space:nowrap;line-height:1.2;}
+.closing-aging-tag.low{color:#09935b;background:#e2f6eb;}
+.closing-aging-tag.medium{color:#9e7410;background:#fff4d9;}
+.closing-aging-tag.high{color:#df4054;background:#ffe6e9;}
+.closing-aging-tag.untagged{color:#7384a0;background:#f0f3f8;}
+.closing-bar-track>.closing-aging-fill.low{background:#48b787;}
+.closing-bar-track>.closing-aging-fill.medium{background:#e9c15b;}
+.closing-bar-track>.closing-aging-fill.high{background:#e8717d;}
+.closing-bar-track>.closing-aging-fill.untagged{background:#a0adbe;}
+@media(max-width:600px){
+  .closing-header{align-items:flex-start;flex-direction:column;}
+  .closing-aging-bars .closing-bar-row{grid-template-columns:154px minmax(0,1fr) 42px;gap:7px;}
+  .closing-aging-tag{font-size:8px;padding:5px 7px;min-width:0;}
+}
