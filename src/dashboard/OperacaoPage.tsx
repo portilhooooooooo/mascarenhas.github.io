@@ -226,11 +226,6 @@ export function OperacaoPage() {
     permissions();window.addEventListener('mba:authenticated',permissions);return()=>window.removeEventListener('mba:authenticated',permissions);
   },[refresh]);
 
-  useEffect(()=>{
-    if(!canView)return;
-    const timer=window.setInterval(()=>{if(!document.hidden)void refresh();},5000);
-    return()=>window.clearInterval(timer);
-  },[canView,refresh]);
 
   const importFile=async()=>{
     if(!file||!canImport||importBusy)return;
