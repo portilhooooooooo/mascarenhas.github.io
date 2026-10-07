@@ -2,8 +2,8 @@ import { Children, isValidElement, type FormHTMLAttributes, type ReactNode } fro
 export function TaskQuestion({ number, question, children }: { number: string; question: string; children: ReactNode }) {
   return <section className="task-question"><h3><span className="task-question-number">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
-export function TaskActionBar({ busy, ready = true, onSkip }: { busy: boolean; ready?: boolean; onSkip: () => void }) {
-  return <footer className="task-renderer-footer"><button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>Pular esse prazo</button><button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>;
+export function TaskActionBar({ busy, ready = true, onSkip, skipLabel = 'Pular esse prazo' }: { busy: boolean; ready?: boolean; onSkip: () => void; skipLabel?: string }) {
+  return <footer className="task-renderer-footer"><button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>{skipLabel}</button><button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>;
 }
 
 type Option = { value: string; label: string; description?: string };
