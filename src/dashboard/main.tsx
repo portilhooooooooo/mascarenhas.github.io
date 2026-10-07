@@ -255,7 +255,7 @@ function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['encerramentos.view'] === true;
+  const allowed = user?.permissions?.['pagamentos.view'] === true;
   if (visible && allowed) mountOperacaoPage();
   else unmountOperacaoPage();
 }
