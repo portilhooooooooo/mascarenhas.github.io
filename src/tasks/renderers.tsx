@@ -90,7 +90,7 @@ function closingClassifierClassification(task: Task, process: TaskProcess) {
   return null;
 }
 
-export function ClosingRenderer({ api, task, process, onCompleted, onSkipped }: BaseRendererProps) {
+export function ClosingRenderer({ api, task, process, onCompleted, onSkipped, onDeferred }: BaseRendererProps & { onDeferred: (process: TaskProcess, reopenAt: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const classifierClassification = closingClassifierClassification(task, process);
@@ -99,11 +99,12 @@ export function ClosingRenderer({ api, task, process, onCompleted, onSkipped }: 
     setBusy(true);
     setError(null);
     try {
-      await api(`/api/task-processes/${process.id}/encerramento-analysis`, {
+      const saved = await api(`/api/task-processes/${process.id}/encerramento-analysis`, {
         method: 'POST',
         body: JSON.stringify(draft),
       });
-      onCompleted(process);
+      if (saved?.reopen_at) onDeferred(process, String(saved.reopen_at));
+      else onCompleted(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível salvar a análise de encerramento.');
     } finally {
