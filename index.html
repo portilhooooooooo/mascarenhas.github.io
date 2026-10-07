@@ -64,7 +64,7 @@
         <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
         <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge">23</em></button>
         <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
-        <button class="nav-item" data-page="acordos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Operação</span></button>
+        <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="wallet-cards"></i><span>Operação</span></button>
         <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
         <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
         <button class="nav-item" data-page="protocolo" data-permission="automations.view"><i data-lucide="send"></i><span>Protocolos</span></button>
@@ -287,8 +287,8 @@
           <section class="panel payments-table-panel"><div class="table-scroll"><table class="task-table payments-table"><thead><tr><th>Pasta</th><th>Credenciado</th><th>Solicitante</th><th>Tipo</th><th>Valor</th><th>Situação</th><th>Aprovação</th><th>Pagamento</th><th>Dias</th></tr></thead><tbody id="pagamentos-table-body"><tr><td colspan="9">Importe uma base para visualizar os pagamentos.</td></tr></tbody></table></div><div class="table-footer"><span id="pagamentos-pagination-label">—</span><div id="pagamentos-pagination"></div></div></section>
         </section>
 
-        <section class="page list-page agreements-page" id="acordos" data-permission="pagamentos.view">
-          <div class="page-title"><div><h1>Acordos</h1><p>Consulte os resultados consolidados das Tasks de Acordos.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button"><i data-lucide="download"></i>Exportar</button></div></div>
+        <section class="page list-page agreements-page" id="acordos" data-permission="agreements.view">
+          <div class="page-title"><div><h1>Acordos</h1><p>Consulte os resultados consolidados das Tasks de Acordos.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button" data-permission="agreements.export"><i data-lucide="download"></i>Exportar</button></div></div>
           <section class="tutelas-summary" aria-label="Indicadores de Acordos">
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="list-checks"></i></span><div><strong id="agreements-total">—</strong><span>Total de acordos</span><small>Base consolidada</small></div></article>
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="clock-3"></i></span><div><strong id="agreements-pending">—</strong><span>Pendentes</span><small>Aguardando análise</small></div></article>
@@ -378,7 +378,7 @@
                 <button type="button" class="analysis-error-button"><i data-lucide="triangle-alert"></i><span><strong>Não foi possível analisar</strong><small>Registre um erro operacional ou documental.</small></span><i data-lucide="chevron-right"></i></button>
                 <label class="notes-field"><span>Observações <b id="notes-requirement">(opcional)</b></span><textarea id="task-notes" maxlength="500" data-db-field="notes" placeholder="Adicione observações sobre a análise, pontos relevantes ou justificativas..."></textarea><small><span id="notes-count">0</span>/500</small></label>
               </div>
-              <footer><button class="secondary-button">Pular e voltar depois</button><button class="primary-button" id="save-next" data-action="save-analysis" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+              <footer><button class="secondary-button" data-permission="tasks.execute">Pular e voltar depois</button><button class="primary-button" id="save-next" data-action="save-analysis" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
             </section>
           </div>
         </section>
@@ -458,7 +458,7 @@
                 </fieldset>
 
                 <p class="payment-receipt-error" id="payment-receipt-error" hidden></p>
-                <footer><button class="secondary-button" id="payment-receipt-skip" type="button">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+                <footer><button class="secondary-button" id="payment-receipt-skip" type="button" data-permission="tasks.execute">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
               </form>
             </section>
           </div>
