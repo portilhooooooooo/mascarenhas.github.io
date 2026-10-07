@@ -1,4 +1,5 @@
 import './operacao.css';
+import { EncerramentosPage } from './EncerramentosPage';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,
@@ -234,7 +235,7 @@ function PagamentosQueue({summary,items,loading}:{summary:PagamentoOperacaoSumma
   </section>;
 }
 
-export function OperacaoPage() {
+function PagamentosPage() {
   const [summary,setSummary]=useState<PagamentoOperacaoSummary|null>(null);
   const [items,setItems]=useState<PagamentoOperacaoItem[]>([]);
   const [file,setFile]=useState<File|null>(null);
@@ -306,11 +307,6 @@ export function OperacaoPage() {
   const queueTotal=Number(summary?.queues?.provision||0)+Number(summary?.queues?.receipt||0);
 
   return <div className="protocolos-page-react operacao-pagamentos-page">
-    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
-      <button type="button" className="active" aria-current="page">Pagamentos</button>
-      <button type="button" aria-disabled="true" title="Em desenvolvimento">Liminar</button>
-      <button type="button" aria-disabled="true" title="Em desenvolvimento">Encerramentos</button>
-    </nav>
     <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Pagamentos</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
 
@@ -332,5 +328,44 @@ export function OperacaoPage() {
     </div>
 
     <PagamentosQueue summary={summary} items={items} loading={loading}/>
+  </div>;
+}
+
+
+function currentModulePermissions() {
+  return (window as Window & { MBA_CURRENT_USER?: { permissions?: Record<string, boolean> } }).MBA_CURRENT_USER?.permissions || {};
+}
+
+export function OperacaoPage() {
+  const [permissions, setPermissions] = useState(currentModulePermissions);
+  const [module, setModule] = useState<'pagamentos' | 'encerramentos'>(() =>
+    currentModulePermissions()['pagamentos.view'] === true ? 'pagamentos' : 'encerramentos'
+  );
+  const canPayments = permissions['pagamentos.view'] === true;
+  const canClosings = permissions['encerramentos.view'] === true;
+
+  useEffect(() => {
+    const sync = () => setPermissions(currentModulePermissions());
+    window.addEventListener('mba:authenticated', sync);
+    window.addEventListener('mba:session-expired', sync);
+    return () => {
+      window.removeEventListener('mba:authenticated', sync);
+      window.removeEventListener('mba:session-expired', sync);
+    };
+  }, []);
+  useEffect(() => {
+    if (module === 'pagamentos' && !canPayments && canClosings) setModule('encerramentos');
+    if (module === 'encerramentos' && !canClosings && canPayments) setModule('pagamentos');
+  }, [module, canPayments, canClosings]);
+
+  return <div className="operacao-module-shell">
+    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
+      {canPayments && <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => setModule('pagamentos')}>Pagamentos</button>}
+      <button type="button" aria-disabled="true" title="Em desenvolvimento">Liminar</button>
+      {canClosings && <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => setModule('encerramentos')}>Encerramentos</button>}
+    </nav>
+    {!canPayments && !canClosings ? <div className="protocolos-empty"><strong>Sem permissão para acessar a Operação</strong></div> :
+      module === 'encerramentos' && canClosings ? <EncerramentosPage/> :
+        canPayments ? <PagamentosPage/> : <EncerramentosPage/>}
   </div>;
 }
