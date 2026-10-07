@@ -1,5 +1,3 @@
-[Reading 572 lines from start (total: 572 lines, 0 remaining)]
-
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import {
   BadgeCheck,
@@ -572,5 +570,3 @@ function CreateUserDialog({
     </div>
   );
 }
-
-[executed on device: ip-172-26-13-96 (010e8b2b-a8f7-4c8f-be32-d35dfce73b4a)]
