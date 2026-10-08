@@ -300,7 +300,11 @@ export function EncerramentosPage() {
   const demoData = useMemo(() => createDemoData(carteira, tipo, periodo), [carteira, tipo, periodo]);
   const displayedData = demonstracao ? demoData : data;
   const metrics = displayedData?.indicadores;
-  const mainMetric = metrics ? n(metrics.encontrados) : '—';
+  const isAgreement = tipo === 'ACORDO';
+  const agreementMatches = displayedData?.distribuicao_tipos.find(item => item.tipo === 'ACORDO')?.quantidade;
+  const mainMetric = isAgreement
+    ? agreementMatches === undefined ? '—' : n(agreementMatches)
+    : metrics ? n(metrics.encontrados) : '—';
   const analysts = demonstracao
     ? demoData.analistas.filter(item => analista === 'todos' || item.id === 'demo-' + analista)
     : (data?.analistas || []);
@@ -346,7 +350,7 @@ export function EncerramentosPage() {
     </div> : null}
     {!demonstracao && error ? <div className="protocolos-alert error" role="alert"><AlertTriangle size={17}/>{error}{data ? ' · Exibindo última consulta válida.' : ''}</div> : null}
     <div className="closing-metrics" aria-busy={!demonstracao && loading}>
-      <Metric icon={SearchCheck} label="Encontrados pela automação" value={mainMetric} detail={metrics ? n(metrics.consultados) + ' processos consultados' : 'Aguardando API'}/>
+      <Metric icon={SearchCheck} label={isAgreement ? 'Indícios de acordo' : 'Encontrados pela automação'} value={mainMetric} detail={isAgreement ? 'Acordos não contabilizados como encerramentos aptos' : metrics ? n(metrics.consultados) + ' processos consultados' : 'Aguardando API'}/>
       <Metric icon={CheckCircle2} label="Processos analisados" value={analysedCount === undefined ? '—' : n(analysedCount)} detail={analyzedDetail}/>
       <Metric icon={Wallet} label="Ticket médio de perdas" value={brl(metrics?.ticket_medio)} detail={metrics ? n(metrics.ticket_amostra) + (demonstracao ? ' casos fictícios com pagamento' : ' casos com pagamento liquidado') : 'Sem apuração'}/>
       <Metric icon={Activity} label="Aging médio" value={demonstracao ? '276 dias' : metrics?.aging_medio == null ? '—' : n(Math.round(metrics.aging_medio)) + ' dias'} detail={demonstracao ? 'Média fictícia da demonstração' : 'Oportunidades aptas com entrada conhecida'}/>
