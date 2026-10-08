@@ -237,7 +237,7 @@ export function ClosingAnalysisFlow({
       {!outcome && classifierClassification ? <small>Indício do classificador: {classifierClassification}</small> : null}
     </section>
 
-    <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença em 1ª instância?">
+    <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
         options={SENTENCES} onChange={value => {
           setSentence(value as TrialResult); setHadAppeal(null); clearAppeal();
