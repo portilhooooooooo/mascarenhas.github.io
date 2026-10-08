@@ -427,7 +427,7 @@ export function UsersPage() {
               </div>
 
               <div className="users-permission-heading">
-                <div><strong>Autorizações</strong><small>Permissões individuais deste usuário, aplicadas conforme a carteira ativa.</small></div>
+                <div><strong>Autorizações</strong><small>O acesso exige permissão individual e módulo disponível na carteira. Controladoria e Automações são exclusivos das carteiras Enter.</small></div>
                 <span>{Object.values(draftPermissions).filter(Boolean).length} liberadas</span>
               </div>
               <div className="users-permission-tabs" role="tablist" aria-label="Detalhamento das autorizações">
