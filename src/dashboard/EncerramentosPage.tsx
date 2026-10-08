@@ -231,25 +231,17 @@ function DistributionPanel({ rows, demo }: { rows: Dados['distribuicao_tipos']; 
       </div>
       <strong className="closing-distribution-total">{n(total)} <small>classificações</small></strong>
     </div>
-    <div className="closing-distribution-stacked" role="img" aria-label="Proporção por categoria de encerramento">
-      {DISTRIBUTION.map(item => {
-        const count = byType.get(item.tipo) || 0;
-        return count > 0 ? <span key={item.tipo} className={'closing-distribution-segment ' + item.tone}
-          style={{ width: (count / total * 100) + '%' }}
-          title={item.label + ': ' + n(count) + ' (' + (count / total * 100).toFixed(1).replace('.', ',') + '%)'} /> : null;
-      })}
-    </div>
     <div className="closing-distribution-list">
       {DISTRIBUTION.map(item => {
         const count = byType.get(item.tipo) || 0;
         const share = total ? count / total * 100 : 0;
         return <div key={item.tipo} className="closing-distribution-row">
           <div className="closing-distribution-row-top">
-            <span><i className={'closing-distribution-marker ' + item.tone}/>{item.label}</span>
+            <span>{item.label}</span>
             <strong>{n(count)} <small>{share.toFixed(1).replace('.', ',')}%</small></strong>
           </div>
           <div className="closing-distribution-track">
-            <span className={item.tone} style={{ width: (count / maximum * 100) + '%' }}/>
+            <span style={{ width: (count / maximum * 100) + '%' }}/>
           </div>
         </div>;
       })}
