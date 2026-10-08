@@ -199,9 +199,7 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page) || button === baseDados;
-      const eligible = recognized && (button === baseDados
-        ? mayOpen('dashboard') && button.dataset.permission !== undefined
-        : mayOpen(page));
+      const eligible = recognized && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
