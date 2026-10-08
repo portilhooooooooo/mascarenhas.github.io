@@ -153,7 +153,7 @@
     const active = document.querySelector('.page.active');
     if (!pages.length) {
       window.showPage?.('sem-acesso');
-    } else if (active?.id && active.id !== 'sem-acesso' && !canAccess(active.id)) {
+    } else if (!active || active.id === 'sem-acesso' || !canAccess(active.id)) {
       window.showPage?.(pages[0][0]);
     }
     window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
