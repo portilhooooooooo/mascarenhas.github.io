@@ -27,7 +27,7 @@ try {
   await page.waitForFunction(() => !!window.MBA_API?.configurePortfolios && !!window.MBA_PORTFOLIO_POLICY?.canAccess);
   assert.equal(await page.locator('.topbar .global-search').count(), 0);
   assert.equal(await page.locator('.topbar #portfolio-switcher').count(), 0, 'portfolio chooser must be removed from topbar');
-  assert.equal(await page.locator('.sidebar #portfolio-switcher').count(), 0, 'portfolio chooser must not appear in sidebar');
+  assert.equal(await page.locator('.sidebar #portfolio-switcher').count(), 1, 'compact portfolio selector must exist in sidebar');
   assert.equal(await page.locator('#tasks-nav-count').textContent(), '', 'task badge must not start with fake count');
 
   const portfolios = [
@@ -54,8 +54,34 @@ try {
     document.body.classList.remove('auth-loading', 'auth-signed-out');
     document.body.classList.add('auth-signed-in');
   });
-  assert.equal(await page.locator('.sidebar-client-section').count(), 0);
-  assert.equal(await page.locator('.sidebar-portfolio-option').count(), 0);
+  await page.locator('.sidebar-portfolio-trigger').waitFor();
+  assert.equal(await page.locator('.sidebar-portfolio-trigger').getAttribute('aria-expanded'), 'false');
+  assert.equal(await page.locator('.sidebar-portfolio-active-name').textContent(), 'Agibank <> Enter');
+  assert.equal(await page.locator('.sidebar-portfolio-menu').count(), 0, 'list must start collapsed');
+  await page.locator('.sidebar-portfolio-trigger').click();
+  assert.deepEqual(await page.locator('[role="menuitemradio"]').allTextContents(), [
+    'Agibank <> Enter', 'Agibank <> MBA', 'Nubank <> MBA', 'Pan <> MBA', 'Energisa <> Enter',
+  ]);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.sidebar-portfolio-menu').count(), 0);
+  await page.evaluate(({ permissions }) => {
+    const allowed = [{ id: 'agibank_enter' }, { id: 'nubank_mba' }];
+    const profile = { id: 'test', email: 'test@example.com', portfolios: allowed, default_portfolio_id: 'agibank_enter', permissions };
+    window.MBA_CURRENT_USER = profile;
+    window.MBA_API.configurePortfolios(allowed, profile.default_portfolio_id);
+    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
+  }, { permissions });
+  await page.locator('.sidebar-portfolio-trigger').click();
+  assert.deepEqual(await page.locator('[role="menuitemradio"]').allTextContents(), [
+    'Agibank <> Enter', 'Nubank <> MBA',
+  ]);
+  await page.keyboard.press('Escape');
+  await page.evaluate(({ portfolios, permissions }) => {
+    const profile = { id: 'test', email: 'test@example.com', portfolios, default_portfolio_id: 'agibank_enter', permissions };
+    window.MBA_CURRENT_USER = profile;
+    window.MBA_API.configurePortfolios(portfolios, profile.default_portfolio_id);
+    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
+  }, { portfolios, permissions });
   assert.equal(await page.evaluate(() => window.MBA_PORTFOLIO_POLICY.canAccess('protocolo')), true);
   await page.evaluate(() => window.MBA_API.setPortfolioId('agibank_mba'));
   assert.equal(await page.evaluate(() => window.MBA_PORTFOLIO_POLICY.canAccess('protocolo')), false);
@@ -68,7 +94,10 @@ try {
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('mba:task-pending-count', { detail: { count: 0 } })));
   assert.equal(await page.locator('#tasks-nav-count').getAttribute('hidden'), '');
 
-  console.log('PASS: portfolio chooser removed from sidebar; backend scoping, permissions and task badge preserved');
+  await page.locator('.sidebar-portfolio-trigger').click();
+  await page.locator('[role="menuitemradio"]').filter({ hasText: 'Pan <> MBA' }).click();
+  await page.waitForFunction(() => localStorage.getItem('mba_portfolio_id') === 'banco_pan_mba');
+  console.log('PASS: compact sidebar selector, five ordered options, membership filtering, and API portfolio scoping');
 } finally {
   await browser?.close();
   server.kill();

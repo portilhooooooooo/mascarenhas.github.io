@@ -52,6 +52,7 @@ assert.match(html, /portfolio-policy\.js/, 'portfolio policy must be loaded for 
 assert.match(shell, /dashboard: 'Analytics'/, 'Analytics must be the module name');
 assert.match(shell, /mayOpen\('protocolo'\)/, 'Controladoria lifecycle must enforce the portfolio');
 assert.match(shell, /<PortfolioSwitcher\s*\/>/, 'portfolio selector must be React');
+assert.match(html, /id="portfolio-switcher"/, 'sidebar must mount a portfolio selector');
 assert.match(taskPage, /<SelectMenu label="Prazo"/, 'task filters must be React listboxes');
 assert.match(users, /Visibilidade dos módulos/, 'user permissions must have module view');
 console.log('PASS: portfolio access, module visibility, selectors, and task badge regression checks');
