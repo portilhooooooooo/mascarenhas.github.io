@@ -564,8 +564,8 @@ body {
 #portfolio-switcher { flex: 0 0 auto; min-width: 0; }
 .sidebar-portfolio-compact {
   min-width: 0;
-  padding: 7px 0 11px;
-  border-bottom: 1px solid var(--mba-border);
+  padding: 0 0 10px;
+  border-bottom: 0;
 }
 .sidebar-portfolio-heading {
   display: block;

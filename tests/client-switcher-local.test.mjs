@@ -27,7 +27,8 @@ try {
   await page.waitForFunction(() => !!window.MBA_API?.configurePortfolios && !!window.MBA_PORTFOLIO_POLICY?.canAccess);
   assert.equal(await page.locator('.topbar .global-search').count(), 0);
   assert.equal(await page.locator('.topbar #portfolio-switcher').count(), 0, 'portfolio chooser must be removed from topbar');
-  assert.equal(await page.locator('.sidebar #portfolio-switcher').count(), 1, 'compact portfolio selector must exist in sidebar');
+  assert.equal(await page.locator('.sidebar-bottom #portfolio-switcher').count(), 1, 'compact selector must sit above logout in sidebar footer');
+  assert.equal(await page.locator('#portfolio-switcher + #logout-button').count(), 1, 'logout must follow selector immediately');
   assert.equal(await page.locator('#tasks-nav-count').textContent(), '', 'task badge must not start with fake count');
 
   const portfolios = [
