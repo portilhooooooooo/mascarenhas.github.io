@@ -4,6 +4,7 @@ import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
+import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
@@ -16,10 +17,12 @@ import './ui-architecture.css';
 type DashboardWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
   MBA_REACT_TASKS?: boolean;
+  MBA_PORTFOLIO_POLICY?: { canAccess: (pageId: string) => boolean };
   showPage?: (page: string, updateRoute?: boolean) => void;
 };
 
 const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao']);
+const mayOpen = (pageId: string) => (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
 
 function labelNavItem(button: Element, label: string) {
   const span = button.querySelector('span');
@@ -139,7 +142,8 @@ function setTopModuleActive(page: string) {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) return;
   nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  nav.querySelector<HTMLElement>(`[data-page="${page}"]`)?.classList.add('active');
+  const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
+  if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') candidate.classList.add('active');
 }
 
 function syncTopModuleFromActivePage() {
@@ -181,7 +185,7 @@ function configureApplicationShell() {
 
   const visiblePages = new Set(['dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
   const labels: Record<string, string> = {
-    dashboard: 'Gestão Processual',
+    dashboard: 'Analytics',
     acordos: 'Operação',
     protocolo: 'Controladoria',
     automacoes: 'Automações',
@@ -191,20 +195,29 @@ function configureApplicationShell() {
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
   const baseDados = buttons.find(button => button.textContent?.trim() === 'Documentos') ?? null;
 
+  const syncVisibility = () => {
+    buttons.forEach(button => {
+      const page = button.dataset.page || '';
+      const recognized = visiblePages.has(page) || button === baseDados;
+      const eligible = recognized && (button === baseDados
+        ? mayOpen('dashboard') && button.dataset.permission !== undefined
+        : mayOpen(page));
+      button.dataset.mbaHidden = String(!eligible);
+      button.hidden = !eligible;
+      if (!eligible) button.classList.remove('active');
+    });
+    const current = document.querySelector<HTMLElement>('main .page.active');
+    if (current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
+      const fallback = [...visiblePages].find(page => mayOpen(page));
+      (window as DashboardWindow).showPage?.(fallback || 'sem-acesso');
+    }
+    syncTopModuleFromActivePage();
+  };
   buttons.forEach(button => {
-    const page = button.dataset.page ?? '';
-    if (page && visiblePages.has(page)) {
-      button.dataset.mbaHidden = 'false';
-      labelNavItem(button, labels[page]);
-      return;
-    }
-    if (button === baseDados) {
-      button.dataset.mbaHidden = 'false';
-      labelNavItem(button, 'Base de dados');
-      button.title = 'Módulo reservado para o Metabase';
-      return;
-    }
-    button.dataset.mbaHidden = 'true';
+    const page = button.dataset.page || '';
+    if (visiblePages.has(page)) labelNavItem(button, labels[page]);
+    else if (button === baseDados) labelNavItem(button, 'Base de dados');
+    else button.dataset.mbaHidden = 'true';
   });
 
   const orderedItems: Array<HTMLElement | null> = [
@@ -221,8 +234,20 @@ function configureApplicationShell() {
   document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
     observer.observe(page, { attributes: true, attributeFilter: ['class'] });
   });
-  syncTopModuleFromActivePage();
+  window.addEventListener('mba:module-visibility-updated', syncVisibility);
+  window.addEventListener('mba:portfolio-changed', syncVisibility);
+  window.addEventListener('mba:session-expired', syncVisibility);
+  syncVisibility();
   configureProfileControl();
+}
+
+let portfolioRoot: Root | null = null;
+function mountPortfolioSwitcher() {
+  const host = document.getElementById('portfolio-switcher');
+  if (!host || portfolioRoot) return;
+  host.replaceChildren();
+  portfolioRoot = createRoot(host);
+  portfolioRoot.render(<PortfolioSwitcher />);
 }
 
 let operacaoRoot: Root | null = null;
@@ -255,7 +280,7 @@ function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = user?.permissions?.['pagamentos.view'] === true;
+  const allowed = mayOpen('acordos');
   if (visible && allowed) mountOperacaoPage();
   else unmountOperacaoPage();
 }
@@ -301,7 +326,7 @@ function syncProtocolosLifecycle() {
   const section = document.getElementById('protocolo');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = user?.permissions?.['automations.view'] === true;
+  const allowed = mayOpen('protocolo');
   if (visible && allowed) mountProtocolosPage();
   else unmountProtocolosPage();
 }
@@ -349,7 +374,7 @@ function syncUsersLifecycle() {
   const section = document.getElementById('usuarios');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = user?.permissions?.['users.view'] === true;
+  const allowed = mayOpen('usuarios');
   if (visible && allowed) mountUsersPage();
   else unmountUsersPage();
 }
@@ -368,6 +393,7 @@ function configureUsersLifecycle() {
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
+    mountPortfolioSwitcher();
     const cleanupBaseTaskImport = (window as DashboardWindow).MBA_REACT_TASKS
       ? () => undefined
       : configureBaseTaskImport();
