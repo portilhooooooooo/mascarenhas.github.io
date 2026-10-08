@@ -30,6 +30,7 @@ export function PortfolioSwitcher() {
     const sync = () => setProfile(shellWindow.MBA_CURRENT_USER || null);
     window.addEventListener('mba:profile-ready', sync);
     window.addEventListener('mba:session-expired', sync);
+    window.addEventListener('mba:logged-out', sync);
     window.addEventListener('mba:portfolio-changed', sync);
     return () => {
       window.removeEventListener('mba:profile-ready', sync);
