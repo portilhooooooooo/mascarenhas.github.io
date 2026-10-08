@@ -207,7 +207,7 @@ function configureApplicationShell() {
       if (!eligible) button.classList.remove('active');
     });
     const current = document.querySelector<HTMLElement>('main .page.active');
-    if (current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
+    if ((window as DashboardWindow).MBA_CURRENT_USER && current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
       const fallback = [...visiblePages].find(page => mayOpen(page));
       (window as DashboardWindow).showPage?.(fallback || 'sem-acesso');
     }
