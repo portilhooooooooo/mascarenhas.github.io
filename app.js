@@ -12,6 +12,7 @@ function setTaskNavCount(count) {
 }
 window.addEventListener('mba:task-pending-count', event => setTaskNavCount(event.detail?.count));
 window.addEventListener('mba:session-expired', () => setTaskNavCount(null));
+window.addEventListener('mba:logged-out', () => setTaskNavCount(null));
 window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 
 const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', usuarios: 'usuarios', 'acordo-execucao': 'tarefas/acordos', 'comprovante-execucao': 'tarefas/comprovante-pagamento' };
