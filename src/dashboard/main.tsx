@@ -290,6 +290,7 @@ function configureOperacaoLifecycle() {
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncOperacaoLifecycle);
   window.addEventListener('mba:session-expired', unmountOperacaoPage);
+  window.addEventListener('mba:logged-out', unmountOperacaoPage);
   document.addEventListener('visibilitychange', syncOperacaoLifecycle);
   syncOperacaoLifecycle();
 }
