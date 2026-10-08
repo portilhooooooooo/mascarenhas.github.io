@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev/tasks-workspace
+      - feat/client-navbar-isolation-20261008
   workflow_dispatch:
 
 permissions:
