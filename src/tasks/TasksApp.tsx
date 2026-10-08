@@ -302,6 +302,7 @@ export function TasksApp() {
     return () => {
       window.removeEventListener('mba:authenticated', onAuth);
       window.removeEventListener('mba:session-expired', onExpired);
+      window.removeEventListener('mba:logged-out', onExpired);
     };
   }, []);
 
