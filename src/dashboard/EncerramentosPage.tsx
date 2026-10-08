@@ -6,6 +6,7 @@ import './encerramentos.css';
 type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
 type VisaoMapa = 'vitorias' | 'derrotas' | 'tkm';
 type Modo = 'encontrados' | 'meta';
+type Etapa = 'validados' | 'enviados_benner';
 type Numero = number | null;
 type TipoRow = { tipo: string; quantidade: number };
 type AgingRow = { faixa: string; quantidade: number };
@@ -27,6 +28,7 @@ type Dados = {
   comarcas?: Comarca[];
   matriz?: Matriz[];
   meta_configurada?: boolean;
+  etapas?: { etapa: Etapa; total: number; tipos: TipoRow[]; aging: AgingRow[]; matriz: Matriz[]; fonte: string; mensagem: string };
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 const TIPOS: { value: Tipo; label: string }[] = [
@@ -43,7 +45,9 @@ const CLASSES = [
   { tipo: 'VITORIA', label: 'Vitória' },
   { tipo: 'ACORDO', label: 'Acordo' },
 ];
-const AGES = ['0 a 3 meses', '3 a 10 meses', 'Mais de 10 meses', 'Sem tag / não reconhecida'];
+const ageBands = (carteira: string) => carteira === 'Agibank Regular'
+  ? ['0–12 meses', '12–24 meses', '>24 meses', 'Sem tag / não reconhecida']
+  : ['0–3 meses', '4–10 meses', '>10 meses', 'Sem tag / não reconhecida'];
 const STAFF = [
   { id: 'demo-gabriel', nome: 'Gabriel', analisados: 43 },
   { id: 'demo-elias', nome: 'Elias', analisados: 31 },
@@ -60,10 +64,10 @@ function localISO(daysBack: number): string {
   return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
 }
 
-async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, analista: string): Promise<Dados> {
+async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, analista: string, etapa: Etapa): Promise<Dados> {
   const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
   if (!api) throw new Error('Conexão com a API indisponível.');
-  const query = new URLSearchParams({ carteira, tipo });
+  const query = new URLSearchParams({ carteira, tipo, etapa });
   if (periodo === '30') query.set('inicio', localISO(29));
   if (periodo === '90') query.set('inicio', localISO(89));
   if (analista !== 'todos') query.set('analista', analista);
@@ -71,8 +75,10 @@ async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, anal
 }
 
 /** Números fictícios, calculados exclusivamente na interface de demonstração. */
-function makeDemo(carteira: string, tipo: Tipo, periodo: string): Dados {
+function makeDemo(carteira: string, tipo: Tipo, periodo: string, etapa: Etapa): Dados {
   const factor = (periodo === '30' ? .23 : periodo === '90' ? .55 : 1) * (carteira === 'Agibank Enter' ? .72 : 1);
+  const stageFactor = etapa === 'validados' ? .78 : .47;
+  const bands = ageBands(carteira);
   const seed = [
     { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 },
     { tipo: 'DERROTA', quantidade: 476 },
@@ -85,13 +91,14 @@ function makeDemo(carteira: string, tipo: Tipo, periodo: string): Dados {
   const classification = selected.filter(item => item.tipo !== 'ACORDO');
   const found = classification.reduce((sum, row) => sum + row.quantidade, 0);
   const divided = CLASSES.map(item => ({ tipo: item.tipo, quantidade: selected.find(s => s.tipo === item.tipo)?.quantidade || 0 }));
-  const matriz: Matriz[] = divided.flatMap((row, index) => {
+  const stageTypes = divided.map(row => ({...row, quantidade: Math.round(row.quantidade * stageFactor)}));
+  const matriz: Matriz[] = stageTypes.flatMap((row, index) => {
     const weights = [0.3 + index * .016, .33, .30 - index * .012, .07 - index * .004];
     const numbers = weights.map((weight, i) => i === 3 ? 0 : Math.round(row.quantidade * weight));
     numbers[3] = Math.max(0, row.quantidade - numbers[0] - numbers[1] - numbers[2]);
-    return AGES.map((faixa, i) => ({ tipo: row.tipo, faixa, quantidade: numbers[i] }));
+    return bands.map((faixa, i) => ({ tipo: row.tipo, faixa, quantidade: numbers[i] }));
   });
-  const aging: AgingRow[] = AGES.map(faixa => ({ faixa, quantidade: matriz.filter(m => m.faixa === faixa).reduce((v, m) => v + m.quantidade, 0) }));
+  const aging: AgingRow[] = bands.map(faixa => ({ faixa, quantidade: matriz.filter(m => m.faixa === faixa).reduce((v, m) => v + m.quantidade, 0) }));
   const map: Uf[] = BRAZIL_STATES.map((state, i) => ({
     uf: state.uf,
     vitorias: Math.round((selected.find(x => x.tipo === 'VITORIA')?.quantidade || 0) * (5 + (i * 13 % 19)) / 345),
@@ -108,6 +115,11 @@ function makeDemo(carteira: string, tipo: Tipo, periodo: string): Dados {
     indicadores: { consultados: Math.round(found * 1.4), encontrados: found, analisados: 100, ticket_medio: 9356.74, ticket_amostra: 420, aging_medio: 224 },
     aging, estados: [], analistas: STAFF, classificacoes: classification,
     distribuicao_tipos: divided, matriz, mapa: map,
+    etapas: {
+      etapa, total: stageTypes.reduce((sum, row) => sum + row.quantidade, 0),
+      tipos: stageTypes, aging, matriz, fonte: 'demonstracao',
+      mensagem: etapa === 'validados' ? 'Validações simuladas' : 'Envios confirmados simulados',
+    },
     comarcas: ['DERROTA','DERROTA_VOLUNTARIA','TODOS'].includes(tipo)
       ? demoComarcas.map(([comarca, uf, derrotas]) => ({ comarca, uf, derrotas: Math.round(derrotas * factor) }))
       : [],
@@ -200,26 +212,27 @@ function MapPanel({ dados, demo }: { dados: Dados | null; demo: boolean }) {
   </section>;
 }
 
-function Composition({ dados, demo }: { dados: Dados | null; demo: boolean }) {
+function Composition({ dados, demo, etapa }: { dados: Dados | null; demo: boolean; etapa: Etapa }) {
   const [mode, setMode] = useState<Modo>('encontrados');
   const available = mode === 'encontrados' || demo || dados?.meta_configurada === true;
   const ratio = mode === 'meta' && demo ? 1.15 : 1;
-  const matrix = dados?.matriz || [];
-  const rawClasses = dados?.distribuicao_tipos || [];
+  const bands = ageBands(dados?.carteira || 'Agibank Regular');
+  const matrix = dados?.etapas?.matriz || [];
+  const rawClasses = dados?.etapas?.tipos || [];
   const types = CLASSES.map(row => ({
     ...row, count: available ? Math.round(valueOrZero(rawClasses.find(item => item.tipo === row.tipo)?.quantidade) * ratio) : 0,
   }));
-  const ages = AGES.map(faixa => ({faixa, count: available ? Math.round(matrix.filter(item => item.faixa === faixa).reduce((s,c) => s + c.quantidade,0) * ratio) : 0}));
+  const ages = bands.map(faixa => ({faixa, count: available ? Math.round(matrix.filter(item => item.faixa === faixa).reduce((s,c) => s + c.quantidade,0) * ratio) : 0}));
   const total = types.reduce((s,row) => s + row.count,0);
   const maxType = Math.max(1,...types.map(row => row.count));
   const maxAge = Math.max(1,...ages.map(row => row.count));
   const maxMatrix = Math.max(1,...matrix.map(row => row.quantidade));
   return <section className="closing-surface closing-composition">
     <div className="closing-card-head">
-      <div><h2>Composição dos encerramentos</h2><p>Tipo × aging</p></div>
+      <div><h2>Composição dos encerramentos</h2><p>{etapa === 'validados' ? 'Validados' : 'Enviados ao Benner'} · Tipo × aging</p></div>
       <Choice value={mode} onChange={v => setMode(v as Modo)} options={[{value:'encontrados',label:'Encontrados'},{value:'meta',label:'Meta'}]}/>
     </div>
-    {!available ? <div className="closing-unset">Meta não configurada</div> : <>
+    {!available ? <div className="closing-unset">Meta não configurada</div> : !total ? <div className="closing-unset">Nenhum processo {etapa === 'validados' ? 'validado' : 'com envio confirmado ao Benner'} no período</div> : <>
       <div className="closing-composition-top">
         <div><h3>Tipos</h3>
           {types.map(item => <div className="closing-smallbar" key={item.tipo}>
@@ -236,9 +249,9 @@ function Composition({ dados, demo }: { dados: Dados | null; demo: boolean }) {
       </div>
       <div className="closing-matrix-head"><h3>Cruzamento tipo × aging</h3><span>{num(total)} processos</span></div>
       <div className="closing-matrix-scroll"><table className="closing-matrix">
-        <thead><tr><th>Tipo</th><th>0–3m</th><th>3–10m</th><th>10m+</th><th>Sem tag</th><th>Total</th></tr></thead>
+        <thead><tr><th>Tipo</th>{bands.map(band=><th key={band}>{band}</th>)}<th>Total</th></tr></thead>
         <tbody>{types.map(row => <tr key={row.tipo}><th>{row.label}</th>
-          {AGES.map(faixa => {
+          {bands.map(faixa => {
             const raw = valueOrZero(matrix.find(cell => cell.tipo === row.tipo && cell.faixa === faixa)?.quantidade);
             const value = Math.round(raw * ratio);
             const opacity = .035 + Math.sqrt(raw/maxMatrix) * .28;
@@ -287,19 +300,20 @@ export function EncerramentosPage() {
   const [tipo,setTipo] = useState<Tipo>('TODOS');
   const [periodo,setPeriodo] = useState('all');
   const [analista,setAnalista] = useState('todos');
+  const [etapa,setEtapa] = useState<Etapa>('validados');
   const [demo,setDemo] = useState(true);
   const [dados,setDados] = useState<Dados | null>(null);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refresh = useCallback(async () => {
     setPending(true);
-    try { const result = await loadDashboard(carteira,tipo,periodo,analista); setDados(result); setError(''); }
+    try { const result = await loadDashboard(carteira,tipo,periodo,analista,etapa); setDados(result); setError(''); }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.'); }
     finally { setPending(false); }
-  },[carteira,tipo,periodo,analista]);
+  },[carteira,tipo,periodo,analista,etapa]);
   useEffect(() => {void refresh();},[refresh]);
   useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
-  const fake = useMemo(() => makeDemo(carteira,tipo,periodo),[carteira,tipo,periodo]);
+  const fake = useMemo(() => makeDemo(carteira,tipo,periodo,etapa),[carteira,tipo,periodo,etapa]);
   const shown = demo ? fake : dados;
   const analysts = demo ? STAFF.filter(a => analista==='todos' || a.id==='demo-'+analista) : (dados?.analistas || []);
   const analysed = demo ? analysts.reduce((v,a)=>v+a.analisados,0) : shown?.indicadores.analisados;
@@ -316,13 +330,17 @@ export function EncerramentosPage() {
       <label>Carteira<select value={carteira} onChange={e=>setCarteira(e.target.value)}><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
       <label>Período<select value={periodo} onChange={e=>setPeriodo(e.target.value)}><option value="all">Todo o histórico</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option></select></label>
+      <label>Etapa<select value={etapa} onChange={e=>setEtapa(e.target.value as Etapa)}>
+        <option value="validados">Validados</option>
+        <option value="enviados_benner">Enviados ao Benner</option>
+      </select></label>
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
     {!demo && error ? <p className="closing-error" role="alert">{error}</p> : null}
     <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown} demo={demo}/>
-      <Composition dados={shown} demo={demo}/>
+      <Composition dados={shown} demo={demo} etapa={etapa}/>
     </div>
     <div className="closing-lower-grid">
       <ComarcasPanel dados={shown}/>
