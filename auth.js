@@ -396,6 +396,7 @@
       moduleActivationAt.clear();
       window.MBA_CURRENT_USER = null;
       setAuthState(false);
+      window.dispatchEvent(new Event('mba:logged-out'));
     }
   });
 
