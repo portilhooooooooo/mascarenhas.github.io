@@ -14,6 +14,7 @@ export interface ClosingCase {
   tipo_validado?: string | null;
   analista_id?: string | null;
   validado_em?: string | null;
+  analisado_em?: string | null;
   fase_recursal?: boolean | null;
   status_envio?: 'NAO_ENVIADO' | 'NA_FILA' | 'PROCESSANDO' | 'ERRO' | 'ENVIADO';
   enviado_benner_em?: string | null;
