@@ -2,6 +2,7 @@ import { StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
+import { BennerAndamentosPage } from './BennerAndamentosPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
@@ -344,6 +345,31 @@ function configureProtocolosLifecycle() {
   syncProtocolosLifecycle();
 }
 
+let bennerAndamentosRoot: Root | null = null;
+function syncBennerAndamentos() {
+  const host = document.getElementById('benner-andamentos-root');
+  const section = document.getElementById('automacoes');
+  const visible = section?.classList.contains('active') === true && !document.hidden;
+  if (visible && mayOpen('automacoes') && host && !bennerAndamentosRoot) {
+    bennerAndamentosRoot = createRoot(host);
+    bennerAndamentosRoot.render(<BennerAndamentosPage />);
+  } else if ((!visible || !mayOpen('automacoes')) && bennerAndamentosRoot) {
+    bennerAndamentosRoot.unmount();
+    bennerAndamentosRoot = null;
+  }
+}
+function configureBennerAndamentos() {
+  const section = document.getElementById('automacoes');
+  if (!section) return;
+  new MutationObserver(syncBennerAndamentos).observe(section, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('mba:authenticated', syncBennerAndamentos);
+  window.addEventListener('mba:portfolio-changed', syncBennerAndamentos);
+  window.addEventListener('mba:session-expired', syncBennerAndamentos);
+  window.addEventListener('mba:logged-out', syncBennerAndamentos);
+  document.addEventListener('visibilitychange', syncBennerAndamentos);
+  syncBennerAndamentos();
+}
+
 let usersRoot: Root | null = null;
 
 function mountUsersPage() {
@@ -411,4 +437,5 @@ createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
 mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
+configureBennerAndamentos();
 configureUsersLifecycle();
