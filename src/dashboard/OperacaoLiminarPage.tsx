@@ -34,6 +34,7 @@ export function OperacaoLiminarPage() {
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [feedback,setFeedback]=useState('');
+  const [portfolioRevision,setPortfolioRevision]=useState(0);
   const [canView,setCanView]=useState(false);
   const [canImport,setCanImport]=useState(false);
   const fileInput=useRef<HTMLInputElement|null>(null);
@@ -51,11 +52,12 @@ export function OperacaoLiminarPage() {
       if(sequence!==requestId.current)return;
       setError(cause instanceof Error?cause.message:'Não foi possível carregar a base de Liminar.');
     }finally{if(sequence===requestId.current)setLoading(false);}
-  },[status,page,pageSize,appliedQuery]);
+  },[status,page,pageSize,appliedQuery,portfolioRevision]);
 
   useEffect(()=>{
     const sync=()=>{
       setCanView(readPermission('tutelas.view'));
+      setPortfolioRevision(previous=>previous+1);
       setCanImport(readPermission('tutelas.import'));
       setPage(1);setStatus('ALL');setQuery('');setAppliedQuery('');setFile(null);
       setSummary(null);setList({rows:[],total:0,page:1,page_size:10,importacao:null});
