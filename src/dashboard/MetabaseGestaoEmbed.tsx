@@ -33,7 +33,7 @@ export function MetabaseGestaoEmbed() {
       const refreshAfter = Math.max(300, Number(config.expires_in || 600) - 60);
       refreshTimer.current = window.setTimeout(() => void load(), refreshAfter * 1000);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a Gestão Processual.');
+      setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a Analytics.');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export function MetabaseGestaoEmbed() {
 
   return <section className="gestao-metabase-shell">
     {error ? <div className="gestao-metabase-state error">
-      <strong>Não foi possível carregar a Gestão Processual</strong>
+      <strong>Não foi possível carregar a Analytics</strong>
       <span>{error}</span>
       <button type="button" onClick={() => void load()}><RefreshCw size={14}/>Tentar novamente</button>
     </div> : null}
