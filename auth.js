@@ -123,8 +123,15 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
+    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
     document.querySelectorAll('[data-permission]').forEach(element => {
-      element.hidden = user.permissions[element.dataset.permission] !== true;
+      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
+      element.hidden = pageId
+        ? !canAccess(pageId)
+        : user.permissions[element.dataset.permission] !== true;
+    });
+    document.querySelectorAll('main .page[id]').forEach(page => {
+      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
     });
     document.querySelectorAll('.master-admin-only').forEach(element => {
       element.hidden = !user.is_master_admin;
@@ -141,14 +148,15 @@
       ['tarefas', 'tasks.view'],
       ['pagamentos', 'pagamentos.view'],
       ['acordos', 'agreements.view'],
-    ].filter(([, permission]) => user.permissions[permission] === true);
+    ].filter(([pageId]) => canAccess(pageId));
 
     const active = document.querySelector('.page.active');
     if (!pages.length) {
       window.showPage?.('sem-acesso');
-    } else if (active?.dataset.permission && user.permissions[active.dataset.permission] !== true) {
+    } else if (active?.id && active.id !== 'sem-acesso' && !canAccess(active.id)) {
       window.showPage?.(pages[0][0]);
     }
+    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
   }
 
   function activePageId() {
@@ -220,6 +228,7 @@
       profile.default_portfolio_id
     );
     applyUser(profile);
+    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
     setAuthState(true);
