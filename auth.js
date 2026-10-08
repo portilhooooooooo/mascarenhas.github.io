@@ -137,17 +137,18 @@
       element.hidden = !user.is_master_admin;
     });
 
+    // Prefer actual shell modules as the post-login landing page.
     const pages = [
       ['dashboard', 'dashboard.view'],
-      ['automacoes', 'automations.view'],
+      ['acordos', 'pagamentos.view'],
+      ['tarefas', 'tasks.view'],
       ['protocolo', 'automations.view'],
-      ['tutelas', 'tutelas.view'],
-      ['encerramentos', 'encerramentos.view'],
+      ['automacoes', 'automations.view'],
       ['usuarios', 'users.view'],
       ['configuracoes', 'settings.view'],
-      ['tarefas', 'tasks.view'],
+      ['tutelas', 'tutelas.view'],
+      ['encerramentos', 'encerramentos.view'],
       ['pagamentos', 'pagamentos.view'],
-      ['acordos', 'agreements.view'],
     ].filter(([pageId]) => canAccess(pageId));
 
     const active = document.querySelector('.page.active');
