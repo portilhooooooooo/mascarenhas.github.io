@@ -134,13 +134,13 @@ function makeDemo(carteira: string, tipo: Tipo, periodo: string, etapa: Etapa, a
   };
 }
 
-function Metrics({ dados, demo, analista, selectedCount, acordo }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean }) {
+function Metrics({ dados, demo, analista, selectedCount, acordo, etapa }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa }) {
   const m = dados?.indicadores;
   const accord = dados?.distribuicao_tipos.find(c => c.tipo === 'ACORDO')?.quantidade;
   const stage = dados?.etapas;
   const cards = [
-    { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados' : 'Sem dados' },
-    { icon: CheckCircle2, name: 'Analisados', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
+    { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados · Indícios DataJud' : 'Sem dados' },
+    { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
   ];
@@ -337,7 +337,7 @@ export function EncerramentosPage() {
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
     {!demo && error ? <p className="closing-error" role="alert">{error}</p> : null}
-    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed}/>
+    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
       <Composition dados={shown} etapa={etapa} periodo={periodo} analista={analista}/>
