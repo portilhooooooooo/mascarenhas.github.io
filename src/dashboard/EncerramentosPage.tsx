@@ -1,32 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, CalendarDays, CheckCircle2, Clock3, MapPinned, RefreshCcw, SearchCheck, UsersRound, Wallet } from 'lucide-react';
+import { Activity, BarChart3, CheckCircle2, Clock3, MapPinned, RefreshCcw, SearchCheck, UsersRound, Wallet } from 'lucide-react';
 import { BRAZIL_STATES } from './brazilStates';
 import './encerramentos.css';
 
-type Classificacao = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
-type Faixa = 'alto' | 'medio' | 'baixo' | 'sem_amostra';
-type Indicadores = {
-  consultados: number;
-  encontrados: number;
-  analisados: number;
-  ticket_medio: number | null;
-  ticket_amostra: number;
-  aging_medio: number | null;
-};
-type Estado = { uf: string; perdas: number; amostra: number; ticket_medio: number | null; faixa: Faixa };
+type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
+type VisaoMapa = 'vitorias' | 'derrotas' | 'tkm';
+type Modo = 'encontrados' | 'meta';
+type Numero = number | null;
+type TipoRow = { tipo: string; quantidade: number };
+type AgingRow = { faixa: string; quantidade: number };
 type Analista = { id: string; nome: string; analisados: number };
+type Uf = { uf: string; vitorias: number; derrotas: number; tkm?: Numero; amostra?: number };
+type Comarca = { comarca: string; uf: string; derrotas: number };
+type Matriz = { tipo: string; faixa: string; quantidade: number };
+type Indicadores = { consultados: number; encontrados: number; analisados: number; ticket_medio: Numero; ticket_amostra: number; aging_medio: Numero };
 type Dados = {
   carteira: string;
   tipo: string | null;
   indicadores: Indicadores;
-  aging: Array<{ faixa: string; quantidade: number }>;
-  estados: Estado[];
+  aging: AgingRow[];
+  estados: Array<{ uf: string; perdas: number; amostra: number; ticket_medio: Numero; faixa: string }>;
   analistas: Analista[];
-  classificacoes: Array<{ tipo: string; quantidade: number }>;
-  distribuicao_tipos: Array<{ tipo: string; quantidade: number }>;
+  classificacoes: TipoRow[];
+  distribuicao_tipos: TipoRow[];
+  mapa?: Uf[];
+  comarcas?: Comarca[];
+  matriz?: Matriz[];
+  meta_configurada?: boolean;
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
-const TIPOS: Array<{ value: Classificacao; label: string }> = [
+const TIPOS: { value: Tipo; label: string }[] = [
   { value: 'TODOS', label: 'Todos os tipos' },
   { value: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária' },
   { value: 'DERROTA', label: 'Derrota' },
@@ -34,332 +37,297 @@ const TIPOS: Array<{ value: Classificacao; label: string }> = [
   { value: 'ACORDO', label: 'Acordo' },
   { value: 'EXTINCAO', label: 'Extinção' },
 ];
-const DISTRIBUTION = [
-  { tipo: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária', tone: 'voluntary' },
-  { tipo: 'DERROTA', label: 'Derrota', tone: 'defeat' },
-  { tipo: 'VITORIA', label: 'Vitória', tone: 'victory' },
-  { tipo: 'ACORDO', label: 'Acordo', tone: 'agreement' },
-] as const;
-const AGING = [
-  { faixa: '0 a 3 meses', tag: '0 A 3 MESES', tone: 'low' },
-  { faixa: '3 a 10 meses', tag: '3 A 10 MESES', tone: 'medium' },
-  { faixa: 'Mais de 10 meses', tag: 'MAIS DE 10 MESES', tone: 'high' },
-  { faixa: 'Sem tag / não reconhecida', tag: 'SEM TAG / NÃO RECONHECIDA', tone: 'untagged' },
-] as const;
-
-// Dados de exemplo apenas para homologação visual; jamais são gravados no backend.
-const DEMO_AGING: Dados['aging'] = [
-  { faixa: '0 a 3 meses', quantidade: 128 },
-  { faixa: '3 a 10 meses', quantidade: 342 },
-  { faixa: 'Mais de 10 meses', quantidade: 517 },
-  { faixa: 'Sem tag / não reconhecida', quantidade: 41 },
+const CLASSES = [
+  { tipo: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária' },
+  { tipo: 'DERROTA', label: 'Derrota' },
+  { tipo: 'VITORIA', label: 'Vitória' },
+  { tipo: 'ACORDO', label: 'Acordo' },
 ];
-const DEMO_ANALYSTS: Analista[] = [
+const AGES = ['0 a 3 meses', '3 a 10 meses', 'Mais de 10 meses', 'Sem tag / não reconhecida'];
+const STAFF = [
   { id: 'demo-gabriel', nome: 'Gabriel', analisados: 43 },
   { id: 'demo-elias', nome: 'Elias', analisados: 31 },
   { id: 'demo-gessica', nome: 'Géssica', analisados: 26 },
 ];
-const ANALYST_OPTIONS = [
-  { value: 'todos', label: 'Todos os analistas' },
-  { value: 'gabriel', label: 'Gabriel' },
-  { value: 'elias', label: 'Elias' },
-  { value: 'gessica', label: 'Géssica' },
-];
+const num = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
+const money = (value: Numero | undefined) => value == null ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
+const percent = (value: number) => value.toFixed(1).replace('.', ',') + '%';
+const captionTipo = (value: string) => CLASSES.find(t => t.tipo === value)?.label || value;
+const valueOrZero = (value: number | undefined | null) => Number(value || 0);
 
-/**
- * Base de demonstração isolada do resultado da API.
- * Valores determinísticos e sintéticos: não representam produtividade nem
- * perdas de clientes e nunca são enviados ou gravados no banco.
- */
-function createDemoData(carteira: string, tipo: Classificacao, periodo: string): Dados {
-  const isEnter = carteira === 'Agibank Enter';
-  const seed = isEnter
-    ? [{ tipo: 'VITORIA', quantidade: 198 }, { tipo: 'DERROTA', quantidade: 255 },
-       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 140 }, { tipo: 'ACORDO', quantidade: 51 }, { tipo: 'EXTINCAO', quantidade: 27 }]
-    : [{ tipo: 'VITORIA', quantidade: 330 }, { tipo: 'DERROTA', quantidade: 476 },
-       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 }, { tipo: 'ACORDO', quantidade: 74 }, { tipo: 'EXTINCAO', quantidade: 32 }];
-  const factor = periodo === '30' ? 0.22 : periodo === '90' ? 0.56 : 1;
-  const all = seed.map(row => ({ ...row, quantidade: Math.max(1, Math.round(row.quantidade * factor)) }));
-  const selected = tipo === 'TODOS' ? all : all.filter(row => row.tipo === tipo);
-  const classifications = selected.filter(row => row.tipo !== 'ACORDO');
-  const distribution = DISTRIBUTION.map(({ tipo: kind }) => ({
-    tipo: kind,
-    quantidade: selected.find(row => row.tipo === kind)?.quantidade || 0,
-  }));
-  const found = classifications.reduce((total, row) => total + row.quantidade, 0);
-  const losses = classifications.filter(row => row.tipo === 'DERROTA' || row.tipo === 'DERROTA_VOLUNTARIA')
-    .reduce((total, row) => total + row.quantidade, 0);
+function localISO(daysBack: number): string {
+  const now = new Date(); now.setDate(now.getDate() - daysBack);
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+}
 
-  const weights = BRAZIL_STATES.map((_, index) => 7 + (index * 11) % 23);
-  const totalWeight = weights.reduce((total, weight) => total + weight, 0);
-  let distributed = 0;
-  const states: Estado[] = BRAZIL_STATES.map((state, index) => {
-    const perdas = index === BRAZIL_STATES.length - 1
-      ? losses - distributed
-      : Math.floor(losses * weights[index] / totalWeight);
-    distributed += perdas;
-    const amostra = Math.min(perdas, Math.floor(perdas * (0.43 + (index % 4) * 0.08)));
-    const ticket = amostra >= 3 ? 5400 + (index * 1327) % 9800 : null;
-    return {
-      uf: state.uf, perdas, amostra, ticket_medio: ticket,
-      faixa: ticket === null ? 'sem_amostra' : ticket < 8500 ? 'baixo' : ticket < 11800 ? 'medio' : 'alto',
-    };
+async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, analista: string): Promise<Dados> {
+  const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
+  if (!api) throw new Error('Conexão com a API indisponível.');
+  const query = new URLSearchParams({ carteira, tipo });
+  if (periodo === '30') query.set('inicio', localISO(29));
+  if (periodo === '90') query.set('inicio', localISO(89));
+  if (analista !== 'todos') query.set('analista', analista);
+  return api.request<Dados>('/api/operacao/encerramentos/dashboard?' + query.toString());
+}
+
+/** Números fictícios, calculados exclusivamente na interface de demonstração. */
+function makeDemo(carteira: string, tipo: Tipo, periodo: string): Dados {
+  const factor = (periodo === '30' ? .23 : periodo === '90' ? .55 : 1) * (carteira === 'Agibank Enter' ? .72 : 1);
+  const seed = [
+    { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 },
+    { tipo: 'DERROTA', quantidade: 476 },
+    { tipo: 'VITORIA', quantidade: 330 },
+    { tipo: 'ACORDO', quantidade: 74 },
+    { tipo: 'EXTINCAO', quantidade: 32 },
+  ];
+  const selected = seed.filter(item => tipo === 'TODOS' || item.tipo === tipo)
+    .map(item => ({ ...item, quantidade: Math.max(1, Math.round(item.quantidade * factor)) }));
+  const classification = selected.filter(item => item.tipo !== 'ACORDO');
+  const found = classification.reduce((sum, row) => sum + row.quantidade, 0);
+  const divided = CLASSES.map(item => ({ tipo: item.tipo, quantidade: selected.find(s => s.tipo === item.tipo)?.quantidade || 0 }));
+  const matriz: Matriz[] = divided.flatMap((row, index) => {
+    const weights = [0.3 + index * .016, .33, .30 - index * .012, .07 - index * .004];
+    const numbers = weights.map((weight, i) => i === 3 ? 0 : Math.round(row.quantidade * weight));
+    numbers[3] = Math.max(0, row.quantidade - numbers[0] - numbers[1] - numbers[2]);
+    return AGES.map((faixa, i) => ({ tipo: row.tipo, faixa, quantidade: numbers[i] }));
   });
-  const sample = states.reduce((total, state) => total + (state.ticket_medio === null ? 0 : state.amostra), 0);
-  const ticketTotal = states.reduce((total, state) =>
-    total + (state.ticket_medio === null ? 0 : state.ticket_medio * state.amostra), 0);
-  const aging = DEMO_AGING.map(row => ({
-    ...row, quantidade: Math.floor(row.quantidade * found / 1028),
+  const aging: AgingRow[] = AGES.map(faixa => ({ faixa, quantidade: matriz.filter(m => m.faixa === faixa).reduce((v, m) => v + m.quantidade, 0) }));
+  const map: Uf[] = BRAZIL_STATES.map((state, i) => ({
+    uf: state.uf,
+    vitorias: Math.round((selected.find(x => x.tipo === 'VITORIA')?.quantidade || 0) * (5 + (i * 13 % 19)) / 345),
+    derrotas: Math.round((divided[0].quantidade + divided[1].quantidade) * (5 + (i * 7 % 21)) / 390),
+    tkm: 6100 + ((i * 1337) % 9100),
+    amostra: 7 + (i % 16),
   }));
-  aging[aging.length - 1].quantidade += found - aging.reduce((total, row) => total + row.quantidade, 0);
-
-  const dayFraction = Math.min(1, found / 180);
-  const analysts = DEMO_ANALYSTS.map(row => ({
-    ...row, analisados: Math.max(0, Math.round(row.analisados * dayFraction)),
-  }));
+  const demoComarcas = [
+    ['Porto Alegre', 'RS', 115], ['São Paulo', 'SP', 94], ['Rio de Janeiro', 'RJ', 76],
+    ['Campo Grande', 'MS', 63], ['Florianópolis', 'SC', 54], ['Salvador', 'BA', 48],
+  ] as const;
   return {
     carteira, tipo: tipo === 'TODOS' ? null : tipo,
-    indicadores: {
-      consultados: Math.round(found * 1.43), encontrados: found,
-      analisados: analysts.reduce((total, row) => total + row.analisados, 0),
-      ticket_medio: sample ? Math.round((ticketTotal / sample) * 100) / 100 : null,
-      ticket_amostra: sample, aging_medio: 276,
-    },
-    aging, estados: states, analistas: analysts, classificacoes: classifications,
-    distribuicao_tipos: distribution,
+    indicadores: { consultados: Math.round(found * 1.4), encontrados: found, analisados: 100, ticket_medio: 9356.74, ticket_amostra: 420, aging_medio: 224 },
+    aging, estados: [], analistas: STAFF, classificacoes: classification,
+    distribuicao_tipos: divided, matriz, mapa: map,
+    comarcas: ['DERROTA','DERROTA_VOLUNTARIA','TODOS'].includes(tipo)
+      ? demoComarcas.map(([comarca, uf, derrotas]) => ({ comarca, uf, derrotas: Math.round(derrotas * factor) }))
+      : [],
+    meta_configurada: true,
   };
 }
 
-const n = (value: number | null | undefined) => new Intl.NumberFormat('pt-BR').format(Number(value ?? 0));
-const brl = (value: number | null | undefined) =>
-  value === null || value === undefined ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
-function localDate(daysAgo: number) {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
-}
-async function getDashboard(carteira: string, tipo: Classificacao, periodo: string, analista: string): Promise<Dados> {
-  const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
-  if (!api) throw new Error('A API do Backoffice não está disponível.');
-  const params = new URLSearchParams({ carteira, tipo });
-  if (analista !== 'todos') params.set('analista', analista);
-  if (periodo === '30') params.set('inicio', localDate(29));
-  if (periodo === '90') params.set('inicio', localDate(89));
-  return api.request<Dados>('/api/operacao/encerramentos/dashboard?' + params.toString());
-}
-function classLabel(tipo: string) { return TIPOS.find(item => item.value === tipo)?.label || tipo || '—'; }
-function Metric({ label, value, detail, icon: Icon }: { label: string; value: string; detail: string; icon: typeof SearchCheck }) {
-  return <article className="closing-metric">
-    <span className="closing-metric-icon"><Icon size={18} strokeWidth={1.8}/></span>
-    <span className="closing-metric-label">{label}</span>
-    <strong>{value}</strong>
-    <small>{detail}</small>
-  </article>;
-}
-function BrazilMap({ estados, demo }: { estados: Estado[]; demo: boolean }) {
-  const [selectedUf, setSelectedUf] = useState<string | null>(null);
-  const byUf = useMemo(() => new Map(estados.map(estado => [estado.uf, estado])), [estados]);
-  const chosen = BRAZIL_STATES.find(estado => estado.uf === selectedUf);
-  const selected = chosen ? byUf.get(chosen.uf) : null;
-  return <article className="closing-panel closing-map-panel">
-    <div className="closing-panel-heading">
-      <div><h2><MapPinned size={16}/> Mapa de perdas por UF {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2><p>Ticket médio pago nas derrotas com pagamento liquidado identificado.</p></div>
-    </div>
-    <div className="closing-map-layout">
-      <svg className="closing-brazil-map" viewBox="0 0 690 690" role="img" aria-label="Mapa do Brasil por ticket médio de perdas">
-        {BRAZIL_STATES.map(state => {
-          const dado = byUf.get(state.uf);
-          const tone = dado?.faixa || 'sem_amostra';
-          return <path
-            key={state.uf} d={state.path}
-            className={'closing-uf ' + tone + (selectedUf === state.uf ? ' is-selected' : '')}
-            role="button" tabIndex={0}
-            aria-label={state.name + ': ' + (dado?.ticket_medio == null ? 'sem amostra suficiente' : brl(dado.ticket_medio))}
-            onClick={() => setSelectedUf(state.uf)}
-            onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedUf(state.uf); } }}>
-            <title>{state.name}: {dado?.ticket_medio == null ? 'sem ticket disponível' : brl(dado.ticket_medio)} ({n(dado?.amostra)} casos com pagamento)</title>
-          </path>;
-        })}
-      </svg>
-      <div className="closing-map-info">
-        <div className="closing-map-legend"><span><i className="alto"/>Maior TKM</span><span><i className="medio"/>TKM intermediário</span><span><i className="baixo"/>Menor TKM</span><span><i className="sem_amostra"/>Amostra insuficiente</span></div>
-        <div className="closing-map-highlight" aria-live="polite">
-          {chosen ? <>
-            <span>{chosen.name} · {chosen.uf}</span>
-            <strong>{brl(selected?.ticket_medio)}</strong>
-            <small>{n(selected?.perdas)} derrotas identificadas · {n(selected?.amostra)} com pagamento</small>
-          </> : <>
-            <span>Distribuição por estado</span>
-            <strong>{n(estados.filter(estado => estado.faixa !== 'sem_amostra').length)} UFs</strong>
-            <small>Selecione uma UF no mapa para ver o ticket médio e a amostra.</small>
-          </>}
-        </div>
-        <p className="closing-map-method">Cores por tercis do ticket médio entre estados com pelo menos 3 processos pagos. Estados sem amostra suficiente permanecem cinza. O mapa não representa taxa de derrota.</p>
-      </div>
-    </div>
-  </article>;
-}
-function AgingPanel({ rows, demo }: { rows: Dados['aging']; demo: boolean }) {
-  const counts = new Map(rows.map(item => [item.faixa, Number(item.quantidade)]));
-  const max = Math.max(1, ...Array.from(counts.values()));
-  return <article className="closing-panel">
-    <div className="closing-panel-heading">
-      <div><h2><Clock3 size={16}/> Aging das oportunidades {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2>
-        <p>Faixas de idade pela entrada da pasta no Benner.</p>
-      </div>
-    </div>
-    <div className="closing-bars closing-aging-bars">
-      {AGING.map(({ faixa, tag, tone }) => {
-        const value = counts.get(faixa) || 0;
-        return <div className="closing-bar-row" key={faixa}>
-          <span className={'closing-aging-tag ' + tone}>{tag}</span>
-          <div className="closing-bar-track"><div className={'closing-aging-fill ' + tone} style={{ width: (value / max * 100) + '%' }}/></div>
-          <strong>{n(value)}</strong>
-        </div>;
-      })}
-    </div>
-  </article>;
-}
-function DistributionPanel({ rows, demo }: { rows: Dados['distribuicao_tipos']; demo: boolean }) {
-  const byType = new Map(rows.map(row => [row.tipo, Number(row.quantidade || 0)]));
-  const total = DISTRIBUTION.reduce((sum, item) => sum + (byType.get(item.tipo) || 0), 0);
-  const maximum = Math.max(1, ...DISTRIBUTION.map(item => byType.get(item.tipo) || 0));
-  return <article className="closing-panel closing-distribution-panel">
-    <div className="closing-panel-heading">
-      <div><h2><Activity size={16}/> Divisão por tipo de encerramento {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2>
-        <p>Indícios classificados pela automação, sem duplicidade de CNJ.</p>
-      </div>
-      <strong className="closing-distribution-total">{n(total)} <small>classificações</small></strong>
-    </div>
-    <div className="closing-distribution-list">
-      {DISTRIBUTION.map(item => {
-        const count = byType.get(item.tipo) || 0;
-        const share = total ? count / total * 100 : 0;
-        return <div key={item.tipo} className="closing-distribution-row">
-          <div className="closing-distribution-row-top">
-            <span>{item.label}</span>
-            <strong>{n(count)} <small>{share.toFixed(1).replace('.', ',')}%</small></strong>
-          </div>
-          <div className="closing-distribution-track">
-            <span style={{ width: (count / maximum * 100) + '%' }}/>
-          </div>
-        </div>;
-      })}
-    </div>
-    <p className="closing-distribution-note">Acordos são apresentados separadamente na composição, mas não entram no indicador de oportunidades aptas ao encerramento.</p>
-  </article>;
+function Metrics({ dados, demo, analista, selectedCount, acordo }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean }) {
+  const m = dados?.indicadores;
+  const accord = dados?.distribuicao_tipos.find(c => c.tipo === 'ACORDO')?.quantidade;
+  const cards = [
+    { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados' : 'Sem dados' },
+    { icon: CheckCircle2, name: 'Analisados', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
+    { icon: Wallet, name: 'Ticket médio', value: money(m?.ticket_medio), sub: m ? num(m.ticket_amostra) + ' pagamentos' : 'Sem pagamentos' },
+    { icon: Clock3, name: 'Aging médio', value: m?.aging_medio == null ? '—' : (m.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
+  ];
+  return <div className="closing-kpis">
+    {cards.map(item => <article className="closing-kpi" key={item.name}>
+      <div className="closing-kpi-top"><span>{item.name}</span><item.icon size={17} strokeWidth={1.75}/></div>
+      <strong>{item.value}</strong><small>{item.sub}</small>
+    </article>)}
+    {demo ? null : null}
+  </div>;
 }
 
-function AnalystsPanel({ analysts, demo, selected }: { analysts: Analista[]; demo: boolean; selected: string }) {
-  const max = Math.max(1, ...analysts.map(a => a.analisados));
-  return <article className="closing-panel">
-    <div className="closing-panel-heading"><div><h2><UsersRound size={16}/> Produtividade dos analistas {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2><p>Processos únicos analisados hoje · horário de Campo Grande.</p></div></div>
-    {analysts.length ? <div className="closing-analysts">
-      {analysts.map((a, index) => <div className="closing-analyst" key={a.id}>
-        <span className="closing-rank">{index + 1}</span>
-        <div><strong>{a.nome}</strong><div className="closing-analyst-bar"><span style={{width: (a.analisados / max * 100) + '%'}}/></div></div>
-        <b>{n(a.analisados)}</b>
-      </div>)}
-    </div> : <div className="closing-empty"><UsersRound size={22}/><strong>Sem análises registradas hoje</strong>
-      <p>{selected !== 'todos' ? 'O analista selecionado ainda não tem análises reais registradas hoje.' : 'A produtividade aparecerá após as primeiras conclusões da tarefa de Encerramentos.'}</p>
-    </div>}
-  </article>;
+function Choice({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: Array<{ value: string; label: string }> }) {
+  return <div className="closing-choice">
+    {options.map(item => <button key={item.value} type="button" className={value === item.value ? 'active' : ''} onClick={() => onChange(item.value)} aria-pressed={value === item.value}>{item.label}</button>)}
+  </div>;
 }
+
+function MapPanel({ dados, demo }: { dados: Dados | null; demo: boolean }) {
+  const [lens, setLens] = useState<VisaoMapa>('derrotas');
+  const [mode, setMode] = useState<Modo>('encontrados');
+  const [selected, setSelected] = useState<string | null>(null);
+  const available = mode === 'encontrados' || demo || dados?.meta_configurada === true;
+  const stats = useMemo(() => {
+    const payments = new Map((dados?.estados || []).map(item => [item.uf, item]));
+    return (dados?.mapa || []).map(item => ({
+      ...item,
+      tkm: demo ? item.tkm : payments.get(item.uf)?.ticket_medio ?? null,
+      amostra: demo ? item.amostra : payments.get(item.uf)?.amostra || 0,
+    }));
+  }, [dados, demo]);
+  const byUF = new Map(stats.map(row => [row.uf, row]));
+  const readMetric = (item: Uf) => {
+    const val = lens === 'vitorias' ? item.vitorias : lens === 'derrotas' ? item.derrotas : item.tkm;
+    return val == null ? null : mode === 'meta' ? (demo ? Math.round(val * 1.15) : null) : val;
+  };
+  const ranked = available ? stats.filter(s => readMetric(s) !== null).sort((a,b) => (readMetric(b) || 0) - (readMetric(a) || 0)).slice(0,6) : [];
+  const ceiling = Math.max(1, ...ranked.map(row => valueOrZero(readMetric(row))));
+  const current = selected ? byUF.get(selected) : undefined;
+  return <section className="closing-surface closing-map">
+    <div className="closing-card-head">
+      <div><h2>Distribuição dos encerramentos</h2><p>Por unidade federativa</p></div>
+      <Choice value={mode} onChange={v => setMode(v as Modo)} options={[{value:'encontrados',label:'Encontrados'},{value:'meta',label:'Meta'}]}/>
+    </div>
+    <div className="closing-map-tabs" aria-label="Visão do mapa">
+      <Choice value={lens} onChange={v => setLens(v as VisaoMapa)}
+        options={[{value:'vitorias',label:'Vitórias'},{value:'derrotas',label:'Derrotas'},{value:'tkm',label:'Maior TKM'}]}/>
+    </div>
+    {!available ? <div className="closing-unset">Meta não configurada</div> :
+      <div className="closing-map-layout-v2">
+        <svg viewBox="0 0 690 690" className="closing-map-svg" aria-label="Mapa do Brasil por UF" role="img">
+          {BRAZIL_STATES.map(state => {
+            const value = byUF.get(state.uf) ? readMetric(byUF.get(state.uf)!) : null;
+            const shade = value === null ? .06 : .16 + .68 * Math.sqrt(Math.max(0,value) / ceiling);
+            return <path key={state.uf} d={state.path} className={'closing-map-state' + (selected === state.uf ? ' selected' : '')}
+              style={{ fill: value === null ? '#e8edf5' : 'rgba(20,43,103,' + shade + ')' }}
+              role="button" tabIndex={0}
+              onClick={() => setSelected(state.uf === selected ? null : state.uf)}
+              onKeyDown={e => {if(e.key === 'Enter' || e.key === ' ') {e.preventDefault();setSelected(state.uf);}}}
+              aria-label={state.name + ': ' + (value === null ? 'sem dados' : lens === 'tkm' ? money(value) : num(value))}
+            ><title>{state.name}: {value === null ? 'sem dados' : lens === 'tkm' ? money(value) : num(value)}</title></path>;
+          })}
+        </svg>
+        <div className="closing-map-ranking">
+          {current ? <div className="closing-selected-uf"><span>{BRAZIL_STATES.find(s => s.uf === selected)?.name} · {selected}</span>
+            <strong>{readMetric(current) == null ? '—' : lens === 'tkm' ? money(readMetric(current)) : num(readMetric(current)!)}</strong>
+          </div> : null}
+          <div className="closing-rank-head"><span>UF</span><span>{lens === 'tkm' ? 'Ticket médio' : 'Processos'}</span></div>
+          {ranked.map(item => <div className="closing-rank-row" key={item.uf}><span>{item.uf}</span>
+            <div className="closing-rank-bar"><i style={{width:(valueOrZero(readMetric(item))/ceiling*100)+'%'}}/></div>
+            <strong>{lens === 'tkm' ? money(readMetric(item)) : num(readMetric(item)!)}</strong>
+          </div>)}
+          {!ranked.length && <p className="closing-nodata">Nenhum resultado</p>}
+        </div>
+      </div>}
+    <div className="closing-card-foot">{lens === 'tkm' ? 'TKM considera apenas pagamentos liquidados.' : 'Selecione uma UF para detalhar.'}</div>
+  </section>;
+}
+
+function Composition({ dados, demo }: { dados: Dados | null; demo: boolean }) {
+  const [mode, setMode] = useState<Modo>('encontrados');
+  const available = mode === 'encontrados' || demo || dados?.meta_configurada === true;
+  const ratio = mode === 'meta' && demo ? 1.15 : 1;
+  const matrix = dados?.matriz || [];
+  const rawClasses = dados?.distribuicao_tipos || [];
+  const types = CLASSES.map(row => ({
+    ...row, count: available ? Math.round(valueOrZero(rawClasses.find(item => item.tipo === row.tipo)?.quantidade) * ratio) : 0,
+  }));
+  const ages = AGES.map(faixa => ({faixa, count: available ? Math.round(matrix.filter(item => item.faixa === faixa).reduce((s,c) => s + c.quantidade,0) * ratio) : 0}));
+  const total = types.reduce((s,row) => s + row.count,0);
+  const maxType = Math.max(1,...types.map(row => row.count));
+  const maxAge = Math.max(1,...ages.map(row => row.count));
+  const maxMatrix = Math.max(1,...matrix.map(row => row.quantidade));
+  return <section className="closing-surface closing-composition">
+    <div className="closing-card-head">
+      <div><h2>Composição dos encerramentos</h2><p>Tipo × aging</p></div>
+      <Choice value={mode} onChange={v => setMode(v as Modo)} options={[{value:'encontrados',label:'Encontrados'},{value:'meta',label:'Meta'}]}/>
+    </div>
+    {!available ? <div className="closing-unset">Meta não configurada</div> : <>
+      <div className="closing-composition-top">
+        <div><h3>Tipos</h3>
+          {types.map(item => <div className="closing-smallbar" key={item.tipo}>
+            <div className="closing-smallbar-label"><span>{item.label}</span><strong>{num(item.count)}</strong></div>
+            <div className="closing-rail"><i style={{width:item.count/maxType*100+'%'}}/></div>
+          </div>)}
+        </div>
+        <div><h3>Aging</h3>
+          {ages.map(item => <div className="closing-smallbar" key={item.faixa}>
+            <div className="closing-smallbar-label"><span>{item.faixa}</span><strong>{num(item.count)}</strong></div>
+            <div className="closing-rail"><i style={{width:item.count/maxAge*100+'%'}}/></div>
+          </div>)}
+        </div>
+      </div>
+      <div className="closing-matrix-head"><h3>Cruzamento tipo × aging</h3><span>{num(total)} processos</span></div>
+      <div className="closing-matrix-scroll"><table className="closing-matrix">
+        <thead><tr><th>Tipo</th><th>0–3m</th><th>3–10m</th><th>10m+</th><th>Sem tag</th><th>Total</th></tr></thead>
+        <tbody>{types.map(row => <tr key={row.tipo}><th>{row.label}</th>
+          {AGES.map(faixa => {
+            const raw = valueOrZero(matrix.find(cell => cell.tipo === row.tipo && cell.faixa === faixa)?.quantidade);
+            const value = Math.round(raw * ratio);
+            const opacity = .035 + Math.sqrt(raw/maxMatrix) * .28;
+            return <td key={faixa} style={{background:'rgba(20,43,103,' + opacity + ')'}} title={row.label + ' / ' + faixa}>{num(value)}</td>;
+          })}
+          <td className="closing-matrix-total">{num(row.count)}</td></tr>)}</tbody>
+      </table></div>
+    </>}
+  </section>;
+}
+
+function ComarcasPanel({ dados }: { dados: Dados | null }) {
+  const comarcas = dados?.comarcas || [];
+  const max = Math.max(1,...comarcas.map(c => c.derrotas));
+  return <section className="closing-surface closing-bottom">
+    <div className="closing-card-head"><div><h2>Comarcas com mais derrotas</h2><p>Top 6 no período</p></div></div>
+    {comarcas.length ? <div className="closing-comarca-list">
+      {comarcas.slice(0,6).map((c,index) => <div className="closing-comarca-row" key={c.uf+c.comarca}>
+        <span className="closing-index">{String(index+1).padStart(2,'0')}</span>
+        <div><strong>{c.comarca}</strong><small>{c.uf}</small></div>
+        <div className="closing-rail"><i style={{width:c.derrotas/max*100+'%'}}/></div>
+        <b>{num(c.derrotas)}</b>
+      </div>)}
+    </div> : <p className="closing-nodata">Nenhuma comarca com derrota no recorte.</p>}
+  </section>;
+}
+
+function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
+  const total = analysts.reduce((sum,a) => sum+a.analisados,0);
+  const max = Math.max(1,...analysts.map(a=>a.analisados));
+  return <section className="closing-surface closing-bottom">
+    <div className="closing-card-head"><div><h2>Produtividade dos analistas</h2><p>Análises do dia</p></div></div>
+    {analysts.length ? <div className="closing-staff">
+      {analysts.map(a => <div className="closing-staff-row" key={a.id}>
+        <span className="closing-avatar">{a.nome.slice(0,2).toUpperCase()}</span>
+        <div className="closing-staff-name"><strong>{a.nome}</strong><small>{total ? percent(a.analisados/total*100) + ' do total' : 'Sem análises'}</small></div>
+        <div className="closing-rail"><i style={{width:a.analisados/max*100+'%'}}/></div>
+        <b>{num(a.analisados)}</b>
+      </div>)}
+    </div> : <p className="closing-nodata">Sem análises registradas hoje.</p>}
+  </section>;
+}
+
 export function EncerramentosPage() {
-  const [carteira, setCarteira] = useState('Agibank Regular');
-  const [tipo, setTipo] = useState<Classificacao>('TODOS');
-  const [periodo, setPeriodo] = useState('all');
-  const [analista, setAnalista] = useState('todos');
-  const [demonstracao, setDemonstracao] = useState(true);
-  const [data, setData] = useState<Dados | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [carteira,setCarteira] = useState('Agibank Regular');
+  const [tipo,setTipo] = useState<Tipo>('TODOS');
+  const [periodo,setPeriodo] = useState('all');
+  const [analista,setAnalista] = useState('todos');
+  const [demo,setDemo] = useState(true);
+  const [dados,setDados] = useState<Dados | null>(null);
+  const [pending,setPending] = useState(false);
+  const [error,setError] = useState('');
   const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getDashboard(carteira, tipo, periodo, analista);
-      setData(result);
-      setError('');
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Não foi possível consultar Encerramentos.');
-    } finally { setLoading(false); }
-  }, [carteira, tipo, periodo, analista]);
-  useEffect(() => { void refresh(); }, [refresh]);
-  useEffect(() => {
-    const timer = window.setInterval(() => { if (!document.hidden) void refresh(); }, 60000);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
-  const demoData = useMemo(() => createDemoData(carteira, tipo, periodo), [carteira, tipo, periodo]);
-  const displayedData = demonstracao ? demoData : data;
-  const metrics = displayedData?.indicadores;
-  const isAgreement = tipo === 'ACORDO';
-  const agreementMatches = displayedData?.distribuicao_tipos.find(item => item.tipo === 'ACORDO')?.quantidade;
-  const mainMetric = isAgreement
-    ? agreementMatches === undefined ? '—' : n(agreementMatches)
-    : metrics ? n(metrics.encontrados) : '—';
-  const analysts = demonstracao
-    ? demoData.analistas.filter(item => analista === 'todos' || item.id === 'demo-' + analista)
-    : (data?.analistas || []);
-  const analysedCount = demonstracao
-    ? analysts.reduce((total, item) => total + item.analisados, 0)
-    : metrics?.analisados;
-  const analyzedDetail = demonstracao
-    ? 'Volume fictício para pré-visualização'
-    : analista !== 'todos'
-      ? 'Conclusões do analista selecionado hoje'
-      : 'Análises humanas registradas';
-  return <div className="protocolos-page-react closing-page">
-    <header className="protocolos-header closing-header">
-      <div><span className="protocolos-eyebrow">GESTÃO PROCESSUAL · ENCERRAMENTOS</span><h1>Painel de encerramentos</h1></div>
-      <div className="closing-header-actions">
-        <label className="closing-preview-toggle">
-          <input type="checkbox" checked={demonstracao} onChange={event => setDemonstracao(event.target.checked)}/>
-          <span>Exibir demonstração</span>
-        </label>
-        <button type="button" className="protocolos-button secondary" onClick={() => void refresh()} disabled={loading}>
-          <RefreshCcw size={14} className={loading ? 'spin' : ''}/>Atualizar
-        </button>
-      </div>
-    </header>
-    <section className="closing-filters" aria-label="Filtros de Encerramentos">
-      <label>Carteira<select value={carteira} onChange={event => setCarteira(event.target.value)}>
-        <option value="Agibank Regular">Agibank &lt;&gt; MBA (Regular)</option>
-        <option value="Agibank Enter">Agibank &lt;&gt; Enter</option>
-      </select></label>
-      <label>Tipo de encerramento<select value={tipo} onChange={event => setTipo(event.target.value as Classificacao)}>
-        {TIPOS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select></label>
-      <label>Período da automação<select value={periodo} onChange={event => setPeriodo(event.target.value)}>
-        <option value="all">Todo o histórico</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option>
-      </select></label>
-      <label>Analista<select value={analista} onChange={event => setAnalista(event.target.value)}>
-        {ANALYST_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-      </select></label>
-      <small><CalendarDays size={13}/> O filtro por analista se aplica à produtividade humana, não aos indícios automáticos.</small>
-    </section>
-    {demonstracao ? <div className="closing-demo-notice" role="status">
-      <strong>Demonstração — dados 100% fictícios.</strong> Todos os indicadores, o mapa, o ticket médio, o aging e a produtividade são exemplos para avaliação visual. Desative esta opção para consultar os resultados reais.
-    </div> : null}
-    {!demonstracao && error ? <div className="protocolos-alert error" role="alert"><AlertTriangle size={17}/>{error}{data ? ' · Exibindo última consulta válida.' : ''}</div> : null}
-    <div className="closing-metrics" aria-busy={!demonstracao && loading}>
-      <Metric icon={SearchCheck} label={isAgreement ? 'Indícios de acordo' : 'Encontrados pela automação'} value={mainMetric} detail={isAgreement ? 'Acordos não contabilizados como encerramentos aptos' : metrics ? n(metrics.consultados) + ' processos consultados' : 'Aguardando API'}/>
-      <Metric icon={CheckCircle2} label="Processos analisados" value={analysedCount === undefined ? '—' : n(analysedCount)} detail={analyzedDetail}/>
-      <Metric icon={Wallet} label="Ticket médio de perdas" value={brl(metrics?.ticket_medio)} detail={metrics ? n(metrics.ticket_amostra) + (demonstracao ? ' casos fictícios com pagamento' : ' casos com pagamento liquidado') : 'Sem apuração'}/>
-      <Metric icon={Activity} label="Aging médio" value={demonstracao ? '276 dias' : metrics?.aging_medio == null ? '—' : n(Math.round(metrics.aging_medio)) + ' dias'} detail={demonstracao ? 'Média fictícia da demonstração' : 'Oportunidades aptas com entrada conhecida'}/>
-    </div>
-    <div className="closing-content-grid">
-      <BrazilMap estados={displayedData?.estados || []} demo={demonstracao}/>
-      <div className="closing-right-column">
-        <AgingPanel rows={displayedData?.aging || []} demo={demonstracao}/>
-        <DistributionPanel rows={displayedData?.distribuicao_tipos || []} demo={demonstracao}/>
+    setPending(true);
+    try { const result = await loadDashboard(carteira,tipo,periodo,analista); setDados(result); setError(''); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.'); }
+    finally { setPending(false); }
+  },[carteira,tipo,periodo,analista]);
+  useEffect(() => {void refresh();},[refresh]);
+  useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
+  const fake = useMemo(() => makeDemo(carteira,tipo,periodo),[carteira,tipo,periodo]);
+  const shown = demo ? fake : dados;
+  const analysts = demo ? STAFF.filter(a => analista==='todos' || a.id==='demo-'+analista) : (dados?.analistas || []);
+  const analysed = demo ? analysts.reduce((v,a)=>v+a.analisados,0) : shown?.indicadores.analisados;
+
+  return <div className="closing-page-v2">
+    <div className="closing-heading">
+      <div><h1>Encerramentos</h1><span>{demo ? 'Visualização de demonstração' : 'Visão da carteira'}</span></div>
+      <div className="closing-heading-actions">
+        <label className="closing-demo-switch"><input type="checkbox" checked={demo} onChange={e=>setDemo(e.target.checked)}/> Demonstração</label>
+        <button type="button" className="closing-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
       </div>
     </div>
-    <section className="closing-analyst-section" aria-label="Produtividade por analista">
-      <AnalystsPanel analysts={analysts} demo={demonstracao} selected={analista}/>
-    </section>
-    <div className="closing-footer-row">
-      <div><strong>Composição das oportunidades</strong><span>{(displayedData?.classificacoes || []).length ? displayedData!.classificacoes.map(c => classLabel(c.tipo) + ': ' + n(c.quantidade)).join(' · ') : 'Nenhuma oportunidade com os filtros selecionados.'}</span></div>
-      <small>TKM = média de pagamentos liquidados por processo de derrota. Não inclui provisões nem pagamentos pendentes. Acordos e indeterminados estão fora das oportunidades aptas.</small>
+    <div className="closing-filter-row">
+      <label>Carteira<select value={carteira} onChange={e=>setCarteira(e.target.value)}><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
+      <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
+      <label>Período<select value={periodo} onChange={e=>setPeriodo(e.target.value)}><option value="all">Todo o histórico</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option></select></label>
+      <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
+    {!demo && error ? <p className="closing-error" role="alert">{error}</p> : null}
+    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed}/>
+    <div className="closing-main-grid">
+      <MapPanel dados={shown} demo={demo}/>
+      <Composition dados={shown} demo={demo}/>
+    </div>
+    <div className="closing-lower-grid">
+      <ComarcasPanel dados={shown}/>
+      <AnalystsPanel analysts={analysts}/>
+    </div>
+    <p className="closing-disclaimer">{demo ? 'Dados demonstrativos — sem impacto na base.' : 'Acordos não integram oportunidades aptas ao encerramento.'}</p>
   </div>;
 }
