@@ -49,7 +49,7 @@
       'tarefa-analise': ['tarefas', 'tasks'],
       'comprovante-execucao': ['tarefas', 'tasks'],
       'acordo-execucao': ['tarefas', 'tasks'],
-      acordos: ['operacao', 'acordos', 'agreements', 'pagamentos', 'encerramentos'],
+      acordos: ['operacao', 'acordos', 'agreements', 'pagamentos', 'liminar', 'tutelas', 'encerramentos'],
       pagamentos: ['operacao', 'pagamentos'],
       automacoes: ['automacoes', 'automations'],
       protocolo: ['controladoria', 'protocolo', 'protocolos'],
@@ -64,7 +64,7 @@
   };
   const canAccess = (pageId, user = window.MBA_CURRENT_USER) => {
     const permission = PAGE_PERMISSIONS[pageId];
-    if (pageId === 'acordos') return Boolean((user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['encerramentos.view'] === true) && moduleAvailable(pageId, user));
+    if (pageId === 'acordos') return Boolean((user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['tutelas.view'] === true || user?.permissions?.['encerramentos.view'] === true) && moduleAvailable(pageId, user));
     return Boolean(permission && user?.permissions?.[permission] === true && moduleAvailable(pageId, user));
   };
   window.MBA_PORTFOLIO_POLICY = Object.freeze({ canAccess, moduleAvailable, getPortfolio, isEnter, PAGE_PERMISSIONS });
