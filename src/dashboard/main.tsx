@@ -338,6 +338,7 @@ function configureProtocolosLifecycle() {
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncProtocolosLifecycle);
   window.addEventListener('mba:session-expired', unmountProtocolosPage);
+  window.addEventListener('mba:logged-out', unmountProtocolosPage);
   document.addEventListener('visibilitychange', syncProtocolosLifecycle);
   syncProtocolosLifecycle();
 }
