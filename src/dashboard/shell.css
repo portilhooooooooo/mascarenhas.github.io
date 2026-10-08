@@ -589,3 +589,31 @@ body {
   .topbar .portfolio-field-operation select { width: 75px; }
   .topbar .portfolio-switcher > svg { display: none; }
 }
+
+/* Shared React selectors: portfolio controls and task filters. */
+.nav-badge[hidden] { display: none !important; }
+.mba-portfolio-react { display: flex; align-items: center; gap: 11px; min-width: 0; width: 100%; }
+.mba-portfolio-react > svg { flex-shrink: 0; color: var(--mba-blue); }
+.mba-portfolio-divider { width: 1px; height: 23px; flex: 0 0 1px; background: var(--mba-border); }
+.mba-react-select { position: relative; display: grid; align-content: center; gap: 2px; min-width: 0; color: var(--mba-text); font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.mba-react-select-label { font-size: 9.5px; line-height: 1.1; color: var(--mba-text-2); font-weight: 600; }
+.mba-react-select-trigger { width: 100%; min-width: 0; height: 22px; display: flex; align-items: center; justify-content: space-between; gap: 5px; padding: 0 2px 0 0; border: 0; border-radius: 4px; background: transparent; color: var(--mba-text); text-align: left; font-size: 12px; font-weight: 600; cursor: pointer; }
+.mba-react-select-trigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mba-react-select-trigger svg { flex: 0 0 auto; color: var(--mba-text-2); }
+.mba-react-select-trigger:disabled { opacity: 1; cursor: default; }
+.mba-react-select-trigger:disabled svg { display: none; }
+.mba-react-select-trigger:focus-visible { outline: 2px solid var(--mba-blue); outline-offset: 2px; }
+.mba-react-select-options { position: absolute; z-index: 130; top: calc(100% + 7px); left: -6px; min-width: max(100%, 155px); max-width: 250px; max-height: 260px; overflow-y: auto; display: grid; gap: 2px; padding: 5px; border: 1px solid var(--mba-border-strong); border-radius: 8px; background: #fff; box-shadow: 0 12px 32px rgba(12,28,61,.14); }
+.mba-react-select-options > button { width: 100%; min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 9px; border: 0; border-radius: 5px; background: transparent; color: var(--mba-text); text-align: left; font-size: 12px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.mba-react-select-options > button:hover, .mba-react-select-options > button:focus-visible { background: var(--mba-subtle); outline: none; }
+.mba-react-select-options > button.selected { background: var(--mba-blue-soft); color: var(--mba-blue); font-weight: 600; }
+.topbar #portfolio-switcher { width: auto; max-width: min(440px,100%); height: 42px; overflow: visible; }
+.topbar .mba-portfolio-react .mba-react-select:first-of-type { min-width: 120px; max-width: 175px; }
+.topbar .mba-portfolio-react .mba-react-select:last-of-type { min-width: 105px; max-width: 145px; }
+@media (max-width: 780px) {
+  .topbar #portfolio-switcher { padding: 4px 7px; }
+  .topbar .mba-portfolio-react { gap: 6px; }
+  .topbar .mba-portfolio-react > svg { display: none; }
+  .topbar .mba-portfolio-react .mba-react-select:first-of-type { min-width: 88px; max-width: 105px; }
+  .topbar .mba-portfolio-react .mba-react-select:last-of-type { min-width: 78px; max-width: 100px; }
+}
