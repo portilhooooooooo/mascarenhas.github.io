@@ -223,6 +223,16 @@ function AssignTaskModal({ task, onClose, onAssigned }: { task: Task; onClose: (
   return <div className="task-modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}><form className="task-react-modal" role="dialog" aria-modal="true" aria-label="Atribuir tarefa" onSubmit={submit}><header><div><h2>Atribuir tarefa</h2><p>{taskTypeLabel(task.type)}</p></div><button type="button" className="task-modal-close" disabled={busy} onClick={onClose}>×</button></header><label className="task-select-field"><span>Prioridade da atribuição</span><select value={priority} disabled={busy} onChange={event => setPriority(event.target.value)}><option value="high">Alta — Urgente</option><option value="medium">Média</option><option value="low">Baixa</option></select><small>Urgente é definido explicitamente aqui; prazo de hoje não eleva a tarefa automaticamente.</small></label><fieldset className="task-participants"><legend>Usuários ativos</legend><p>Os processos atribuídos pelo backend ficam visíveis somente ao respectivo usuário.</p>{users.length ? users.map(userOption => <label key={userOption.id}><input type="checkbox" checked={selected.includes(userOption.id)} disabled={busy} onChange={event => setSelected(current => event.target.checked ? [...current, userOption.id] : current.filter(id => id !== userOption.id))} /><span>{userOption.name || userOption.email || userOption.id}</span></label>) : <small>Nenhum usuário ativo disponível.</small>}</fieldset>{error ? <p className="task-renderer-error" role="alert">{error}</p> : null}<footer><button className="secondary-button" type="button" disabled={busy} onClick={onClose}>Cancelar</button><button className="primary-button" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Salvar atribuição'}</button></footer></form></div>;
 }
 
+function currentTaskTab(): 'management' | 'execution' | 'results' {
+  const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
+  if (path === 'tarefas/atribuicoes') return 'management';
+  if (path === 'tarefas/resultados') return 'results';
+  return 'execution';
+}
+function navigateTaskTab(route: string) {
+  (window as Window & { MBA_NAVIGATE?: (route: string) => boolean }).MBA_NAVIGATE?.(route);
+}
+
 export function TasksApp() {
   const pageVisible = useTasksPageVisible();
   const [user, setUser] = useState<MbaUser | null>(() => mbaWindow.MBA_CURRENT_USER || null);
@@ -233,7 +243,7 @@ export function TasksApp() {
   const refreshGeneration = useRef(0);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [tab, setTab] = useState<'management' | 'execution' | 'results'>('execution');
+  const [tab, setTab] = useState<'management' | 'execution' | 'results'>(currentTaskTab);
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [search, setSearch] = useState('');
@@ -243,6 +253,12 @@ export function TasksApp() {
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [assignTask, setAssignTask] = useState<Task | null>(null);
+
+  useEffect(() => {
+    const sync = () => setTab(currentTaskTab());
+    window.addEventListener('mba:route-changed', sync);
+    return () => window.removeEventListener('mba:route-changed', sync);
+  }, []);
 
   const stationRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -589,9 +605,9 @@ export function TasksApp() {
 
   return <div ref={stationRef} className={`tasks-react-root ${tab === 'execution' ? 'task-station' : ''}`}>
     <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas">
-      <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setTab('execution'); setSelectedType('all'); }}>Tarefas</button>
-      <button type="button" disabled={!manager} className={tab === 'management' ? 'active' : ''} onClick={() => setTab('management')}>Atribuições</button>
-      <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => setTab('results')}>Resultados</button>
+      <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setSelectedType('all'); navigateTaskTab('tarefas'); }}>Tarefas</button>
+      <button type="button" disabled={!manager} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
+      <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Resultados</button>
     </nav>
     {tab === 'results' ? <section className="tasks-results" aria-label="Resultados das tarefas"><h1>Resultados</h1><p>O painel do Metabase será disponibilizado aqui.</p></section> : null}
 

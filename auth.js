@@ -151,10 +151,11 @@
       ['pagamentos', 'pagamentos.view'],
     ].filter(([pageId]) => canAccess(pageId));
 
-    const active = document.querySelector('.page.active');
+    // Deep links must be restored before choosing the initial module.
+    const routeRestored = window.restorePageRoute?.() === true;
     if (!pages.length) {
       window.showPage?.('sem-acesso');
-    } else if (!active || active.id === 'sem-acesso' || !canAccess(active.id)) {
+    } else if (!routeRestored) {
       window.showPage?.(pages[0][0]);
     }
     window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));

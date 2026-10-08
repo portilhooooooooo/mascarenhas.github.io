@@ -15,35 +15,113 @@ window.addEventListener('mba:session-expired', () => setTaskNavCount(null));
 window.addEventListener('mba:logged-out', () => setTaskNavCount(null));
 window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 
-const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', usuarios: 'usuarios', 'acordo-execucao': 'tarefas/acordos', 'comprovante-execucao': 'tarefas/comprovante-pagamento' };
+const pageRoutes = Object.freeze({
+  dashboard: 'analytics',
+  acordos: 'operacao/pagamentos',
+  protocolo: 'controladoria/protocolos',
+  automacoes: 'automacoes',
+  tarefas: 'tarefas',
+  'tarefa-analise': 'tarefas/analise',
+  'comprovante-execucao': 'tarefas/comprovante-pagamento',
+  'acordo-execucao': 'tarefas/acordos',
+  pagamentos: 'pagamentos',
+  tutelas: 'automacoes/liminares',
+  encerramentos: 'automacoes/encerramentos',
+  usuarios: 'usuarios',
+  configuracoes: 'configuracoes',
+  'sem-acesso': 'sem-acesso',
+});
+const nestedPageRoutes = Object.freeze({
+  'analytics/encerramentos': 'dashboard',
+  'controladoria/defesas': 'protocolo',
+  'controladoria/indicadores': 'protocolo',
+  'tarefas/atribuicoes': 'tarefas',
+  'tarefas/resultados': 'tarefas',
+});
+const routeAliases = Object.freeze({
+  dashboard: 'analytics',
+  'gestao-processual': 'analytics',
+  acordos: 'operacao/pagamentos',
+  operacao: 'operacao/pagamentos',
+  protocolo: 'controladoria/protocolos',
+  controladoria: 'controladoria/protocolos',
+  'automacoes/protocolos': 'controladoria/protocolos',
+  tutelas: 'automacoes/liminares',
+  encerramentos: 'automacoes/encerramentos',
+});
 
+function routeFromLocation() {
+  const source = location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname;
+  return source.replace(/^\/+|\/+$/g, '');
+}
+function routeUrl(route) {
+  return window.MBA_LOCAL_PREVIEW ? '#/' + route : '/' + route;
+}
+function resolvePageRoute(route) {
+  const canonical = routeAliases[route] || route;
+  if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
+    return { pageId: 'tarefas', canonical: 'tarefas' };
+  }
+  const pageId = Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical) || nestedPageRoutes[canonical];
+  return pageId ? { pageId, canonical } : null;
+}
+function canAccessRoute(pageId, route) {
+  if (pageId === 'sem-acesso') return true;
+  if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
+  if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
+  if (route === 'tarefas/atribuicoes') {
+    const user = window.MBA_CURRENT_USER;
+    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
+  }
+  return true;
+}
+function publishRoute(route, pageId, replace = false) {
+  const target = routeUrl(route);
+  const current = window.MBA_LOCAL_PREVIEW ? location.hash : location.pathname;
+  if (current !== target) history[replace ? 'replaceState' : 'pushState']({ pageId }, '', target);
+  window.dispatchEvent(new CustomEvent('mba:route-changed', { detail: { route, pageId } }));
+}
 function authorizedPageId(pageId) {
-  const target = document.getElementById(pageId);
   if (pageId === 'sem-acesso') return pageId;
-  if (!target || !window.MBA_PORTFOLIO_POLICY?.canAccess(pageId)) return 'sem-acesso';
+  if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
   return pageId;
 }
-
 function showPage(pageId, updateRoute = true) {
   pageId = authorizedPageId(pageId);
-  pages.forEach((page) => page.classList.toggle('active', page.id === pageId));
-  navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageId));
-  if (updateRoute && pageRoutes[pageId]) {
-    const target = window.MBA_LOCAL_PREVIEW ? `#/${pageRoutes[pageId]}` : `/${pageRoutes[pageId]}`;
-    if (`${location.pathname}${location.hash}` !== target) history.pushState({ pageId }, '', target);
-  }
+  pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+  navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
+  if (updateRoute) publishRoute(pageRoutes[pageId] || 'sem-acesso', pageId);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.showPage = showPage;
-
+function navigateRoute(route) {
+  const match = resolvePageRoute(String(route || '').replace(/^\/+|\/+$/g, ''));
+  if (!match || !window.MBA_CURRENT_USER) return false;
+  if (!canAccessRoute(match.pageId, match.canonical)) {
+    showPage('sem-acesso');
+    return false;
+  }
+  showPage(match.pageId, false);
+  publishRoute(match.canonical, match.pageId);
+  return true;
+}
+window.MBA_NAVIGATE = navigateRoute;
 function restorePageRoute() {
-  const route = (location.hash.replace(/^#\//, '') || location.pathname.replace(/^\//, '')).replace(/\/$/, '');
-  const pageId = Object.entries(pageRoutes).find(([, value]) => value === route)?.[0];
-  const targetPage = pageId ? document.getElementById(pageId) : null;
-  if (pageId && targetPage && !targetPage.hidden) showPage(pageId, false);
+  if (!window.MBA_CURRENT_USER) return false;
+  const match = resolvePageRoute(routeFromLocation());
+  if (!match) return false;
+  if (!canAccessRoute(match.pageId, match.canonical)) {
+    showPage('sem-acesso', false);
+    publishRoute('sem-acesso', 'sem-acesso', true);
+    return true;
+  }
+  showPage(match.pageId, false);
+  publishRoute(match.canonical, match.pageId, true);
+  return true;
 }
 window.addEventListener('popstate', restorePageRoute);
 window.addEventListener('hashchange', restorePageRoute);
+window.addEventListener('mba:portfolio-changed', restorePageRoute);
 window.restorePageRoute = restorePageRoute;
 
 const appShell = document.querySelector('.app-shell');
