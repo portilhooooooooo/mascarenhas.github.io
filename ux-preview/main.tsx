@@ -5,10 +5,9 @@ import { ControladoriaPage } from '../src/dashboard/ControladoriaPage';
 import '../src/dashboard/protocolos.css';
 import '../src/dashboard/controladoria.css';
 import '../src/dashboard/defesas.css';
+import '@fontsource/inter/latin-300.css';
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
-import '@fontsource/inter/latin-600.css';
-import '@fontsource/inter/latin-700.css';
 import '../src/dashboard/shell.css';
 import './preview.css';
 

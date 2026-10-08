@@ -70,7 +70,7 @@ assert.match(login, /favicon\.svg\?v=20260917-exact-symbol/, 'login must use the
 assert.doesNotMatch(login, /id="microsoft-login"/, 'React buttons must not expose a legacy DOM control point');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');
 
-assert.match(loginCss, /--login-accent:#142b67/, 'login must use the corporate navy accent');
+assert.match(loginCss, /--login-accent:#18181b/, 'login must use the graphite accent of the minimal design system');
 assert.match(loginCss, /\.react-login-header/, 'login must include the shared top-brand header language');
 assert.match(loginCss, /\.react-login-main/, 'login must use the centered corporate workspace layout');
 assert.match(loginCss, /\.react-login-primary/, 'login must style the primary access action');
