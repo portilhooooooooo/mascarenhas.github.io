@@ -89,28 +89,21 @@
 }
 
 
-/* Distribuição das quatro classificações e produtividade em seção independente. */
+/* BI de Encerramentos: distribuição neutra, sem paleta por classificação. */
 .closing-right-column{grid-template-rows:auto minmax(0,1fr)}
 .closing-distribution-panel{display:flex;flex-direction:column;min-height:0}
-.closing-distribution-panel .closing-panel-heading{align-items:start;gap:10px}
+.closing-distribution-panel .closing-panel-heading{align-items:start;gap:10px;margin-bottom:20px}
 .closing-distribution-total{display:grid;gap:3px;justify-items:end;font-size:20px;font-weight:700;color:var(--mba-text);white-space:nowrap;font-variant-numeric:tabular-nums}
 .closing-distribution-total small{font-size:9px;font-weight:500;color:var(--mba-muted)}
-.closing-distribution-stacked{display:flex;gap:2px;height:12px;width:100%;border-radius:5px;background:#e9eef5;overflow:hidden;margin:1px 0 18px}
-.closing-distribution-segment{min-width:0;height:100%;display:block}
-.closing-distribution-segment.voluntary,.closing-distribution-track>span.voluntary,.closing-distribution-marker.voluntary{background:#9a6eb8}
-.closing-distribution-segment.defeat,.closing-distribution-track>span.defeat,.closing-distribution-marker.defeat{background:#e37377}
-.closing-distribution-segment.victory,.closing-distribution-track>span.victory,.closing-distribution-marker.victory{background:#4baf89}
-.closing-distribution-segment.agreement,.closing-distribution-track>span.agreement,.closing-distribution-marker.agreement{background:#597cb5}
-.closing-distribution-list{display:grid;gap:14px}
-.closing-distribution-row{display:grid;gap:7px}
+.closing-distribution-list{display:grid;gap:20px}
+.closing-distribution-row{display:grid;gap:9px}
 .closing-distribution-row-top{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;color:var(--mba-text-2)}
-.closing-distribution-row-top>span{display:flex;align-items:center;gap:8px;min-width:0}
-.closing-distribution-marker{display:block;width:9px;height:9px;border-radius:3px;flex:0 0 9px}
+.closing-distribution-row-top>span{display:flex;align-items:center;gap:8px;min-width:0;font-weight:550;color:var(--mba-text)}
 .closing-distribution-row-top strong{font-weight:700;font-variant-numeric:tabular-nums;color:var(--mba-text);white-space:nowrap}
 .closing-distribution-row-top strong small{margin-left:7px;font-size:10px;font-weight:500;color:var(--mba-muted)}
-.closing-distribution-track{height:6px;border-radius:20px;background:#edf1f6;overflow:hidden}
-.closing-distribution-track>span{display:block;height:100%;border-radius:inherit}
-.closing-distribution-note{margin:16px 0 0;padding-top:12px;border-top:1px solid var(--mba-border);font-size:10px;line-height:1.5;color:var(--mba-muted)}
+.closing-distribution-track{height:7px;border-radius:20px;background:#ecf0f6;overflow:hidden}
+.closing-distribution-track>span{display:block;height:100%;background:var(--mba-blue,#142b67);border-radius:inherit;transition:width .2s ease}
+.closing-distribution-note{margin:18px 0 0;padding-top:12px;border-top:1px solid var(--mba-border);font-size:10px;line-height:1.5;color:var(--mba-muted)}
 .closing-analyst-section{margin-top:14px}
 .closing-analyst-section .closing-analysts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 .closing-analyst-section .closing-analyst{padding:14px 12px;border:1px solid var(--mba-border);border-radius:8px;background:var(--mba-subtle)}
