@@ -19,3 +19,14 @@
 .operacao-module-subnav button[aria-disabled='true'] { color: var(--mba-muted); cursor: default; }
 .operacao-module-subnav button[aria-disabled='true']:hover { color: var(--mba-muted); }
 .operacao-download-button { min-height: 34px; }
+
+/* Encerramentos: preserve the Pagamentos workspace system without horizontal status scroll. */
+.operacao-encerramentos-status { flex-wrap: wrap; overflow: visible; padding-bottom: 12px; }
+.operacao-encerramentos-status button { min-width: 106px; justify-content: space-between; }
+.operacao-encerramentos-table { min-width: 1080px; }
+.operacao-encerramentos-table td small { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 10px; }
+.operacao-encerramentos-table .protocolos-cnj { white-space: nowrap; }
+.operacao-encerramentos-table input[type='checkbox'] { accent-color: var(--mba-blue); cursor: pointer; width: 15px; height: 15px; }
+.operacao-encerramentos-select { width: 100%; min-width: 160px; max-width: 315px; padding: 7px 9px; border: 1px solid var(--mba-border); border-radius: 6px; background: #fff; color: var(--mba-text); font-size: 11px; }
+.operacao-encerramentos-select:focus-visible { outline: 2px solid var(--mba-blue); outline-offset: 2px; }
+.operacao-encerramentos-page .protocolos-workspace-head { flex-wrap: wrap; }
