@@ -84,3 +84,34 @@
 @media(max-width:1350px){.closing-main-grid{grid-template-columns:1fr}.closing-map-layout-v2{grid-template-columns:minmax(0,1fr) minmax(160px,.52fr)}.closing-map-svg{max-height:360px}}
 @media(max-width:900px){.closing-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-lower-grid{grid-template-columns:1fr}.closing-filter-row{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-composition-top{gap:12px}}
 @media(max-width:560px){.closing-heading{align-items:flex-start;flex-direction:column}.closing-filter-row{grid-template-columns:1fr}.closing-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.closing-kpi{padding:13px}.closing-kpi strong{font-size:19px}.closing-surface{padding:12px}.closing-card-head{flex-wrap:wrap}.closing-map-layout-v2{grid-template-columns:1fr}.closing-map-svg{max-width:385px;margin:auto}.closing-composition-top{grid-template-columns:1fr}.closing-composition-top>div+div{border-left:none;padding-left:0}.closing-choice button{padding:6px 7px;font-size:9px}.closing-matrix{min-width:440px}}
+
+/* Ranking operacional enxuto — branch local. */
+.closing-filter-row{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding:9px 11px;margin-bottom:10px}
+.closing-filter-row select{height:31px}
+.closing-kpis{gap:9px;margin-bottom:10px}
+.closing-kpi{padding:12px 14px;gap:5px}
+.closing-kpi strong{font-size:21px}
+.closing-composition-table{padding:2px 0 10px}
+.closing-composition-table+.closing-composition-table{border-top:1px solid var(--closing-line);padding-top:15px}
+.closing-breakdown-head,.closing-breakdown-row{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(58px,.57fr));align-items:center;column-gap:9px}
+.closing-breakdown-head{margin-bottom:8px}
+.closing-breakdown-head h3{margin:0!important;font-size:11px}
+.closing-breakdown-head>span{font-size:9px;line-height:1.2;color:var(--closing-muted);text-align:right}
+.closing-breakdown-row{min-height:45px;gap:8px 9px;padding:5px 0;border-bottom:1px solid #f1f4f8}
+.closing-breakdown-row:last-child{border-bottom:0}
+.closing-breakdown-name{display:grid;gap:6px;min-width:0}
+.closing-breakdown-name>span{font-size:10px;color:var(--closing-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.closing-breakdown-name .closing-rail{height:5px}
+.closing-breakdown-row>strong,.closing-breakdown-row>span{text-align:right;font-size:11px;font-variant-numeric:tabular-nums}
+.closing-breakdown-row>span{color:var(--closing-muted)}
+.closing-breakdown-row>strong{color:var(--closing-ink)}
+.closing-composition .closing-card-foot{margin-top:6px}
+.closing-comarca-list{min-height:248px;align-content:start}
+.closing-comarca-row{padding:8px 0;min-height:39px}
+.closing-pagination{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:12px;min-height:26px}
+.closing-pagination button{min-width:26px;height:26px;padding:0 5px;border-radius:6px;border:1px solid var(--closing-line);background:#fff;color:var(--closing-blue);cursor:pointer;font-size:11px}
+.closing-pagination button.active{background:var(--closing-blue);color:#fff;border-color:var(--closing-blue)}
+.closing-pagination button:disabled{opacity:.3;cursor:default}
+.closing-map .closing-card-head{margin-bottom:9px}
+@media(max-width:1050px){.closing-filter-row{grid-template-columns:repeat(5,minmax(105px,1fr));overflow-x:auto}}
+@media(max-width:650px){.closing-filter-row{grid-template-columns:repeat(2,minmax(0,1fr));overflow-x:visible}.closing-breakdown-head,.closing-breakdown-row{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(49px,.55fr));column-gap:5px}.closing-breakdown-head>span{font-size:8px}.closing-breakdown-name>span{font-size:9px}}
