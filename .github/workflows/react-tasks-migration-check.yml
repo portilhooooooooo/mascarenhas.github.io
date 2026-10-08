@@ -29,6 +29,9 @@ jobs:
       - name: Hardening checks
         run: npm run test:hardening
 
+      - name: Task oversight access and read-only checks
+        run: node --test tests/tasks-oversight.test.mjs
+
       - name: Metabase architecture checks
         run: |
           npm run test:metabase
