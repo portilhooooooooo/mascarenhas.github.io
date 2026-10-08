@@ -62,7 +62,7 @@
       <nav class="main-nav" aria-label="Navegação principal">
         <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
         <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
-        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge">23</em></button>
+        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge" id="tasks-nav-count" aria-label="Pendências" hidden></em></button>
         <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
         <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="wallet-cards"></i><span>Operação</span></button>
         <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
@@ -85,18 +85,7 @@
       <header class="topbar">
         <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         <div class="top-actions">
-          <div class="portfolio-switcher" id="portfolio-switcher" role="group" aria-label="Contexto de acesso">
-            <i data-lucide="building-2" aria-hidden="true"></i>
-            <label class="portfolio-field" for="client-select">
-              <span>Cliente</span>
-              <select id="client-select" aria-label="Cliente ativo"></select>
-            </label>
-            <span class="portfolio-field-divider" aria-hidden="true"></span>
-            <label class="portfolio-field portfolio-field-operation" for="portfolio-select">
-              <span>Operação</span>
-              <select id="portfolio-select" aria-label="Carteira ativa"></select>
-            </label>
-          </div>
+          <div class="portfolio-switcher" id="portfolio-switcher" aria-label="Carteira ativa"></div>
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
           <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
           <div class="profile" aria-label="Usuário autenticado">
@@ -660,6 +649,7 @@
   <script src="config.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
+  <script src="portfolio-policy.js?v=20261008"></script>
   <script src="app.js?v=20260917-task-lobby-v2"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260914-protocolo-hardening"></script>
   <script src="agreements.js?v=20260818"></script>
