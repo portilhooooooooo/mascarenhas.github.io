@@ -119,6 +119,7 @@ export function canManageTasks(user: MbaUser | null) {
   return Boolean(
     user?.is_master_admin
     || user?.permissions?.['tasks.manage']
+    || user?.permissions?.['tasks.view_others']
     || user?.permissions?.['tasks.assign']
     || user?.permissions?.['tasks.create'],
   );
