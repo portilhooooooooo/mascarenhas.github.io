@@ -124,6 +124,59 @@ function userInitials(user) {
   return String(user.name || user.email || 'U').trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'U';
 }
 
+function renderPortfolioSwitcher(user) {
+  const shell = document.querySelector('#portfolio-switcher');
+  const clientSelect = document.querySelector('#client-select');
+  const operationSelect = document.querySelector('#portfolio-select');
+  if (!shell || !clientSelect || !operationSelect) return;
+
+  const portfolios = Array.isArray(user?.portfolios) ? user.portfolios : [];
+  if (!portfolios.length) {
+    shell.hidden = true;
+    return;
+  }
+
+  const selected = window.MBA_API.configurePortfolios?.(portfolios, user?.default_portfolio_id)
+    || portfolios[0].id;
+  const clients = new Map();
+  portfolios.forEach((portfolio) => {
+    const clientName = String(portfolio.client_name || portfolio.display_name || 'Cliente').trim();
+    if (!clients.has(clientName)) clients.set(clientName, []);
+    clients.get(clientName).push(portfolio);
+  });
+
+  clientSelect.innerHTML = [...clients.keys()].map((name) =>
+    `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+  ).join('');
+  const active = portfolios.find((portfolio) => portfolio.id === selected) || portfolios[0];
+  const currentClient = String(active.client_name || active.display_name || 'Cliente').trim();
+  clientSelect.value = currentClient;
+  clientSelect.disabled = clients.size === 1;
+
+  const renderOperations = (clientName, activePortfolioId) => {
+    const available = clients.get(clientName) || [];
+    operationSelect.innerHTML = available.map((portfolio) =>
+      `<option value="${escapeHtml(portfolio.id)}">${escapeHtml(portfolio.operator_name || (available.length === 1 ? 'Carteira única' : portfolio.display_name || portfolio.id))}</option>`
+    ).join('');
+    const chosen = available.some((portfolio) => portfolio.id === activePortfolioId)
+      ? activePortfolioId : available[0]?.id;
+    operationSelect.value = chosen || '';
+    operationSelect.disabled = available.length <= 1;
+    return chosen;
+  };
+  renderOperations(currentClient, selected);
+
+  clientSelect.onchange = () => {
+    const next = renderOperations(clientSelect.value, '');
+    if (next && next !== window.MBA_API.getPortfolioId?.()) {
+      window.MBA_API.setPortfolioId(next);
+      window.location.reload();
+    }
+  };
+  shell.hidden = false;
+}
+
+
 function filteredUsers() {
   const search = document.querySelector('#users-search')?.value.trim().toLowerCase() || '';
   const role = document.querySelector('#users-role-filter')?.value || '';
@@ -795,6 +848,7 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
 
 window.addEventListener('mba:authenticated', (event) => {
   authenticatedUser = event.detail;
+  renderPortfolioSwitcher(event.detail);
   // A gestão de usuários é carregada pelo módulo React somente quando a página é aberta.
   if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
   if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
@@ -802,6 +856,13 @@ window.addEventListener('mba:authenticated', (event) => {
   if (event.detail.permissions?.['pagamentos.view']) loadPagamentos(true).catch(() => {});
   if (event.detail.permissions?.['agreements.view']) window.loadAgreements?.(true);
   if (event.detail.permissions?.['tasks.view']) loadTasks();
+});
+
+document.querySelector('#portfolio-select')?.addEventListener('change', (event) => {
+  const next = String(event.currentTarget.value || '');
+  if (!next || next === window.MBA_API.getPortfolioId?.()) return;
+  window.MBA_API.setPortfolioId(next);
+  window.location.reload();
 });
 
 document.addEventListener('keydown', (event) => {

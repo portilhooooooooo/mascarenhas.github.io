@@ -88,6 +88,18 @@
           <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         </div>
         <div class="top-actions">
+          <div class="portfolio-switcher" id="portfolio-switcher" role="group" aria-label="Contexto de acesso">
+            <i data-lucide="building-2" aria-hidden="true"></i>
+            <label class="portfolio-field" for="client-select">
+              <span>Cliente</span>
+              <select id="client-select" aria-label="Cliente ativo"></select>
+            </label>
+            <span class="portfolio-field-divider" aria-hidden="true"></span>
+            <label class="portfolio-field portfolio-field-operation" for="portfolio-select">
+              <span>Operação</span>
+              <select id="portfolio-select" aria-label="Carteira ativa"></select>
+            </label>
+          </div>
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
           <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
           <div class="profile" aria-label="Usuário autenticado">

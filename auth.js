@@ -215,6 +215,10 @@
 
   async function loadProfile() {
     const profile = await window.MBA_API.request('/api/me');
+    window.MBA_API.configurePortfolios?.(
+      profile.portfolios,
+      profile.default_portfolio_id
+    );
     applyUser(profile);
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
