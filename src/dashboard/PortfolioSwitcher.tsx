@@ -35,6 +35,7 @@ export function PortfolioSwitcher() {
     return () => {
       window.removeEventListener('mba:profile-ready', sync);
       window.removeEventListener('mba:session-expired', sync);
+      window.removeEventListener('mba:logged-out', sync);
       window.removeEventListener('mba:portfolio-changed', sync);
     };
   }, []);
