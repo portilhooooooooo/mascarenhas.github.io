@@ -280,8 +280,10 @@ function renderPermissionEditor(user) {
   document.querySelector('#permission-grid').innerHTML = permissionSectionOrder.filter((section) => groups[section]?.length).map((section) => `<div class="permission-edit-card"><h3>${escapeHtml(permissionSections[section] || section)}</h3>${groups[section].map((permission) => {
     const state = effective[permission.key];
     const exclusive = permission.key.startsWith('users.') && !canReceiveUsersAccess;
-    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute'].includes(permission.key);
-    const locked = exclusive || operational || protectedIdentity;
+    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute', 'tasks.view_others'].includes(permission.key);
+    // Visibility of colleagues' tasks is an explicit, scoped permission.
+    // It is safe to configure without granting permission to execute or manage.
+    const locked = exclusive || (operational && permission.key !== 'tasks.view_others') || protectedIdentity;
     const lockLabel = exclusive ? 'Exclusivo' : taskOnlyRestricted ? 'Escopo operacional' : '';
     return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O acesso operacional permite somente tarefas atribuídas' : 'Origem atual: ' + (state?.source || 'sem regra')}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
   }).join('')}</div>`).join('');
