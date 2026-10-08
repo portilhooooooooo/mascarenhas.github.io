@@ -1,4 +1,5 @@
 import './operacao.css';
+import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,
@@ -333,11 +334,31 @@ function PagamentosPage() {
 
 
 export function OperacaoPage() {
+  const [module,setModule]=useState<'pagamentos'|'encerramentos'>('pagamentos');
+  const [allowed,setAllowed]=useState({pagamentos:false,encerramentos:false});
+  useEffect(()=>{
+    const sync=()=>{
+      const permissions=(window as Window & {MBA_CURRENT_USER?:{permissions?:Record<string,boolean>}}).MBA_CURRENT_USER?.permissions||{};
+      const next={pagamentos:permissions['pagamentos.view']===true,encerramentos:permissions['encerramentos.view']===true};
+      setAllowed(next);
+      setModule(previous=>next[previous]?previous:next.pagamentos?'pagamentos':'encerramentos');
+    };
+    sync();
+    window.addEventListener('mba:authenticated',sync);
+    window.addEventListener('mba:profile-ready',sync);
+    window.addEventListener('mba:portfolio-changed',sync);
+    return ()=>{
+      window.removeEventListener('mba:authenticated',sync);
+      window.removeEventListener('mba:profile-ready',sync);
+      window.removeEventListener('mba:portfolio-changed',sync);
+    };
+  },[]);
   return <div className="operacao-module-shell">
     <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
-      <button type="button" className="active" aria-current="page">Pagamentos</button>
-      <button type="button" aria-disabled="true" title="Em desenvolvimento">Liminar</button>
+      {allowed.pagamentos?<button type="button" className={module==='pagamentos'?'active':''} aria-current={module==='pagamentos'?'page':undefined} onClick={()=>setModule('pagamentos')}>Pagamentos</button>:null}
+      <button type="button" aria-disabled="true" title="Em desenvolvimento" disabled>Liminar</button>
+      {allowed.encerramentos?<button type="button" className={module==='encerramentos'?'active':''} aria-current={module==='encerramentos'?'page':undefined} onClick={()=>setModule('encerramentos')}>Encerramentos</button>:null}
     </nav>
-    <PagamentosPage/>
+    {module==='pagamentos'&&allowed.pagamentos?<PagamentosPage/>:module==='encerramentos'&&allowed.encerramentos?<OperacaoEncerramentosPage/>:<div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
   </div>;
 }
