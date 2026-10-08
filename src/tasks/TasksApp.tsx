@@ -369,7 +369,7 @@ export function TasksApp() {
     setLoadError(null);
     try {
       const [rows, otherRows] = await Promise.all([
-        apiRequest('/api/tasks?scope=mine'),
+        apiRequest(isMaster ? '/api/tasks?scope=all' : '/api/tasks?scope=mine'),
         canViewOtherTasks ? apiRequest('/api/tasks?scope=all') : Promise.resolve(null),
       ]);
       if (refreshGeneration.current !== generation) return;
@@ -403,7 +403,7 @@ export function TasksApp() {
     } finally {
       if (refreshGeneration.current === generation) setLoading(false);
     }
-  }, [user, manager, hydrateTask, hydrateInBackground, activeKey, canViewOtherTasks]);
+  }, [user, manager, hydrateTask, hydrateInBackground, activeKey, canViewOtherTasks, isMaster]);
 
   useEffect(() => {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return;
@@ -415,7 +415,7 @@ export function TasksApp() {
     const timer = window.setInterval(async () => {
       try {
         const [rows, otherRows] = await Promise.all([
-          apiRequest('/api/tasks?scope=mine'),
+          apiRequest(isMaster ? '/api/tasks?scope=all' : '/api/tasks?scope=mine'),
           canViewOtherTasks ? apiRequest('/api/tasks?scope=all') : Promise.resolve(null),
         ]);
         if (mbaWindow.MBA_CURRENT_USER?.id !== user?.id) return;
@@ -430,7 +430,7 @@ export function TasksApp() {
       }
     }, REFRESH_MS);
     return () => window.clearInterval(timer);
-  }, [pageVisible, user?.id, activeKey, hydrateTask, canViewOtherTasks]);
+  }, [pageVisible, user?.id, activeKey, hydrateTask, canViewOtherTasks, isMaster]);
 
   const workItems = useMemo(() => {
     void processVersion;
