@@ -297,7 +297,7 @@ export function EncerramentosPage() {
   const [periodo,setPeriodo] = useState('mes');
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
-  const [demo,setDemo] = useState(true);
+  const [demo,setDemo] = useState(false);
   const [dados,setDados] = useState<Dados | null>(null);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
