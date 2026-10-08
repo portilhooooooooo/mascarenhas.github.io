@@ -1,6 +1,7 @@
 import { FormEvent, StrictMode, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './login.css';
+import '../design-system.css';
 
 type LoginState = {
   busy: boolean;
