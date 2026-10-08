@@ -237,6 +237,7 @@ export function TasksApp() {
   const pageVisible = useTasksPageVisible();
   const [user, setUser] = useState<MbaUser | null>(() => mbaWindow.MBA_CURRENT_USER || null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [visibleTasks, setVisibleTasks] = useState<Task[]>([]);
   const [processVersion, setProcessVersion] = useState(0);
   const processCache = useRef(new Map<string, TaskProcess[]>());
   const inFlight = useRef(new Map<string, Promise<TaskProcess[]>>());
@@ -284,6 +285,12 @@ export function TasksApp() {
   const canCreate = isMaster || user?.permissions?.['tasks.create'] === true;
   const canExecute = isMaster || user?.permissions?.['tasks.execute'] === true;
   const canManage = isMaster || user?.permissions?.['tasks.manage'] === true;
+  const canViewOtherTasks = isMaster || user?.permissions?.['tasks.view_others'] === true;
+  const ownTaskIds = useMemo(() => new Set(tasks.map(task => task.id)), [tasks]);
+  const allVisibleTasks = useMemo(
+    () => visibleTasks.filter(task => taskAssignedToUser(task, user, manager)).sort(compareTasks),
+    [visibleTasks, user, manager],
+  );
   const allAssignedTasks = useMemo(
     () => tasks.filter(task => taskAssignedToUser(task, user, manager)).sort(compareTasks),
     [tasks, user, manager],
@@ -296,6 +303,7 @@ export function TasksApp() {
       processCache.current.clear();
       inFlight.current.clear();
       setTasks([]);
+      setVisibleTasks([]);
       setActiveKey(null);
       setDeferredKeys([]);
       setProcessVersion(value => value + 1);
@@ -308,6 +316,7 @@ export function TasksApp() {
       resetSession();
       setUser(null);
       setTasks([]);
+      setVisibleTasks([]);
       processCache.current.clear();
       setProcessVersion(value => value + 1);
       setActiveKey(null);
@@ -359,15 +368,20 @@ export function TasksApp() {
     setLoading(true);
     setLoadError(null);
     try {
-      const rows = await apiRequest('/api/tasks');
+      const [rows, otherRows] = await Promise.all([
+        apiRequest('/api/tasks?scope=mine'),
+        canViewOtherTasks ? apiRequest('/api/tasks?scope=all') : Promise.resolve(null),
+      ]);
       if (refreshGeneration.current !== generation) return;
       const nextTasks = Array.isArray(rows) ? rows as Task[] : [];
+      const nextVisibleTasks = Array.isArray(otherRows) ? otherRows as Task[] : nextTasks;
       if (resetCache) {
         processCache.current.clear();
         setProcessVersion(value => value + 1);
         setActiveKey(null);
       }
       setTasks(nextTasks);
+      setVisibleTasks(nextVisibleTasks);
 
       const available = nextTasks.filter(task => isTaskActive(task) && taskAssignedToUser(task, user, manager)).sort(compareTasks);
       if (!available.length) {
@@ -389,7 +403,7 @@ export function TasksApp() {
     } finally {
       if (refreshGeneration.current === generation) setLoading(false);
     }
-  }, [user, manager, hydrateTask, hydrateInBackground, activeKey]);
+  }, [user, manager, hydrateTask, hydrateInBackground, activeKey, canViewOtherTasks]);
 
   useEffect(() => {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return;
@@ -400,10 +414,14 @@ export function TasksApp() {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return undefined;
     const timer = window.setInterval(async () => {
       try {
-        const rows = await apiRequest('/api/tasks');
+        const [rows, otherRows] = await Promise.all([
+          apiRequest('/api/tasks?scope=mine'),
+          canViewOtherTasks ? apiRequest('/api/tasks?scope=all') : Promise.resolve(null),
+        ]);
         if (mbaWindow.MBA_CURRENT_USER?.id !== user?.id) return;
         const freshTasks = Array.isArray(rows) ? rows as Task[] : [];
         setTasks(freshTasks);
+        setVisibleTasks(Array.isArray(otherRows) ? otherRows as Task[] : freshTasks);
         const activeTaskId = activeKey?.split(':')[0];
         const task = freshTasks.find(item => String(item.id) === String(activeTaskId));
         if (task) await hydrateTask(task, true);
@@ -412,7 +430,7 @@ export function TasksApp() {
       }
     }, REFRESH_MS);
     return () => window.clearInterval(timer);
-  }, [pageVisible, user?.id, activeKey, hydrateTask]);
+  }, [pageVisible, user?.id, activeKey, hydrateTask, canViewOtherTasks]);
 
   const workItems = useMemo(() => {
     void processVersion;
@@ -611,7 +629,7 @@ export function TasksApp() {
     </nav>
     {tab === 'results' ? <section className="tasks-results" aria-label="Resultados das tarefas"><h1>Resultados</h1><p>O painel do Metabase será disponibilizado aqui.</p></section> : null}
 
-    {tab === 'management' && manager ? <section className="tasks-management-view"><div className="tasks-management-header"><div><h1>Atribuições</h1><p>Crie, distribua e acompanhe os lotes operacionais.</p></div>{canCreate ? <button className="primary-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={15} />Nova tarefa</button> : null}</div><div className="tasks-management-table-wrap"><table className="tasks-management-table"><thead><tr><th>Tarefa</th><th>Tipo</th><th>Pendências</th><th>Status</th><th>Atualização</th><th></th></tr></thead><tbody>{allAssignedTasks.length ? allAssignedTasks.map(task => <tr key={task.id}><td><strong>{task.title || taskTypeLabel(task.type)}</strong><small>{task.description || 'Sem descrição'}</small></td><td>{taskTypeLabel(task.type)}</td><td>{pendingCount(task)}</td><td><span className={`tasks-state-pill ${taskState(task)}`}>{TASK_STATE_META[taskState(task)].singular}</span><small>{taskStatusLabel(task.status)}</small></td><td>{task.updated_at ? new Date(task.updated_at).toLocaleString('pt-BR') : 'Sem atualização'}</td><td><div className="tasks-row-actions">{canManage ? <button type="button" className="secondary-button" disabled={!isTaskActive(task)} onClick={() => setAssignTask(task)}><UserPlus size={14} />Atribuir</button> : null}{canExecute ? <button type="button" className="secondary-button" disabled={!isTaskActive(task) || pendingCount(task) <= 0} onClick={() => void executeTask(task)}>Executar</button> : null}{canManage ? <button type="button" className="tasks-delete-button" title="Excluir lote" onClick={() => void deleteTask(task)}><Trash2 size={14} /></button> : null}</div></td></tr>) : <tr><td colSpan={6}>Nenhuma tarefa disponível.</td></tr>}</tbody></table></div></section> : null}
+    {tab === 'management' && manager ? <section className="tasks-management-view"><div className="tasks-management-header"><div><h1>Atribuições</h1><p>Crie, distribua e acompanhe os lotes operacionais.</p></div>{canCreate ? <button className="primary-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={15} />Nova tarefa</button> : null}</div><div className="tasks-management-table-wrap"><table className="tasks-management-table"><thead><tr><th>Tarefa</th><th>Tipo</th><th>Pendências</th><th>Status</th><th>Atualização</th><th></th></tr></thead><tbody>{allVisibleTasks.length ? allVisibleTasks.map(task => <tr key={task.id}><td><strong>{task.title || taskTypeLabel(task.type)}</strong><small>{task.description || 'Sem descrição'}</small></td><td>{taskTypeLabel(task.type)}</td><td>{pendingCount(task)}</td><td><span className={`tasks-state-pill ${taskState(task)}`}>{TASK_STATE_META[taskState(task)].singular}</span><small>{taskStatusLabel(task.status)}</small></td><td>{task.updated_at ? new Date(task.updated_at).toLocaleString('pt-BR') : 'Sem atualização'}</td><td><div className="tasks-row-actions">{canManage ? <button type="button" className="secondary-button" disabled={!isTaskActive(task)} onClick={() => setAssignTask(task)}><UserPlus size={14} />Atribuir</button> : null}{canExecute && ownTaskIds.has(task.id) ? <button type="button" className="secondary-button" disabled={!isTaskActive(task) || pendingCount(task) <= 0} onClick={() => void executeTask(task)}>Executar</button> : null}{canManage ? <button type="button" className="tasks-delete-button" title="Excluir lote" onClick={() => void deleteTask(task)}><Trash2 size={14} /></button> : null}</div></td></tr>) : <tr><td colSpan={6}>Nenhuma tarefa disponível.</td></tr>}</tbody></table></div></section> : null}
 
     {tab === 'execution' ? <>
 
