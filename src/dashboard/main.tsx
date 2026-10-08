@@ -13,6 +13,10 @@ import './controladoria.css';
 import './defesas.css';
 import './users.css';
 import './ui-architecture.css';
+import '@fontsource/inter/latin-300.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '../design-system.css';
 
 type DashboardWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };

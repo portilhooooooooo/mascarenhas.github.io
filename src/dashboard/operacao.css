@@ -5,7 +5,7 @@
 .operacao-pagamentos-table { min-width: 1180px; }
 .operacao-pagamentos-table td small { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 9.5px; line-height: 1.3; }
 .operacao-pagamentos-table td:first-child { min-width: 245px !important; }
-.operacao-cell-main { display: block; color: var(--mba-text); font-size: 10.5px; font-weight: 600; }
+.operacao-cell-main { display: block; color: var(--mba-text); font-size: 10.5px; font-weight: 500; }
 .operacao-danger-copy { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b42318 !important; }
 .protocolos-badge.amber { background: #fffaeb; color: #b54708; }
 .protocolos-status-strip-react button.amber svg { color: #b54708; }
