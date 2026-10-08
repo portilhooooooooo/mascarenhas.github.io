@@ -104,8 +104,8 @@ export function OperacaoEncerramentosPage() {
     row.status_envio==='PROCESSANDO'?'Processando':
     row.status_envio==='ERRO'?'Erro no envio':
     row.validacao_decisao==='apto'?'Apto validado':
-    row.validacao_decisao==='nao_apto'?'Inapto validado':
-    row.fase_recursal?'Em fase recursal':'Pendente de análise';
+    row.fase_recursal?'Em fase recursal · sem acórdão':
+    row.validacao_decisao==='nao_apto'?'Inapto validado':'Pendente de análise';
   const send=async()=>{
     if(!canRun||submitting||!candidates.length)return;
     const items=candidates.map(row=>({
@@ -148,7 +148,7 @@ export function OperacaoEncerramentosPage() {
     </section>
     <section className="protocolos-card protocolos-workspace operacao-workspace">
       <header className="protocolos-workspace-head">
-        <div><h2>Base operacional</h2><p>Os indícios do DataJud não equivalem a classificações confirmadas. Derrota, Derrota voluntária e Vitória só exibem validações feitas por analistas.</p></div>
+        <div><h2>Base operacional</h2><p>Os indícios do DataJud não equivalem a classificações confirmadas. Em fase recursal identifica, apenas em Agibank MBA, a análise humana que confirma apelação ainda sem acórdão. Derrota, Derrota voluntária e Vitória também exigem validação dos analistas.</p></div>
         <div className="protocolos-toolbar-actions">
           <button type="button" className="protocolos-button primary" disabled={!canRun||!isActionTab||!candidates.length||submitting} onClick={()=>void send()}>
             {submitting?<LoaderCircle className="spin" size={15}/>:<Send size={15}/>}Enviar ao Benner ({count(candidates.length)})
@@ -182,7 +182,7 @@ export function OperacaoEncerramentosPage() {
                 {isActionTab?<td><input type="checkbox" aria-label={'Selecionar '+formatCnj(row.cnj)} checked={Boolean(selected[row.cnj])} disabled={!canRun||!canSelect||submitting} onChange={event=>setSelected(current=>({...current,[row.cnj]:event.target.checked}))}/></td>:null}
                 <td><strong className="protocolos-cnj">{formatCnj(row.cnj)}</strong><small>{row.pasta?'Pasta '+row.pasta:'Pasta não encontrada'}{row.comarca?' · '+row.comarca+' / '+(row.uf||''):''}</small></td>
                 <td><span className="operacao-cell-main">{row.datajud_tipo||'Não classificado'}</span><small>{row.datajud_indicio_apto===true?'Indício favorável':row.datajud_indicio_apto===false?'Indício desfavorável':'Sem indício'}</small></td>
-                <td><span className="operacao-cell-main">{row.tipo_validado||statusLabel(row)}</span><small>{row.validado_em?'Confirmado em '+dt(row.validado_em):'Aguardando validação do analista'}</small></td>
+                <td><span className="operacao-cell-main">{row.tipo_validado||statusLabel(row)}</span><small>{row.analisado_em?'Analisado em '+dt(row.analisado_em):row.validado_em?'Confirmado em '+dt(row.validado_em):'Aguardando validação do analista'}</small></td>
                 <td>{canSelect&&isActionTab?<select className="operacao-encerramentos-select" aria-label={'Andamento de '+formatCnj(row.cnj)} value={movements[row.cnj]||defaultMovement} onChange={event=>setMovements(current=>({...current,[row.cnj]:event.target.value}))} disabled={submitting}>
                   {Object.entries(MOVEMENTS).map(([key,value])=><option key={key} value={value} disabled={key!==row.tipo_validado}>{value}</option>)}
                 </select>:<span className="operacao-cell-main">{defaultMovement||'—'}</span>}</td>
