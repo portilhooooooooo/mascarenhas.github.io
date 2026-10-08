@@ -25,3 +25,6 @@ __pycache__/
 *.secrets.*
 secrets/
 credentials/
+
+# Sites local runtime
+.sites-runtime/

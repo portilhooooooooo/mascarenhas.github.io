@@ -1,6 +1,7 @@
-import { Children, isValidElement, type FormHTMLAttributes, type ReactNode } from 'react';
+import { Children, isValidElement, useId, type FormHTMLAttributes, type ReactNode } from 'react';
 export function TaskQuestion({ number, question, children }: { number: string; question: string; children: ReactNode }) {
-  return <section className="task-question"><h3><span className="task-question-number">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
+  const headingId = useId();
+  return <section className="task-question" aria-labelledby={headingId}><h3 id={headingId}><span className="task-question-number" aria-hidden="true">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
 export function TaskActionBar({ busy, ready = true, onSkip, skipLabel = 'Pular esse prazo' }: { busy: boolean; ready?: boolean; onSkip: () => void; skipLabel?: string }) {
   return <footer className="task-renderer-footer"><button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>{skipLabel}</button><button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>;

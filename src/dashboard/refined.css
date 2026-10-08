@@ -1,0 +1,148 @@
+/* Shared visual layer for the refined workspace. No authorization or data changes. */
+:root {
+  --mba-bg:#f3f5f9; --mba-surface:#fff; --mba-subtle:#f5f7fb;
+  --mba-text:#172b4a; --mba-text-2:#536580; --mba-muted:#71809a;
+  --mba-border:#e3e8f0; --mba-border-strong:#ccd6e5;
+  --mba-blue:#224b98; --mba-blue-dark:#16376f; --mba-blue-soft:#edf3fd;
+  --mba-page-title:28px; --mba-page-x:28px; --mba-page-y:20px;
+  --mba-subnav-font-size:14px; --mba-subnav-height:46px;
+}
+body {background:var(--mba-bg);font-size:14px;line-height:1.5}
+button,input,select,textarea {font:inherit}
+button {transition:background .15s ease,border-color .15s ease,color .15s ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible {outline:2px solid #3872c9;outline-offset:3px}
+/* Horizontal application navigation retains the existing permission-controlled DOM. */
+body .app-shell {display:block;padding-top:64px}
+body .app-shell .sidebar {inset:0 0 auto;width:100%;height:64px;flex-direction:row;align-items:center;gap:26px;padding:0 28px;background:#fff;border:0;border-bottom:1px solid var(--mba-border);overflow:visible}
+body .app-shell .sidebar-head {height:auto;min-height:0;flex-shrink:0;padding:0}
+body .app-shell .brand {font-size:18px;gap:8px}
+body .app-shell .brand>span:first-child {font-size:22px;letter-spacing:-1px}
+body .app-shell .brand-word {display:inline}
+body .app-shell .sidebar-toggle {display:none}
+body .app-shell .main-nav {flex-direction:row;align-items:stretch;gap:3px;padding:0;height:64px;overflow-x:auto;overflow-y:hidden}
+body .app-shell .main-nav .nav-item {width:auto;min-width:max-content;height:64px;gap:7px;padding:0 13px;border-radius:0;font-size:14px}
+body .app-shell .nav-item>span {display:inline}
+body .app-shell .nav-item.active {background:transparent;color:var(--mba-blue)}
+body .app-shell .nav-item.active::before {inset:auto 12px 0;height:3px;width:auto;border-radius:3px 3px 0 0}
+body .app-shell .nav-item svg {width:16px;height:16px}
+body .app-shell .sidebar-bottom {padding:0;margin:0;border:0}
+body .app-shell .sidebar-logout {width:34px;height:34px;padding:8px}
+body .app-shell .sidebar-logout span {display:none}
+body .app-shell .main-area,body .app-shell.sidebar-collapsed .main-area {width:100%;margin-left:0}
+body .app-shell .topbar {position:relative;top:0;min-height:58px;height:auto;padding:8px 28px;background:var(--mba-bg);border-bottom:0}
+body .topbar .portfolio-switcher {background:#fff;border-color:var(--mba-border);border-radius:8px}
+body .profile {background:transparent;border:0}
+body .profile .avatar {background:#e5ebf5;color:#254678}
+body .page-title h1,body .analytics-page-header h1,body .protocolos-header h1 {font-weight:600;letter-spacing:-.035em}
+body .primary-button {background:var(--mba-blue);border:1px solid var(--mba-blue);border-radius:7px;color:#fff;min-height:38px;font-size:14px;font-weight:500}
+body .primary-button:hover:not(:disabled) {background:var(--mba-blue-dark);border-color:var(--mba-blue-dark)}
+body .secondary-button {min-height:38px;border-radius:7px;border-color:var(--mba-border-strong);font-size:14px}
+body .mba-react-select-trigger {border-radius:7px;background:#fff}
+/* Workstation: one quiet queue and one clear decision surface. */
+body #tarefas[data-react-tasks='true'] .tasks-react-root {zoom:1;padding:0 28px 20px!important}
+body #tarefas[data-react-tasks='true'] .tasks-react-root.task-station {gap:16px}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-react-subnav {margin:0!important;padding:0!important;background:transparent!important;gap:28px!important;flex-shrink:0}
+body #tarefas[data-react-tasks='true'] .tasks-react-subnav>button {font-size:14px!important;min-height:46px!important;height:46px!important}
+.workspace-heading {display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none;padding:3px 0 1px}
+.workspace-heading h1 {margin:0;font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-.04em}
+.workspace-heading p {margin:6px 0 0;color:var(--mba-text-2);font-size:14px}
+.workspace-heading .workspace-count {display:flex;align-items:baseline;gap:7px;color:var(--mba-text-2);font-size:13px}
+.workspace-count strong {font-size:22px;font-weight:600;color:var(--mba-text);font-variant-numeric:tabular-nums}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-workspace {grid-template-columns:320px minmax(0,1fr);gap:20px}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-workspace-sidebar {background:transparent;border:0;border-radius:0}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-section {padding:0;gap:14px;background:transparent;border:0}
+body #tarefas[data-react-tasks='true'] .tasks-process-title {padding:0 2px;align-items:center}
+body #tarefas[data-react-tasks='true'] .tasks-process-title strong {font-size:14px;font-weight:600}
+body #tarefas[data-react-tasks='true'] .tasks-process-title>span {font-size:12px;color:var(--mba-muted)}
+body #tarefas[data-react-tasks='true'] .queue-station-filters {gap:10px}
+body #tarefas[data-react-tasks='true'] .queue-station-filters .mba-react-select-trigger {height:40px;font-size:14px;padding:0 11px;background:#fff}
+body #tarefas[data-react-tasks='true'] .mba-react-select-label {font-size:12px;color:var(--mba-text-2)}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-search {height:40px;background:#fff;border-radius:7px;border-color:var(--mba-border-strong);padding:0 12px}
+body #tarefas[data-react-tasks='true'] .tasks-process-search input {font-size:14px}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-list {gap:8px}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-item {height:76px;min-height:76px;padding:12px 13px;border:1px solid var(--mba-border);border-radius:8px;background:#fff;box-shadow:none;position:relative;text-align:left}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-item:hover {background:#f8faff;border-color:#aebfda}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-item.selected {background:#eaf1fd;border-color:#9fb8df;box-shadow:inset 3px 0 #28549c}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-item strong {font-size:14px;font-weight:550;letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+body #tarefas[data-react-tasks='true'] .task-station .tasks-process-item small {font-size:12px;line-height:1.5}
+body #tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill {font-size:12px;font-weight:500;padding:3px 7px;border-radius:5px}
+body #tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.high {color:#956125;background:#fff2dc}
+body #tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.normal {background:#f0f3f8;color:#62728a}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card {border:1px solid var(--mba-border);border-radius:10px;background:#fff;box-shadow:0 2px 3px #172b4a03}
+body #tarefas[data-react-tasks='true'] .task-station .execution-process-heading {padding:22px 28px 16px;background:#fff;border-bottom:0;align-items:center}
+body #tarefas[data-react-tasks='true'] .execution-process-heading small {color:var(--mba-blue);font-size:12px;letter-spacing:.07em;font-weight:600;text-transform:uppercase}
+body #tarefas[data-react-tasks='true'] .task-station .execution-process-heading h2 {font-size:24px;font-weight:600;letter-spacing:-.035em;margin-top:7px}
+body #tarefas[data-react-tasks='true'] .execution-copy {padding:8px 10px;font-size:13px;border-color:var(--mba-border);border-radius:7px;color:var(--mba-text-2)}
+body #tarefas[data-react-tasks='true'] .task-station .execution-brief {margin:0 28px;padding:0 0 17px;border-bottom:1px solid var(--mba-border)}
+body #tarefas[data-react-tasks='true'] .execution-brief dt,body #tarefas[data-react-tasks='true'] .execution-brief dd {font-size:13px}
+body #tarefas[data-react-tasks='true'] .task-station .task-form-content {padding:22px 28px;gap:24px}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-question h3 {font-size:16px;font-weight:550;gap:12px;margin-bottom:14px;letter-spacing:-.02em}
+body #tarefas[data-react-tasks='true'] .task-station .task-question-number {width:28px;height:28px;font-size:12px;background:#edf2fa;color:#3b5b8e;border-radius:7px}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-grid {gap:10px;max-width:900px}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card>span {min-height:48px;padding:12px 16px;border-radius:7px;background:#fff;border-color:#dce3ec}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card strong {font-size:14px;font-weight:500}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card:hover>span {border-color:#9eb5d7;background:#f8faff}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card input:checked+span {background:#edf3fd;border-color:#537fbe;box-shadow:inset 0 0 0 1px #537fbe;color:#224b98}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer {padding:15px 28px;background:#fbfcfe}
+body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer button {min-height:40px;font-size:14px;padding-inline:18px}
+body #tarefas[data-react-tasks='true'] .workbench-queue-pagination {font-size:13px}
+body #tarefas[data-react-tasks='true'] .workbench-queue-pagination button {font-size:13px;padding:8px 10px;border-radius:6px;background:transparent}
+body #tarefas[data-react-tasks='true'] .workbench-queue-pagination button:hover:not(:disabled) {background:#e5ebf5}
+body #tarefas[data-react-tasks='true'] .tasks-management-header {margin:24px 0}
+body #tarefas[data-react-tasks='true'] .tasks-management-header h1 {font-size:28px;letter-spacing:-.035em;font-weight:600}
+body #tarefas[data-react-tasks='true'] .tasks-management-table-wrap {border-radius:10px;border-color:var(--mba-border)}
+body #tarefas[data-react-tasks='true'] .tasks-management-table td {font-size:14px;padding:18px 16px}
+body #tarefas[data-react-tasks='true'] .tasks-management-table th {font-size:12px;padding:13px 16px;background:#f8fafd}
+body #tarefas[data-react-tasks='true'] .tasks-management-table tr:hover td {background:#fafcff}
+body #tarefas[data-react-tasks='true'] .tasks-react-state {border:1px dashed #ccd6e5;border-radius:10px;background:#fff}
+body .task-react-modal {border-radius:10px;padding:26px;border:1px solid var(--mba-border)}
+@media(max-width:1100px) {
+  body .app-shell .sidebar {gap:16px;padding-inline:20px}
+  body .app-shell .main-nav .nav-item {padding-inline:10px}
+  body #tarefas[data-react-tasks='true'] .tasks-react-root {padding-inline:20px!important}
+  body #tarefas[data-react-tasks='true'] .task-station .tasks-workspace {grid-template-columns:280px minmax(0,1fr);gap:16px}
+  body #tarefas[data-react-tasks='true'] .task-station .execution-process-heading,body #tarefas[data-react-tasks='true'] .task-station .task-form-content {padding-inline:20px}
+  body #tarefas[data-react-tasks='true'] .task-station .execution-process-heading h2 {font-size:21px}
+  body #tarefas[data-react-tasks='true'] .task-station .tasks-process-item strong {font-size:13px}
+}
+@media(max-width:760px) {
+  body .app-shell .sidebar {height:104px;flex-wrap:wrap;gap:0;padding:12px 16px 0}
+  body .app-shell {padding-top:104px}
+  body .app-shell .sidebar-head {width:100%;height:36px}
+  body .app-shell .main-nav,body .app-shell .main-nav .nav-item {height:44px;min-height:44px}
+  body .app-shell .sidebar-bottom {position:absolute;right:14px;top:14px}
+  body .app-shell .topbar {padding-inline:16px}
+  body #tarefas[data-react-tasks='true'] .tasks-react-root {padding-inline:16px!important}
+  .workspace-heading h1 {font-size:24px}.workspace-heading p {font-size:13px}.workspace-count {display:none!important}
+  body #tarefas[data-react-tasks='true'] .tasks-react-root.task-station {height:auto;min-height:calc(100dvh - 150px);overflow:visible}
+  body #tarefas[data-react-tasks='true'] .task-station .tasks-workspace {display:flex;flex-direction:column;overflow:visible}
+  body #tarefas[data-react-tasks='true'] .task-station .tasks-workspace-sidebar {height:310px;flex:none}
+  body #tarefas[data-react-tasks='true'] .task-station .tasks-execution-panel,body #tarefas[data-react-tasks='true'] .task-station .execution-card {height:auto;overflow:visible;min-height:420px}
+  body #tarefas[data-react-tasks='true'] .task-station .tasks-renderer-body,body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-form,body #tarefas[data-react-tasks='true'] .task-station .task-form-content {height:auto;overflow:visible}
+  body #tarefas[data-react-tasks='true'] .task-station .execution-process-heading h2 {font-size:18px;overflow-wrap:anywhere}
+  body #tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer {flex-wrap:wrap;padding:14px 20px;gap:8px}
+}
+@media(prefers-reduced-motion:reduce) {*,*::before,*::after {scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+/* All question renderers share legible labels and quiet answer states. */
+body #tarefas[data-react-tasks='true'] .tasks-process-title>strong {text-transform:none;letter-spacing:0}
+body #tarefas[data-react-tasks='true'] .closing-summary {padding:14px 16px;background:#f6f8fc;border-color:#e3e8f0;border-radius:8px;gap:5px}
+body #tarefas[data-react-tasks='true'] .closing-summary>span {font-size:12px;letter-spacing:.045em;font-weight:500}
+body #tarefas[data-react-tasks='true'] .closing-summary>strong {font-size:15px;font-weight:550}
+body #tarefas[data-react-tasks='true'] .closing-summary>small {font-size:13px}
+body #tarefas[data-react-tasks='true'] .closing-date-answer,body #tarefas[data-react-tasks='true'] .closing-date-answer input {font-size:14px}
+body #tarefas[data-react-tasks='true'] .closing-inline-note {font-size:13px}
+body #tarefas[data-react-tasks='true'] .execution-card .defesa-flow-question-body h3 {font-size:16px;font-weight:550}
+body #tarefas[data-react-tasks='true'] .execution-card .defesa-flow-binary button,body #tarefas[data-react-tasks='true'] .execution-card .defesa-flow-priority button {font-size:14px;border-radius:7px;min-height:46px}
+body #tarefas[data-react-tasks='true'] .tasks-management-table td:first-child strong {font-size:14px;font-weight:550}
+body #tarefas[data-react-tasks='true'] .tasks-management-table td small {font-size:12px}
+body #tarefas[data-react-tasks='true'] .tasks-row-actions .secondary-button {font-size:13px}
+body #tarefas[data-react-tasks='true'] .task-option-card input:focus-visible+span {outline:2px solid #3872c9;outline-offset:3px}
+body #tarefas[data-react-tasks='true'] .task-option-card input:checked+span strong::after {content:'✓';margin-left:12px;color:#224b98;font-weight:700}
+/* A saved preference from the former sidebar cannot collapse the new header. */
+body .app-shell.sidebar-collapsed .sidebar {width:100%;padding-inline:28px}
+body .app-shell.sidebar-collapsed .brand {display:inline-flex}
+body .app-shell.sidebar-collapsed .nav-item span {display:inline}
+body .app-shell.sidebar-collapsed .nav-item {padding-inline:13px;justify-content:flex-start}
+body .app-shell.sidebar-collapsed .sidebar-head {justify-content:flex-start}
+@media(max-width:1100px){body .app-shell.sidebar-collapsed .sidebar{padding-inline:20px}body .app-shell.sidebar-collapsed .nav-item{padding-inline:10px}}
+@media(max-width:760px){body .app-shell.sidebar-collapsed .sidebar{padding-inline:16px}}
