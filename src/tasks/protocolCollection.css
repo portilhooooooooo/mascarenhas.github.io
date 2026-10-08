@@ -22,9 +22,9 @@
 .protocol-error-panel .task-question>p{
   display:block;
   margin:0;
-  color:#64748b;
+  color:#71717a;
   font-size:10.5px;
-  font-weight:400;
+  font-weight:300;
   line-height:1.45;
 }
 
@@ -45,16 +45,16 @@
 }
 
 .protocol-upload-heading>strong{
-  color:var(--mba-text,#0f1f3d);
+  color:var(--mba-text,#18181b);
   font-size:10.5px;
-  font-weight:700;
+  font-weight:500;
   letter-spacing:.025em;
 }
 
 .protocol-upload-heading>span{
   color:#b91c1c;
   font-size:9px;
-  font-weight:600;
+  font-weight:500;
 }
 
 .protocol-upload-control{
@@ -64,14 +64,14 @@
   justify-content:space-between;
   gap:12px;
   padding:8px 9px 8px 12px;
-  border:1px solid var(--mba-border,#e3eaf2);
-  border-radius:8px;
+  border:1px solid var(--mba-border,#ececee);
+  border-radius:var(--radius-md);
   background:#fff;
   transition:border-color .12s ease,background .12s ease,box-shadow .12s ease;
 }
 
 .protocol-upload-control:hover{
-  border-color:#cbd5e1;
+  border-color:#d4d4d8;
 }
 
 .protocol-upload-control.uploading{
@@ -94,7 +94,7 @@
   display:flex;
   align-items:center;
   gap:9px;
-  color:#64748b;
+  color:#71717a;
 }
 
 .protocol-upload-control.ready .protocol-upload-file{
@@ -113,18 +113,18 @@
 
 .protocol-upload-file strong{
   overflow:hidden;
-  color:var(--mba-text,#0f1f3d);
+  color:var(--mba-text,#18181b);
   font-size:10.5px;
-  font-weight:600;
+  font-weight:500;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
 
 .protocol-upload-file small{
   overflow:hidden;
-  color:#8190a5;
+  color:#a1a1aa;
   font-size:9.5px;
-  font-weight:400;
+  font-weight:300;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
@@ -169,13 +169,13 @@
   padding:0;
   border:0;
   background:transparent;
-  color:#52647d;
+  color:#52525b;
   font:600 10.5px/1.3 Inter,sans-serif;
   cursor:pointer;
 }
 
 .protocol-back-link:hover{
-  color:var(--mba-blue,#142b67);
+  color:var(--mba-blue,#18181b);
   text-decoration:underline;
   text-underline-offset:2px;
 }
@@ -209,9 +209,9 @@
   z-index:1;
   margin:auto -20px -16px;
   padding:12px 20px 16px;
-  border-top:1px solid var(--mba-border,#e3eaf2);
+  border-top:1px solid var(--mba-border,#ececee);
   background:#fff;
-  box-shadow:0 -6px 18px rgba(15,31,61,.025);
+  box-shadow:0 -6px 18px rgba(24,24,27,.025);
 }
 
 .protocol-workspace-footer .secondary-button,

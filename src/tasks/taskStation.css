@@ -5,17 +5,17 @@
 #tarefas[data-react-tasks='true'] .task-station .tasks-workspace-sidebar,#tarefas[data-react-tasks='true'] .task-station .tasks-execution-panel{position:static;height:100%;min-height:0;overflow:hidden}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-section{padding:12px;overflow:hidden;gap:10px}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-title{flex:none}
-.queue-station-controls button{padding:0;border:0;background:none;color:#142b67;font:500 11px Inter,sans-serif}
+.queue-station-controls button{padding:0;border:0;background:none;color:#18181b;font:500 11px Inter,sans-serif}
 .queue-station-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:none}
-.queue-station-filters label{display:grid;gap:5px;min-width:0;font-size:10px;color:#52647d}
-.queue-station-filters select{height:32px;min-width:0;width:100%;padding:0 6px;font:500 11px Inter,sans-serif;color:#0f1f3d;background:#fff;border:1px solid #e3eaf2;border-radius:5px}
+.queue-station-filters label{display:grid;gap:5px;min-width:0;font-size:10px;color:#52525b}
+.queue-station-filters select{height:32px;min-width:0;width:100%;padding:0 6px;font:500 11px Inter,sans-serif;color:#18181b;background:#fff;border:1px solid #ececee;border-radius:var(--radius-sm)}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-search{flex:none;margin:0;height:32px}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-list{flex:1;overflow-y:auto;max-height:none;gap:6px;min-height:0}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-item{height:64px;min-height:64px;padding:8px;gap:6px}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-item strong{font-size:11px}
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-item small{font-size:10px}
 .queue-item-badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px;white-space:nowrap}
-.queue-item-badges>small{color:#52647d}
+.queue-item-badges>small{color:#52525b}
 #tarefas[data-react-tasks='true'] .task-station .workbench-queue-pagination{flex:none;margin:0;padding-top:8px}
 #tarefas[data-react-tasks='true'] .task-station .execution-card{height:100%;min-height:0;overflow:hidden}
 #tarefas[data-react-tasks='true'] .task-station .execution-process-heading{flex:none;padding:14px 20px}
@@ -29,9 +29,9 @@
 #tarefas[data-react-tasks='true'] .task-station .task-question-number{width:25px;height:25px;font-size:10px}
 #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-grid{max-width:780px;gap:8px;grid-auto-rows:1fr;align-items:stretch}
 #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card{min-width:0;height:100%;display:flex}
-#tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card>span{width:100%;height:100%;min-height:42px;padding:10px 12px;display:flex;align-items:center;border-radius:5px}
+#tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card>span{width:100%;height:100%;min-height:42px;padding:10px 12px;display:flex;align-items:center;border-radius:var(--radius-sm)}
 #tarefas[data-react-tasks='true'] .task-station .execution-card .task-option-card strong{font-size:12px;line-height:1.4}
-#tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer{position:static;flex:none;width:100%;margin:0;padding:12px 20px;border-top:1px solid #e3eaf2;background:#fff;display:flex;flex-direction:row;justify-content:space-between;z-index:1}
+#tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer{position:static;flex:none;width:100%;margin:0;padding:12px 20px;border-top:1px solid #ececee;background:#fff;display:flex;flex-direction:row;justify-content:space-between;z-index:1}
 #tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer button{min-height:36px;font-size:12px;width:auto}
 #tarefas[data-react-tasks='true'] .task-station .defesa-enter-deadline{font-size:12px;padding-bottom:8px}
 #tarefas[data-react-tasks='true'] .task-station .defesa-enter-deadline p{font-size:12px;margin:4px 0}
@@ -44,15 +44,15 @@
 @media(max-width:600px){#tarefas[data-react-tasks='true'] .tasks-react-root.task-station{padding:8px}#tarefas[data-react-tasks='true'] .task-station .tasks-workspace{grid-template-columns:minmax(0,1fr);grid-template-rows:300px minmax(0,1fr);gap:8px}#tarefas[data-react-tasks='true'] .task-station .queue-station-controls{position:static;text-align:right}#tarefas[data-react-tasks='true'] .task-station .tasks-process-section{gap:6px}#tarefas[data-react-tasks='true'] .task-station .queue-station-filters{gap:8px}#tarefas[data-react-tasks='true'] .task-station .tasks-process-list{min-height:0}#tarefas[data-react-tasks='true'] .task-station .execution-process-heading{padding:10px 14px}#tarefas[data-react-tasks='true'] .task-station .execution-process-heading h2{font-size:17px}#tarefas[data-react-tasks='true'] .task-station .task-form-content{padding:14px;gap:16px}#tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer{padding:10px 14px}#tarefas[data-react-tasks='true'] .task-station .execution-card .task-renderer-footer button{font-size:11px;padding-inline:10px}}
 
 #tarefas[data-react-tasks='true'] .task-station .tasks-react-subnav{flex:none;height:40px;margin:0;padding:0 12px}
-.tasks-results{padding:18px 0}.tasks-results h1{font-size:28px}.tasks-results p{font-size:13px;color:var(--mba-text-2,#52647d)}
+.tasks-results{padding:18px 0}.tasks-results h1{font-size:28px}.tasks-results p{font-size:13px;color:var(--mba-text-2,#52525b)}
 
 /* Requested compact scale; task viewport measurements compensate for zoom. */
 .tasks-react-root { zoom: .9; }
 
-.queue-item-badges .tasks-state-pill.high { color:#142b67; background:#edf1f8; }
+.queue-item-badges .tasks-state-pill.high { color:#18181b; background:#edf1f8; }
 .queue-item-badges .tasks-state-pill.normal { color:#4b5563; background:#f3f4f6; }
 
 /* React listbox filters share the same typography and focus state as the global shell. */
 .queue-station-filters .mba-react-select { width: 100%; min-width: 0; }
-.queue-station-filters .mba-react-select-trigger { height: 32px; padding: 0 9px; border: 1px solid var(--mba-border-strong); border-radius: 6px; background: #fff; font-size: 11px; }
+.queue-station-filters .mba-react-select-trigger { height: 32px; padding: 0 9px; border: 1px solid var(--mba-border-strong); border-radius: var(--radius-sm); background: #fff; font-size: 11px; }
 .queue-station-filters .mba-react-select-options { top: calc(100% + 3px); min-width: 100%; }
