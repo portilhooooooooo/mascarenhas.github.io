@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, CalendarDays, CheckCircle2, Clock3, MapPinned,
 import { BRAZIL_STATES } from './brazilStates';
 import './encerramentos.css';
 
-type Classificacao = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'EXTINCAO';
+type Classificacao = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
 type Faixa = 'alto' | 'medio' | 'baixo' | 'sem_amostra';
 type Indicadores = {
   consultados: number;
@@ -23,6 +23,7 @@ type Dados = {
   estados: Estado[];
   analistas: Analista[];
   classificacoes: Array<{ tipo: string; quantidade: number }>;
+  distribuicao_tipos: Array<{ tipo: string; quantidade: number }>;
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 const TIPOS: Array<{ value: Classificacao; label: string }> = [
@@ -30,8 +31,15 @@ const TIPOS: Array<{ value: Classificacao; label: string }> = [
   { value: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária' },
   { value: 'DERROTA', label: 'Derrota' },
   { value: 'VITORIA', label: 'Vitória' },
+  { value: 'ACORDO', label: 'Acordo' },
   { value: 'EXTINCAO', label: 'Extinção' },
 ];
+const DISTRIBUTION = [
+  { tipo: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária', tone: 'voluntary' },
+  { tipo: 'DERROTA', label: 'Derrota', tone: 'defeat' },
+  { tipo: 'VITORIA', label: 'Vitória', tone: 'victory' },
+  { tipo: 'ACORDO', label: 'Acordo', tone: 'agreement' },
+] as const;
 const AGING = [
   { faixa: '0 a 3 meses', tag: '0 A 3 MESES', tone: 'low' },
   { faixa: '3 a 10 meses', tag: '3 A 10 MESES', tone: 'medium' },
@@ -67,12 +75,17 @@ function createDemoData(carteira: string, tipo: Classificacao, periodo: string):
   const isEnter = carteira === 'Agibank Enter';
   const seed = isEnter
     ? [{ tipo: 'VITORIA', quantidade: 198 }, { tipo: 'DERROTA', quantidade: 255 },
-       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 140 }, { tipo: 'EXTINCAO', quantidade: 27 }]
+       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 140 }, { tipo: 'ACORDO', quantidade: 51 }, { tipo: 'EXTINCAO', quantidade: 27 }]
     : [{ tipo: 'VITORIA', quantidade: 330 }, { tipo: 'DERROTA', quantidade: 476 },
-       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 }, { tipo: 'EXTINCAO', quantidade: 32 }];
+       { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 }, { tipo: 'ACORDO', quantidade: 74 }, { tipo: 'EXTINCAO', quantidade: 32 }];
   const factor = periodo === '30' ? 0.22 : periodo === '90' ? 0.56 : 1;
   const all = seed.map(row => ({ ...row, quantidade: Math.max(1, Math.round(row.quantidade * factor)) }));
-  const classifications = tipo === 'TODOS' ? all : all.filter(row => row.tipo === tipo);
+  const selected = tipo === 'TODOS' ? all : all.filter(row => row.tipo === tipo);
+  const classifications = selected.filter(row => row.tipo !== 'ACORDO');
+  const distribution = DISTRIBUTION.map(({ tipo: kind }) => ({
+    tipo: kind,
+    quantidade: selected.find(row => row.tipo === kind)?.quantidade || 0,
+  }));
   const found = classifications.reduce((total, row) => total + row.quantidade, 0);
   const losses = classifications.filter(row => row.tipo === 'DERROTA' || row.tipo === 'DERROTA_VOLUNTARIA')
     .reduce((total, row) => total + row.quantidade, 0);
@@ -113,6 +126,7 @@ function createDemoData(carteira: string, tipo: Classificacao, periodo: string):
       ticket_amostra: sample, aging_medio: 276,
     },
     aging, estados: states, analistas: analysts, classificacoes: classifications,
+    distribuicao_tipos: distribution,
   };
 }
 
@@ -206,6 +220,44 @@ function AgingPanel({ rows, demo }: { rows: Dados['aging']; demo: boolean }) {
     </div>
   </article>;
 }
+function DistributionPanel({ rows, demo }: { rows: Dados['distribuicao_tipos']; demo: boolean }) {
+  const byType = new Map(rows.map(row => [row.tipo, Number(row.quantidade || 0)]));
+  const total = DISTRIBUTION.reduce((sum, item) => sum + (byType.get(item.tipo) || 0), 0);
+  const maximum = Math.max(1, ...DISTRIBUTION.map(item => byType.get(item.tipo) || 0));
+  return <article className="closing-panel closing-distribution-panel">
+    <div className="closing-panel-heading">
+      <div><h2><Activity size={16}/> Divisão por tipo de encerramento {demo ? <span className="closing-demo-inline">Exemplo</span> : null}</h2>
+        <p>Indícios classificados pela automação, sem duplicidade de CNJ.</p>
+      </div>
+      <strong className="closing-distribution-total">{n(total)} <small>classificações</small></strong>
+    </div>
+    <div className="closing-distribution-stacked" role="img" aria-label="Proporção por categoria de encerramento">
+      {DISTRIBUTION.map(item => {
+        const count = byType.get(item.tipo) || 0;
+        return count > 0 ? <span key={item.tipo} className={'closing-distribution-segment ' + item.tone}
+          style={{ width: (count / total * 100) + '%' }}
+          title={item.label + ': ' + n(count) + ' (' + (count / total * 100).toFixed(1).replace('.', ',') + '%)'} /> : null;
+      })}
+    </div>
+    <div className="closing-distribution-list">
+      {DISTRIBUTION.map(item => {
+        const count = byType.get(item.tipo) || 0;
+        const share = total ? count / total * 100 : 0;
+        return <div key={item.tipo} className="closing-distribution-row">
+          <div className="closing-distribution-row-top">
+            <span><i className={'closing-distribution-marker ' + item.tone}/>{item.label}</span>
+            <strong>{n(count)} <small>{share.toFixed(1).replace('.', ',')}%</small></strong>
+          </div>
+          <div className="closing-distribution-track">
+            <span className={item.tone} style={{ width: (count / maximum * 100) + '%' }}/>
+          </div>
+        </div>;
+      })}
+    </div>
+    <p className="closing-distribution-note">Acordos são apresentados separadamente na composição, mas não entram no indicador de oportunidades aptas ao encerramento.</p>
+  </article>;
+}
+
 function AnalystsPanel({ analysts, demo, selected }: { analysts: Analista[]; demo: boolean; selected: string }) {
   const max = Math.max(1, ...analysts.map(a => a.analisados));
   return <article className="closing-panel">
@@ -303,9 +355,12 @@ export function EncerramentosPage() {
       <BrazilMap estados={displayedData?.estados || []} demo={demonstracao}/>
       <div className="closing-right-column">
         <AgingPanel rows={displayedData?.aging || []} demo={demonstracao}/>
-        <AnalystsPanel analysts={analysts} demo={demonstracao} selected={analista}/>
+        <DistributionPanel rows={displayedData?.distribuicao_tipos || []} demo={demonstracao}/>
       </div>
     </div>
+    <section className="closing-analyst-section" aria-label="Produtividade por analista">
+      <AnalystsPanel analysts={analysts} demo={demonstracao} selected={analista}/>
+    </section>
     <div className="closing-footer-row">
       <div><strong>Composição das oportunidades</strong><span>{(displayedData?.classificacoes || []).length ? displayedData!.classificacoes.map(c => classLabel(c.tipo) + ': ' + n(c.quantidade)).join(' · ') : 'Nenhuma oportunidade com os filtros selecionados.'}</span></div>
       <small>TKM = média de pagamentos liquidados por processo de derrota. Não inclui provisões nem pagamentos pendentes. Acordos e indeterminados estão fora das oportunidades aptas.</small>
