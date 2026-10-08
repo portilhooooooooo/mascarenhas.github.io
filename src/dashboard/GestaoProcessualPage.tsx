@@ -27,7 +27,7 @@ export function GestaoProcessualPage() {
   }, [activeTab, canViewClosing]);
 
   return <div className="gestao-metabase-page gestao-processual-react">
-    <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Gestão Processual">
+    <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
       <button type="button" className={activeTab === 'geral' ? 'active' : ''} aria-current={activeTab === 'geral' ? 'page' : undefined} onClick={() => setActiveTab('geral')}>Visão geral</button>
       {canViewClosing && <button type="button" className={activeTab === 'encerramentos' ? 'active' : ''} aria-current={activeTab === 'encerramentos' ? 'page' : undefined} onClick={() => setActiveTab('encerramentos')}>Encerramentos</button>}
     </nav>
