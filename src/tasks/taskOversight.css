@@ -9,8 +9,6 @@
 .tasks-oversight-eyebrow{display:flex;gap:7px;align-items:center;font-size:9.5px;letter-spacing:.09em;color:#61718a;font-weight:700}
 .tasks-oversight-header h1{margin:5px 0 3px;font-size:20px;font-weight:700;letter-spacing:-.03em}
 .tasks-oversight-header p{margin:0;font-size:11px;color:#64748b}
-.tasks-oversight-actions{display:flex;gap:8px;align-items:center;flex:none}
-.tasks-oversight-actions>button{border:1px solid #dbe4ed;border-radius:8px;background:#fff;color:#385475;padding:8px 12px;font:650 10.5px Inter,sans-serif;cursor:pointer}
 .tasks-oversight-readonly{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:8px 11px;border-radius:9px;border:1px solid #dae2f0;background:#f7f9fd;color:#385375;font-size:10.5px;font-weight:650}
 .tasks-oversight-filters{display:grid;grid-template-columns:minmax(150px,1.2fr) minmax(130px,1fr) minmax(130px,1fr) minmax(180px,1.4fr);gap:9px;align-items:end}
 .tasks-oversight-filters .mba-react-select{min-width:0}
