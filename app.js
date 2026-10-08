@@ -117,22 +117,53 @@ function userInitials(user) {
 
 function renderPortfolioSwitcher(user) {
   const shell = document.querySelector('#portfolio-switcher');
-  const select = document.querySelector('#portfolio-select');
-  if (!shell || !select) return;
+  const clientSelect = document.querySelector('#client-select');
+  const operationSelect = document.querySelector('#portfolio-select');
+  if (!shell || !clientSelect || !operationSelect) return;
+
   const portfolios = Array.isArray(user?.portfolios) ? user.portfolios : [];
   if (!portfolios.length) {
     shell.hidden = true;
     return;
   }
-  const selected = window.MBA_API.configurePortfolios?.(
-    portfolios,
-    user?.default_portfolio_id
-  ) || 'agibank_enter';
-  select.innerHTML = portfolios.map((portfolio) =>
-    `<option value="${escapeHtml(portfolio.id)}">${escapeHtml(portfolio.display_name || portfolio.id)}</option>`
+
+  const selected = window.MBA_API.configurePortfolios?.(portfolios, user?.default_portfolio_id)
+    || portfolios[0].id;
+  const clients = new Map();
+  portfolios.forEach((portfolio) => {
+    const clientName = String(portfolio.client_name || portfolio.display_name || 'Cliente').trim();
+    if (!clients.has(clientName)) clients.set(clientName, []);
+    clients.get(clientName).push(portfolio);
+  });
+
+  clientSelect.innerHTML = [...clients.keys()].map((name) =>
+    `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
   ).join('');
-  select.value = selected;
-  select.disabled = portfolios.length <= 1;
+  const active = portfolios.find((portfolio) => portfolio.id === selected) || portfolios[0];
+  const currentClient = String(active.client_name || active.display_name || 'Cliente').trim();
+  clientSelect.value = currentClient;
+  clientSelect.disabled = clients.size === 1;
+
+  const renderOperations = (clientName, activePortfolioId) => {
+    const available = clients.get(clientName) || [];
+    operationSelect.innerHTML = available.map((portfolio) =>
+      `<option value="${escapeHtml(portfolio.id)}">${escapeHtml(portfolio.operator_name || (available.length === 1 ? 'Carteira única' : portfolio.display_name || portfolio.id))}</option>`
+    ).join('');
+    const chosen = available.some((portfolio) => portfolio.id === activePortfolioId)
+      ? activePortfolioId : available[0]?.id;
+    operationSelect.value = chosen || '';
+    operationSelect.disabled = available.length <= 1;
+    return chosen;
+  };
+  renderOperations(currentClient, selected);
+
+  clientSelect.onchange = () => {
+    const next = renderOperations(clientSelect.value, '');
+    if (next && next !== window.MBA_API.getPortfolioId?.()) {
+      window.MBA_API.setPortfolioId(next);
+      window.location.reload();
+    }
+  };
   shell.hidden = false;
 }
 
@@ -179,13 +210,14 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-role').disabled = true;
   document.querySelector('#selected-user-active').checked = Boolean(user.active);
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
-  const portfolioCatalog = Array.isArray(authenticatedUser?.portfolios) ? authenticatedUser.portfolios : [];
-  const assignedPortfolioIds = new Set((user.portfolios || []).map((item) => String(item.id)));
+  const currentPortfolioId = window.MBA_API.getPortfolioId?.();
+  const currentPortfolio = (authenticatedUser?.portfolios || []).find(item => item.id === currentPortfolioId);
+  const assignedPortfolioIds = new Set((user.portfolios || []).map(item => String(item.id)));
   const portfolioGrid = document.querySelector('#selected-user-portfolio-grid');
   if (portfolioGrid) {
-    portfolioGrid.innerHTML = portfolioCatalog.map((portfolio) =>
-      `<label><input type="checkbox" value="${escapeHtml(portfolio.id)}" ${assignedPortfolioIds.has(String(portfolio.id)) ? 'checked' : ''}> ${escapeHtml(portfolio.display_name || portfolio.id)}</label>`
-    ).join('');
+    portfolioGrid.innerHTML = currentPortfolio
+      ? `<label><input type="checkbox" value="${escapeHtml(currentPortfolio.id)}" ${assignedPortfolioIds.has(String(currentPortfolio.id)) ? 'checked' : ''}> ${escapeHtml(currentPortfolio.display_name || currentPortfolio.id)}</label>`
+      : '';
   }
   const operational = user.access_kind === 'operational';
   document.querySelector('#selected-user-modules').hidden = !operational;
@@ -232,12 +264,12 @@ async function loadUsers() {
       window.MBA_API.request('/api/permissions'),
     ]);
     permissionCatalog = permissions;
-    usersCache = await Promise.all(users.map(async (user) => {
-      try {
-        const detail = await window.MBA_API.request(`/api/users/${user.id}`);
-        return { ...user, effective_permissions: detail.effective_permissions, permission_map: Object.fromEntries((detail.effective_permissions || []).map((item) => [item.key, item.allowed])) };
-      } catch (_error) { return { ...user, permission_map: {} }; }
-    }));
+    usersCache = users;
+    if (selectedUser && !usersCache.some(user => user.id === selectedUser.id)) {
+      selectedUser = null;
+      const editor = document.querySelector('#permissions-editor');
+      if (editor) editor.hidden = true;
+    }
     loading.hidden = true;
     renderUsers();
   } catch (error) {
@@ -274,8 +306,9 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
     const permissions = [...document.querySelectorAll('[data-permission-id]:not(:disabled)')].map(input => ({permission_id: input.dataset.permissionId, allowed: input.checked}));
     if (permissions.length) await window.MBA_API.request(`/api/users/${selectedUser.id}/permissions`, {method: 'PUT', body: JSON.stringify({permissions})});
     button.textContent = 'Alterações salvas';
+    const previouslySelectedId = selectedUser.id;
     await loadUsers();
-    await selectUser(selectedUser.id);
+    if (usersCache.some(user => user.id === previouslySelectedId)) await selectUser(previouslySelectedId);
     setTimeout(() => { button.textContent = 'Salvar alterações'; }, 1600);
   } catch (error) { window.alert(error.message); } finally { button.disabled = false; }
 });
