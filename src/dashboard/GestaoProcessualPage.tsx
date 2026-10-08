@@ -11,20 +11,28 @@ function getPermissions() {
 export function GestaoProcessualPage() {
   const [permissions, setPermissions] = useState(getPermissions);
   const [activeTab, setActiveTab] = useState<'geral' | 'encerramentos'>('geral');
-  const canViewClosing = permissions['encerramentos.view'] === true;
+  const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
+  const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
+  const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
 
   useEffect(() => {
     const sync = () => setPermissions(getPermissions());
     window.addEventListener('mba:authenticated', sync);
+    window.addEventListener('mba:profile-ready', sync);
+    window.addEventListener('mba:logged-out', sync);
     window.addEventListener('mba:session-expired', sync);
     return () => {
       window.removeEventListener('mba:authenticated', sync);
+      window.removeEventListener('mba:profile-ready', sync);
+      window.removeEventListener('mba:logged-out', sync);
       window.removeEventListener('mba:session-expired', sync);
     };
   }, []);
   useEffect(() => {
     if (!canViewClosing && activeTab === 'encerramentos') setActiveTab('geral');
   }, [activeTab, canViewClosing]);
+
+  if (!canViewAnalytics) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
   return <div className="gestao-metabase-page gestao-processual-react">
     <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
