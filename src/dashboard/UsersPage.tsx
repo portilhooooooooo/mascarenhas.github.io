@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { SelectMenu } from './SelectMenu';
 import {
   BadgeCheck,
   Ban,
@@ -64,7 +65,7 @@ const mbaWindow = window as UsersWindow;
 const MASTER_EMAIL = 'gabriel.portilho@mascarenhasbarbosa.com.br';
 
 const SECTION_LABELS: Record<string, string> = {
-  dashboard: 'Gestão processual',
+  dashboard: 'Analytics',
   tasks: 'Tarefas',
   automations: 'Automações',
   tutelas: 'Tutelas',
@@ -141,6 +142,7 @@ export function UsersPage() {
   const [draftActive, setDraftActive] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [permissionView, setPermissionView] = useState<'modules' | 'advanced'>('modules');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pageError, setPageError] = useState('');
@@ -235,6 +237,13 @@ export function UsersPage() {
   const totalAuthorized = users.filter(user => Object.values(permissionMap(user)).some(Boolean)).length;
   const totalBlocked = users.filter(user => user.account_locked || !user.active).length;
   const selectedProtected = isProtectedUser(selected);
+  const dirty = Boolean(selected) && (draftActive !== Boolean(selected?.active)
+    || Object.entries(draftPermissions).some(([key, value]) => value !== (permissionMap(selected)[key] === true)));
+  const moduleGroups = groups.map(group => ({
+    ...group,
+    permissions: group.permissions.filter(permission => permission.key.endsWith('.view')),
+  })).filter(group => group.permissions.length > 0);
+  const visibleGroups = permissionView === 'modules' ? moduleGroups : groups;
   const selectedEffective = Object.fromEntries(
     (selected?.effective_permissions || []).map(item => [item.key, item]),
   );
@@ -303,7 +312,7 @@ export function UsersPage() {
         <div>
           <span className="users-eyebrow">Administração</span>
           <h1>Usuários e autorizações</h1>
-          <p>Controle o acesso ao frontend e às ações protegidas da API por usuário.</p>
+          <p>Gerencie perfis, módulos autorizados e sessões de acesso.</p>
         </div>
         <div className="users-header-actions">
           <button className="users-button secondary" type="button" onClick={() => load(selectedId)} disabled={loading}>
@@ -341,12 +350,9 @@ export function UsersPage() {
                 aria-label="Buscar usuários"
               />
             </label>
-            <select value={statusFilter} onChange={event => setStatusFilter(event.target.value)} aria-label="Filtrar status">
-              <option value="">Todos</option>
-              <option value="active">Ativos</option>
-              <option value="locked">Bloqueados</option>
-              <option value="inactive">Desativados</option>
-            </select>
+            <SelectMenu label="Status" value={statusFilter}
+              options={[{ value: '', label: 'Todos' }, { value: 'active', label: 'Ativos' }, { value: 'locked', label: 'Bloqueados' }, { value: 'inactive', label: 'Desativados' }]}
+              onChange={setStatusFilter} className="users-status-selector" />
           </div>
 
           <div className="users-list">
@@ -421,12 +427,20 @@ export function UsersPage() {
               </div>
 
               <div className="users-permission-heading">
-                <div><strong>Autorizações</strong><small>O frontend e a API utilizam as mesmas chaves de permissão.</small></div>
+                <div><strong>Autorizações</strong><small>Permissões individuais deste usuário, aplicadas conforme a carteira ativa.</small></div>
                 <span>{Object.values(draftPermissions).filter(Boolean).length} liberadas</span>
+              </div>
+              <div className="users-permission-tabs" role="tablist" aria-label="Detalhamento das autorizações">
+                <button type="button" role="tab" aria-selected={permissionView === 'modules'}
+                  className={permissionView === 'modules' ? 'active' : ''}
+                  onClick={() => setPermissionView('modules')}>Visibilidade dos módulos</button>
+                <button type="button" role="tab" aria-selected={permissionView === 'advanced'}
+                  className={permissionView === 'advanced' ? 'active' : ''}
+                  onClick={() => setPermissionView('advanced')}>Ações avançadas</button>
               </div>
 
               <div className="users-permission-groups">
-                {groups.map(group => (
+                {visibleGroups.map(group => (
                   <section className="users-permission-group" key={group.section}>
                     <header><strong>{group.label}</strong></header>
                     {group.permissions.map(permission => {
@@ -438,7 +452,7 @@ export function UsersPage() {
                           <span>
                             <strong>{permission.description || permission.key}</strong>
                             <small>
-                              <code>{permission.key}</code>
+                              {permissionView === 'advanced' && <code>{permission.key}</code>}
                               <span>{exclusive ? 'Exclusivo do administrador raiz' : sourceLabel(effective?.source)}</span>
                             </small>
                           </span>
@@ -468,7 +482,7 @@ export function UsersPage() {
                     className="users-button primary"
                     type="button"
                     onClick={saveSelected}
-                    disabled={saving || selectedProtected}
+                    disabled={saving || selectedProtected || !dirty}
                   >
                     {saving ? <LoaderCircle className="spinning" /> : <BadgeCheck />}
                     Salvar alterações
