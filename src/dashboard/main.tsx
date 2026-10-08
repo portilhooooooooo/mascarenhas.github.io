@@ -235,6 +235,7 @@ function configureApplicationShell() {
   window.addEventListener('mba:module-visibility-updated', syncVisibility);
   window.addEventListener('mba:portfolio-changed', syncVisibility);
   window.addEventListener('mba:session-expired', syncVisibility);
+  window.addEventListener('mba:logged-out', syncVisibility);
   syncVisibility();
   configureProfileControl();
 }
