@@ -51,3 +51,8 @@
 
 .queue-item-badges .tasks-state-pill.high { color:#142b67; background:#edf1f8; }
 .queue-item-badges .tasks-state-pill.normal { color:#4b5563; background:#f3f4f6; }
+
+/* React listbox filters share the same typography and focus state as the global shell. */
+.queue-station-filters .mba-react-select { width: 100%; min-width: 0; }
+.queue-station-filters .mba-react-select-trigger { height: 32px; padding: 0 9px; border: 1px solid var(--mba-border-strong); border-radius: 6px; background: #fff; font-size: 11px; }
+.queue-station-filters .mba-react-select-options { top: calc(100% + 3px); min-width: 100%; }
