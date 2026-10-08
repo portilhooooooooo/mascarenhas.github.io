@@ -1,5 +1,6 @@
 import './operacao.css';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
+import {OperacaoLiminarPage} from './OperacaoLiminarPage';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,
@@ -334,14 +335,14 @@ function PagamentosPage() {
 
 
 export function OperacaoPage() {
-  const [module,setModule]=useState<'pagamentos'|'encerramentos'>('pagamentos');
-  const [allowed,setAllowed]=useState({pagamentos:false,encerramentos:false});
+  const [module,setModule]=useState<'pagamentos'|'liminar'|'encerramentos'>('pagamentos');
+  const [allowed,setAllowed]=useState({pagamentos:false,liminar:false,encerramentos:false});
   useEffect(()=>{
     const sync=()=>{
       const permissions=(window as Window & {MBA_CURRENT_USER?:{permissions?:Record<string,boolean>}}).MBA_CURRENT_USER?.permissions||{};
-      const next={pagamentos:permissions['pagamentos.view']===true,encerramentos:permissions['encerramentos.view']===true};
+      const next={pagamentos:permissions['pagamentos.view']===true,liminar:permissions['tutelas.view']===true,encerramentos:permissions['encerramentos.view']===true};
       setAllowed(next);
-      setModule(previous=>next[previous]?previous:next.pagamentos?'pagamentos':'encerramentos');
+      setModule(previous=>next[previous]?previous:next.pagamentos?'pagamentos':next.liminar?'liminar':'encerramentos');
     };
     sync();
     window.addEventListener('mba:authenticated',sync);
@@ -356,9 +357,9 @@ export function OperacaoPage() {
   return <div className="operacao-module-shell">
     <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
       {allowed.pagamentos?<button type="button" className={module==='pagamentos'?'active':''} aria-current={module==='pagamentos'?'page':undefined} onClick={()=>setModule('pagamentos')}>Pagamentos</button>:null}
-      <button type="button" aria-disabled="true" title="Em desenvolvimento" disabled>Liminar</button>
+      {allowed.liminar?<button type="button" className={module==='liminar'?'active':''} aria-current={module==='liminar'?'page':undefined} onClick={()=>setModule('liminar')}>Liminar</button>:null}
       {allowed.encerramentos?<button type="button" className={module==='encerramentos'?'active':''} aria-current={module==='encerramentos'?'page':undefined} onClick={()=>setModule('encerramentos')}>Encerramentos</button>:null}
     </nav>
-    {module==='pagamentos'&&allowed.pagamentos?<PagamentosPage/>:module==='encerramentos'&&allowed.encerramentos?<OperacaoEncerramentosPage/>:<div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
+    {module==='pagamentos'&&allowed.pagamentos?<PagamentosPage/>:module==='liminar'&&allowed.liminar?<OperacaoLiminarPage/>:module==='encerramentos'&&allowed.encerramentos?<OperacaoEncerramentosPage/>:<div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
   </div>;
 }

@@ -30,3 +30,12 @@
 .operacao-encerramentos-select { width: 100%; min-width: 160px; max-width: 315px; padding: 7px 9px; border: 1px solid var(--mba-border); border-radius: 6px; background: #fff; color: var(--mba-text); font-size: 11px; }
 .operacao-encerramentos-select:focus-visible { outline: 2px solid var(--mba-blue); outline-offset: 2px; }
 .operacao-encerramentos-page .protocolos-workspace-head { flex-wrap: wrap; }
+
+/* Liminar: mesma grade operacional de Pagamentos e Encerramentos. */
+.operacao-liminar-status { flex-wrap: wrap; overflow: visible; }
+.operacao-liminar-status button { min-width: 128px; }
+.operacao-liminar-table { min-width: 900px; }
+.operacao-liminar-table td small { display: block; margin-top: 4px; color: var(--mba-muted); font-size: 10px; }
+.operacao-liminar-evidencia { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.operacao-liminar-page .protocolos-modern-drop { width: 100%; justify-content: center; }
+.operacao-liminar-page .protocolos-search button { padding: 5px 10px; background: transparent; border: none; color: var(--mba-blue); cursor: pointer; }
