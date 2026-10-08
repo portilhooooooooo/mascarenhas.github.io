@@ -145,7 +145,7 @@ export function TaskOversight({ tasks, api, selectedTaskId, onSelectTask, loadin
           <h1>Tarefas dos colaboradores</h1>
           <p>Consulte os lotes e processos da carteira selecionada, sem interferir na execução dos responsáveis.</p>
         </div>
-        <span className="tasks-oversight-readonly"><ShieldCheck size={14} /> Somente leitura</span>
+        <div className="tasks-oversight-actions"><button type="button" onClick={() => setReloadKey(value => value + 1)}>Atualizar</button><span className="tasks-oversight-readonly"><ShieldCheck size={14} /> Somente leitura</span></div>
       </header>
       <div className="tasks-oversight-filters">
         <SelectMenu label="Colaborador" value={assignee} options={peopleOptions} onChange={setAssignee} />
