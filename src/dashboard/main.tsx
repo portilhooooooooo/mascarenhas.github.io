@@ -4,7 +4,6 @@ import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
-import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
@@ -240,15 +239,6 @@ function configureApplicationShell() {
   configureProfileControl();
 }
 
-let portfolioRoot: Root | null = null;
-function mountPortfolioSwitcher() {
-  const host = document.getElementById('portfolio-switcher');
-  if (!host || portfolioRoot) return;
-  host.replaceChildren();
-  portfolioRoot = createRoot(host);
-  portfolioRoot.render(<PortfolioSwitcher />);
-}
-
 let operacaoRoot: Root | null = null;
 
 function mountOperacaoPage() {
@@ -395,7 +385,6 @@ function configureUsersLifecycle() {
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
-    mountPortfolioSwitcher();
     const cleanupBaseTaskImport = (window as DashboardWindow).MBA_REACT_TASKS
       ? () => undefined
       : configureBaseTaskImport();
