@@ -26,6 +26,10 @@ try {
   await page.addInitScript(() => { window.lucide = {createIcons(){}}; });
   await page.goto('http://127.0.0.1:5199/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(() => !!window.MBA_API?.configurePortfolios);
+  assert.equal(await page.locator('#global-search-input').count(),0,'Global process search must not appear in navbar');
+  assert.equal(await page.locator('.topbar .global-search').count(),0);
+  assert.equal(await page.locator('.topbar #client-select').count(),1,'Client selection must remain');
+  assert.equal(await page.locator('.topbar #portfolio-select').count(),1,'Operation selection must remain');
   const portfolioList = [
     {id:'agibank_enter',client_name:'Agibank',operator_name:'Enter',display_name:'Agibank <> Enter'},
     {id:'agibank_mba',client_name:'Agibank',operator_name:'MBA',display_name:'Agibank <> MBA'},
