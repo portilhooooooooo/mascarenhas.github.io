@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, Play, RefreshCcw, Search, Send} from 'lucide-react';
+import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
   getClosingCases, getClosingSummary, sendClosingsToBenner,
   type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType,
