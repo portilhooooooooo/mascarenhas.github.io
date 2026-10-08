@@ -26,6 +26,7 @@ const files = [
   'protocolo.css',
   'config.js',
   'data-api.js',
+  'portfolio-policy.js',
   'app.js',
   'react-compat.js',
   'agreements.js',
