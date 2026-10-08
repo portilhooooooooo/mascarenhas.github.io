@@ -115,6 +115,27 @@ function userInitials(user) {
   return String(user.name || user.email || 'U').trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'U';
 }
 
+function renderPortfolioSwitcher(user) {
+  const shell = document.querySelector('#portfolio-switcher');
+  const select = document.querySelector('#portfolio-select');
+  if (!shell || !select) return;
+  const portfolios = Array.isArray(user?.portfolios) ? user.portfolios : [];
+  if (!portfolios.length) {
+    shell.hidden = true;
+    return;
+  }
+  const selected = window.MBA_API.configurePortfolios?.(
+    portfolios,
+    user?.default_portfolio_id
+  ) || 'agibank_enter';
+  select.innerHTML = portfolios.map((portfolio) =>
+    `<option value="${escapeHtml(portfolio.id)}">${escapeHtml(portfolio.display_name || portfolio.id)}</option>`
+  ).join('');
+  select.value = selected;
+  select.disabled = portfolios.length <= 1;
+  shell.hidden = false;
+}
+
 function filteredUsers() {
   const search = document.querySelector('#users-search')?.value.trim().toLowerCase() || '';
   const role = document.querySelector('#users-role-filter')?.value || '';
@@ -158,6 +179,14 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-role').disabled = true;
   document.querySelector('#selected-user-active').checked = Boolean(user.active);
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
+  const portfolioCatalog = Array.isArray(authenticatedUser?.portfolios) ? authenticatedUser.portfolios : [];
+  const assignedPortfolioIds = new Set((user.portfolios || []).map((item) => String(item.id)));
+  const portfolioGrid = document.querySelector('#selected-user-portfolio-grid');
+  if (portfolioGrid) {
+    portfolioGrid.innerHTML = portfolioCatalog.map((portfolio) =>
+      `<label><input type="checkbox" value="${escapeHtml(portfolio.id)}" ${assignedPortfolioIds.has(String(portfolio.id)) ? 'checked' : ''}> ${escapeHtml(portfolio.display_name || portfolio.id)}</label>`
+    ).join('');
+  }
   const operational = user.access_kind === 'operational';
   document.querySelector('#selected-user-modules').hidden = !operational;
   document.querySelectorAll('#selected-user-modules input').forEach((input) => {
@@ -235,6 +264,11 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
       const allowed_modules = [...document.querySelectorAll('#selected-user-modules input:checked')].map(input => input.value);
       await window.MBA_API.request(`/api/users/${selectedUser.id}`, {method: 'PATCH', body: JSON.stringify({allowed_modules})});
     }
+    const portfolio_ids = [...document.querySelectorAll('#selected-user-portfolio-grid input:checked')].map(input => input.value);
+    await window.MBA_API.request(`/api/users/${selectedUser.id}/portfolios`, {
+      method: 'PUT',
+      body: JSON.stringify({ portfolio_ids }),
+    });
     const active = document.querySelector('#selected-user-active').checked;
     if (active !== selectedUser.active) await window.MBA_API.request(`/api/users/${selectedUser.id}/${active ? 'activate' : 'deactivate'}`, {method: 'POST', body: JSON.stringify({motivo: 'Alteração administrativa de estado'})});
     const permissions = [...document.querySelectorAll('[data-permission-id]:not(:disabled)')].map(input => ({permission_id: input.dataset.permissionId, allowed: input.checked}));
@@ -784,8 +818,16 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
   try { const response = await window.MBA_AUTOMATION_API.fetch('/api/pagamentos/validacao/exportar', { method: 'POST', body: JSON.stringify({ rows: lastAcpRows }) }); if (!response.ok) throw new Error('Não foi possível exportar a validação.'); const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a'); link.href = url; link.download = 'validacao_acp.xlsx'; link.click(); URL.revokeObjectURL(url); } catch (error) { window.alert(error.message); }
 });
 
+document.querySelector('#portfolio-select')?.addEventListener('change', (event) => {
+  const next = String(event.currentTarget.value || '');
+  if (!next || next === window.MBA_API.getPortfolioId?.()) return;
+  window.MBA_API.setPortfolioId(next);
+  window.location.reload();
+});
+
 window.addEventListener('mba:authenticated', (event) => {
   authenticatedUser = event.detail;
+  renderPortfolioSwitcher(event.detail);
   if (event.detail.permissions?.['users.view']) loadUsers();
   if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
   if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});

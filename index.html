@@ -88,6 +88,11 @@
           <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         </div>
         <div class="top-actions">
+          <label class="portfolio-switcher" id="portfolio-switcher">
+            <i data-lucide="briefcase-business"></i>
+            <span class="sr-only">Carteira ativa</span>
+            <select id="portfolio-select" aria-label="Carteira ativa"></select>
+          </label>
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
           <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
           <div class="profile" aria-label="Usuário autenticado">
@@ -524,6 +529,10 @@
               <div class="selected-user-controls"><label class="account-toggle"><input id="selected-user-active" type="checkbox"><span></span><em>Credencial ativa</em></label><label class="account-toggle" hidden><input id="selected-user-task-access" type="checkbox"><span></span><em>Acesso às Tasks</em></label><select class="permission-role-select" id="selected-user-role"><option value="admin">Administrador</option><option value="user">Usuário</option><option value="operational">Operacional</option></select><button class="secondary-button" id="reset-task-otp" type="button" hidden>Redefinir autenticador</button><button class="secondary-button" id="unlock-user" type="button" hidden>Desbloquear</button><button class="secondary-button" id="revoke-user-sessions" type="button">Revogar sessões</button></div>
               </div>
               <div class="permission-grid-edit" id="permission-grid"></div>
+              <fieldset class="agreement-participants" id="selected-user-portfolios">
+                <legend>Carteiras permitidas</legend>
+                <div class="criteria-grid" id="selected-user-portfolio-grid"></div>
+              </fieldset>
               <fieldset class="agreement-participants" id="selected-user-modules"><legend>Módulos permitidos</legend><div class="criteria-grid"><label><input type="checkbox" value="acordos"> Acordos</label><label><input type="checkbox" value="liminar"> Liminar</label><label><input type="checkbox" value="encerramento"> Encerramentos</label><label><input type="checkbox" value="bloqueio"> Bloqueio</label><label><input type="checkbox" value="citacao"> Citação</label><label><input type="checkbox" value="protocolo"> Protocolo</label><label><input type="checkbox" value="comprovante_pagamento"> Comprovante de Pagamento</label></div><small id="selected-user-otp-status"></small></fieldset>
               <div class="permissions-editor-footer"><small id="permission-editor-help">Por padrão, credenciais novas acessam apenas as tarefas atribuídas.</small><button class="permission-save-button" id="save-user-permissions" type="button">Salvar alterações</button></div>
             </section>

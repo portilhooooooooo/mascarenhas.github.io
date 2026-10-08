@@ -3,6 +3,8 @@
   const localHost = ['localhost', '127.0.0.1'].includes(location.hostname);
   const baseUrl = String(window.MBA_API_BASE_URL || '').trim().replace(/\/$/, '');
   const tokenKey = 'mba_session_token';
+  const portfolioKey = 'mba_portfolio_id';
+  const defaultPortfolioId = 'agibank_enter';
   const preview = window.MBA_LOCAL_PREVIEW && localHost;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const transientStatuses = new Set([502, 503, 504]);
@@ -19,6 +21,26 @@
     sessionStorage.removeItem(tokenKey);
   };
   const cloneRows = rows => rows.map(row => ({ ...row }));
+  const getPortfolioId = () => localStorage.getItem(portfolioKey) || defaultPortfolioId;
+  const setPortfolioId = (portfolioId) => {
+    const value = String(portfolioId || '').trim().toLowerCase();
+    if (!/^[a-z0-9_]+$/.test(value)) throw new Error('Carteira inválida.');
+    localStorage.setItem(portfolioKey, value);
+    taskProcessCache.clear();
+    processToTask.clear();
+    inFlightGets.clear();
+    window.dispatchEvent(new CustomEvent('mba:portfolio-changed', { detail: { portfolio_id: value } }));
+    return value;
+  };
+  const configurePortfolios = (portfolios, fallback = defaultPortfolioId) => {
+    const allowed = new Set((Array.isArray(portfolios) ? portfolios : []).map(item => String(item?.id || '')));
+    let selected = getPortfolioId();
+    if (!allowed.has(selected)) {
+      selected = allowed.has(fallback) ? fallback : (allowed.values().next().value || defaultPortfolioId);
+      localStorage.setItem(portfolioKey, selected);
+    }
+    return selected;
+  };
 
   function debugRequest(path, status, startedAt, attempt) {
     if (!preview && window.MBA_API_DEBUG !== true) return;
@@ -120,6 +142,7 @@
     if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     const token = getStoredToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
+    if (path.startsWith('/api/')) headers.set('X-Portfolio-Id', getPortfolioId());
 
     const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
     const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
@@ -215,6 +238,9 @@
     fetch: backendFetch,
     baseUrl,
     getAccessToken: async () => getStoredToken(),
+    getPortfolioId,
+    setPortfolioId,
+    configurePortfolios,
   };
   window.MBA_AUTOMATION_API = window.MBA_API;
   window.MBA_TASK_IMPORT = { createTaskWithImportedProcesses };
