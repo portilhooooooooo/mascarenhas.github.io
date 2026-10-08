@@ -386,6 +386,7 @@ function configureUsersLifecycle() {
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncUsersLifecycle);
   window.addEventListener('mba:session-expired', unmountUsersPage);
+  window.addEventListener('mba:logged-out', unmountUsersPage);
   document.addEventListener('visibilitychange', syncUsersLifecycle);
   syncUsersLifecycle();
 }
