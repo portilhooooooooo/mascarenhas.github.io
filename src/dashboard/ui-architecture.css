@@ -51,7 +51,7 @@ body :is(
   color: var(--mba-text-2) !important;
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   font-size: var(--mba-subnav-font-size) !important;
-  font-weight: 500 !important;
+  font-weight: 400 !important;
   line-height: 1 !important;
   letter-spacing: -.005em !important;
   white-space: nowrap;
@@ -75,7 +75,7 @@ body :is(
   .tasks-react-subnav
 ) > button.active {
   color: var(--mba-blue) !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
 }
 
 body :is(
@@ -158,7 +158,7 @@ body :is(
   body .lobby-heading h1 {
     font-size: var(--mba-page-title);
     line-height: 1.2;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: -.025em;
   }
 
@@ -182,7 +182,7 @@ body :is(
   body .protocolos-button {
     min-height: 34px;
     height: 34px;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     font-size: 11.5px;
   }
 
