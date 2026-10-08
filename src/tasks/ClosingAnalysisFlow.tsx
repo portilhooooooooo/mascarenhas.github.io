@@ -6,7 +6,7 @@ type YesNo = 'sim' | 'nao' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
 type AppealResult = 'provido' | 'improvido';
 type Appellant = 'banco' | 'autora';
-type FinalMerit = 'vitoria' | 'derrota' | 'extincao' | 'indeterminado';
+type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
 export type ClosingAnalysisDraft = {
   workflow_version: 2;
@@ -39,7 +39,6 @@ const OUTCOME_LABELS: Record<string, string> = {
   apto_vitoria: 'Apto ao encerramento — Vitória',
   apto_derrota_voluntaria: 'Apto ao encerramento — Derrota voluntária',
   apto_derrota: 'Apto ao encerramento — Derrota',
-  apto_extincao: 'Apto ao encerramento — Extinção',
   apto_pending_custas: 'Apto, pendente de custas finais',
   inapto_recurso_pendente: 'Inapto — apelação pendente',
   inapto_prazo_recursal: 'Inapto — prazo recursal em aberto',
@@ -100,8 +99,7 @@ function formatDate(value: string | null) {
 }
 
 function asFinalResult(sentence: TrialResult): FinalMerit {
-  if (sentence === 'improcedente') return 'vitoria';
-  if (sentence === 'extincao') return 'extincao';
+  if (sentence === 'improcedente' || sentence === 'extincao') return 'vitoria';
   return 'derrota';
 }
 
@@ -178,12 +176,11 @@ export function ClosingAnalysisFlow({
     outcome = 'inapto_resultado_indeterminado';
   } else if (finalMerit) {
     if (transitConfirmed === 'nao') outcome = 'inapto_sem_transito';
-    else if (transitConfirmed === 'sim' && hasValidTransitDate) {
-      if (costsPaid === 'nao') outcome = 'apto_pending_custas';
+    else if (transitConfirmed === 'sim') {
+      if (finalMerit === 'vitoria') outcome = 'apto_vitoria';
+      else if (costsPaid === 'nao') outcome = 'apto_pending_custas';
       else if (costsPaid === 'sim') {
-        if (finalMerit === 'vitoria') outcome = 'apto_vitoria';
-        else if (finalMerit === 'extincao') outcome = 'apto_extincao';
-        else if (executionRequested === 'nao') {
+        if (executionRequested === 'nao' && hasValidTransitDate) {
           outcome = transitTooRecent
             ? 'inapto_aguardando_transito_60d'
             : 'apto_derrota_voluntaria';
@@ -217,13 +214,14 @@ export function ClosingAnalysisFlow({
       appeal_deadline_open: hadAppeal === 'nao' ? deadlineOpen === 'sim' : null,
       appeal_deadline_date: hadAppeal === 'nao' && deadlineOpen === 'sim' ? deadlineDate : null,
       transit_confirmed: canAnswerTransit ? transitConfirmed === 'sim' : null,
-      transit_date: canAnswerTransit && transitConfirmed === 'sim' ? transitDate : null,
-      final_costs_paid: canAnswerTransit && transitConfirmed === 'sim' && hasValidTransitDate
+      transit_date: finalMerit === 'derrota' && transitConfirmed === 'sim'
+        && costsPaid === 'sim' && executionRequested === 'nao' ? transitDate || null : null,
+      final_costs_paid: finalMerit === 'derrota' && transitConfirmed === 'sim'
         ? costsPaid === 'sim' : null,
-      execution_requested: finalMerit === 'derrota' && hasValidTransitDate && costsPaid === 'sim'
+      execution_requested: finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim'
         ? executionRequested === 'sim' : null,
-      full_payment: finalMerit === 'derrota' && hasValidTransitDate && costsPaid === 'sim' && executionRequested === 'sim'
-        ? fullPayment === 'sim' : null,
+      full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
+        && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
     });
   };
@@ -290,32 +288,35 @@ export function ClosingAnalysisFlow({
         onChange={value => { setTransitConfirmed(value); setTransitDate(''); clearAfterTransit(); }} />
     </TaskQuestion> : null}
 
-    {canAnswerTransit && transitConfirmed === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Quando foi expedida a certidão de trânsito em julgado?">
-      <DateAnswer name="closing-transit-date" label="Data da certidão de trânsito em julgado"
-        value={transitDate} disabled={busy} onChange={value => {
-          setTransitDate(value); clearAfterTransit();
-        }} />
-      {outcome === 'inapto_aguardando_transito_60d' ? <p className="closing-inline-note">
-        Para Derrota Voluntária, são exigidos 60 dias após o trânsito.
-        Reanálise em {formatDate(reopenAt)}.
-      </p> : null}
-    </TaskQuestion> : null}
-
-    {canAnswerTransit && transitConfirmed === 'sim' && hasValidTransitDate ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' ?
       <TaskQuestion number={String(++questionNumber)} question="Houve o pagamento das custas finais?">
         <BinaryChoice name="closing-costs" value={costsPaid} disabled={busy} onChange={value => {
-          setCostsPaid(value); setExecutionRequested(null); setFullPayment(null); setLocalError(null);
+          setCostsPaid(value); setExecutionRequested(null); setFullPayment(null);
+          setTransitDate(''); setLocalError(null);
         }} />
       </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && hasValidTransitDate && costsPaid === 'sim' ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' ?
       <TaskQuestion number={String(++questionNumber)} question="Houve pedido de execução?">
         <BinaryChoice name="closing-execution" value={executionRequested} disabled={busy} onChange={value => {
-          setExecutionRequested(value); setFullPayment(null); setLocalError(null);
+          setExecutionRequested(value); setFullPayment(null); setTransitDate(''); setLocalError(null);
         }} />
       </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && hasValidTransitDate && costsPaid === 'sim' && executionRequested === 'sim' ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' &&
+      costsPaid === 'sim' && executionRequested === 'nao' ?
+      <TaskQuestion number={String(++questionNumber)} question="Qual foi a data do trânsito em julgado?">
+        <DateAnswer name="closing-transit-date" label="Data do trânsito em julgado"
+          value={transitDate} disabled={busy} onChange={value => {
+            setTransitDate(value); setLocalError(null);
+          }} />
+        {outcome === 'inapto_aguardando_transito_60d' ? <p className="closing-inline-note">
+          Derrota Voluntária exige 60 dias após o trânsito.
+          Reanálise em {formatDate(reopenAt)}.
+        </p> : null}
+      </TaskQuestion> : null}
+
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' && executionRequested === 'sim' ?
       <TaskQuestion number={String(++questionNumber)} question="Houve pagamento do valor integral solicitado pela autora?">
         <BinaryChoice name="closing-payment" value={fullPayment} disabled={busy} onChange={value => {
           setFullPayment(value); setLocalError(null);
