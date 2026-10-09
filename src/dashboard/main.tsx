@@ -352,6 +352,9 @@ function syncBennerAndamentos() {
 function configureBennerAndamentos() {
   const section = document.getElementById('automacoes');
   if (!section) return;
+  document.getElementById('benner-andamentos-open')?.addEventListener('click', () => {
+    document.getElementById('benner-andamentos-root')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   new MutationObserver(syncBennerAndamentos).observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncBennerAndamentos);
   window.addEventListener('mba:portfolio-changed', syncBennerAndamentos);
