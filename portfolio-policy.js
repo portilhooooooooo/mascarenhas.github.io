@@ -39,7 +39,7 @@
   };
   const moduleAvailable = (pageId, user) => {
     // Home não concede acesso aos módulos operacionais.
-    if (pageId === 'home') return Boolean(user?.id && user?.email && user?.permissions && typeof user.permissions === 'object');
+    if (pageId === 'home') return Boolean(user?.id); // Toda sessão autenticada acessa a Home, independentemente de carteira/permissões.
     if (!user || !PAGE_PERMISSIONS[pageId]) return false;
     if (GLOBAL_PAGES.has(pageId)) return true;
     const portfolio = getPortfolio(user);
