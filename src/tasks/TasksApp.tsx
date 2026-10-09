@@ -33,7 +33,7 @@ import {
   type ApiRequest,
 } from './renderers';
 import { ProtocolCollectionRenderer } from './ProtocolCollectionRenderer';
-import { TeamTasksView } from './TeamTasksView';
+import { TasksResults } from './TasksResults';
 import { ProcessHeading, TaskBrief } from './TaskExecution';
 import { SelectMenu } from '../dashboard/SelectMenu';
 import './tasks.css';
@@ -76,6 +76,16 @@ function useTasksPageVisible() {
     };
   }, []);
   return visible;
+}
+
+const CNJ_UF: Record<string,string> = { '01':'AC','02':'AL','03':'AP','04':'AM','05':'BA','06':'CE','07':'DF','08':'ES','09':'GO','10':'MA','11':'MT','12':'MS','13':'MG','14':'PA','15':'PB','16':'PR','17':'PE','18':'PI','19':'RJ','20':'RN','21':'RS','22':'RO','23':'RR','24':'SC','25':'SE','26':'SP','27':'TO' };
+function processUf(process: TaskProcess): string {
+  const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
+  const explicit = String(process.uf || metadata.uf || metadata.estado || '').trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(explicit)) return explicit;
+  const cnj = String(process.case_number || '').replace(/\D/g,'');
+  if (cnj.length === 20 && cnj[13] === '8') return CNJ_UF[cnj.slice(14,16)] || '';
+  return '';
 }
 
 function taskStatusLabel(status: unknown) {
@@ -246,10 +256,10 @@ export function TasksApp() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<'management' | 'execution' | 'results'>(currentTaskTab);
-  const [teamMode, setTeamMode] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedDeadline, setSelectedDeadline] = useState('all');
+  const [selectedUf, setSelectedUf] = useState('all');
   const [search, setSearch] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [queueSize, setQueueSize] = useState(10);
@@ -452,6 +462,8 @@ export function TasksApp() {
     });
   }, [allAssignedTasks, processVersion, deferredKeys]);
 
+  const availableUfs = useMemo(() => [...new Set(workItems.map(item => processUf(item.process)).filter(Boolean))].sort(), [workItems]);
+
   const pendingForTask = useCallback((task: Task) => {
     void processVersion;
     const rows = processCache.current.get(task.id);
@@ -461,10 +473,10 @@ export function TasksApp() {
 
   const deadlineOptions = [
     { value: 'all', label: 'Todos' },
-    { value: 'overdue', label: 'Vencidos' },
-    { value: 'today', label: 'Hoje' },
-    { value: 'next3', label: 'Próximos 3 dias' },
-    { value: 'none', label: 'Sem prazo' },
+    { value: 'overdue', label: 'Pra ontem' },
+    { value: 'today', label: 'Pra hoje' },
+    { value: 'future', label: 'Pra depois' },
+    { value: 'completed', label: 'Concluídos' },
   ];
   const navPendingCount = relevantTasks.reduce((sum, task) => sum + pendingForTask(task), 0);
   useEffect(() => {
@@ -474,13 +486,13 @@ export function TasksApp() {
 
   const filteredItems = useMemo(() => workItems.filter(item => {
     const status = processStatus(item, deferredKeys.includes(workItemKey(item)));
-    if (!isTaskActive(item.task) || ['completed','cancelled','inactive','waiting'].includes(status)) return false;
+    if (!isTaskActive(item.task) || ['cancelled','inactive','waiting'].includes(status)) return false;
+    if (selectedDeadline === 'completed' ? status !== 'completed' : status === 'completed') return false;
+    if (selectedUf !== 'all' && processUf(item.process) !== selectedUf) return false;
     if (selectedPriority !== 'all' && situation(item) !== selectedPriority) return false;
-    if (selectedDeadline !== 'all') {
+    if (selectedDeadline !== 'all' && selectedDeadline !== 'completed') {
       const due = item.process.deadline_at || item.task.deadline_at;
-      if (selectedDeadline === 'none') {
-        if (due) return false;
-      } else {
+      {
         if (!due) return false;
         const date = new Date(due);
         if (Number.isNaN(date.getTime())) return false;
@@ -490,7 +502,7 @@ export function TasksApp() {
         const days = Math.round((date.getTime() - now.getTime()) / 86400000);
         if (selectedDeadline === 'overdue' && days >= 0) return false;
         if (selectedDeadline === 'today' && days !== 0) return false;
-        if (selectedDeadline === 'next3' && (days < 0 || days > 3)) return false;
+        if (selectedDeadline === 'future' && days <= 0) return false;
       }
     }
     if (selectedType !== 'all' && normalize(item.task.type) !== selectedType) return false;
@@ -498,7 +510,7 @@ export function TasksApp() {
     const number = String(item.process.case_number || '').toLowerCase();
     const needle = search.trim().toLowerCase();
     return number.includes(needle) || (/^[\d.\-\s]+$/.test(needle) && number.replace(/\D/g,'').includes(needle.replace(/\D/g,'')));
-  }), [workItems, selectedPriority, selectedDeadline, selectedType, search, deferredKeys]);
+  }), [workItems, selectedPriority, selectedDeadline, selectedUf, selectedType, search, deferredKeys]);
 
   useEffect(() => {
     if (!pageVisible) return;
@@ -650,23 +662,22 @@ export function TasksApp() {
 
   return <div ref={stationRef} className={`tasks-react-root ${tab === 'execution' ? 'task-station' : ''}`}>
     <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas">
-      <button type="button" className={tab === 'execution' && !teamMode ? 'active' : ''} onClick={() => { setTeamMode(false); setSelectedType('all'); navigateTaskTab('tarefas'); }}>Minhas tarefas</button>
-      {canViewOtherTasks ? <button type="button" className={tab === 'execution' && teamMode ? 'active' : ''} onClick={() => { setTeamMode(true); navigateTaskTab('tarefas'); }}>Equipe</button> : null}
-      <button type="button" disabled={!manager} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
+      <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setSelectedType('all'); navigateTaskTab('tarefas'); }}>Minhas tarefas</button>
       <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Resultados</button>
+      <button type="button" disabled={!manager} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
     </nav>
-    {tab === 'results' ? <section className="tasks-results" aria-label="Resultados das tarefas"><h1>Resultados</h1><p>O painel do Metabase será disponibilizado aqui.</p></section> : null}
+    {tab === 'results' ? <TasksResults api={apiRequest} canViewAll={isMaster || user?.permissions?.['tasks.results_all'] === true} /> : null}
 
     {tab === 'management' && manager ? <section className="tasks-management-view"><div className="tasks-management-header"><div><h1>Atribuições</h1><p>Crie, distribua e acompanhe os lotes operacionais.</p></div>{canCreate ? <button className="primary-button" type="button" onClick={() => setCreateOpen(true)}><Plus size={15} />Nova tarefa</button> : null}</div><div className="tasks-management-table-wrap"><table className="tasks-management-table"><thead><tr><th>Tarefa</th><th>Tipo</th><th>Pendências</th><th>Status</th><th>Atualização</th><th></th></tr></thead><tbody>{allVisibleTasks.length ? allVisibleTasks.map(task => <tr key={task.id}><td><strong>{task.title || taskTypeLabel(task.type)}</strong><small>{task.description || 'Sem descrição'}</small></td><td>{taskTypeLabel(task.type)}</td><td>{pendingCount(task)}</td><td><span className={`tasks-state-pill ${taskState(task)}`}>{TASK_STATE_META[taskState(task)].singular}</span><small>{taskStatusLabel(task.status)}</small></td><td>{task.updated_at ? new Date(task.updated_at).toLocaleString('pt-BR') : 'Sem atualização'}</td><td><div className="tasks-row-actions">{canManage ? <button type="button" className="secondary-button" disabled={!isTaskActive(task)} onClick={() => setAssignTask(task)}><UserPlus size={14} />Atribuir</button> : null}{canExecute && ownTaskIds.has(task.id) ? <button type="button" className="secondary-button" disabled={!isTaskActive(task) || pendingCount(task) <= 0} onClick={() => void executeTask(task)}>Executar</button> : null}{canManage ? <button type="button" className="tasks-delete-button" title="Excluir lote" onClick={() => void deleteTask(task)}><Trash2 size={14} /></button> : null}</div></td></tr>) : <tr><td colSpan={6}>Nenhuma tarefa disponível.</td></tr>}</tbody></table></div></section> : null}
 
-    {tab === 'execution' && teamMode && canViewOtherTasks ? <TeamTasksView tasks={allVisibleTasks} api={apiRequest} visible={pageVisible} /> : null}
-    {tab === 'execution' && (!teamMode || !canViewOtherTasks) ? <>
+    {tab === 'execution' ? <>
 
       {loadError ? <div className="workbench-notice" role="alert"><span>Não foi possível atualizar a fila. {loadError}</span><button type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button></div> : null}
       {actionNotice ? <div className="execution-notification" role="status"><span>{actionNotice}</span><button type="button" aria-label="Fechar confirmação" onClick={() => setActionNotice(null)}>×</button></div> : null}
       <section className="tasks-workspace"><aside className="tasks-workspace-sidebar"><section className="tasks-process-section"><div className="tasks-process-title"><strong>Processos da fila</strong><span>{filteredItems.length} carregados</span></div><div className="queue-station-filters">
         <SelectMenu label="Prazo" value={selectedDeadline} options={deadlineOptions} onChange={value => { setSelectedDeadline(value); setActiveKey(null); }} />
         <SelectMenu label="Prioridade" value={selectedPriority} options={[{ value: 'all', label: 'Todas' }, { value: 'high', label: 'Alta' }, { value: 'medium', label: 'Média' }, { value: 'low', label: 'Baixa' }]} onChange={value => { setSelectedPriority(value); setActiveKey(null); }} />
+        <SelectMenu label="UF" value={selectedUf} options={[{value:'all',label:'Todas'},...availableUfs.map(uf=>({value:uf,label:uf}))]} onChange={value=>{setSelectedUf(value);setActiveKey(null);}} />
       </div><label className="tasks-process-search"><Search size={14} /><input value={search} type="search" aria-label="Buscar processo" placeholder="Buscar processo" onChange={event => setSearch(event.target.value)} /></label><div className="tasks-process-list">{visibleItems.length ? visibleItems.map(item => { const priority = situation(item); return <button type="button" key={workItemKey(item)} className={`tasks-process-item ${workItemKey(item) === activeKey ? 'selected' : ''}`} onClick={() => selectItem(item)}><div><strong>{item.process.case_number || 'Processo sem número'}</strong><small>{taskTypeLabel(item.task.type)}</small></div><div className="queue-item-badges"><span className={`tasks-state-pill ${priority}`}>{priority === 'high' ? 'Alta' : priority === 'medium' ? 'Média' : 'Baixa'}</span></div></button>; }) : <div className="tasks-sidebar-empty">{loading ? 'Carregando fila…' : 'Nenhum processo neste filtro.'}</div>}</div><div className="workbench-queue-pagination"><button type="button" disabled={windowStart === 0} onClick={() => selectItem(filteredItems[Math.max(0, windowStart - queueSize)])}>Anterior</button><span>{filteredItems.length ? windowStart + 1 : 0}–{Math.min(windowStart + queueSize, filteredItems.length)}</span><button type="button" disabled={windowStart + queueSize >= filteredItems.length} onClick={() => selectItem(filteredItems[windowStart + queueSize])}>Próximos</button></div></section></aside><main className="tasks-execution-panel">{activeItem ? <><article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="tasks-renderer-body" key={normalize(activeItem.task.type) === 'acordos' ? `agreement:${activeItem.task.id}` : workItemKey(activeItem)}>{normalize(activeItem.process.status) === 'completed' ? <div className="tasks-renderer-state"><strong>Processo concluído</strong></div> : normalize(activeItem.task.type) === 'liminar' ? <LiminarRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'defesa' ? <DefenseRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'encerramento' ? <ClosingRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onDeferred={(process, reopenAt) => markClosingDeferred(activeItem.task, process, reopenAt)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div>}</main></section></> : null}
 
     {createOpen && canCreate ? <CreateTaskModal onClose={() => setCreateOpen(false)} onCreated={() => loadTaskList(true)} /> : null}
