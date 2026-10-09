@@ -4,7 +4,7 @@ import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuesti
 
 type YesNo = 'sim' | 'nao' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
-type AppealResult = 'provido' | 'improvido' | 'mantida_improcedencia' | 'convertida_procedencia';
+type AppealResult = 'provido' | 'improvido' | 'mantida_improcedencia' | 'convertida_procedencia' | 'sentenca_desconstituida';
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
@@ -46,6 +46,7 @@ const OUTCOME_LABELS: Record<string, string> = {
   inapto_aguardando_transito_60d: 'Inapto temporariamente — aguardando 60 dias do trânsito',
   inapto_execucao_pendente: 'Inapto — execução sem pagamento integral',
   inapto_resultado_indeterminado: 'Inapto — resultado do recurso exige validação',
+  inapto_sentenca_desconstituida: 'Inapto — sentença desconstituída; aguardando nova decisão',
 };
 
 const SENTENCES = [
@@ -158,7 +159,9 @@ export function ClosingAnalysisFlow({
   if (sentence && noAppealReady) {
     finalMerit = asFinalResult(sentence);
   } else if (sentence && appealJudged) {
-    if (sentence === 'improcedente' || sentence === 'extincao') {
+    if (appealResult === 'sentenca_desconstituida') {
+      finalMerit = null;
+    } else if (sentence === 'improcedente' || sentence === 'extincao') {
       finalMerit = appealResult === 'mantida_improcedencia' ? 'vitoria'
         : appealResult === 'convertida_procedencia' ? 'derrota' : 'indeterminado';
     } else if (appealResult === 'improvido') {
@@ -173,6 +176,8 @@ export function ClosingAnalysisFlow({
   let outcome: string | null = null;
   if (appealPending) {
     outcome = 'inapto_recurso_pendente';
+  } else if (appealJudged && appealResult === 'sentenca_desconstituida') {
+    outcome = 'inapto_sentenca_desconstituida';
   } else if (hadAppeal === 'nao' && deadlineOpen === 'sim') {
     if (deadlineAge !== null && deadlineAge <= 0) outcome = 'inapto_prazo_recursal';
   } else if (finalMerit === 'indeterminado') {
@@ -269,8 +274,10 @@ export function ClosingAnalysisFlow({
       <OptionGroup name="closing-appeal-result" value={appealResult} disabled={busy}
         options={sentence === 'improcedente' || sentence === 'extincao'
           ? [{ value: 'mantida_improcedencia', label: 'Mantida a improcedência' },
-             { value: 'convertida_procedencia', label: 'Convertido em procedência' }]
-          : [{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' }]}
+             { value: 'convertida_procedencia', label: 'Convertido em procedência' },
+             { value: 'sentenca_desconstituida', label: 'Sentença desconstituída' }]
+          : [{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' },
+             { value: 'sentenca_desconstituida', label: 'Sentença desconstituída' }]}
         onChange={value => { setAppealResult(value as AppealResult); clearTransit(); }} />
     </TaskQuestion> : null}
 
