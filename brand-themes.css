@@ -378,3 +378,107 @@ html[data-mba-theme="lua"] .app-shell :is(
 @media(prefers-reduced-motion:reduce) {
   .topbar .mba-theme-switch { transition:none; }
 }
+
+/*
+ * Regression fix: session bars have their own hard-coded white surface in
+ * protocolos.css. Explicitly theme the complete status control, including its
+ * empty/disabled state, rather than allowing light text on white.
+ */
+html[data-mba-theme="lua"] .app-shell .protocolos-session-bar {
+  background:#29292c !important;
+  border:1px solid #45454a !important;
+  color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-copy>span {
+  color:#b8b7bc !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-copy>small {
+  color:#bdbbc1 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state {
+  color:#ededf0 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state i {
+  background:#9999a3 !important;
+  box-shadow:0 0 0 3px #55555c55 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.active,
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.connected,
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.in_use {
+  color:#a8dec0 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.active i,
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.connected i,
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.in_use i {
+  background:#75bd99 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.error,
+html[data-mba-theme="lua"] .app-shell .protocolos-session-state.lost {
+  color:#f3a09c !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-button {
+  background:#343437 !important;
+  color:#f2f2f4 !important;
+  border-color:#505056 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-button.primary:not(:disabled) {
+  background:#b97959 !important;color:#fff !important;border-color:#b97959 !important;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-button.primary:disabled {
+  background:#4b3d37 !important;color:#dfc4b8 !important;
+  border-color:#5e4941 !important;opacity:1 !important;cursor:not-allowed;
+}
+html[data-mba-theme="lua"] .app-shell .protocolos-button.secondary {
+  background:#343437 !important;color:#eeeef0 !important;
+}
+
+/* Analytics has a separately mounted Metabase web component.
+ * Theme the React shell, not the dashboard internals, to avoid hiding charts.
+ */
+html[data-mba-theme="lua"] .app-shell #dashboard,
+html[data-mba-theme="lua"] .app-shell .gestao-metabase-page,
+html[data-mba-theme="lua"] .app-shell .gestao-processual-react {
+  background:#1e1e20 !important;color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] .app-shell .gestao-metabase-shell,
+html[data-mba-theme="lua"] .app-shell .operacao-metabase-shell {
+  background:#29292c !important;border-color:#45454a !important;
+  color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] .app-shell .gestao-metabase-loading,
+html[data-mba-theme="lua"] .app-shell .operacao-metabase-loading {
+  background:rgba(30,30,32,.88) !important;
+  color:#d6a184 !important;
+}
+html[data-mba-theme="lua"] .app-shell .gestao-metabase-state,
+html[data-mba-theme="lua"] .app-shell .operacao-metabase-state {
+  background:#29292c !important;color:#cccacf !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .gestao-metabase-state,.operacao-metabase-state
+) :is(strong,span) { color:#f0eef0 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .gestao-metabase-state,.operacao-metabase-state
+) button {
+  background:#39393e !important;color:#f1f1f2 !important;
+  border-color:#56565b !important;
+}
+html[data-mba-theme="lua"] .app-shell .gestao-metabase-mount,
+html[data-mba-theme="lua"] .app-shell .operacao-metabase-mount {
+  display:block;min-height:760px;background:#29292c;
+}
+/* The embedded Metabase widget may render its own light UI. Keep its
+   internal palette isolated so text/charts don't inherit white-on-white. */
+html[data-mba-theme="lua"] .app-shell :is(
+  .gestao-metabase-mount,.operacao-metabase-mount
+) metabase-dashboard {
+  display:block;width:100%;min-height:760px;
+  color-scheme:light;
+  background:#fff;
+  color:#20232a;
+}
+@media(max-width:820px) {
+  html[data-mba-theme="lua"] .app-shell :is(
+    .gestao-metabase-mount,.operacao-metabase-mount
+  ) metabase-dashboard { min-height:680px; }
+}
