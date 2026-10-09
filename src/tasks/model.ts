@@ -197,10 +197,17 @@ export function compareTasks(a: Task, b: Task) {
 export function backendPriority(item: WorkItem) {
   return normalize(item.process.priority || item.task.priority) || 'unspecified';
 }
-export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Altíssima', 'altíssima': 'Altíssima', highest: 'Altíssima', urgent: 'Altíssima', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Normal', baixa: 'Baixa', low: 'Baixa', unspecified: 'Não informada' };
+export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Altíssima', 'altíssima': 'Altíssima', highest: 'Altíssima', urgent: 'Altíssima', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Média', baixa: 'Baixa', low: 'Baixa', unspecified: 'Não informada' };
+export function priorityLevel(item: WorkItem): 'high' | 'medium' | 'low' {
+  const value = backendPriority(item);
+  if (['altissima', 'altíssima', 'highest', 'urgent', 'urgente', 'alta', 'high'].includes(value)) return 'high';
+  if (['baixa', 'low'].includes(value)) return 'low';
+  // Valores legados "normal" e sem prioridade explícita permanecem na faixa média.
+  return 'medium';
+}
 function priorityRank(item: WorkItem) {
   const value = backendPriority(item);
-  return ['altissima','altíssima','highest','urgent'].includes(value) ? 0 : ['alta','high'].includes(value) ? 1 : ['media','média','medium','normal'].includes(value) ? 2 : ['baixa','low'].includes(value) ? 3 : 4;
+  return priorityLevel(item) === 'high' ? 0 : priorityLevel(item) === 'medium' ? 1 : 2;
 }
 export function processStatus(item: WorkItem, skipped = false) {
   const status = normalize(item.process.status) || 'pending';
