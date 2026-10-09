@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { CheckCircle2, Copy } from 'lucide-react';
 import { taskTypeLabel, type Task, type TaskProcess } from './model';
 import './taskExecution.css';
@@ -19,7 +19,7 @@ export function ProcessHeading({ task, process }: { task: Task; process: TaskPro
     setCopied(false); setCopyError(false); setHelpOpen(false);
     setHelpMessage(''); setHelpError(''); setHelpSuccess('');
   }, [process.id]);
-  const sendHelp = async (event: React.FormEvent) => {
+  const sendHelp = async (event: FormEvent) => {
     event.preventDefault();
     const client = (window as Window & { MBA_API?: { request: (url: string, options: RequestInit) => Promise<unknown> } }).MBA_API;
     if (!client) { setHelpError('API indisponível.'); return; }
