@@ -290,6 +290,68 @@ html[data-mba-theme="lua"] #tarefas .tasks-management-table-wrap {
 }
 html[data-mba-theme="lua"] #tarefas .tasks-team-summary { color:#bab9bf !important; }
 
+
+/* Cobertura dos módulos com fundos codificados fora dos tokens legados. */
+html[data-mba-theme="lua"] .app-shell :is(
+  .closing-filter-row,.closing-kpi,.closing-surface,.closing-unset,.closing-map-tabs .closing-choice,
+  .users-toolbar,.users-access-state,.users-permission-group>header,
+  .users-permission-row.disabled,.users-list-row,.protocolos-modern-drop,
+  .protocolos-selected-file,.protocolos-search,.protocolos-page-size,
+  .protocolos-status-strip-react button,.defesas-source-meta,.defesas-saneamento-grid,
+  .defesa-flow-question,.defesa-flow-question.nested,.defesa-flow-criterion,
+  .defesa-flow-result,.execution-review,.closing-inline-note,.protocolos-intake-section,
+  .protocolos-table-react,.users-list,.users-detail,.users-list-panel,
+  .controladoria-workspace,.closing-choice button:not(.active)
+) {
+  background:#29292c !important;color:#eeeef0 !important;
+  border-color:#46464a !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .users-list-row:hover,.closing-choice button:not(.active):hover,
+  .protocolos-modern-drop:hover,.protocolos-modern-drop.is-dragging
+) { background:#343437 !important; }
+html[data-mba-theme="lua"] .app-shell .users-list-row.selected {
+  background:#42352f !important;box-shadow:inset 2px 0 #c78f70 !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .operacao-encerramentos-select,.closing-filter-row select,.closing-refresh,
+  .closing-pagination button,.tasks-team-pagination button,
+  .tasks-team-filters select,.tasks-team-filters input
+) {
+  background:#343437 !important;color:#f3f3f4 !important;
+  border-color:#53535a !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .closing-matrix thead th,.closing-matrix tbody th,
+  .protocolos-table-react th
+) { background:#343437 !important;color:#d1cdd0 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .closing-kpi strong,.closing-surface strong,.users-list-row strong,
+  .users-permission-group strong,.protocolos-card strong,.defesa-flow-question strong
+) { color:#f3f3f4 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .users-avatar,.protocolos-file-icon
+) { background:#3c3c41 !important;border-color:#5b5b62 !important;color:#dfb093 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .closing-rail,.closing-rank-bar
+) { background:#49494e !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .closing-error,.users-alert.error,.protocolos-alert
+) { background:#462f30 !important;border-color:#825254 !important;color:#f6bdb4 !important; }
+html[data-mba-theme="lua"] .app-shell .users-alert.success {
+  background:#263e33 !important;border-color:#44745c !important;color:#a8e4bf !important;
+}
+html[data-mba-theme="lua"] #tarefas :is(
+  .defesa-flow-question,.defesa-flow-question.nested,.defesa-flow-criterion,
+  .defesa-flow-result,.closing-inline-note,.execution-review
+) { background:#29292c !important;color:#f3f3f4 !important;border-color:#4b4b50 !important; }
+html[data-mba-theme="lua"] #tarefas .defesa-flow-criterion.selected {
+  background:#42352f !important;border-color:#ac816a !important;
+}
+html[data-mba-theme="lua"] .app-shell table :is(strong,span,small,a):not([class*="status"]):not([class*="priority"]):not([class*="badge"]):not([class*="pill"]) {
+  color:#eeeef0 !important;
+}
+
 /* Mensagens, informação semântica e acessibilidade. */
 html[data-mba-theme="lua"] .app-shell :is(
   .workbench-notice,.execution-notification,.task-renderer-error,[role=alert]
