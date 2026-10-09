@@ -227,13 +227,15 @@
 
   installModuleActivationHooks();
 
-  async function loadProfile() {
+  async function loadProfile({ startOnHome = false } = {}) {
     const profile = await window.MBA_API.request('/api/me');
     window.MBA_API.configurePortfolios?.(
       profile.portfolios,
       profile.default_portfolio_id
     );
     applyUser(profile);
+    // Após um login novo, todos iniciam na Home; links internos continuam navegáveis.
+    if (startOnHome) window.showPage?.('home');
     window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
@@ -241,11 +243,11 @@
     publishLoginState({ busy: false, error: null });
   }
 
-  async function loadProfileWithRetry() {
+  async function loadProfileWithRetry(options = {}) {
     let lastError;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await loadProfile();
+        return await loadProfile(options);
       } catch (error) {
         lastError = error;
         if (error?.status === 401 || error?.status === 403) throw error;
@@ -294,6 +296,7 @@
       }
 
       const code = sessionStorage.getItem(oauthHandoffKey);
+      const startOnHome = Boolean(code);
       if (code) {
         const verifier = sessionStorage.getItem(oauthVerifierKey);
         if (!verifier) {
@@ -312,7 +315,7 @@
       }
 
       if (getStoredToken()) {
-        await loadProfileWithRetry();
+        await loadProfileWithRetry({ startOnHome });
       } else {
         setAuthState(false);
         publishLoginState({ busy: false, error: null });
