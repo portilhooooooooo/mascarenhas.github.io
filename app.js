@@ -16,6 +16,7 @@ window.addEventListener('mba:logged-out', () => setTaskNavCount(null));
 window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 
 const pageRoutes = Object.freeze({
+  home: 'home',
   dashboard: 'analytics',
   acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
