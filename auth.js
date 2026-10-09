@@ -11,7 +11,6 @@
   let loginState = { busy: false, error: null };
 
   const pagePermissionScopes = Object.freeze({
-    home: [],
     dashboard: ['dashboard.view'],
     automacoes: ['automations.view'],
     protocolo: [],
@@ -124,9 +123,7 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
-    const canAccess = pageId => pageId === 'home'
-      ? Boolean(user?.id)
-      : window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
+    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
     document.querySelectorAll('[data-permission]').forEach(element => {
       const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
       element.hidden = pageId
@@ -142,10 +139,9 @@
 
     // Prefer actual shell modules as the post-login landing page.
     const pages = [
-      ['home', null],
+      ['tarefas', 'tasks.view'],
       ['dashboard', 'dashboard.view'],
       ['acordos', 'pagamentos.view'],
-      ['tarefas', 'tasks.view'],
       ['protocolo', 'automations.view'],
       ['automacoes', 'automations.view'],
       ['usuarios', 'users.view'],
@@ -227,15 +223,13 @@
 
   installModuleActivationHooks();
 
-  async function loadProfile({ startOnHome = false } = {}) {
+  async function loadProfile() {
     const profile = await window.MBA_API.request('/api/me');
     window.MBA_API.configurePortfolios?.(
       profile.portfolios,
       profile.default_portfolio_id
     );
     applyUser(profile);
-    // Após um login novo, todos iniciam na Home; links internos continuam navegáveis.
-    if (startOnHome) window.showPage?.('home');
     window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
@@ -243,11 +237,11 @@
     publishLoginState({ busy: false, error: null });
   }
 
-  async function loadProfileWithRetry(options = {}) {
+  async function loadProfileWithRetry() {
     let lastError;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await loadProfile(options);
+        return await loadProfile();
       } catch (error) {
         lastError = error;
         if (error?.status === 401 || error?.status === 403) throw error;
@@ -296,7 +290,6 @@
       }
 
       const code = sessionStorage.getItem(oauthHandoffKey);
-      const startOnHome = Boolean(code);
       if (code) {
         const verifier = sessionStorage.getItem(oauthVerifierKey);
         if (!verifier) {
@@ -315,7 +308,7 @@
       }
 
       if (getStoredToken()) {
-        await loadProfileWithRetry({ startOnHome });
+        await loadProfileWithRetry();
       } else {
         setAuthState(false);
         publishLoginState({ busy: false, error: null });
