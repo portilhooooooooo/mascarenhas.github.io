@@ -24,8 +24,6 @@ const files = [
   'brand-identity.css',
   'brand-themes.css',
   'brand-theme.js',
-  'home.css',
-  'home.js',
   'agreements.css',
   'payment-receipt.css',
   'protocolo.css',
@@ -92,8 +90,6 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
   .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
   .replace(/brand-theme\.js(?:\?v=[^"']+)?/g, `brand-theme.js?v=${buildVersion}`)
-  .replace(/home\.css(?:\?v=[^"']+)?/g, `home.css?v=${buildVersion}`)
-  .replace(/home\.js(?:\?v=[^"']+)?/g, `home.js?v=${buildVersion}`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)
   .replace(/payment-receipt\.css(?:\?v=[^"']+)?/g, `payment-receipt.css?v=${buildVersion}`)
