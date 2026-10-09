@@ -1,0 +1,54 @@
+/* Home — identidade Sol/Lua, sem cards ou métricas. */
+#home.home-page {
+  min-height: calc(100vh - 138px);
+  padding: clamp(55px, 12vh, 136px) clamp(14px, 5vw, 78px) 48px;
+  background: var(--mba-bg);
+}
+#home .home-intro { max-width: 920px; }
+#home .home-kicker {
+  margin: 0 0 24px;
+  color: var(--mba-muted);
+  font: 600 10px/1.45 Inter, system-ui, sans-serif;
+  letter-spacing: .12em;
+}
+#home .home-greeting {
+  margin: 0;
+  color: var(--mba-text) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: clamp(35px, 4.7vw, 65px) !important;
+  font-weight: 400 !important;
+  line-height: 1.12;
+  letter-spacing: -.042em;
+  text-wrap: balance;
+}
+#home .home-subtitle {
+  margin: 19px 0 0;
+  color: var(--mba-text-2);
+  font: 400 clamp(15px, 1.35vw, 18px)/1.55 Inter, system-ui, sans-serif;
+  letter-spacing: -.015em;
+}
+#home .home-task-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 46px;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--mba-border-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--mba-blue-dark);
+  font: 600 12px/1.4 Inter, system-ui, sans-serif;
+  cursor: pointer;
+  transition: color .14s ease, border-color .14s ease;
+}
+#home .home-task-link svg { width: 15px; height: 15px; stroke-width: 1.6; }
+#home .home-task-link:hover { color: var(--mba-blue); border-color: currentColor; }
+#home .home-task-link:focus-visible { outline: 2px solid var(--mba-blue); outline-offset: 5px; }
+#home .home-task-link[hidden] { display: none !important; }
+@media (max-width: 760px) {
+  #home.home-page { min-height: calc(100dvh - 100px); padding: 60px 15px 42px; }
+  #home .home-kicker { margin-bottom: 19px; }
+  #home .home-task-link { margin-top: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { #home .home-task-link { transition: none; } }
