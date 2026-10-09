@@ -183,11 +183,10 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  const visiblePages = new Set(['tarefas', 'dashboard', 'acordos', 'protocolo', 'automacoes']);
+  const visiblePages = new Set(['tarefas', 'dashboard', 'acordos', 'automacoes']);
   const labels: Record<string, string> = {
     dashboard: 'Analytics',
     acordos: 'Operação',
-    protocolo: 'Controladoria',
     automacoes: 'Automações',
     tarefas: 'Tarefas',
   };
@@ -199,7 +198,7 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page) || button === baseDados;
-      const eligible = recognized && Boolean(page) && mayOpen(page);
+      const eligible = recognized && Boolean(page) && (mayOpen(page) || (page === 'acordos' && mayOpen('protocolo')));
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
@@ -222,7 +221,6 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
-    nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
     baseDados,
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
   ];
@@ -270,7 +268,7 @@ function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = mayOpen('acordos');
+  const allowed = mayOpen('acordos') || mayOpen('protocolo');
   if (visible && allowed) mountOperacaoPage();
   else unmountOperacaoPage();
 }
