@@ -76,6 +76,9 @@ test('abas React atualizam a rota e restauram a página pai', () => {
   assert.equal(e.window.MBA_NAVIGATE('controladoria/defesas'), true);
   assert.equal(e.location.pathname, '/operacao/defesas');
   assert.equal(e.active.get('acordos'), true);
+  assert.equal(e.window.MBA_NAVIGATE('operacao/protocolos'), true);
+  assert.equal(e.location.pathname, '/operacao/protocolos');
+  assert.equal(e.active.get('acordos'), true);
   assert.equal(e.window.MBA_NAVIGATE('tarefas/resultados'), true);
   assert.equal(e.active.get('tarefas'), true);
   assert.equal(e.events.at(-1).detail.route, 'tarefas/resultados');
