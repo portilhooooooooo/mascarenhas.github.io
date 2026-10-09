@@ -560,6 +560,19 @@ const integrationConfig = {
   'benner-andamentos': { label: 'Andamentos no Benner', run: '/api/automations/benner-andamentos/import', status: (id) => `/api/automations/benner-andamentos/jobs/${id}`, done: ['DONE', 'DONE_WITH_ERRORS', 'ERROR', 'DISPATCH_ERROR'], progress: ['processed'] },
 };
 
+function syncAutomationPortfolioCards() {
+  const portfolio = window.MBA_PORTFOLIO_POLICY?.getPortfolio?.(window.MBA_CURRENT_USER);
+  const isAgibankMascarenhas = portfolio?.id === 'agibank_mba';
+  for (const name of ['liminar', 'encerramentos']) {
+    const card = document.querySelector('[data-integration-card="' + name + '"]');
+    if (card) card.hidden = isAgibankMascarenhas;
+  }
+}
+window.addEventListener('mba:profile-ready', syncAutomationPortfolioCards);
+window.addEventListener('mba:authenticated', syncAutomationPortfolioCards);
+window.addEventListener('mba:portfolio-changed', syncAutomationPortfolioCards);
+syncAutomationPortfolioCards();
+
 function setIntegrationHealth(name, online) {
   const badge = document.querySelector(`#${name}-health`);
   const dashboard = document.querySelector(`#dashboard-${name}-status`);
