@@ -786,7 +786,8 @@ document.querySelector('#integration-form')?.addEventListener('submit', async (e
     document.querySelector('#integration-result').hidden = false;
     document.querySelector('#integration-result-status').textContent = 'Job criado';
     document.querySelector('#integration-result-progress').textContent = `Identificador: ${jobId}`;
-    setResourceBusy(type, true);
+    // Benner accepts independent queued batches; do not lock the upload card until completion.
+    if (type !== 'benner-andamentos') setResourceBusy(type, true);
     pollIntegration(type, jobId);
   } catch (error) {
     const messages = { 401: 'Sua sessão expirou. Entre novamente.', 403: 'Você não possui permissão para executar esta automação.', 409: 'Já existe uma automação utilizando este recurso.', 413: 'Esta execução excede o limite permitido de processos.', 429: 'Você atingiu o limite diário de execuções desta automação.' };
