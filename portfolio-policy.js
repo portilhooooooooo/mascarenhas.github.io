@@ -16,7 +16,7 @@
     usuarios: 'users.view',
     configuracoes: 'settings.view',
   });
-  const ENTER_ONLY = new Set(['automacoes', 'protocolo']);
+  const ENTER_ONLY = new Set(['protocolo']);
   const GLOBAL_PAGES = new Set(['usuarios', 'configuracoes']);
   const SHARED_PAGES = new Set(['dashboard', 'tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'acordos', 'pagamentos', 'tutelas', 'encerramentos']);
   const canonical = value => String(value || '').trim().toLowerCase();
@@ -57,10 +57,11 @@
       encerramentos: ['encerramentos'],
     };
     if (ENTER_ONLY.has(pageId) && !isEnter(portfolio)) return false;
+    if (pageId === 'automacoes' && !isEnter(portfolio) && canonical(portfolio.id) !== 'agibank_mba') return false;
     if (modules) return (moduleAliases[pageId] || [pageId]).some(key => modules.has(key));
     // Without declared capabilities, allow generic modules only by user permission.
     // Modules tied to Enter still require an Enter portfolio.
-    return SHARED_PAGES.has(pageId) || (ENTER_ONLY.has(pageId) && isEnter(portfolio));
+    return SHARED_PAGES.has(pageId) || (pageId === 'automacoes' && (isEnter(portfolio) || canonical(portfolio.id) === 'agibank_mba')) || (ENTER_ONLY.has(pageId) && isEnter(portfolio));
   };
   const canAccess = (pageId, user = window.MBA_CURRENT_USER) => {
     const permission = PAGE_PERMISSIONS[pageId];
