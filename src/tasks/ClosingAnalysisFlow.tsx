@@ -23,6 +23,7 @@ export type ClosingAnalysisDraft = {
   execution_requested: boolean | null;
   full_payment: boolean | null;
   classifier_classification: string | null;
+  classification_confirmed: boolean;
 };
 
 type Props = {
@@ -130,6 +131,8 @@ export function ClosingAnalysisFlow({
   const [executionRequested, setExecutionRequested] = useState<YesNo>(null);
   const [fullPayment, setFullPayment] = useState<YesNo>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [classificationConfirmed, setClassificationConfirmed] = useState<YesNo>(null);
+  const [redoDecision, setRedoDecision] = useState<YesNo>(null);
 
   const clearAfterTransit = () => {
     setCostsPaid(null); setExecutionRequested(null); setFullPayment(null);
@@ -144,6 +147,7 @@ export function ClosingAnalysisFlow({
   };
   useEffect(() => {
     setSentence(null); setHadAppeal(null); clearAppeal();
+    setClassificationConfirmed(null); setRedoDecision(null);
   }, [cnj]);
 
   const appealPending = hadAppeal === 'sim' && appealDecided === 'nao';
@@ -196,6 +200,14 @@ export function ClosingAnalysisFlow({
     }
   }
 
+  useEffect(() => { setClassificationConfirmed(null); setRedoDecision(null); }, [outcome]);
+
+  const redoAnalysis = () => {
+    setSentence(null); setHadAppeal(null); clearAppeal();
+    setClassificationConfirmed(null); setRedoDecision(null);
+    setLocalError(null);
+  };
+
   const reopenAt = outcome === 'inapto_aguardando_transito_60d'
     ? afterDays(transitDate, 60)
     : outcome === 'inapto_prazo_recursal' ? afterDays(deadlineDate, 1) : null;
@@ -204,7 +216,7 @@ export function ClosingAnalysisFlow({
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || hadAppeal === null) {
+    if (!outcome || !sentence || hadAppeal === null || classificationConfirmed === null || (classificationConfirmed === 'nao' && redoDecision === null)) {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
       return;
     }
@@ -228,6 +240,7 @@ export function ClosingAnalysisFlow({
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
         && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
+      classification_confirmed: classificationConfirmed === 'sim',
     });
   };
 
@@ -329,8 +342,19 @@ export function ClosingAnalysisFlow({
         }} />
       </TaskQuestion> : null}
 
+    {outcome ? <TaskQuestion number={String(++questionNumber)} question="Você concorda com a classificação desse processo?">
+      <BinaryChoice name="closing-classification-confirmed" value={classificationConfirmed} disabled={busy}
+        onChange={value => { setClassificationConfirmed(value); setRedoDecision(null); setLocalError(null); }} />
+    </TaskQuestion> : null}
+
+    {outcome && classificationConfirmed === 'nao' ? <TaskQuestion number={String(++questionNumber)} question="Gostaria de refazer esse processo?">
+      <BinaryChoice name="closing-redo" value={redoDecision} disabled={busy}
+        onChange={value => { if (value === 'sim') redoAnalysis(); else setRedoDecision(value); }} />
+      <p className="closing-inline-note">Se não refizer, a divergência será registrada como Classificação errada na Operação. O processo não será liberado ao Benner.</p>
+    </TaskQuestion> : null}
+
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome)} onSkip={() => void onSkip()}
+    <TaskActionBar busy={busy} ready={Boolean(outcome && classificationConfirmed !== null && (classificationConfirmed === 'sim' || redoDecision === 'nao'))} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
 }
