@@ -67,6 +67,7 @@ function resolvePageRoute(route) {
   return pageId ? { pageId, canonical } : null;
 }
 function canAccessRoute(pageId, route) {
+  if (pageId === 'home') return Boolean(window.MBA_CURRENT_USER?.id);
   if (pageId === 'sem-acesso') return true;
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
@@ -83,6 +84,7 @@ function publishRoute(route, pageId, replace = false) {
   window.dispatchEvent(new CustomEvent('mba:route-changed', { detail: { route, pageId } }));
 }
 function authorizedPageId(pageId) {
+  if (pageId === 'home') return window.MBA_CURRENT_USER?.id && document.getElementById('home') ? 'home' : 'sem-acesso';
   if (pageId === 'sem-acesso') return pageId;
   if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
   return pageId;
@@ -109,7 +111,13 @@ function navigateRoute(route) {
 window.MBA_NAVIGATE = navigateRoute;
 function restorePageRoute() {
   if (!window.MBA_CURRENT_USER) return false;
-  const match = resolvePageRoute(routeFromLocation());
+  const route = routeFromLocation();
+  // / e uma URL de acesso negado de sessão anterior nunca bloqueiam a Home.
+  if (!route || route === 'sem-acesso') {
+    showPage('home');
+    return true;
+  }
+  const match = resolvePageRoute(route);
   if (!match) return false;
   if (!canAccessRoute(match.pageId, match.canonical)) {
     showPage('sem-acesso', false);
