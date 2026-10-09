@@ -22,7 +22,9 @@ type DashboardWindow = Window & typeof globalThis & {
 };
 
 const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao']);
-const mayOpen = (pageId: string) => (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
+const mayOpen = (pageId: string) => pageId === 'home'
+  ? Boolean((window as DashboardWindow).MBA_CURRENT_USER)
+  : (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
 
 function labelNavItem(button: Element, label: string) {
   const span = button.querySelector('span');
