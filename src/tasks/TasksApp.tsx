@@ -319,7 +319,6 @@ export function TasksApp() {
       setVisibleTasks([]);
       setActiveKey(null);
       setDeferredKeys([]);
-      setTeamMode(false);
       setProcessVersion(value => value + 1);
     };
     const onAuth = () => {
@@ -492,8 +491,7 @@ export function TasksApp() {
     if (selectedPriority !== 'all' && situation(item) !== selectedPriority) return false;
     if (selectedDeadline !== 'all' && selectedDeadline !== 'completed') {
       const due = item.process.deadline_at || item.task.deadline_at;
-      {
-        if (!due) return false;
+      if (!due) return false;
         const date = new Date(due);
         if (Number.isNaN(date.getTime())) return false;
         const now = new Date();
@@ -503,7 +501,6 @@ export function TasksApp() {
         if (selectedDeadline === 'overdue' && days >= 0) return false;
         if (selectedDeadline === 'today' && days !== 0) return false;
         if (selectedDeadline === 'future' && days <= 0) return false;
-      }
     }
     if (selectedType !== 'all' && normalize(item.task.type) !== selectedType) return false;
     if (!search.trim()) return true;
