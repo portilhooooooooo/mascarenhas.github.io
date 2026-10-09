@@ -28,7 +28,7 @@ function createPolicy(id, overrides = {}) {
 for (const id of ['agibank_mba', 'banco_pan_mba']) {
   const policy = createPolicy(id);
   assert.equal(policy.canAccess('dashboard'), true);
-  assert.equal(policy.canAccess('automacoes'), false, id + ' must not see automations');
+  assert.equal(policy.canAccess('automacoes'), id === 'agibank_mba', id + ' automation scope must follow Agibank Mascarenhas authorization');
   assert.equal(policy.canAccess('protocolo'), false, id + ' must not see Controladoria');
   assert.equal(policy.canAccess('tarefas'), true);
 }
@@ -38,6 +38,7 @@ for (const id of ['agibank_enter', 'energisa_enter']) {
   assert.equal(policy.canAccess('protocolo'), true);
 }
 assert.equal(createPolicy('agibank_enter', { permissions: { ...allPermissions, 'automations.view': false } }).canAccess('automacoes'), false, 'individual user denial must take precedence');
+assert.equal(createPolicy('agibank_mba', { permissions: { ...allPermissions, 'automations.view': false } }).canAccess('automacoes'), false, 'Agibank MBA automation still requires user permission');
 assert.equal(createPolicy('not-allowed').canAccess('automacoes'), false, 'unknown portfolio must fail closed');
 assert.equal(createPolicy('not-allowed').canAccess('dashboard'), false, 'unknown portfolio must not expose shared modules');
 const metadata = portfolios.map(item => item.id === 'agibank_enter' ? { ...item, enabled_modules: ['analytics', 'tasks'] } : item);
