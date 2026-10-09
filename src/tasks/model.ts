@@ -197,7 +197,7 @@ export function compareTasks(a: Task, b: Task) {
 export function backendPriority(item: WorkItem) {
   return normalize(item.process.priority || item.task.priority) || 'unspecified';
 }
-export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Altíssima', 'altíssima': 'Altíssima', highest: 'Altíssima', urgent: 'Altíssima', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Média', baixa: 'Baixa', low: 'Baixa', unspecified: 'Não informada' };
+export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Alta', 'altíssima': 'Alta', highest: 'Alta', urgent: 'Alta', urgente: 'Alta', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Média', baixa: 'Baixa', low: 'Baixa', unspecified: 'Média' };
 export function priorityLevel(item: WorkItem): 'high' | 'medium' | 'low' {
   const value = backendPriority(item);
   if (['altissima', 'altíssima', 'highest', 'urgent', 'urgente', 'alta', 'high'].includes(value)) return 'high';
@@ -206,8 +206,8 @@ export function priorityLevel(item: WorkItem): 'high' | 'medium' | 'low' {
   return 'medium';
 }
 function priorityRank(item: WorkItem) {
-  const value = backendPriority(item);
-  return priorityLevel(item) === 'high' ? 0 : priorityLevel(item) === 'medium' ? 1 : 2;
+  const level = priorityLevel(item);
+  return level === 'high' ? 0 : level === 'medium' ? 1 : 2;
 }
 export function processStatus(item: WorkItem, skipped = false) {
   const status = normalize(item.process.status) || 'pending';
