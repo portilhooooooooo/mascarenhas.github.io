@@ -138,7 +138,10 @@ export function taskAssignedToUser(task: Task, user: MbaUser | null, manager: bo
 
 export function processAssignedToUser(task: Task, process: TaskProcess, user: MbaUser | null, manager: boolean) {
   if (!user?.id) return false;
-  if (user.is_master_admin || user.permissions?.['tasks.manage']) return true;
+  // Management grants oversight, not execution ownership. The database
+  // authorizes completion for the assigned analyst (or the master admin).
+  // Do not show another analyst's processes as executable for managers.
+  if (user.is_master_admin) return true;
   return Boolean(process.assignee_id) && String(process.assignee_id) === String(user.id);
 }
 
