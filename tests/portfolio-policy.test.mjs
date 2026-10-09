@@ -25,13 +25,6 @@ function createPolicy(id, overrides = {}) {
   vm.runInNewContext(policySource, { window });
   return window.MBA_PORTFOLIO_POLICY;
 }
-assert.equal(createPolicy('not-allowed').canAccess('home'), true, 'Home accessible to authenticated profiles even without active portfolio');
-assert.equal(createPolicy('agibank_mba', { id: null }).canAccess('home'), false, 'Home denies invalid profiles');
-assert.equal(createPolicy('not-allowed', { permissions: {}, portfolios: [] }).canAccess('home'), true, 'Home não depende de permissões ou de carteiras');
-assert.equal(createPolicy('agibank_enter', { permissions: {} }).canAccess('home'), true, 'Home é acessível mesmo sem qualquer módulo autorizado');
-assert.equal(createPolicy('not-allowed', { permissions: {}, portfolios: [] }).canAccess('tarefas'), false, 'Acesso universal à Home não libera os módulos operacionais');
-assert.match(html, /data-page="home"/, 'Home must appear in navigation');
-assert.match(html, /class="page active home-page" id="home"/, 'Home is the initial section');
 for (const id of ['agibank_mba', 'banco_pan_mba']) {
   const policy = createPolicy(id);
   assert.equal(policy.canAccess('dashboard'), true);
@@ -48,6 +41,10 @@ assert.equal(createPolicy('agibank_enter', { permissions: { ...allPermissions, '
 assert.equal(createPolicy('agibank_mba', { permissions: { ...allPermissions, 'automations.view': false } }).canAccess('automacoes'), false, 'Agibank MBA automation still requires user permission');
 assert.equal(createPolicy('not-allowed').canAccess('automacoes'), false, 'unknown portfolio must fail closed');
 assert.equal(createPolicy('not-allowed').canAccess('dashboard'), false, 'unknown portfolio must not expose shared modules');
+assert.equal(createPolicy('agibank_mba').canAccess('home'), false, 'removed Home is not accessible');
+assert.doesNotMatch(html, /data-page="home"/, 'Home must not appear in the sidebar');
+assert.doesNotMatch(html, /id="home"/, 'Home section must be removed');
+assert.doesNotMatch(shell, /data-page="home"/, 'React sidebar must not reference Home');
 const metadata = portfolios.map(item => item.id === 'agibank_enter' ? { ...item, enabled_modules: ['analytics', 'tasks'] } : item);
 const explicit = createPolicy('agibank_enter', { portfolios: metadata });
 assert.equal(explicit.canAccess('automacoes'), false, 'declared backend capability denies undeclared module');
@@ -58,8 +55,6 @@ assert.doesNotMatch(html, /nav-badge">23<\/em>/, 'task badge must not be hardcod
 assert.match(html, /id="tasks-nav-count"[^>]*hidden/, 'task badge must start empty');
 assert.match(html, /portfolio-policy\.js/, 'portfolio policy must be loaded for classic navigation');
 assert.match(shell, /dashboard: 'Analytics'/, 'Analytics must be the module name');
-assert.match(shell, /const eligible = page === 'home'/, 'Home must remain visible to authenticated users regardless of portfolio module permissions');
-assert.match(shell, /data-page="home"/, "Home must be present in React navigation order");
 assert.match(shell, /mayOpen\('protocolo'\)/, 'Controladoria lifecycle must enforce the portfolio');
 assert.match(shell, /<PortfolioSwitcher\s*\/>/, 'portfolio selector must be React');
 assert.match(html, /id="portfolio-switcher"/, 'sidebar must mount a portfolio selector');
