@@ -4,7 +4,7 @@ import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuesti
 
 type YesNo = 'sim' | 'nao' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
-type AppealResult = 'provido' | 'improvido';
+type AppealResult = 'provido' | 'improvido' | 'sentenca_desconstituida';
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
@@ -46,6 +46,7 @@ const OUTCOME_LABELS: Record<string, string> = {
   inapto_aguardando_transito_60d: 'Inapto temporariamente — aguardando 60 dias do trânsito',
   inapto_execucao_pendente: 'Inapto — execução sem pagamento integral',
   inapto_resultado_indeterminado: 'Inapto — resultado do recurso exige validação',
+  inapto_sentenca_desconstituida: 'Inapto — sentença desconstituída; aguardando nova decisão',
 };
 
 const SENTENCES = [
@@ -158,7 +159,9 @@ export function ClosingAnalysisFlow({
   if (sentence && noAppealReady) {
     finalMerit = asFinalResult(sentence);
   } else if (sentence && appealJudged) {
-    if (appealResult === 'improvido') {
+    if (appealResult === 'sentenca_desconstituida') {
+      finalMerit = null;
+    } else if (appealResult === 'improvido') {
       finalMerit = asFinalResult(sentence);
     } else if (sentence === 'extincao' || (sentence === 'parcialmente_procedente' && appellant === 'banco')) {
       finalMerit = 'indeterminado';
@@ -170,6 +173,8 @@ export function ClosingAnalysisFlow({
   let outcome: string | null = null;
   if (appealPending) {
     outcome = 'inapto_recurso_pendente';
+  } else if (appealJudged && appealResult === 'sentenca_desconstituida') {
+    outcome = 'inapto_sentenca_desconstituida';
   } else if (hadAppeal === 'nao' && deadlineOpen === 'sim') {
     if (deadlineAge !== null && deadlineAge <= 0) outcome = 'inapto_prazo_recursal';
   } else if (finalMerit === 'indeterminado') {
@@ -264,7 +269,8 @@ export function ClosingAnalysisFlow({
 
     {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da apelação?">
       <OptionGroup name="closing-appeal-result" value={appealResult} disabled={busy}
-        options={[{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' }]}
+        options={[{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' },
+          { value: 'sentenca_desconstituida', label: 'Sentença desconstituída' }]}
         onChange={value => { setAppealResult(value as AppealResult); clearTransit(); }} />
     </TaskQuestion> : null}
 
