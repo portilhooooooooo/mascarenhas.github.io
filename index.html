@@ -58,18 +58,16 @@
         <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true"><i data-lucide="panel-left-close"></i></button>
       </div>
       <p class="brand-caption">Hub de Gestão</p>
-
       <nav class="main-nav" aria-label="Navegação principal">
         <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
         <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
-        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge">23</em></button>
+        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge" id="tasks-nav-count" aria-label="Pendências" hidden></em></button>
         <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
-        <button class="nav-item" data-page="acordos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Operação</span></button>
+        <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="wallet-cards"></i><span>Operação</span></button>
         <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
         <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
         <button class="nav-item" data-page="protocolo" data-permission="automations.view"><i data-lucide="send"></i><span>Protocolos</span></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="lock-keyhole"></i><span>Bloqueios</span></button>
-        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="building-2"></i><span>Clientes</span></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="send"></i><span>Envios ERP</span></button>
         <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="chart-no-axes-combined"></i><span>Relatórios</span></button>
         <button class="nav-item" data-page="usuarios" data-permission="users.view"><i data-lucide="users"></i><span>Usuários</span></button>
@@ -77,29 +75,15 @@
       </nav>
 
       <div class="sidebar-bottom">
+        <div id="portfolio-switcher" aria-label="Seleção de carteira"></div>
         <button class="sidebar-logout" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
       </div>
     </aside>
 
     <div class="main-area">
       <header class="topbar">
-        <div class="global-search-wrap">
-          <label class="global-search" for="global-search-input"><i data-lucide="search"></i><span class="sr-only">Busca global</span><input id="global-search-input" type="search" placeholder="Buscar processos, usuários, documentos..."><kbd>Ctrl + K</kbd></label>
-          <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
-        </div>
+        <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         <div class="top-actions">
-          <div class="portfolio-switcher" id="portfolio-switcher" role="group" aria-label="Contexto de acesso">
-            <i data-lucide="building-2" aria-hidden="true"></i>
-            <label class="portfolio-field" for="client-select">
-              <span>Cliente</span>
-              <select id="client-select" aria-label="Cliente ativo"></select>
-            </label>
-            <span class="portfolio-field-divider" aria-hidden="true"></span>
-            <label class="portfolio-field portfolio-field-operation" for="portfolio-select">
-              <span>Operação</span>
-              <select id="portfolio-select" aria-label="Carteira ativa"></select>
-            </label>
-          </div>
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
           <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
           <div class="profile" aria-label="Usuário autenticado">
@@ -135,6 +119,12 @@
               <div class="module-icon amber"><i data-lucide="file-check-2"></i></div>
               <div class="module-copy"><div class="module-title-row"><h2>Agente de Encerramentos</h2><span class="status-badge" id="encerramentos-health">Verificando</span></div><p>Pesquisa processos no Enter e classifica indícios de encerramento conforme os critérios selecionados.</p><div class="module-meta"><span><small>Execução atual</small><strong id="encerramentos-job-status">—</strong></span><span><small>Progresso</small><strong id="encerramentos-job-progress">—</strong></span></div></div>
               <div class="module-actions"><button class="primary-button integration-run-button" data-integration="encerramentos" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="encerramentos"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
+            </article>
+
+            <article class="automation-card" data-integration-card="benner-andamentos">
+              <div class="module-icon blue"><i data-lucide="file-plus-2"></i></div>
+              <div class="module-copy"><div class="module-title-row"><h2>Andamentos no Benner</h2><span class="status-badge" id="benner-andamentos-health">Verificando</span></div><p>Importa planilhas e lança andamentos nas pastas do Benner com validação de registro.</p><div class="module-meta"><span><small>Execução atual</small><strong id="benner-andamentos-job-status">—</strong></span><span><small>Progresso</small><strong id="benner-andamentos-job-progress">—</strong></span></div></div>
+              <div class="module-actions"><button class="primary-button integration-run-button" type="button" data-integration="benner-andamentos" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="benner-andamentos"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
             </article>
 
           </div>
@@ -299,8 +289,8 @@
           <section class="panel payments-table-panel"><div class="table-scroll"><table class="task-table payments-table"><thead><tr><th>Pasta</th><th>Credenciado</th><th>Solicitante</th><th>Tipo</th><th>Valor</th><th>Situação</th><th>Aprovação</th><th>Pagamento</th><th>Dias</th></tr></thead><tbody id="pagamentos-table-body"><tr><td colspan="9">Importe uma base para visualizar os pagamentos.</td></tr></tbody></table></div><div class="table-footer"><span id="pagamentos-pagination-label">—</span><div id="pagamentos-pagination"></div></div></section>
         </section>
 
-        <section class="page list-page agreements-page" id="acordos" data-permission="pagamentos.view">
-          <div class="page-title"><div><h1>Acordos</h1><p>Consulte os resultados consolidados das Tasks de Acordos.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button"><i data-lucide="download"></i>Exportar</button></div></div>
+        <section class="page list-page agreements-page" id="acordos" data-permission="agreements.view">
+          <div class="page-title"><div><h1>Acordos</h1><p>Consulte os resultados consolidados das Tasks de Acordos.</p></div><div class="page-title-actions"><button class="primary-button page-action-button" id="agreements-export" type="button" data-permission="agreements.export"><i data-lucide="download"></i>Exportar</button></div></div>
           <section class="tutelas-summary" aria-label="Indicadores de Acordos">
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="list-checks"></i></span><div><strong id="agreements-total">—</strong><span>Total de acordos</span><small>Base consolidada</small></div></article>
             <article class="stat-card"><span class="stat-card-icon"><i data-lucide="clock-3"></i></span><div><strong id="agreements-pending">—</strong><span>Pendentes</span><small>Aguardando análise</small></div></article>
@@ -390,7 +380,7 @@
                 <button type="button" class="analysis-error-button"><i data-lucide="triangle-alert"></i><span><strong>Não foi possível analisar</strong><small>Registre um erro operacional ou documental.</small></span><i data-lucide="chevron-right"></i></button>
                 <label class="notes-field"><span>Observações <b id="notes-requirement">(opcional)</b></span><textarea id="task-notes" maxlength="500" data-db-field="notes" placeholder="Adicione observações sobre a análise, pontos relevantes ou justificativas..."></textarea><small><span id="notes-count">0</span>/500</small></label>
               </div>
-              <footer><button class="secondary-button">Pular e voltar depois</button><button class="primary-button" id="save-next" data-action="save-analysis" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+              <footer><button class="secondary-button" data-permission="tasks.execute">Pular e voltar depois</button><button class="primary-button" id="save-next" data-action="save-analysis" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
             </section>
           </div>
         </section>
@@ -470,7 +460,7 @@
                 </fieldset>
 
                 <p class="payment-receipt-error" id="payment-receipt-error" hidden></p>
-                <footer><button class="secondary-button" id="payment-receipt-skip" type="button">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
+                <footer><button class="secondary-button" id="payment-receipt-skip" type="button" data-permission="tasks.execute">Pular e voltar depois</button><button class="primary-button" type="submit" data-permission="tasks.execute">Salvar e próximo<i data-lucide="arrow-right"></i></button></footer>
               </form>
             </section>
           </div>
@@ -596,11 +586,13 @@
 
   <dialog id="integration-dialog" class="task-dialog integration-dialog">
     <form id="integration-form">
-      <header><div><h2 id="integration-dialog-title">Executar integração</h2><p>Informe um número CNJ por linha.</p></div><button type="button" class="icon-button" data-close-integration><i data-lucide="x"></i></button></header>
+      <header><div><h2 id="integration-dialog-title">Executar integração</h2><p id="integration-dialog-help">Informe um número CNJ por linha ou anexe uma planilha XLSX.</p></div><button type="button" class="icon-button" data-close-integration><i data-lucide="x"></i></button></header>
       <input type="hidden" name="integration" id="integration-type">
       <label id="integration-origin-field" hidden>Origem<input name="origem" value="MBA_BACKOFFICE" maxlength="100"></label>
       <fieldset id="integration-criteria-field" hidden><legend>Critérios de encerramento</legend><div class="criteria-grid"><label><input type="checkbox" name="criterios" value="VITORIA" checked> Vitória</label><label><input type="checkbox" name="criterios" value="DERROTA"> Derrota</label><label><input type="checkbox" name="criterios" value="CUMPRIMENTO_SENTENCA"> Cumprimento de sentença</label><label><input type="checkbox" name="criterios" value="TRANSITO_JULGADO"> Trânsito em julgado</label><label><input type="checkbox" name="criterios" value="SUSPENSO"> Suspenso</label></div></fieldset>
-      <label>Processos CNJ<textarea name="cnjs" rows="8" placeholder="0000000-00.0000.0.00.0000" required></textarea></label>
+      <div class="integration-template-row"><button type="button" class="secondary-button" id="integration-template-download"><i data-lucide="download"></i>Baixar modelo XLSX</button><small id="integration-template-help">Modelo de planilha para esta automação.</small></div>
+      <label id="integration-file-field">Planilha XLSX ou CSV<input name="file" id="integration-file" type="file" accept=".xlsx,.csv"></label>
+      <label id="integration-cnjs-field">Ou informe os processos CNJ<textarea name="cnjs" rows="8" placeholder="0000000-00.0000.0.00.0000"></textarea></label>
       <p class="dialog-error" id="integration-error" hidden></p>
       <div class="integration-job-result" id="integration-result" hidden><strong id="integration-result-status"></strong><span id="integration-result-progress"></span><a id="integration-download" class="secondary-button" target="_blank" rel="noopener" hidden>Baixar resultado</a></div>
       <footer><button type="button" class="secondary-button" data-close-integration>Fechar</button><button type="submit" class="primary-button">Iniciar execução</button></footer>
@@ -667,6 +659,7 @@
   <script src="config.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>
 <script src="data-api.js?v=20260818-agreements-supabase-token"></script>
+  <script src="portfolio-policy.js?v=20261008"></script>
   <script src="app.js?v=20260917-task-lobby-v2"></script>
   <script type="module" src="assets/react-dashboard/dashboard-react.js?v=20260914-protocolo-hardening"></script>
   <script src="agreements.js?v=20260818"></script>

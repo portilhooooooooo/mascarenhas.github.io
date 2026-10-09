@@ -1,5 +1,5 @@
 .operacao-pagamentos-page { max-width: 1600px; margin: 0 auto; }
-.operacao-single-intake { grid-template-columns: minmax(0, 820px); }
+.operacao-single-intake { grid-template-columns: minmax(0, 1fr); width: 100%; }
 .operacao-card-subtitle { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 9.5px; line-height: 1.35; }
 .operacao-workspace { min-width: 0; }
 .operacao-pagamentos-table { min-width: 1180px; }
@@ -16,3 +16,38 @@
 @media (max-width: 920px) {
   .operacao-single-intake { grid-template-columns: 1fr; }
 }
+.operacao-module-subnav button[aria-disabled='true'] { color: var(--mba-muted); cursor: default; }
+.operacao-module-subnav button[aria-disabled='true']:hover { color: var(--mba-muted); }
+.operacao-download-button { min-height: 34px; }
+
+/* Encerramentos: preserve the Pagamentos workspace system without horizontal status scroll. */
+.operacao-encerramentos-status { flex-wrap: wrap; overflow: visible; padding-bottom: 12px; }
+.operacao-encerramentos-status button { min-width: 106px; justify-content: space-between; }
+.operacao-encerramentos-table { min-width: 1080px; }
+.operacao-encerramentos-table td small { display: block; margin-top: 3px; color: var(--mba-muted); font-size: 10px; }
+.operacao-encerramentos-table .protocolos-cnj { white-space: nowrap; }
+.operacao-encerramentos-table input[type='checkbox'] { accent-color: var(--mba-blue); cursor: pointer; width: 15px; height: 15px; }
+.operacao-encerramentos-select { width: 100%; min-width: 160px; max-width: 315px; padding: 7px 9px; border: 1px solid var(--mba-border); border-radius: 6px; background: #fff; color: var(--mba-text); font-size: 11px; }
+.operacao-encerramentos-select:focus-visible { outline: 2px solid var(--mba-blue); outline-offset: 2px; }
+.operacao-encerramentos-page .protocolos-workspace-head { flex-wrap: wrap; }
+
+/* Liminar: mesma grade operacional de Pagamentos e Encerramentos. */
+.operacao-liminar-status { flex-wrap: wrap; overflow: visible; }
+.operacao-liminar-status button { min-width: 128px; }
+.operacao-liminar-table { min-width: 900px; }
+.operacao-liminar-table td small { display: block; margin-top: 4px; color: var(--mba-muted); font-size: 10px; }
+.operacao-liminar-evidencia { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.operacao-liminar-page .protocolos-modern-drop { width: 100%; justify-content: center; }
+.operacao-liminar-page .protocolos-search button { padding: 5px 10px; background: transparent; border: none; color: var(--mba-blue); cursor: pointer; }
+
+/* Confirmed closing observation is human-reviewed, not a DataJud hint. */
+.operacao-encerramentos-table { min-width: 1480px; }
+.operacao-closing-observation { width: 260px; max-width: 290px; font-size: 11px; line-height: 1.45; }
+.operacao-closing-observation summary { cursor: pointer; color: var(--mba-text); line-height: 1.5; }
+.operacao-closing-observation summary:hover { text-decoration: underline; }
+.operacao-closing-observation p { margin: 7px 0 0; white-space: normal; overflow-wrap: anywhere; }
+.operacao-motivo-badge { display: inline-flex; border-radius: 6px; padding: 4px 7px; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.operacao-motivo-badge.yes { background: #e7f7ed; color: #116737; }
+.operacao-motivo-badge.no { background: #fff0ef; color: #b42318; }
+.operacao-motivo-badge.unknown { background: #f1f3f7; color: #596579; }
+.operacao-encerramentos-page .protocolos-toolbar-actions { flex-wrap: wrap; gap: 8px; }

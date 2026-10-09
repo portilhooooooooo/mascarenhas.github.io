@@ -3,21 +3,26 @@ import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
+import { UsersPage } from './UsersPage';
+import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
 import './protocolos.css';
 import './controladoria.css';
 import './defesas.css';
+import './users.css';
 import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
   MBA_REACT_TASKS?: boolean;
+  MBA_PORTFOLIO_POLICY?: { canAccess: (pageId: string) => boolean };
   showPage?: (page: string, updateRoute?: boolean) => void;
 };
 
 const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao']);
+const mayOpen = (pageId: string) => (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
 
 function labelNavItem(button: Element, label: string) {
   const span = button.querySelector('span');
@@ -137,7 +142,8 @@ function setTopModuleActive(page: string) {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) return;
   nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-  nav.querySelector<HTMLElement>(`[data-page="${page}"]`)?.classList.add('active');
+  const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
+  if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') candidate.classList.add('active');
 }
 
 function syncTopModuleFromActivePage() {
@@ -179,7 +185,7 @@ function configureApplicationShell() {
 
   const visiblePages = new Set(['dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
   const labels: Record<string, string> = {
-    dashboard: 'Gestão Processual',
+    dashboard: 'Analytics',
     acordos: 'Operação',
     protocolo: 'Controladoria',
     automacoes: 'Automações',
@@ -189,20 +195,27 @@ function configureApplicationShell() {
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
   const baseDados = buttons.find(button => button.textContent?.trim() === 'Documentos') ?? null;
 
+  const syncVisibility = () => {
+    buttons.forEach(button => {
+      const page = button.dataset.page || '';
+      const recognized = visiblePages.has(page) || button === baseDados;
+      const eligible = recognized && Boolean(page) && mayOpen(page);
+      button.dataset.mbaHidden = String(!eligible);
+      button.hidden = !eligible;
+      if (!eligible) button.classList.remove('active');
+    });
+    const current = document.querySelector<HTMLElement>('main .page.active');
+    if ((window as DashboardWindow).MBA_CURRENT_USER && current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
+      const fallback = [...visiblePages].find(page => mayOpen(page));
+      (window as DashboardWindow).showPage?.(fallback || 'sem-acesso');
+    }
+    syncTopModuleFromActivePage();
+  };
   buttons.forEach(button => {
-    const page = button.dataset.page ?? '';
-    if (page && visiblePages.has(page)) {
-      button.dataset.mbaHidden = 'false';
-      labelNavItem(button, labels[page]);
-      return;
-    }
-    if (button === baseDados) {
-      button.dataset.mbaHidden = 'false';
-      labelNavItem(button, 'Base de dados');
-      button.title = 'Módulo reservado para o Metabase';
-      return;
-    }
-    button.dataset.mbaHidden = 'true';
+    const page = button.dataset.page || '';
+    if (visiblePages.has(page)) labelNavItem(button, labels[page]);
+    else if (button === baseDados) labelNavItem(button, 'Base de dados');
+    else button.dataset.mbaHidden = 'true';
   });
 
   const orderedItems: Array<HTMLElement | null> = [
@@ -219,7 +232,11 @@ function configureApplicationShell() {
   document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
     observer.observe(page, { attributes: true, attributeFilter: ['class'] });
   });
-  syncTopModuleFromActivePage();
+  window.addEventListener('mba:module-visibility-updated', syncVisibility);
+  window.addEventListener('mba:portfolio-changed', syncVisibility);
+  window.addEventListener('mba:session-expired', syncVisibility);
+  window.addEventListener('mba:logged-out', syncVisibility);
+  syncVisibility();
   configureProfileControl();
 }
 
@@ -253,7 +270,7 @@ function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = user?.permissions?.['pagamentos.view'] === true;
+  const allowed = mayOpen('acordos');
   if (visible && allowed) mountOperacaoPage();
   else unmountOperacaoPage();
 }
@@ -265,6 +282,7 @@ function configureOperacaoLifecycle() {
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncOperacaoLifecycle);
   window.addEventListener('mba:session-expired', unmountOperacaoPage);
+  window.addEventListener('mba:logged-out', unmountOperacaoPage);
   document.addEventListener('visibilitychange', syncOperacaoLifecycle);
   syncOperacaoLifecycle();
 }
@@ -299,7 +317,7 @@ function syncProtocolosLifecycle() {
   const section = document.getElementById('protocolo');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = user?.permissions?.['automations.view'] === true;
+  const allowed = mayOpen('protocolo');
   if (visible && allowed) mountProtocolosPage();
   else unmountProtocolosPage();
 }
@@ -312,13 +330,71 @@ function configureProtocolosLifecycle() {
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncProtocolosLifecycle);
   window.addEventListener('mba:session-expired', unmountProtocolosPage);
+  window.addEventListener('mba:logged-out', unmountProtocolosPage);
   document.addEventListener('visibilitychange', syncProtocolosLifecycle);
   syncProtocolosLifecycle();
+}
+
+let usersRoot: Root | null = null;
+
+function mountUsersPage() {
+  const section = document.getElementById('usuarios');
+  if (!section || usersRoot) return;
+  section.dataset.reactMounted = 'true';
+  section.classList.add('users-react-host');
+  section.replaceChildren();
+  const mount = document.createElement('div');
+  mount.className = 'users-react-root';
+  section.appendChild(mount);
+  usersRoot = createRoot(mount);
+  usersRoot.render(<StrictMode><UsersPage /></StrictMode>);
+}
+
+function unmountUsersPage() {
+  if (!usersRoot) return;
+  usersRoot.unmount();
+  usersRoot = null;
+  const section = document.getElementById('usuarios');
+  if (section) {
+    delete section.dataset.reactMounted;
+    section.classList.remove('users-react-host');
+    section.replaceChildren();
+  }
+}
+
+function syncUsersLifecycle() {
+  const section = document.getElementById('usuarios');
+  const user = (window as DashboardWindow).MBA_CURRENT_USER;
+  const visible = section?.classList.contains('active') === true && !document.hidden;
+  const allowed = mayOpen('usuarios');
+  if (visible && allowed) mountUsersPage();
+  else unmountUsersPage();
+}
+
+function configureUsersLifecycle() {
+  const section = document.getElementById('usuarios');
+  if (!section) return;
+  const observer = new MutationObserver(syncUsersLifecycle);
+  observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('mba:authenticated', syncUsersLifecycle);
+  window.addEventListener('mba:session-expired', unmountUsersPage);
+  window.addEventListener('mba:logged-out', unmountUsersPage);
+  document.addEventListener('visibilitychange', syncUsersLifecycle);
+  syncUsersLifecycle();
+}
+
+let portfolioRoot: Root | null = null;
+function mountPortfolioSwitcher() {
+  const host = document.getElementById('portfolio-switcher');
+  if (!host || portfolioRoot) return;
+  portfolioRoot = createRoot(host);
+  portfolioRoot.render(<PortfolioSwitcher />);
 }
 
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
+    mountPortfolioSwitcher();
     const cleanupBaseTaskImport = (window as DashboardWindow).MBA_REACT_TASKS
       ? () => undefined
       : configureBaseTaskImport();
@@ -334,3 +410,4 @@ createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
 mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
+configureUsersLifecycle();

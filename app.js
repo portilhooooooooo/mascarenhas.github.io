@@ -1,26 +1,127 @@
 const navItems = [...document.querySelectorAll('.nav-item')];
 const pages = [...document.querySelectorAll('.page')];
 
-const pageRoutes = { acordos: 'acordos', tarefas: 'tarefas', protocolo: 'protocolo', 'acordo-execucao': 'tarefas/acordos', 'comprovante-execucao': 'tarefas/comprovante-pagamento' };
-function showPage(pageId, updateRoute = true) {
-  pages.forEach((page) => page.classList.toggle('active', page.id === pageId));
-  navItems.forEach((item) => item.classList.toggle('active', item.dataset.page === pageId));
-  if (updateRoute && pageRoutes[pageId]) {
-    const target = window.MBA_LOCAL_PREVIEW ? `#/${pageRoutes[pageId]}` : `/${pageRoutes[pageId]}`;
-    if (`${location.pathname}${location.hash}` !== target) history.pushState({ pageId }, '', target);
+function setTaskNavCount(count) {
+  const badge = document.getElementById('tasks-nav-count');
+  if (!badge) return;
+  const number = Number(count);
+  const valid = Number.isFinite(number) && number > 0;
+  badge.hidden = !valid;
+  if (valid) badge.textContent = number > 99 ? '99+' : String(Math.trunc(number));
+  else badge.textContent = '';
+}
+window.addEventListener('mba:task-pending-count', event => setTaskNavCount(event.detail?.count));
+window.addEventListener('mba:session-expired', () => setTaskNavCount(null));
+window.addEventListener('mba:logged-out', () => setTaskNavCount(null));
+window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
+
+const pageRoutes = Object.freeze({
+  dashboard: 'analytics',
+  acordos: 'operacao/pagamentos',
+  protocolo: 'controladoria/protocolos',
+  automacoes: 'automacoes',
+  tarefas: 'tarefas',
+  'tarefa-analise': 'tarefas/analise',
+  'comprovante-execucao': 'tarefas/comprovante-pagamento',
+  'acordo-execucao': 'tarefas/acordos',
+  pagamentos: 'pagamentos',
+  tutelas: 'automacoes/liminares',
+  encerramentos: 'automacoes/encerramentos',
+  usuarios: 'usuarios',
+  configuracoes: 'configuracoes',
+  'sem-acesso': 'sem-acesso',
+});
+const nestedPageRoutes = Object.freeze({
+  'analytics/encerramentos': 'dashboard',
+  'controladoria/defesas': 'protocolo',
+  'controladoria/indicadores': 'protocolo',
+  'tarefas/atribuicoes': 'tarefas',
+  'tarefas/resultados': 'tarefas',
+});
+const routeAliases = Object.freeze({
+  dashboard: 'analytics',
+  'gestao-processual': 'analytics',
+  acordos: 'operacao/pagamentos',
+  operacao: 'operacao/pagamentos',
+  protocolo: 'controladoria/protocolos',
+  controladoria: 'controladoria/protocolos',
+  'automacoes/protocolos': 'controladoria/protocolos',
+  tutelas: 'automacoes/liminares',
+  encerramentos: 'automacoes/encerramentos',
+});
+
+function routeFromLocation() {
+  const source = location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname;
+  return source.replace(/^\/+|\/+$/g, '');
+}
+function routeUrl(route) {
+  return window.MBA_LOCAL_PREVIEW ? '#/' + route : '/' + route;
+}
+function resolvePageRoute(route) {
+  const canonical = routeAliases[route] || route;
+  if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
+    return { pageId: 'tarefas', canonical: 'tarefas' };
   }
+  const pageId = Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical) || nestedPageRoutes[canonical];
+  return pageId ? { pageId, canonical } : null;
+}
+function canAccessRoute(pageId, route) {
+  if (pageId === 'sem-acesso') return true;
+  if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
+  if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
+  if (route === 'tarefas/atribuicoes') {
+    const user = window.MBA_CURRENT_USER;
+    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
+  }
+  return true;
+}
+function publishRoute(route, pageId, replace = false) {
+  const target = routeUrl(route);
+  const current = window.MBA_LOCAL_PREVIEW ? location.hash : location.pathname;
+  if (current !== target) history[replace ? 'replaceState' : 'pushState']({ pageId }, '', target);
+  window.dispatchEvent(new CustomEvent('mba:route-changed', { detail: { route, pageId } }));
+}
+function authorizedPageId(pageId) {
+  if (pageId === 'sem-acesso') return pageId;
+  if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
+  return pageId;
+}
+function showPage(pageId, updateRoute = true) {
+  pageId = authorizedPageId(pageId);
+  pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+  navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
+  if (updateRoute) publishRoute(pageRoutes[pageId] || 'sem-acesso', pageId);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.showPage = showPage;
-
+function navigateRoute(route) {
+  const match = resolvePageRoute(String(route || '').replace(/^\/+|\/+$/g, ''));
+  if (!match || !window.MBA_CURRENT_USER) return false;
+  if (!canAccessRoute(match.pageId, match.canonical)) {
+    showPage('sem-acesso');
+    return false;
+  }
+  showPage(match.pageId, false);
+  publishRoute(match.canonical, match.pageId);
+  return true;
+}
+window.MBA_NAVIGATE = navigateRoute;
 function restorePageRoute() {
-  const route = (location.hash.replace(/^#\//, '') || location.pathname.replace(/^\//, '')).replace(/\/$/, '');
-  const pageId = Object.entries(pageRoutes).find(([, value]) => value === route)?.[0];
-  const targetPage = pageId ? document.getElementById(pageId) : null;
-  if (pageId && targetPage && !targetPage.hidden) showPage(pageId, false);
+  if (!window.MBA_CURRENT_USER) return false;
+  const match = resolvePageRoute(routeFromLocation());
+  if (!match) return false;
+  if (!canAccessRoute(match.pageId, match.canonical)) {
+    showPage('sem-acesso', false);
+    publishRoute('sem-acesso', 'sem-acesso', true);
+    return true;
+  }
+  showPage(match.pageId, false);
+  publishRoute(match.canonical, match.pageId, true);
+  return true;
 }
 window.addEventListener('popstate', restorePageRoute);
 window.addEventListener('hashchange', restorePageRoute);
+window.addEventListener('mba:portfolio-changed', restorePageRoute);
 window.restorePageRoute = restorePageRoute;
 
 const appShell = document.querySelector('.app-shell');
@@ -115,58 +216,6 @@ function userInitials(user) {
   return String(user.name || user.email || 'U').trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'U';
 }
 
-function renderPortfolioSwitcher(user) {
-  const shell = document.querySelector('#portfolio-switcher');
-  const clientSelect = document.querySelector('#client-select');
-  const operationSelect = document.querySelector('#portfolio-select');
-  if (!shell || !clientSelect || !operationSelect) return;
-
-  const portfolios = Array.isArray(user?.portfolios) ? user.portfolios : [];
-  if (!portfolios.length) {
-    shell.hidden = true;
-    return;
-  }
-
-  const selected = window.MBA_API.configurePortfolios?.(portfolios, user?.default_portfolio_id)
-    || portfolios[0].id;
-  const clients = new Map();
-  portfolios.forEach((portfolio) => {
-    const clientName = String(portfolio.client_name || portfolio.display_name || 'Cliente').trim();
-    if (!clients.has(clientName)) clients.set(clientName, []);
-    clients.get(clientName).push(portfolio);
-  });
-
-  clientSelect.innerHTML = [...clients.keys()].map((name) =>
-    `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
-  ).join('');
-  const active = portfolios.find((portfolio) => portfolio.id === selected) || portfolios[0];
-  const currentClient = String(active.client_name || active.display_name || 'Cliente').trim();
-  clientSelect.value = currentClient;
-  clientSelect.disabled = clients.size === 1;
-
-  const renderOperations = (clientName, activePortfolioId) => {
-    const available = clients.get(clientName) || [];
-    operationSelect.innerHTML = available.map((portfolio) =>
-      `<option value="${escapeHtml(portfolio.id)}">${escapeHtml(portfolio.operator_name || (available.length === 1 ? 'Carteira única' : portfolio.display_name || portfolio.id))}</option>`
-    ).join('');
-    const chosen = available.some((portfolio) => portfolio.id === activePortfolioId)
-      ? activePortfolioId : available[0]?.id;
-    operationSelect.value = chosen || '';
-    operationSelect.disabled = available.length <= 1;
-    return chosen;
-  };
-  renderOperations(currentClient, selected);
-
-  clientSelect.onchange = () => {
-    const next = renderOperations(clientSelect.value, '');
-    if (next && next !== window.MBA_API.getPortfolioId?.()) {
-      window.MBA_API.setPortfolioId(next);
-      window.location.reload();
-    }
-  };
-  shell.hidden = false;
-}
-
 function filteredUsers() {
   const search = document.querySelector('#users-search')?.value.trim().toLowerCase() || '';
   const role = document.querySelector('#users-role-filter')?.value || '';
@@ -210,15 +259,6 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-role').disabled = true;
   document.querySelector('#selected-user-active').checked = Boolean(user.active);
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
-  const currentPortfolioId = window.MBA_API.getPortfolioId?.();
-  const currentPortfolio = (authenticatedUser?.portfolios || []).find(item => item.id === currentPortfolioId);
-  const assignedPortfolioIds = new Set((user.portfolios || []).map(item => String(item.id)));
-  const portfolioGrid = document.querySelector('#selected-user-portfolio-grid');
-  if (portfolioGrid) {
-    portfolioGrid.innerHTML = currentPortfolio
-      ? `<label><input type="checkbox" value="${escapeHtml(currentPortfolio.id)}" ${assignedPortfolioIds.has(String(currentPortfolio.id)) ? 'checked' : ''}> ${escapeHtml(currentPortfolio.display_name || currentPortfolio.id)}</label>`
-      : '';
-  }
   const operational = user.access_kind === 'operational';
   document.querySelector('#selected-user-modules').hidden = !operational;
   document.querySelectorAll('#selected-user-modules input').forEach((input) => {
@@ -240,8 +280,10 @@ function renderPermissionEditor(user) {
   document.querySelector('#permission-grid').innerHTML = permissionSectionOrder.filter((section) => groups[section]?.length).map((section) => `<div class="permission-edit-card"><h3>${escapeHtml(permissionSections[section] || section)}</h3>${groups[section].map((permission) => {
     const state = effective[permission.key];
     const exclusive = permission.key.startsWith('users.') && !canReceiveUsersAccess;
-    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute'].includes(permission.key);
-    const locked = exclusive || operational || protectedIdentity;
+    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute', 'tasks.view_others'].includes(permission.key);
+    // Visibility of colleagues' tasks is an explicit, scoped permission.
+    // It is safe to configure without granting permission to execute or manage.
+    const locked = exclusive || (operational && permission.key !== 'tasks.view_others') || protectedIdentity;
     const lockLabel = exclusive ? 'Exclusivo' : taskOnlyRestricted ? 'Escopo operacional' : '';
     return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O acesso operacional permite somente tarefas atribuídas' : 'Origem atual: ' + (state?.source || 'sem regra')}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
   }).join('')}</div>`).join('');
@@ -264,12 +306,12 @@ async function loadUsers() {
       window.MBA_API.request('/api/permissions'),
     ]);
     permissionCatalog = permissions;
-    usersCache = users;
-    if (selectedUser && !usersCache.some(user => user.id === selectedUser.id)) {
-      selectedUser = null;
-      const editor = document.querySelector('#permissions-editor');
-      if (editor) editor.hidden = true;
-    }
+    usersCache = await Promise.all(users.map(async (user) => {
+      try {
+        const detail = await window.MBA_API.request(`/api/users/${user.id}`);
+        return { ...user, effective_permissions: detail.effective_permissions, permission_map: Object.fromEntries((detail.effective_permissions || []).map((item) => [item.key, item.allowed])) };
+      } catch (_error) { return { ...user, permission_map: {} }; }
+    }));
     loading.hidden = true;
     renderUsers();
   } catch (error) {
@@ -296,19 +338,13 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
       const allowed_modules = [...document.querySelectorAll('#selected-user-modules input:checked')].map(input => input.value);
       await window.MBA_API.request(`/api/users/${selectedUser.id}`, {method: 'PATCH', body: JSON.stringify({allowed_modules})});
     }
-    const portfolio_ids = [...document.querySelectorAll('#selected-user-portfolio-grid input:checked')].map(input => input.value);
-    await window.MBA_API.request(`/api/users/${selectedUser.id}/portfolios`, {
-      method: 'PUT',
-      body: JSON.stringify({ portfolio_ids }),
-    });
     const active = document.querySelector('#selected-user-active').checked;
     if (active !== selectedUser.active) await window.MBA_API.request(`/api/users/${selectedUser.id}/${active ? 'activate' : 'deactivate'}`, {method: 'POST', body: JSON.stringify({motivo: 'Alteração administrativa de estado'})});
     const permissions = [...document.querySelectorAll('[data-permission-id]:not(:disabled)')].map(input => ({permission_id: input.dataset.permissionId, allowed: input.checked}));
     if (permissions.length) await window.MBA_API.request(`/api/users/${selectedUser.id}/permissions`, {method: 'PUT', body: JSON.stringify({permissions})});
     button.textContent = 'Alterações salvas';
-    const previouslySelectedId = selectedUser.id;
     await loadUsers();
-    if (usersCache.some(user => user.id === previouslySelectedId)) await selectUser(previouslySelectedId);
+    await selectUser(selectedUser.id);
     setTimeout(() => { button.textContent = 'Salvar alterações'; }, 1600);
   } catch (error) { window.alert(error.message); } finally { button.disabled = false; }
 });
@@ -521,7 +557,21 @@ const integrationConfig = {
   liminar: { label: 'API de Liminar', run: '/api/integrations/liminar/run', status: (id) => `/api/integrations/liminar/jobs/${id}`, download: (id) => `/api/integrations/liminar/jobs/${id}/download`, done: ['DONE', 'ERROR'], progress: ['done'] },
   datajud: { label: 'CNJ / DataJud', run: '/api/integrations/datajud/run', status: (id) => `/api/integrations/datajud/jobs/${id}`, done: ['CONCLUIDO', 'CONCLUÍDO', 'ERRO'], progress: ['processados', 'done'] },
   encerramentos: { label: 'Agente de Encerramentos', run: '/api/integrations/encerramentos/run', status: (id) => `/api/integrations/encerramentos/jobs/${id}`, download: (id) => `/api/integrations/encerramentos/jobs/${id}/download`, done: ['DONE', 'ERROR'], progress: ['done'] },
+  'benner-andamentos': { label: 'Andamentos no Benner', run: '/api/automations/benner-andamentos/import', status: (id) => `/api/automations/benner-andamentos/jobs/${id}`, done: ['DONE', 'DONE_WITH_ERRORS', 'ERROR', 'DISPATCH_ERROR'], progress: ['processed'] },
 };
+
+function syncAutomationPortfolioCards() {
+  const portfolio = window.MBA_PORTFOLIO_POLICY?.getPortfolio?.(window.MBA_CURRENT_USER);
+  const isAgibankMascarenhas = portfolio?.id === 'agibank_mba';
+  for (const name of ['liminar', 'encerramentos']) {
+    const card = document.querySelector('[data-integration-card="' + name + '"]');
+    if (card) card.hidden = isAgibankMascarenhas;
+  }
+}
+window.addEventListener('mba:profile-ready', syncAutomationPortfolioCards);
+window.addEventListener('mba:authenticated', syncAutomationPortfolioCards);
+window.addEventListener('mba:portfolio-changed', syncAutomationPortfolioCards);
+syncAutomationPortfolioCards();
 
 function setIntegrationHealth(name, online) {
   const badge = document.querySelector(`#${name}-health`);
@@ -555,10 +605,14 @@ async function loadIntegrationHealth() {
     setIntegrationBusy('liminar', Boolean(health.liminar?.busy));
     setIntegrationBusy('encerramentos', Boolean(health.encerramentos?.busy));
     setIntegrationBusy('datajud', Boolean(health.datajud?.busy));
+    window.MBA_AUTOMATION_API.request('/api/automations/benner-andamentos/reasons')
+      .then(() => setIntegrationHealth('benner-andamentos', true))
+      .catch(() => setIntegrationHealth('benner-andamentos', false));
   } catch (_error) {
     setIntegrationHealth('liminar', false);
     setIntegrationHealth('datajud', false);
     setIntegrationHealth('encerramentos', false);
+    setIntegrationHealth('benner-andamentos', false);
   }
 }
 
@@ -575,6 +629,76 @@ function terminalIntegrationStatus(type, status) {
   return integrationConfig[type].done.some((terminal) => normalized === terminal || normalized.startsWith(terminal));
 }
 
+const integrationTemplateColumns = Object.freeze({
+  liminar: ['CNJ'],
+  datajud: ['CNJ'],
+  encerramentos: ['CNJ'],
+  'benner-andamentos': ['CNJ', 'RECEBIMENTO_DOCUMENTO', 'DATA_ANDAMENTO', 'ANDAMENTO', 'OBSERVAÇÕES', 'MOTIVO DERROTA'],
+});
+
+const integrationTemplateInstructions = Object.freeze({
+  liminar: ['CNJ: obrigatório; informar um processo por linha.', 'O conteúdo do XLSX será importado como lista de CNJs.'],
+  datajud: ['CNJ: obrigatório; informar um processo por linha.', 'Origem: preenchida no formulário de execução.'],
+  encerramentos: ['CNJ: obrigatório; informar um processo por linha.', 'Critérios: selecionados no formulário de execução.'],
+  'benner-andamentos': [
+    'CNJ: obrigatório, texto com 20 dígitos e formatação CNJ.',
+    'RECEBIMENTO_DOCUMENTO: data DD/MM/AAAA ou vazia para data atual.',
+    'DATA_ANDAMENTO: data DD/MM/AAAA ou vazia para data atual.',
+    'ANDAMENTO: descrição exata da opção no Benner, obrigatória.',
+    'OBSERVAÇÕES: campo opcional.',
+    'MOTIVO DERROTA: obrigatório somente se ANDAMENTO = Motivo derrota; usar opção exata do Benner.',
+  ],
+});
+
+function downloadIntegrationTemplate(type) {
+  const XLSX = window.XLSX;
+  if (!XLSX?.utils || !integrationTemplateColumns[type]) throw new Error('Gerador XLSX indisponível.');
+  const headers = integrationTemplateColumns[type];
+  const ws = XLSX.utils.aoa_to_sheet([headers]);
+  ws['!cols'] = headers.map((h) => ({ wch: Math.min(Math.max(h.length + 5, 22), 32) }));
+  // Preserve CNJ as text to avoid Excel's 15-digit numeric precision limit.
+  ws['A2'] = { t: 's', v: '' };
+  const guide = XLSX.utils.aoa_to_sheet([['Instruções'], ...integrationTemplateInstructions[type].map((text) => [text])]);
+  guide['!cols'] = [{ wch: 100 }];
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, ws, 'PROCESSOS');
+  XLSX.utils.book_append_sheet(book, guide, 'INSTRUCOES');
+  XLSX.writeFile(book, 'modelo_' + type.replace(/[^a-z0-9]+/gi, '_') + '.xlsx', { bookType: 'xlsx' });
+}
+
+async function readIntegrationCnjs(file) {
+  if (!window.XLSX?.read) throw new Error('Leitor XLSX indisponível.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('A planilha excede 5 MB.');
+  const book = window.XLSX.read(await file.arrayBuffer(), { type: 'array', cellText: true });
+  const values = window.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1, raw: false, defval: '' });
+  const headers = (values[0] || []).map((value) => String(value).trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase());
+  const index = headers.indexOf('CNJ');
+  if (index < 0) throw new Error('A planilha deve conter a coluna CNJ.');
+  const processes = [];
+  const seen = new Set();
+  for (const [i, row] of values.slice(1).entries()) {
+    const cnj = String(row[index] || '').trim();
+    if (!cnj) continue;
+    const digits = cnj.replace(/\D/g, '');
+    if (digits.length !== 20) throw new Error('CNJ inválido na linha ' + (i + 2) + '.');
+    if (seen.has(digits)) continue;
+    seen.add(digits);
+    processes.push(digits.slice(0, 7) + '-' + digits.slice(7, 9) + '.' + digits.slice(9, 13) + '.' + digits.slice(13, 14) + '.' + digits.slice(14, 16) + '.' + digits.slice(16));
+  }
+  if (!processes.length) throw new Error('A planilha não contém CNJs válidos.');
+  return processes;
+}
+
+document.querySelector('#integration-template-download')?.addEventListener('click', () => {
+  try {
+    downloadIntegrationTemplate(document.querySelector('#integration-type').value);
+  } catch (error) {
+    const box = document.querySelector('#integration-error');
+    box.textContent = error.message;
+    box.hidden = false;
+  }
+});
+
 document.querySelectorAll('.integration-run-button').forEach((button) => button.addEventListener('click', async () => {
   const type = button.dataset.integration;
   if (button.id === 'tutelas-run-button') {
@@ -586,6 +710,17 @@ document.querySelectorAll('.integration-run-button').forEach((button) => button.
   document.querySelector('#integration-dialog-title').textContent = `Executar ${integrationConfig[type].label}`;
   document.querySelector('#integration-origin-field').hidden = type !== 'datajud';
   document.querySelector('#integration-criteria-field').hidden = type !== 'encerramentos';
+  const isBenner = type === 'benner-andamentos';
+  document.querySelector('#integration-cnjs-field').hidden = isBenner;
+  document.querySelector('#integration-file-field').hidden = false;
+  document.querySelector('#integration-dialog-help').textContent = isBenner
+    ? 'Importe XLSX/CSV com os campos de andamento e motivo de derrota, quando necessário.'
+    : 'Informe CNJs ou envie uma planilha com a coluna CNJ.';
+  document.querySelector('#integration-template-help').textContent = isBenner
+    ? 'Modelo com seis campos e instruções específicas do Benner.'
+    : 'Modelo com coluna CNJ para esta automação.';
+  document.querySelector('#integration-file').value = '';
+  document.querySelector('#integration-form textarea[name="cnjs"]').required = false;
   document.querySelector('#integration-error').hidden = true;
   document.querySelector('#integration-result').hidden = true;
   document.querySelector('#integration-download').hidden = true;
@@ -607,6 +742,10 @@ async function pollIntegration(type, jobId) {
     document.querySelector('#integration-result-progress').textContent = `${job.last_msg || job.mensagem_atual || 'Em processamento'} · ${done} de ${total}`;
     document.querySelector(`#${type}-job-status`).textContent = job.status;
     document.querySelector(`#${type}-job-progress`).textContent = `${done}/${total}`;
+    if (type === 'benner-andamentos') {
+      document.querySelector('#integration-result-progress').textContent =
+        `${done}/${total} processados · ${Number(job.done || 0)} confirmados · ${Number(job.skipped || 0)} já existentes · ${Number(job.errors || 0)} erros/ressalvas`;
+    }
     const finished = terminalIntegrationStatus(type, status);
     if (!finished) integrationPollTimer = setTimeout(() => pollIntegration(type, jobId), 2000);
     if (config.download && status === 'DONE') {
@@ -631,23 +770,37 @@ document.querySelector('#integration-form')?.addEventListener('submit', async (e
   const submit = form.querySelector('[type="submit"]');
   const data = new FormData(form);
   const type = data.get('integration');
-  const cnjs = [...new Set(String(data.get('cnjs') || '').split(/[\r\n,;]+/).map((value) => value.trim()).filter(Boolean))];
+  const selectedFile = data.get('file');
+  const hasFile = selectedFile instanceof File && selectedFile.size > 0;
   const errorBox = document.querySelector('#integration-error');
   errorBox.hidden = true;
   submit.disabled = true;
   try {
-    if (!cnjs.length) throw new Error('Informe ao menos um processo CNJ.');
-    const payload = type === 'liminar' ? { cnj_list: cnjs }
-      : type === 'datajud' ? { origem: data.get('origem'), processos: cnjs }
-        : { source: 'enter', processos: cnjs, criterios: data.getAll('criterios') };
-    if (type === 'encerramentos' && !payload.criterios.length) throw new Error('Selecione ao menos um critério.');
-    const job = await window.MBA_AUTOMATION_API.request(integrationConfig[type].run, { method: 'POST', body: JSON.stringify(payload) });
+    let job;
+    if (type === 'benner-andamentos') {
+      if (!hasFile) throw new Error('Selecione um XLSX ou CSV para lançar os andamentos.');
+      if (!/\.(xlsx|csv)$/i.test(selectedFile.name)) throw new Error('Formato aceito: XLSX ou CSV.');
+      const upload = new FormData();
+      upload.set('file', selectedFile);
+      job = await window.MBA_AUTOMATION_API.request(integrationConfig[type].run, { method: 'POST', body: upload });
+    } else {
+      const cnjs = hasFile
+        ? await readIntegrationCnjs(selectedFile)
+        : [...new Set(String(data.get('cnjs') || '').split(/[\r\n,;]+/).map((value) => value.trim()).filter(Boolean))];
+      if (!cnjs.length) throw new Error('Informe CNJs ou selecione uma planilha XLSX/CSV.');
+      const payload = type === 'liminar' ? { cnj_list: cnjs }
+        : type === 'datajud' ? { origem: data.get('origem'), processos: cnjs }
+          : { source: 'enter', processos: cnjs, criterios: data.getAll('criterios') };
+      if (type === 'encerramentos' && !payload.criterios.length) throw new Error('Selecione ao menos um critério.');
+      job = await window.MBA_AUTOMATION_API.request(integrationConfig[type].run, { method: 'POST', body: JSON.stringify(payload) });
+    }
     const jobId = job.job_id || job.id;
     if (!jobId) throw new Error('A integração não retornou o identificador do job.');
     document.querySelector('#integration-result').hidden = false;
     document.querySelector('#integration-result-status').textContent = 'Job criado';
     document.querySelector('#integration-result-progress').textContent = `Identificador: ${jobId}`;
-    setResourceBusy(type, true);
+    // Benner accepts independent queued batches; do not lock the upload card until completion.
+    if (type !== 'benner-andamentos') setResourceBusy(type, true);
     pollIntegration(type, jobId);
   } catch (error) {
     const messages = { 401: 'Sua sessão expirou. Entre novamente.', 403: 'Você não possui permissão para executar esta automação.', 409: 'Já existe uma automação utilizando este recurso.', 413: 'Esta execução excede o limite permitido de processos.', 429: 'Você atingiu o limite diário de execuções desta automação.' };
@@ -667,7 +820,8 @@ document.querySelector('#reset-task-otp')?.addEventListener('click', async () =>
 });
 
 async function loadIntegrationJobs(type) {
-  const jobs = await window.MBA_AUTOMATION_API.request(`/api/integrations/${type}/jobs`);
+  const path = type === 'benner-andamentos' ? '/api/automations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
+  const jobs = await window.MBA_AUTOMATION_API.request(path);
   window.dispatchEvent(new CustomEvent('mba:jobs-loaded', { detail: { integration: type, jobs } }));
   return jobs;
 }
@@ -851,17 +1005,9 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
   try { const response = await window.MBA_AUTOMATION_API.fetch('/api/pagamentos/validacao/exportar', { method: 'POST', body: JSON.stringify({ rows: lastAcpRows }) }); if (!response.ok) throw new Error('Não foi possível exportar a validação.'); const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a'); link.href = url; link.download = 'validacao_acp.xlsx'; link.click(); URL.revokeObjectURL(url); } catch (error) { window.alert(error.message); }
 });
 
-document.querySelector('#portfolio-select')?.addEventListener('change', (event) => {
-  const next = String(event.currentTarget.value || '');
-  if (!next || next === window.MBA_API.getPortfolioId?.()) return;
-  window.MBA_API.setPortfolioId(next);
-  window.location.reload();
-});
-
 window.addEventListener('mba:authenticated', (event) => {
   authenticatedUser = event.detail;
-  renderPortfolioSwitcher(event.detail);
-  if (event.detail.permissions?.['users.view']) loadUsers();
+  // A gestão de usuários é carregada pelo módulo React somente quando a página é aberta.
   if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
   if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
   if (event.detail.permissions?.['tutelas.view'] || event.detail.permissions?.['automations.view']) loadTutelaCases().catch(() => {});

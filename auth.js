@@ -123,32 +123,42 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
+    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
     document.querySelectorAll('[data-permission]').forEach(element => {
-      element.hidden = user.permissions[element.dataset.permission] !== true;
+      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
+      element.hidden = pageId
+        ? !canAccess(pageId)
+        : user.permissions[element.dataset.permission] !== true;
+    });
+    document.querySelectorAll('main .page[id]').forEach(page => {
+      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
     });
     document.querySelectorAll('.master-admin-only').forEach(element => {
       element.hidden = !user.is_master_admin;
     });
 
+    // Prefer actual shell modules as the post-login landing page.
     const pages = [
       ['dashboard', 'dashboard.view'],
-      ['automacoes', 'automations.view'],
+      ['acordos', 'pagamentos.view'],
+      ['tarefas', 'tasks.view'],
       ['protocolo', 'automations.view'],
-      ['tutelas', 'tutelas.view'],
-      ['encerramentos', 'encerramentos.view'],
+      ['automacoes', 'automations.view'],
       ['usuarios', 'users.view'],
       ['configuracoes', 'settings.view'],
-      ['tarefas', 'tasks.view'],
+      ['tutelas', 'tutelas.view'],
+      ['encerramentos', 'encerramentos.view'],
       ['pagamentos', 'pagamentos.view'],
-      ['acordos', 'agreements.view'],
-    ].filter(([, permission]) => user.permissions[permission] === true);
+    ].filter(([pageId]) => canAccess(pageId));
 
-    const active = document.querySelector('.page.active');
+    // Deep links must be restored before choosing the initial module.
+    const routeRestored = window.restorePageRoute?.() === true;
     if (!pages.length) {
       window.showPage?.('sem-acesso');
-    } else if (active?.dataset.permission && user.permissions[active.dataset.permission] !== true) {
+    } else if (!routeRestored) {
       window.showPage?.(pages[0][0]);
     }
+    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
   }
 
   function activePageId() {
@@ -220,6 +230,7 @@
       profile.default_portfolio_id
     );
     applyUser(profile);
+    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
     window.restorePageRoute?.();
     dispatchModuleAuthentication(activePageId(), true);
     setAuthState(true);
@@ -386,6 +397,7 @@
       moduleActivationAt.clear();
       window.MBA_CURRENT_USER = null;
       setAuthState(false);
+      window.dispatchEvent(new Event('mba:logged-out'));
     }
   });
 

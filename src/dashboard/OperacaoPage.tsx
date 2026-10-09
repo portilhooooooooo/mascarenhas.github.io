@@ -1,4 +1,6 @@
 import './operacao.css';
+import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
+import {OperacaoLiminarPage} from './OperacaoLiminarPage';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,
@@ -6,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleDollarSign,
+  Download,
   FileSpreadsheet,
   Hourglass,
   LoaderCircle,
@@ -84,6 +87,46 @@ function StatusBadge({status}:{status:PagamentoOperacaoStatus}) {
   const meta=STATUS_META[status]||STATUS_META.IMPORTADO;
   const Icon=meta.icon;
   return <span className={'protocolos-badge '+meta.tone}><Icon size={12}/>{meta.label}</span>;
+}
+
+function downloadVisibleRows(items:PagamentoOperacaoItem[]) {
+  if (!items.length) return;
+  const escape=(value:unknown)=>{
+    const text=String(value ?? '').replace(/"/g,'""');
+    return '"' + text + '"';
+  };
+  const headers=[
+    'PROCESSO','PASTA','STATUS','BASE PAGAMENTOS','CORRESPONDÊNCIA',
+    'IDENTIFICADOR INPUT','IDENTIFICADOR BENNER','STATUS PROVISÃO',
+    'VALOR INPUT','VALOR PROVISÃO','STATUS COMPROVANTE','ARQUIVO COMPROVANTE',
+    'MENSAGEM','ATUALIZAÇÃO',
+  ];
+  const rows=items.map(item=>[
+    item.processo,
+    item.pasta,
+    STATUS_META[item.status_operacional]?.label || item.status_operacional,
+    item.pagamentos_situacao,
+    item.pagamentos_match,
+    item.identificador_input,
+    item.benner_identifier,
+    item.provision_status,
+    item.valor_input,
+    item.provision_amount,
+    receiptLabel(item),
+    item.receipt_filename,
+    item.automation_message,
+    item.automation_updated_at || item.updated_at,
+  ]);
+  const csv='\ufeff'+[headers,...rows].map(row=>row.map(escape).join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');
+  anchor.href=url;
+  anchor.download='pagamentos_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function receiptLabel(item:PagamentoOperacaoItem) {
@@ -167,7 +210,10 @@ function PagamentosQueue({summary,items,loading}:{summary:PagamentoOperacaoSumma
     </div>
     <div className="protocolos-toolbar">
       <label className="protocolos-search"><Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)} aria-label="Buscar pagamentos" placeholder="Buscar por processo, pasta, identificador ou motivo..."/></label>
-      <div className="protocolos-toolbar-actions"><label className="protocolos-page-size"><span>Exibir</span><select value={pageSize} onChange={event=>setPageSize(Number(event.target.value))}>{PAGE_SIZES.map(size=><option key={size} value={size}>{size}</option>)}</select></label></div>
+      <div className="protocolos-toolbar-actions">
+        <button type="button" className="protocolos-button secondary operacao-download-button" disabled={loading||visible.length===0} onClick={()=>downloadVisibleRows(visible)}><Download size={14}/>Baixar</button>
+        <label className="protocolos-page-size"><span>Exibir</span><select value={pageSize} onChange={event=>setPageSize(Number(event.target.value))}>{PAGE_SIZES.map(size=><option key={size} value={size}>{size}</option>)}</select></label>
+      </div>
     </div>
     <div className="protocolos-table-wrap">
       <table className="protocolos-table-react operacao-pagamentos-table">
@@ -190,7 +236,7 @@ function PagamentosQueue({summary,items,loading}:{summary:PagamentoOperacaoSumma
   </section>;
 }
 
-export function OperacaoPage() {
+function PagamentosPage() {
   const [summary,setSummary]=useState<PagamentoOperacaoSummary|null>(null);
   const [items,setItems]=useState<PagamentoOperacaoItem[]>([]);
   const [file,setFile]=useState<File|null>(null);
@@ -257,7 +303,7 @@ export function OperacaoPage() {
   const queueTotal=Number(summary?.queues?.provision||0)+Number(summary?.queues?.receipt||0);
 
   return <div className="protocolos-page-react operacao-pagamentos-page">
-    <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Pagamentos</h1><p>Snapshot operacional com validação de provisão e comprovante diretamente no Benner.</p></div></header>
+    <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Pagamentos</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
 
     <section className="protocolos-session-bar" aria-label="Status do backend">
@@ -278,5 +324,37 @@ export function OperacaoPage() {
     </div>
 
     <PagamentosQueue summary={summary} items={items} loading={loading}/>
+  </div>;
+}
+
+
+
+export function OperacaoPage() {
+  const [module,setModule]=useState<'pagamentos'|'liminar'|'encerramentos'>('pagamentos');
+  const [allowed,setAllowed]=useState({pagamentos:false,liminar:false,encerramentos:false});
+  useEffect(()=>{
+    const sync=()=>{
+      const permissions=(window as Window & {MBA_CURRENT_USER?:{permissions?:Record<string,boolean>}}).MBA_CURRENT_USER?.permissions||{};
+      const next={pagamentos:permissions['pagamentos.view']===true,liminar:permissions['tutelas.view']===true,encerramentos:permissions['encerramentos.view']===true};
+      setAllowed(next);
+      setModule(previous=>next[previous]?previous:next.pagamentos?'pagamentos':next.liminar?'liminar':'encerramentos');
+    };
+    sync();
+    window.addEventListener('mba:authenticated',sync);
+    window.addEventListener('mba:profile-ready',sync);
+    window.addEventListener('mba:portfolio-changed',sync);
+    return ()=>{
+      window.removeEventListener('mba:authenticated',sync);
+      window.removeEventListener('mba:profile-ready',sync);
+      window.removeEventListener('mba:portfolio-changed',sync);
+    };
+  },[]);
+  return <div className="operacao-module-shell">
+    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
+      {allowed.pagamentos?<button type="button" className={module==='pagamentos'?'active':''} aria-current={module==='pagamentos'?'page':undefined} onClick={()=>setModule('pagamentos')}>Pagamentos</button>:null}
+      {allowed.liminar?<button type="button" className={module==='liminar'?'active':''} aria-current={module==='liminar'?'page':undefined} onClick={()=>setModule('liminar')}>Liminar</button>:null}
+      {allowed.encerramentos?<button type="button" className={module==='encerramentos'?'active':''} aria-current={module==='encerramentos'?'page':undefined} onClick={()=>setModule('encerramentos')}>Encerramentos</button>:null}
+    </nav>
+    {module==='pagamentos'&&allowed.pagamentos?<PagamentosPage/>:module==='liminar'&&allowed.liminar?<OperacaoLiminarPage/>:module==='encerramentos'&&allowed.encerramentos?<OperacaoEncerramentosPage/>:<div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
   </div>;
 }

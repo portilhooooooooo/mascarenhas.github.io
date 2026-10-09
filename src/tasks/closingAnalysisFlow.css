@@ -1,0 +1,19 @@
+.closing-flow{min-height:100%;display:flex;flex-direction:column;gap:16px}
+.execution-card .closing-flow .task-question{padding:0 0 15px;border-bottom:1px solid #e3eaf2;gap:10px}
+.execution-card .closing-flow .task-question h3{font-size:14px;font-weight:600;line-height:1.45}
+.execution-card .closing-flow .task-question-body{width:100%}
+.execution-card .closing-flow .task-option-grid{width:100%;gap:10px}
+.execution-card .closing-flow .task-option-card>span{min-height:60px}
+.closing-summary{order:0;display:grid;gap:4px;padding:12px 14px;border:1px solid #d6e0eb;border-radius:7px;background:#f8fafc}
+.closing-summary>span{font-size:10px;font-weight:700;letter-spacing:.045em;text-transform:uppercase;color:#64748b}
+.closing-summary>strong{font-size:13px;font-weight:650;line-height:1.5}
+.closing-summary>small{font-size:11px;color:#64748b;line-height:1.45}
+.closing-summary.neutral>strong{color:#52647d}
+.closing-summary.positive>strong{color:#15803d}
+.closing-summary.negative>strong{color:#b45309}
+.closing-date-answer{display:grid;gap:7px;max-width:380px;font-size:12px;font-weight:600;color:#52647d}
+.closing-date-answer input{width:100%;min-height:40px;border:1px solid #d6e0eb;border-radius:7px;background:#fff;padding:8px 11px;font:500 12px/1.4 Inter,system-ui,sans-serif;color:#1b2b45}
+.closing-date-answer input:focus-visible{outline:2px solid #94b2e2;outline-offset:1px}
+.closing-date-answer input:disabled{opacity:.6}
+.closing-inline-note{margin:8px 0 0;padding:9px 11px;border-left:3px solid #94a3b8;background:#f8fafc;color:#52647d;font-size:11px;line-height:1.5}
+@media(max-width:760px){.closing-date-answer{max-width:100%}}

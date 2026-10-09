@@ -27,8 +27,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Automation runtime syntax
+        run: node --check app.js
+
       - name: Hardening checks
         run: npm run test:hardening
+
+      - name: Master task execution scope
+        run: node --test tests/master-task-scope.test.mjs
 
       - name: Metabase architecture checks
         run: |
