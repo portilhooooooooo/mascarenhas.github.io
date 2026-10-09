@@ -21,6 +21,7 @@ await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
 const files = [
   'index.html',
   'styles.css',
+  'brand-identity.css',
   'agreements.css',
   'payment-receipt.css',
   'protocolo.css',
