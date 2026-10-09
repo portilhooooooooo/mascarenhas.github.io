@@ -4,12 +4,12 @@ import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuesti
 
 type YesNo = 'sim' | 'nao' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
-type AppealResult = 'provido' | 'improvido';
+type AppealResult = 'provido' | 'improvido' | 'mantida_improcedencia' | 'convertida_procedencia';
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
 export type ClosingAnalysisDraft = {
-  workflow_version: 2;
+  workflow_version: 3;
   first_instance_merit: TrialResult;
   had_appeal: boolean;
   appeal_decided: boolean | null;
@@ -158,9 +158,12 @@ export function ClosingAnalysisFlow({
   if (sentence && noAppealReady) {
     finalMerit = asFinalResult(sentence);
   } else if (sentence && appealJudged) {
-    if (appealResult === 'improvido') {
+    if (sentence === 'improcedente' || sentence === 'extincao') {
+      finalMerit = appealResult === 'mantida_improcedencia' ? 'vitoria'
+        : appealResult === 'convertida_procedencia' ? 'derrota' : 'indeterminado';
+    } else if (appealResult === 'improvido') {
       finalMerit = asFinalResult(sentence);
-    } else if (sentence === 'extincao' || (sentence === 'parcialmente_procedente' && appellant === 'banco')) {
+    } else if (sentence === 'parcialmente_procedente' && appellant === 'banco') {
       finalMerit = 'indeterminado';
     } else {
       finalMerit = appellant === 'banco' ? 'vitoria' : 'derrota';
@@ -205,7 +208,7 @@ export function ClosingAnalysisFlow({
     }
     setLocalError(null);
     await onSubmit({
-      workflow_version: 2,
+      workflow_version: 3,
       first_instance_merit: sentence,
       had_appeal: hadAppeal === 'sim',
       appeal_decided: hadAppeal === 'sim' ? appealDecided === 'sim' : null,
@@ -264,7 +267,10 @@ export function ClosingAnalysisFlow({
 
     {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da apelação?">
       <OptionGroup name="closing-appeal-result" value={appealResult} disabled={busy}
-        options={[{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' }]}
+        options={sentence === 'improcedente' || sentence === 'extincao'
+          ? [{ value: 'mantida_improcedencia', label: 'Mantida a improcedência' },
+             { value: 'convertida_procedencia', label: 'Convertido em procedência' }]
+          : [{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' }]}
         onChange={value => { setAppealResult(value as AppealResult); clearTransit(); }} />
     </TaskQuestion> : null}
 
