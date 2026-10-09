@@ -22,9 +22,7 @@ type DashboardWindow = Window & typeof globalThis & {
 };
 
 const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao']);
-const mayOpen = (pageId: string) => pageId === 'home'
-  ? Boolean((window as DashboardWindow).MBA_CURRENT_USER)
-  : (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
+const mayOpen = (pageId: string) => (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
 
 function labelNavItem(button: Element, label: string) {
   const span = button.querySelector('span');
@@ -168,7 +166,6 @@ function syncTopModuleFromActivePage() {
     setTopModuleActive('tarefas');
     return;
   }
-  if (activePage.id === 'home') setTopModuleActive('home');
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
 }
 
@@ -186,9 +183,8 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  const visiblePages = new Set(['home', 'dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
+  const visiblePages = new Set(['tarefas', 'dashboard', 'acordos', 'protocolo', 'automacoes']);
   const labels: Record<string, string> = {
-    home: 'Home',
     dashboard: 'Analytics',
     acordos: 'Operação',
     protocolo: 'Controladoria',
@@ -203,12 +199,7 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page) || button === baseDados;
-      // Home é a entrada do workspace e não depende das permissões por carteira.
-      // O shell já está restrito à sessão autenticada.
-      const user = (window as DashboardWindow).MBA_CURRENT_USER;
-      const eligible = page === 'home'
-        ? Boolean(user)
-        : recognized && Boolean(page) && mayOpen(page);
+      const eligible = recognized && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
@@ -228,13 +219,12 @@ function configureApplicationShell() {
   });
 
   const orderedItems: Array<HTMLElement | null> = [
-    nav.querySelector<HTMLElement>('[data-page="home"]'),
+    nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
     baseDados,
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
-    nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
