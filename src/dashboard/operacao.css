@@ -39,3 +39,15 @@
 .operacao-liminar-evidencia { max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .operacao-liminar-page .protocolos-modern-drop { width: 100%; justify-content: center; }
 .operacao-liminar-page .protocolos-search button { padding: 5px 10px; background: transparent; border: none; color: var(--mba-blue); cursor: pointer; }
+
+/* Confirmed closing observation is human-reviewed, not a DataJud hint. */
+.operacao-encerramentos-table { min-width: 1480px; }
+.operacao-closing-observation { width: 260px; max-width: 290px; font-size: 11px; line-height: 1.45; }
+.operacao-closing-observation summary { cursor: pointer; color: var(--mba-text); line-height: 1.5; }
+.operacao-closing-observation summary:hover { text-decoration: underline; }
+.operacao-closing-observation p { margin: 7px 0 0; white-space: normal; overflow-wrap: anywhere; }
+.operacao-motivo-badge { display: inline-flex; border-radius: 6px; padding: 4px 7px; font-size: 10px; font-weight: 650; white-space: nowrap; }
+.operacao-motivo-badge.yes { background: #e7f7ed; color: #116737; }
+.operacao-motivo-badge.no { background: #fff0ef; color: #b42318; }
+.operacao-motivo-badge.unknown { background: #f1f3f7; color: #596579; }
+.operacao-encerramentos-page .protocolos-toolbar-actions { flex-wrap: wrap; gap: 8px; }
