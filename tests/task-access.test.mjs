@@ -11,5 +11,6 @@ assert.equal(processAssignedToUser({}, {},null,true),false);
 assert.equal(taskAssignedToUser({},null,true),false);
 assert.equal(taskAssignedToUser({responsible_id:'bob'},user,false),true);
 assert.equal(processAssignedToUser({responsible_id:'bob'},{assignee_id:'alice'},user,false),true);
-assert.equal(processAssignedToUser({}, {assignee_id:'bob'},{id:'admin',permissions:{'tasks.manage':true}},true),true);
+assert.equal(processAssignedToUser({}, {assignee_id:'bob'},{id:'admin',permissions:{'tasks.manage':true}},true),false);
+assert.equal(processAssignedToUser({}, {assignee_id:'bob'},{id:'master',is_master_admin:true},true),true);
 console.log('Assignment and fail-closed identity checks passed');
