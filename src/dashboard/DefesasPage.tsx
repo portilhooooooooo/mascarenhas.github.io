@@ -142,7 +142,7 @@ export function DefesasPage() {
 
   return <section className="defesas-batch-page" aria-label="Defesas em lote">
     <header className="protocolos-header">
-      <div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Defesas</h1><p>Confira os prazos e o destino de cada defesa. Os casos que exigem validação individual seguem para Tarefas.</p></div>
+      <div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Defesas</h1><p>Confira os prazos e o destino de cada defesa. Os casos que exigem validação individual seguem para Tarefas.</p></div>
       <div className="protocolos-header-actions"><button className="protocolos-button secondary" type="button" disabled={loading} onClick={() => void load()}><RefreshCw size={14}/>{loading ? 'Atualizando…' : 'Atualizar'}</button></div>
     </header>
 
@@ -160,7 +160,7 @@ export function DefesasPage() {
     </section>
 
     <section className="protocolos-card protocolos-workspace defesas-batch-workspace">
-      <header className="protocolos-workspace-head"><div><h2>Processos da Controladoria</h2><p>Fila ativa sincronizada pelo worker já existente.</p></div></header>
+      <header className="protocolos-workspace-head"><div><h2>Processos de defesa</h2><p>Fila ativa sincronizada pelo worker já existente.</p></div></header>
       <div className="protocolos-status-strip-react">
         <button type="button" className={status === 'all' ? 'active' : ''} onClick={() => setStatus('all')}>Todos <strong>{counts.all}</strong></button>
         <button type="button" className={`success ${status === 'saneado' ? 'active' : ''}`} onClick={() => setStatus('saneado')}>Saneados <strong>{counts.saneado}</strong></button>
