@@ -693,3 +693,28 @@ body.auth-signed-in .login-screen { display: none !important; }
 .task-delete-button:hover { border-color: #fecaca; background: var(--danger-soft); color: var(--danger); }
 .task-delete-button:disabled { opacity: .45; cursor: default; }
 .task-delete-button svg { width: 14px; height: 14px; }
+/* Independent client access editor in Usuários. */
+.access-editor-intro{padding:18px 20px 0}
+.access-editor-intro strong{font-size:14px;font-weight:600;color:var(--text)}
+.access-editor-intro p{margin:5px 0 0;font-size:12px;color:var(--muted);line-height:1.55}
+.access-portfolio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px 20px 20px}
+.access-portfolio-card{border:1px solid var(--line);border-radius:9px;min-width:0;overflow:hidden;background:#fff}
+.access-portfolio-card.is-enabled{border-color:var(--accent)}
+.access-portfolio-card.is-disabled{background:#fafbfc}
+.access-portfolio-card>header{padding:12px 14px;border-bottom:1px solid var(--line)}
+.access-portfolio-card>header label{display:flex;align-items:center;gap:10px;cursor:pointer}
+.access-portfolio-card>header input{width:16px;height:16px;accent-color:var(--accent)}
+.access-portfolio-card>header span{display:flex;flex-direction:column;gap:3px}
+.access-portfolio-card>header strong{font-size:13px;color:var(--text)}
+.access-portfolio-card>header small{font-size:11px;color:var(--muted)}
+.access-module-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:12px}
+.access-module{border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px;min-width:0}
+.access-module-master{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px}
+.access-module-master strong{font-weight:600}
+.access-module input{accent-color:var(--accent)}
+.access-module-actions{display:grid;gap:8px;margin:10px 0 0 18px}
+.access-module-actions label{display:flex;align-items:flex-start;gap:6px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1.35}
+.access-module-actions input{margin:1px 0 0}
+.access-portfolio-card.is-disabled .access-module-grid{opacity:.5}
+@media(max-width:1100px){.access-portfolio-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.access-module-grid{grid-template-columns:1fr}}

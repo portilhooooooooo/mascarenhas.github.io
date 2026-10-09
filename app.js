@@ -204,6 +204,7 @@ let usersCache = [];
 let tasksCache = [];
 let paymentFilterTimer = null;
 let permissionCatalog = [];
+let userPortfolioCatalog = [];
 let selectedUser = null;
 let authenticatedUser = null;
 const roleLabels = { admin: 'Administrador', user: 'Usuário', operational: 'Operacional' };
@@ -290,10 +291,11 @@ function renderPermissionEditor(user) {
 }
 
 async function selectUser(userId) {
-  const user = await window.MBA_API.request(`/api/users/${userId}`);
-  selectedUser = user;
+  const access = await window.MBA_API.request('/api/users/' + encodeURIComponent(userId) + '/access');
+  selectedUser = access.user;
   renderUsers();
-  renderPermissionEditor(user);
+  renderPermissionEditor(selectedUser);
+  window.MBA_USER_ACCESS.render(access, permissionCatalog, userPortfolioCatalog);
 }
 
 async function loadUsers() {
@@ -301,16 +303,15 @@ async function loadUsers() {
   if (!loading || !window.MBA_API) return;
   loading.hidden = false;
   try {
-    const [users, permissions] = await Promise.all([
-      window.MBA_API.request('/api/users'),
+    const [users, permissions, portfolios] = await Promise.all([
+      window.MBA_API.request('/api/users/global'),
       window.MBA_API.request('/api/permissions'),
+      window.MBA_API.request('/api/portfolios'),
     ]);
     permissionCatalog = permissions;
-    usersCache = await Promise.all(users.map(async (user) => {
-      try {
-        const detail = await window.MBA_API.request(`/api/users/${user.id}`);
-        return { ...user, effective_permissions: detail.effective_permissions, permission_map: Object.fromEntries((detail.effective_permissions || []).map((item) => [item.key, item.allowed])) };
-      } catch (_error) { return { ...user, permission_map: {} }; }
+    userPortfolioCatalog = portfolios;
+    usersCache = users.map(user => ({
+      ...user, permission_map: Object.fromEntries((user.portfolios || []).map(id => [id, true])),
     }));
     loading.hidden = true;
     renderUsers();
@@ -328,25 +329,26 @@ document.querySelector('#users-table-body')?.addEventListener('click', (event) =
   document.querySelector(selector)?.addEventListener(selector === '#users-search' ? 'input' : 'change', renderUsers);
 });
 
-document.querySelector('#save-user-permissions')?.addEventListener('click', async (event) => {
+document.querySelector('#save-user-permissions')?.addEventListener('click', async event => {
   if (!selectedUser) return;
   const button = event.currentTarget;
   button.disabled = true;
+  const original = button.textContent;
   try {
     if (selectedUser.email.toLowerCase() === exclusiveUsersEmail) return;
-    if (selectedUser.access_kind === 'operational') {
-      const allowed_modules = [...document.querySelectorAll('#selected-user-modules input:checked')].map(input => input.value);
-      await window.MBA_API.request(`/api/users/${selectedUser.id}`, {method: 'PATCH', body: JSON.stringify({allowed_modules})});
-    }
+    await window.MBA_USER_ACCESS.save(selectedUser.id);
     const active = document.querySelector('#selected-user-active').checked;
-    if (active !== selectedUser.active) await window.MBA_API.request(`/api/users/${selectedUser.id}/${active ? 'activate' : 'deactivate'}`, {method: 'POST', body: JSON.stringify({motivo: 'Alteração administrativa de estado'})});
-    const permissions = [...document.querySelectorAll('[data-permission-id]:not(:disabled)')].map(input => ({permission_id: input.dataset.permissionId, allowed: input.checked}));
-    if (permissions.length) await window.MBA_API.request(`/api/users/${selectedUser.id}/permissions`, {method: 'PUT', body: JSON.stringify({permissions})});
-    button.textContent = 'Alterações salvas';
+    if (active !== selectedUser.active) {
+      await window.MBA_API.request('/api/users/' + encodeURIComponent(selectedUser.id) + '/global-state', {
+        method: 'POST', body: JSON.stringify({active}),
+      });
+    }
+    button.textContent = 'Acessos atualizados';
     await loadUsers();
     await selectUser(selectedUser.id);
-    setTimeout(() => { button.textContent = 'Salvar alterações'; }, 1600);
-  } catch (error) { window.alert(error.message); } finally { button.disabled = false; }
+    setTimeout(() => { button.textContent = original; }, 1600);
+  } catch (error) { window.alert('Erro ao salvar os acessos: ' + error.message); }
+  finally { button.disabled = false; }
 });
 
 const userCreateDialog = document.querySelector('#user-create-dialog');
@@ -362,10 +364,18 @@ document.querySelector('#user-create-form')?.addEventListener('submit', async ev
   const payload = {access_kind, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: access_kind === 'operational' ? [...form.querySelectorAll('[name="allowed_modules"]:checked')].map(input => input.value) : []};
   submit.disabled = true; errorBox.hidden = true;
   try {
+    const existing = usersCache.find(user => String(user.email || '').toLowerCase() === payload.email.toLowerCase());
+    if (existing) {
+      userCreateDialog.close();
+      await selectUser(existing.id);
+      window.alert('Esta pessoa já possui uma credencial. Libere a nova carteira pelo painel de acessos.');
+      return;
+    }
     const result = await window.MBA_API.request('/api/users', {method: 'POST', body: JSON.stringify(payload)});
     form.reset(); document.querySelector('#user-create-modules').hidden = true; userCreateDialog.close();
     if (result.enrollment) window.MBA_SHOW_ENROLLMENT(result.enrollment, result.user.email);
     await loadUsers();
+    if (result.user?.id) await selectUser(result.user.id);
   } catch (error) { errorBox.textContent = error.message; errorBox.hidden = false; }
   finally { submit.disabled = false; }
 });

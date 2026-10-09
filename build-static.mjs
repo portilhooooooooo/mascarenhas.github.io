@@ -28,6 +28,7 @@ const files = [
   'data-api.js',
   'portfolio-policy.js',
   'app.js',
+  'user-access-manager.js',
   'react-compat.js',
   'agreements.js',
   'payment-receipt.js',
@@ -78,6 +79,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/config\.js(?:\?v=[^"']+)?/g, `config.js?v=${buildVersion}`)
   .replace(/data-api\.js(?:\?v=[^"']+)?/g, `data-api.js?v=${buildVersion}`)
   .replace(/auth\.js(?:\?v=[^"']+)?/g, `auth.js?v=${buildVersion}`)
+  .replace(/user-access-manager\.js(?:\?v=[^"']+)?/g, `user-access-manager.js?v=${buildVersion}`)
   .replace(/app\.js(?:\?v=[^"']+)?/g, `app.js?v=${buildVersion}`)
   .replace(/agreements\.js(?:\?v=[^"']+)?/g, `agreements.js?v=${buildVersion}`)
   .replace(/payment-receipt\.js(?:\?v=[^"']+)?/g, `payment-receipt.js?v=${buildVersion}`)
