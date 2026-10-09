@@ -124,7 +124,9 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
-    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
+    const canAccess = pageId => pageId === 'home'
+      ? Boolean(user?.id)
+      : window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
     document.querySelectorAll('[data-permission]').forEach(element => {
       const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
       element.hidden = pageId
