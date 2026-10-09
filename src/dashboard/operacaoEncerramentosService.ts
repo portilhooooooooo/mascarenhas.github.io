@@ -19,8 +19,14 @@ export interface ClosingCase {
   status_envio?: 'NAO_ENVIADO' | 'NA_FILA' | 'PROCESSANDO' | 'ERRO' | 'ENVIADO';
   enviado_benner_em?: string | null;
   benner_referencia?: string | null;
+  benner_erro?: string | null;
+  observacoes_analista?: string | null;
+  tem_motivo_derrota?: boolean | null;
+  motivo_derrota_verificado_em?: string | null;
   atualizado_em?: string | null;
 }
+
+export type MotivoDerrotaFilter = 'todos' | 'sim' | 'nao' | 'nao_verificado';
 
 export interface ClosingSummary {
   statuses: Record<ClosingStatus, number>;
@@ -39,9 +45,10 @@ function api(): ApiClient {
 export function getClosingSummary(): Promise<ClosingSummary> {
   return api().request('/api/operacao/encerramentos/summary');
 }
-export function getClosingCases(status: ClosingStatus, limit: number, offset: number, search = ''): Promise<ClosingList> {
+export function getClosingCases(status: ClosingStatus, limit: number, offset: number, search = '', motivoDerrota: MotivoDerrotaFilter = 'todos'): Promise<ClosingList> {
   const query = new URLSearchParams({status, limit: String(limit), offset: String(offset)});
   if (search.trim()) query.set('q', search.trim());
+  if (motivoDerrota !== 'todos') query.set('motivo_derrota', motivoDerrota);
   return api().request('/api/operacao/encerramentos/items?' + query);
 }
 export function sendClosingsToBenner(items: {cnj: string; andamento: string}[]): Promise<ClosingSendResult> {
