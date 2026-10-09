@@ -6,8 +6,8 @@ import { test } from 'node:test';
 const source = readFileSync(new URL('../app.js', import.meta.url), 'utf8').split('const appShell =')[0];
 
 function environment(initialPath = '/tarefas', options = {}) {
-  const allowed = new Set(options.allowed || ['home', 'dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'usuarios']);
-  const ids = ['home', 'dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'tutelas', 'usuarios', 'configuracoes', 'pagamentos', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'sem-acesso'];
+  const allowed = new Set(options.allowed || ['dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'usuarios']);
+  const ids = ['dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'tutelas', 'usuarios', 'configuracoes', 'pagamentos', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'sem-acesso'];
   const active = new Map(ids.map(id => [id, false]));
   const pages = ids.map(id => ({ id, classList: { toggle(_name, value) { active.set(id, value); } } }));
   const location = { pathname: '/', hash: '' };
@@ -40,29 +40,19 @@ function environment(initialPath = '/tarefas', options = {}) {
   return { window, location, active, events, listeners, setUrl };
 }
 
-test('Home restaura o deep link /home e publica a rota', () => {
-  const e = environment('/home');
-  assert.equal(e.window.restorePageRoute(), true);
-  assert.equal(e.active.get('home'), true);
-  e.window.showPage('tarefas');
-  e.window.showPage('home');
-  assert.equal(e.location.pathname, '/home');
-});
-test('Home não exige qualquer permissão operacional', () => {
-  const e = environment('/home', { allowed: [] });
-  assert.equal(e.window.restorePageRoute(), true);
-  assert.equal(e.active.get('home'), true);
-  assert.equal(e.window.MBA_NAVIGATE('home'), true);
-  assert.equal(e.location.pathname, '/home');
-});
-
-test('rota raiz e acesso negado anterior abrem na Home', () => {
-  for (const initial of ['/', '/sem-acesso']) {
-    const e = environment(initial, { allowed: [] });
+test('URLs antigas da Home e página raiz redirecionam a Tarefas', () => {
+  for (const entry of ['/home', '/', '/sem-acesso']) {
+    const e = environment(entry);
     assert.equal(e.window.restorePageRoute(), true);
-    assert.equal(e.active.get('home'), true);
-    assert.equal(e.location.pathname, '/home');
+    assert.equal(e.active.get('tarefas'), true);
+    assert.equal(e.location.pathname, '/tarefas');
   }
+});
+test('rota antiga Home cai em Analytics sem permissão para Tarefas', () => {
+  const e = environment('/home', { allowed: ['dashboard'] });
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('dashboard'), true);
+  assert.equal(e.location.pathname, '/analytics');
 });
 
 test('navbar muda a URL ao navegar para automações e analytics', () => {
@@ -109,11 +99,12 @@ test('prévia local preserva navegação em hash', () => {
   e.window.showPage('automacoes');
   assert.equal(e.location.hash, '#/automacoes');
 });
-test('autenticação prioriza rota compartilhada', () => {
+test('login não referencia Home e prioriza Tarefas sem perder deep links', () => {
   const auth = readFileSync(new URL('../auth.js', import.meta.url), 'utf8');
   assert.match(auth, /const routeRestored = window\.restorePageRoute\?\.\(\) === true/);
   assert.match(auth, /else if \(!routeRestored\)/);
-  assert.match(auth, /\['home', null\]/, 'Home is first after login');
-  assert.match(auth, /const startOnHome = Boolean\(code\)/, 'Microsoft login triggers initial Home');
-  assert.match(auth, /if \(startOnHome\) window\.showPage\?\.\('home'\)/, 'Every new Microsoft login lands on Home');
+  const firstModule = auth.indexOf("['tarefas', 'tasks.view']");
+  const secondModule = auth.indexOf("['dashboard', 'dashboard.view']");
+  assert.ok(firstModule !== -1 && firstModule < secondModule);
+  assert.doesNotMatch(auth, /startOnHome|\['home', null\]/);
 });
