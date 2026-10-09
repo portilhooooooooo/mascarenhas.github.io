@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Automation runtime syntax
+        run: node --check app.js
+
       - name: Hardening checks
         run: npm run test:hardening
 
