@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
-  getClosingCases, getClosingSummary, sendClosingsToBenner,
+  getClosingCases, getClosingSummary, getClosingDivergences, reanalyzeClosingTask, sendClosingsToBenner,
   type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType, type MotivoDerrotaFilter,
 } from './operacaoEncerramentosService';
 
@@ -13,6 +13,7 @@ const STATUS: Array<{key: ClosingStatus; label: string; tone: string}> = [
   {key:'DERROTA',label:'Derrota',tone:'amber'},
   {key:'DERROTA_VOLUNTARIA',label:'Derrota voluntária',tone:'amber'},
   {key:'VITORIA',label:'Vitória',tone:'success'},
+  {key:'CLASSIFICACAO_ERRADA',label:'Classificação errada',tone:'danger'},
   {key:'ENVIADOS_BENNER',label:'Enviados ao Benner',tone:'blue'},
 ];
 const MOVEMENTS: Record<ClosingType, string> = {
@@ -31,7 +32,7 @@ const formatCnj = (value:string) => {
   return digits.length===20 ? digits.slice(0,7)+'-'+digits.slice(7,9)+'.'+digits.slice(9,13)+'.'+digits.slice(13,14)+'.'+digits.slice(14,16)+'.'+digits.slice(16) : value;
 };
 function eligible(row:ClosingCase) {
-  return row.validacao_decisao==='apto' && row.validado_em &&
+  return !row.classificacao_errada && row.validacao_decisao==='apto' && row.validado_em &&
     Object.prototype.hasOwnProperty.call(MOVEMENTS, row.tipo_validado || '') &&
     !row.enviado_benner_em && !['NA_FILA','PROCESSANDO','ENVIADO'].includes(row.status_envio||'');
 }
@@ -50,6 +51,7 @@ export function OperacaoEncerramentosPage() {
   const [summary,setSummary]=useState<ClosingSummary|null>(null);
   const [rows,setRows]=useState<ClosingCase[]>([]);
   const [total,setTotal]=useState(0);
+  const [wrongCount,setWrongCount]=useState(0);
   const [tab,setTab]=useState<ClosingStatus>('PENDENTES');
   const [query,setQuery]=useState('');
   const [appliedQuery,setAppliedQuery]=useState('');
@@ -69,11 +71,14 @@ export function OperacaoEncerramentosPage() {
   const refresh=useCallback(async()=>{
     if(!canView)return;
     try {
-      const [nextSummary,nextList]=await Promise.all([
+      const [nextSummary,wrongOverview,nextList]=await Promise.all([
         getClosingSummary(),
-        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro),
+        getClosingDivergences(1,0),
+        tab==='CLASSIFICACAO_ERRADA'
+          ? getClosingDivergences(pageSize,(page-1)*pageSize,appliedQuery)
+          : getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro),
       ]);
-      setSummary(nextSummary);setRows(nextList.rows||[]);setTotal(Number(nextList.total||0));setError('');
+      setWrongCount(Number(wrongOverview.total||0));setSummary(nextSummary);setRows(nextList.rows||[]);setTotal(Number(nextList.total||0));setError('');
     } catch (cause) {
       setError(cause instanceof Error?cause.message:'Não foi possível consultar Encerramentos.');
     } finally {setLoading(false);}
@@ -158,7 +163,7 @@ export function OperacaoEncerramentosPage() {
       </header>
       <div className="protocolos-status-strip-react operacao-encerramentos-status" role="tablist" aria-label="Status dos encerramentos">
         {STATUS.map(status=><button type="button" role="tab" aria-selected={tab===status.key} key={status.key} className={(tab===status.key?'active ':'')+status.tone} onClick={()=>{setTab(status.key);setPage(1);}}>
-          <span>{status.label}</span><strong>{count(summary?.statuses?.[status.key])}</strong>
+          <span>{status.label}</span><strong>{count(status.key==='CLASSIFICACAO_ERRADA'?wrongCount:summary?.statuses?.[status.key])}</strong>
         </button>)}
       </div>
       <div className="protocolos-toolbar">
@@ -184,7 +189,7 @@ export function OperacaoEncerramentosPage() {
               const defaultMovement=MOVEMENTS[row.tipo_validado as ClosingType]||'';
               return <tr key={row.portfolio_id+'-'+row.cnj}>
                 {isActionTab?<td><input type="checkbox" aria-label={'Selecionar '+formatCnj(row.cnj)} checked={Boolean(selected[row.cnj])} disabled={!canRun||!canSelect||submitting} onChange={event=>setSelected(current=>({...current,[row.cnj]:event.target.checked}))}/></td>:null}
-                <td><strong className="protocolos-cnj">{formatCnj(row.cnj)}</strong><small>{row.pasta?'Pasta '+row.pasta:'Pasta não encontrada'}{row.comarca?' · '+row.comarca+' / '+(row.uf||''):''}</small></td>
+                <td><strong className="protocolos-cnj">{formatCnj(row.cnj)}</strong>{row.classificacao_errada?<small className="operacao-divergence-tag">Classificação errada</small>:null}{row.task_process_id&&row.classificacao_errada&&row.reanalysis_status!=='pending'?<button type="button" className="protocolos-button secondary operacao-reanalyze" disabled={submitting} onClick={async()=>{if(!window.confirm('Reabrir a análise de '+formatCnj(row.cnj)+'? O histórico anterior será preservado.'))return;setSubmitting(true);try{await reanalyzeClosingTask(row.task_process_id!);setFeedback('Processo reaberto para reanálise.');await refresh();}catch(cause){setError(cause instanceof Error?cause.message:'Não foi possível reabrir a análise.');}finally{setSubmitting(false);}}}>Refazer análise</button>:row.classificacao_errada&&row.reanalysis_status==='pending'?<small>Reanálise solicitada</small>:null}<small>{row.pasta?'Pasta '+row.pasta:'Pasta não encontrada'}{row.comarca?' · '+row.comarca+' / '+(row.uf||''):''}</small></td>
                 <td><span className="operacao-cell-main">{row.datajud_tipo||'Não classificado'}</span><small>{row.datajud_indicio_apto===true?'Indício favorável':row.datajud_indicio_apto===false?'Indício desfavorável':'Sem indício'}</small></td>
                 <td><span className="operacao-cell-main">{row.tipo_validado||statusLabel(row)}</span><small>{row.analisado_em?'Analisado em '+dt(row.analisado_em):row.validado_em?'Confirmado em '+dt(row.validado_em):'Aguardando validação do analista'}</small></td>
                 <td><div className="operacao-closing-observation">
