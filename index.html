@@ -123,12 +123,11 @@
 
             <article class="automation-card" data-integration-card="benner-andamentos">
               <div class="module-icon blue"><i data-lucide="file-plus-2"></i></div>
-              <div class="module-copy"><div class="module-title-row"><h2>Andamentos no Benner</h2><span class="status-badge">Importação CSV/XLSX</span></div><p>Lance andamentos em lote, selecione motivos de derrota e acompanhe cada processo.</p><div class="module-meta"><span><small>Execução</small><strong>Fila Benner</strong></span><span><small>Conferência</small><strong>Histórico por CNJ</strong></span></div></div>
-              <div class="module-actions"><button class="primary-button" type="button" id="benner-andamentos-open" data-permission="automations.run"><i data-lucide="upload"></i>Importar andamentos</button></div>
+              <div class="module-copy"><div class="module-title-row"><h2>Andamentos no Benner</h2><span class="status-badge" id="benner-andamentos-health">Verificando</span></div><p>Importa planilhas e lança andamentos nas pastas do Benner com validação de registro.</p><div class="module-meta"><span><small>Execução atual</small><strong id="benner-andamentos-job-status">—</strong></span><span><small>Progresso</small><strong id="benner-andamentos-job-progress">—</strong></span></div></div>
+              <div class="module-actions"><button class="primary-button integration-run-button" type="button" data-integration="benner-andamentos" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="benner-andamentos"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
             </article>
 
           </div>
-          <div id="benner-andamentos-root"></div>
         </section>
 
         <section class="page list-page tutelas-page" id="tutelas" data-permission="tutelas.view">
@@ -583,11 +582,13 @@
 
   <dialog id="integration-dialog" class="task-dialog integration-dialog">
     <form id="integration-form">
-      <header><div><h2 id="integration-dialog-title">Executar integração</h2><p>Informe um número CNJ por linha.</p></div><button type="button" class="icon-button" data-close-integration><i data-lucide="x"></i></button></header>
+      <header><div><h2 id="integration-dialog-title">Executar integração</h2><p id="integration-dialog-help">Informe um número CNJ por linha ou anexe uma planilha XLSX.</p></div><button type="button" class="icon-button" data-close-integration><i data-lucide="x"></i></button></header>
       <input type="hidden" name="integration" id="integration-type">
       <label id="integration-origin-field" hidden>Origem<input name="origem" value="MBA_BACKOFFICE" maxlength="100"></label>
       <fieldset id="integration-criteria-field" hidden><legend>Critérios de encerramento</legend><div class="criteria-grid"><label><input type="checkbox" name="criterios" value="VITORIA" checked> Vitória</label><label><input type="checkbox" name="criterios" value="DERROTA"> Derrota</label><label><input type="checkbox" name="criterios" value="CUMPRIMENTO_SENTENCA"> Cumprimento de sentença</label><label><input type="checkbox" name="criterios" value="TRANSITO_JULGADO"> Trânsito em julgado</label><label><input type="checkbox" name="criterios" value="SUSPENSO"> Suspenso</label></div></fieldset>
-      <label>Processos CNJ<textarea name="cnjs" rows="8" placeholder="0000000-00.0000.0.00.0000" required></textarea></label>
+      <div class="integration-template-row"><button type="button" class="secondary-button" id="integration-template-download"><i data-lucide="download"></i>Baixar modelo XLSX</button><small id="integration-template-help">Modelo de planilha para esta automação.</small></div>
+      <label id="integration-file-field">Planilha XLSX ou CSV<input name="file" id="integration-file" type="file" accept=".xlsx,.csv"></label>
+      <label id="integration-cnjs-field">Ou informe os processos CNJ<textarea name="cnjs" rows="8" placeholder="0000000-00.0000.0.00.0000"></textarea></label>
       <p class="dialog-error" id="integration-error" hidden></p>
       <div class="integration-job-result" id="integration-result" hidden><strong id="integration-result-status"></strong><span id="integration-result-progress"></span><a id="integration-download" class="secondary-button" target="_blank" rel="noopener" hidden>Baixar resultado</a></div>
       <footer><button type="button" class="secondary-button" data-close-integration>Fechar</button><button type="submit" class="primary-button">Iniciar execução</button></footer>
