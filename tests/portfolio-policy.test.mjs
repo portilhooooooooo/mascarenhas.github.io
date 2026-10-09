@@ -55,6 +55,8 @@ assert.doesNotMatch(html, /nav-badge">23<\/em>/, 'task badge must not be hardcod
 assert.match(html, /id="tasks-nav-count"[^>]*hidden/, 'task badge must start empty');
 assert.match(html, /portfolio-policy\.js/, 'portfolio policy must be loaded for classic navigation');
 assert.match(shell, /dashboard: 'Analytics'/, 'Analytics must be the module name');
+assert.match(shell, /const eligible = page === 'home'[\\s\\S]*?Boolean\\(user\\)/, 'Home must remain visible to authenticated users regardless of portfolio module permissions');
+assert.match(shell, /nav\\.querySelector<HTMLElement>\\('\\[data-page="home"\\]'\\)/, 'Home must be the first navigation item');
 assert.match(shell, /mayOpen\('protocolo'\)/, 'Controladoria lifecycle must enforce the portfolio');
 assert.match(shell, /<PortfolioSwitcher\s*\/>/, 'portfolio selector must be React');
 assert.match(html, /id="portfolio-switcher"/, 'sidebar must mount a portfolio selector');
