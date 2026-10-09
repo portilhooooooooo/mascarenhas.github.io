@@ -38,6 +38,8 @@
     return null;
   };
   const moduleAvailable = (pageId, user) => {
+    // Home não concede acesso aos módulos operacionais.
+    if (pageId === 'home') return Boolean(user?.id && user?.email && user?.permissions && typeof user.permissions === 'object');
     if (!user || !PAGE_PERMISSIONS[pageId]) return false;
     if (GLOBAL_PAGES.has(pageId)) return true;
     const portfolio = getPortfolio(user);
@@ -64,6 +66,7 @@
     return SHARED_PAGES.has(pageId) || (pageId === 'automacoes' && (isEnter(portfolio) || canonical(portfolio.id) === 'agibank_mba')) || (ENTER_ONLY.has(pageId) && isEnter(portfolio));
   };
   const canAccess = (pageId, user = window.MBA_CURRENT_USER) => {
+    if (pageId === 'home') return moduleAvailable(pageId, user);
     const permission = PAGE_PERMISSIONS[pageId];
     if (pageId === 'acordos') return Boolean((user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['tutelas.view'] === true || user?.permissions?.['encerramentos.view'] === true) && moduleAvailable(pageId, user));
     return Boolean(permission && user?.permissions?.[permission] === true && moduleAvailable(pageId, user));
