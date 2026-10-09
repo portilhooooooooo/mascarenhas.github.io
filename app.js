@@ -76,7 +76,7 @@ function canAccessRoute(pageId, route) {
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
-    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
+    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true || user?.permissions?.['tasks.view_others'] === true;
   }
   return true;
 }
