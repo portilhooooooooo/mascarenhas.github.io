@@ -1,0 +1,318 @@
+/*
+ * Mascarenhas Barbosa — Sol (claro) / Lua (grafite).
+ * Sol preserva a identidade clara existente na brand-identity.css.
+ * Lua usa grafite em TODA a aplicação, sem off-white/amarelo no workspace.
+ * A página de login mantém sua direção editorial original nos dois temas.
+ */
+
+/* Seletor único e discreto, próximo do perfil — não cria outra navbar. */
+.topbar .mba-theme-switch {
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:31px;min-width:66px;padding:0 10px;border-radius:7px;
+  border:1px solid var(--mba-border);background:transparent;
+  color:var(--mba-text-2);font:500 11px/1 Inter,system-ui,sans-serif;
+  white-space:nowrap;cursor:pointer;box-shadow:none;
+  transition:background .16s ease,border-color .16s ease,color .16s ease;
+}
+.topbar .mba-theme-switch svg { width:15px;height:15px;flex:0 0 15px; }
+.topbar .mba-theme-switch:hover { color:var(--mba-text);background:var(--mba-subtle); }
+.topbar .mba-theme-switch:focus-visible {
+  outline:2px solid #c18a6e;outline-offset:2px;
+}
+html[data-mba-theme="sol"] { color-scheme:light; }
+html[data-mba-theme="lua"] {
+  color-scheme:dark;
+  --mba-bg:#1e1e20;
+  --mba-surface:#29292c;
+  --mba-subtle:#343437;
+  --mba-text:#f3f3f4;
+  --mba-text-2:#c6c4c5;
+  --mba-muted:#a19fa3;
+  --mba-border:#414145;
+  --mba-border-strong:#56565b;
+  --mba-blue:#c78f70;
+  --mba-blue-dark:#dda787;
+  --mba-blue-soft:#41332f;
+  --mba-green:#78b89b;
+  --mba-red:#ec9189;
+  --mba-orange:#e1b47a;
+  --ink:#f3f3f4;
+  --muted:#c6c4c5;
+  --muted-soft:#a19fa3;
+  --line:#414145;
+  --line-strong:#56565b;
+  --surface:#29292c;
+  --bg:#1e1e20;
+  --accent:#c78f70;
+  --accent-soft:#41332f;
+  --success:#78b89b;
+  --danger:#ec9189;
+  --warning:#e1b47a;
+  background:#1e1e20;
+}
+
+/* Superfícies de base e navegação sem manchas claras. */
+html[data-mba-theme="lua"] body,
+html[data-mba-theme="lua"] .app-shell,
+html[data-mba-theme="lua"] .main-area,
+html[data-mba-theme="lua"] .content,
+html[data-mba-theme="lua"] .page,
+html[data-mba-theme="lua"] .dashboard-page,
+html[data-mba-theme="lua"] .analytics-page,
+html[data-mba-theme="lua"] .operacao-react-host,
+html[data-mba-theme="lua"] .users-react-host,
+html[data-mba-theme="lua"] .protocolo-react-shell {
+  background:#1e1e20 !important;color:#f3f3f4;
+}
+html[data-mba-theme="lua"] .sidebar {
+  background:#1e1e20 !important;border-right-color:#3b3b40 !important;
+}
+html[data-mba-theme="lua"] .topbar {
+  background:#1e1e20 !important;border-color:#3b3b40 !important;color:#efeff0 !important;
+}
+html[data-mba-theme="lua"] .topbar .mba-theme-switch {
+  background:#29292c;border-color:#454549;color:#eeeeef;
+}
+html[data-mba-theme="lua"] .topbar .mba-theme-switch:hover {
+  background:#37373b;border-color:#777078;
+}
+html[data-mba-theme="lua"] .topbar .avatar { background:#3e3533;color:#e5baa0; }
+html[data-mba-theme="lua"] .topbar .profile-chevron { color:#c0bfc2; }
+html[data-mba-theme="lua"] .profile-menu { background:#29292c !important;border-color:#454549 !important;box-shadow:0 14px 25px #0006 !important; }
+html[data-mba-theme="lua"] .profile-menu-item {
+  background:transparent !important;color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] .profile-menu-item:hover { background:#37373b !important; }
+html[data-mba-theme="lua"] .sidebar .nav-item.active { background:#393235 !important; }
+
+/* Module tabs: apenas um sublinhado cobre e fundo grafite. */
+html[data-mba-theme="lua"] body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav) {
+  background:#1e1e20 !important;border-color:#3b3b40 !important;
+}
+html[data-mba-theme="lua"] body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button {
+  color:#bdbbc0 !important;
+}
+html[data-mba-theme="lua"] body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button.active {
+  color:#fff4eb !important;
+}
+html[data-mba-theme="lua"] body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button.active::after {
+  background:#c78f70 !important;
+}
+
+/* Componentes comuns compartilhados pelos módulos. */
+html[data-mba-theme="lua"] .app-shell :is(
+  .panel,.card,.module-card,.analytics-card,.operation-card,.mba-operational-panel,
+  .metabase-card,.tasks-management-table-wrap,.tasks-team-table-wrap,
+  .task-dialog,.task-react-modal,.modal,.dialog,.dialog-card,.table-wrap,
+  .workbench-filters,.workbench-attention,.workbench-intake,.protocolos-card,
+  .protocolos-table-wrap,.agreement-context,.agreement-card,
+  .payment-card,.payment-receipt-card,.protocolos-page-react .protocolos-section,
+  .users-card,.user-card,.operation-panel,.controladoria-panel
+) {
+  background:#29292c !important;color:#f3f3f4 !important;
+  border-color:#414145 !important;box-shadow:none !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .page-title,.dashboard-header,.analytics-page-header,.tasks-management-header,
+  .lobby-heading,.workbench-header,.protocolos-header,.operation-header,
+  .tasks-results,.empty-state,.large-empty,.workbench-status
+) {
+  color:#eeeeef;
+}
+html[data-mba-theme="lua"] .app-shell :is(h1,h2,h3,h4,h5,h6) {
+  color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .page-title p,.tasks-management-header p,.workbench-header p,.protocolos-header p,
+  .analytics-page-header p,.tasks-renderer-state span,.tasks-react-state span,
+  .operation-header p,.empty-state p,.users-page p,.description
+) { color:#bab8bb !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .primary-button,.operation-primary-button,.analytics-button.primary
+) {
+  background:#b97959 !important;border-color:#b97959 !important;color:#fff !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .primary-button,.operation-primary-button,.analytics-button.primary
+):hover:not(:disabled) { background:#c78f70 !important;border-color:#c78f70 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .secondary-button,.icon-button,.execute-button,.btn,.page-button,
+  .workbench-queue-pagination button,.workbench-notice button
+) {
+  background:#343437 !important;border-color:#4b4b50 !important;color:#eeeef0 !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .secondary-button,.icon-button,.execute-button,.workbench-queue-pagination button
+):hover:not(:disabled) { background:#414145 !important; }
+
+/* Inputs e seletores do HTML legado, React e módulos de operação. */
+html[data-mba-theme="lua"] .app-shell :is(
+  input:not([type=checkbox]):not([type=radio]), select, textarea,
+  .mba-react-select-trigger,.search-field,.search-input,.task-filter,
+  .task-process-search,.tasks-process-search,.form-control,
+  .react-select__control,.process-search
+) {
+  background:#343437 !important;border-color:#53535a !important;
+  color:#f3f3f4 !important;box-shadow:none !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(input,textarea)::placeholder {
+  color:#aaa8ad !important;opacity:1;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .mba-react-select-options,.mba-react-select-menu,.select-options,
+  .dropdown-menu,.dropdown-content,[role=listbox]
+) {
+  background:#303034 !important;border-color:#525258 !important;color:#eeeef0 !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .mba-react-select-options button,.mba-react-select-option,.dropdown-item,[role=option]
+) { color:#f0eff0 !important;background:transparent; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .mba-react-select-options button,.mba-react-select-option,.dropdown-item,[role=option]
+):hover { background:#414145 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  label,legend,dt,dd,small,caption,.field-label,.input-label
+) { color:#cbc9cb; }
+
+/* Grids/tabelas: manter linhas e hierarquia legíveis. */
+html[data-mba-theme="lua"] .app-shell :is(
+  table,.task-table,.payments-table,.agreements-table,.tasks-management-table,
+  .tasks-team-table,.protocolos-table-react,.users-table
+) { background:#29292c !important;color:#f2f2f3 !important; }
+html[data-mba-theme="lua"] .app-shell table :is(thead,th) {
+  background:#343437 !important;color:#c9c6ca !important;
+  border-color:#46464b !important;
+}
+html[data-mba-theme="lua"] .app-shell table :is(tbody,tr,td) {
+  background:#29292c !important;color:#ecebed !important;border-color:#414145 !important;
+}
+html[data-mba-theme="lua"] .app-shell table tbody tr:hover td {
+  background:#343437 !important;
+}
+html[data-mba-theme="lua"] .app-shell table :is(strong,span,small,a) { color:inherit; }
+html[data-mba-theme="lua"] .app-shell :is(.table-footer,.pagination,.table-pagination,.workbench-queue-pagination) {
+  background:#29292c !important;border-color:#454549 !important;color:#b9b7ba !important;
+}
+
+/* Área operacional: cores neutras e métricas contrastantes. */
+html[data-mba-theme="lua"] .app-shell :is(
+  .workbench-filters,.workbench-status,.workbench-attention button,
+  .workbench-type,.workbench-intake,.protocolos-intake-grid-react,
+  .protocolos-status-strip-react,.controladoria-protocolos-view,
+  .operation-summary,.analytics-stat,.dashboard-stat,.metric-card
+) { background:#29292c !important;border-color:#414145 !important;color:#f3f3f4 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .workbench-header small,.workbench-type,.workbench-status button,
+  .workbench-attention button small,.metric-label,.stat-label
+) { color:#c8c6ca !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .workbench-header h1,.workbench-attention button strong,.stat-value,.metric-value
+) { color:#f3f3f4 !important; }
+
+/* Tarefas — manter a estação original com scroll e perguntas condicionais. */
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
+  background:#1e1e20 !important;color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .tasks-react-root {
+  background:#1e1e20 !important;color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] #tarefas :is(
+  .tasks-workspace-sidebar,.tasks-process-section,.tasks-renderer-card,.tasks-renderer-body,
+  .execution-card,.execution-process-heading,.execution-brief,.task-renderer-footer,
+  .tasks-management-table-wrap,.tasks-team-view,.tasks-team-table-wrap,.tasks-react-state
+) {
+  background:#29292c !important;color:#f3f3f4 !important;border-color:#46464a !important;
+}
+html[data-mba-theme="lua"] #tarefas :is(
+  .tasks-process-title strong,.tasks-process-item strong,.execution-process-heading h2,
+  .task-question h3,.task-option-card strong,.task-text-field,.task-select-field,
+  .tasks-management-table strong,.tasks-team-header,.closing-summary strong
+) { color:#f3f3f4 !important; }
+html[data-mba-theme="lua"] #tarefas :is(
+  .tasks-process-title span,.tasks-process-item small,.execution-brief,
+  .task-question p,.task-text-field>small,.tasks-management-table small,
+  .tasks-team-header p,.closing-summary>span,.closing-summary>small
+) { color:#bab7bc !important; }
+html[data-mba-theme="lua"] #tarefas :is(
+  .tasks-process-item,.tasks-process-search,.mba-react-select-trigger,
+  .queue-station-filters select,.task-option-card>span,
+  .task-text-field input,.task-text-field textarea,.task-select-field select,
+  .closing-date-answer input,.execution-copy
+) {
+  background:#343437 !important;border-color:#505055 !important;color:#f3f3f4 !important;
+}
+html[data-mba-theme="lua"] #tarefas .tasks-process-item:hover {
+  background:#39393d !important;border-color:#626267 !important;
+}
+html[data-mba-theme="lua"] #tarefas .tasks-process-item.selected {
+  background:#42352f !important;border-color:#87654f !important;
+  box-shadow:inset 2px 0 #ca9070 !important;
+}
+html[data-mba-theme="lua"] #tarefas .task-option-card>span:hover {
+  background:#403b39 !important;border-color:#a58066 !important;
+}
+html[data-mba-theme="lua"] #tarefas .task-option-card input:checked+span {
+  background:#45362f !important;border-color:#b98061 !important;
+  box-shadow:inset 2px 0 #c78f70 !important;
+}
+html[data-mba-theme="lua"] #tarefas .task-question-number {
+  background:#44362f !important;color:#efb58c !important;
+}
+html[data-mba-theme="lua"] #tarefas :is(.closing-summary,.closing-summary.neutral) {
+  background:#343437 !important;border-color:#525258 !important;
+}
+html[data-mba-theme="lua"] #tarefas .closing-summary.positive {
+  background:#283b34 !important;border-color:#467360 !important;
+}
+html[data-mba-theme="lua"] #tarefas .closing-summary.positive>strong { color:#a3d6bd !important; }
+html[data-mba-theme="lua"] #tarefas .closing-summary.negative {
+  background:#42382d !important;border-color:#897052 !important;
+}
+html[data-mba-theme="lua"] #tarefas .closing-summary.negative>strong { color:#e6bc88 !important; }
+html[data-mba-theme="lua"] #tarefas .queue-item-badges .tasks-state-pill.high {
+  color:#ffc4bd !important;background:#513433 !important;
+}
+html[data-mba-theme="lua"] #tarefas .queue-item-badges .tasks-state-pill.medium {
+  color:#eed0a3 !important;background:#493e2f !important;
+}
+html[data-mba-theme="lua"] #tarefas .queue-item-badges .tasks-state-pill.low {
+  color:#a8d9bd !important;background:#2c4437 !important;
+}
+html[data-mba-theme="lua"] #tarefas :is(
+  .defesa-flow-criterion,.defense-court-deadline,.defesa-enter-deadline,
+  .agreement-context,.agreement-money-grid,.task-renderer-state,.task-renderer-error
+) { border-color:#505055 !important; }
+html[data-mba-theme="lua"] #tarefas .task-renderer-footer {
+  background:#29292c !important;border-top-color:#46464a !important;
+}
+html[data-mba-theme="lua"] #tarefas .tasks-management-table-wrap {
+  background:#29292c !important;border-color:#414145 !important;
+}
+html[data-mba-theme="lua"] #tarefas .tasks-team-summary { color:#bab9bf !important; }
+
+/* Mensagens, informação semântica e acessibilidade. */
+html[data-mba-theme="lua"] .app-shell :is(
+  .workbench-notice,.execution-notification,.task-renderer-error,[role=alert]
+) {
+  background:#3e302d !important;color:#ffd6c1 !important;border-color:#715246 !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .status-badge.success,.status-completed,.agreement-result-eligible
+) { color:#9bddb7 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .status-badge.error,.status-failed,.agreement-result-ineligible
+) { color:#f8aba1 !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .modal-backdrop,.task-modal-backdrop
+) { background:rgba(0,0,0,.72) !important; }
+html[data-mba-theme="lua"] .app-shell :is(
+  .task-react-modal,.task-dialog,.modal
+) { background:#29292c !important;color:#f3f3f4 !important; }
+
+@media(max-width:560px) {
+  .topbar .mba-theme-switch { min-width:32px;width:32px;padding:0; }
+  .topbar .mba-theme-switch span { display:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .topbar .mba-theme-switch { transition:none; }
+}
