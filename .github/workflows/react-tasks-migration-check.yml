@@ -43,7 +43,7 @@ jobs:
           python3 -m py_compile scripts/metabase/*.py
 
       - name: Identidade e prioridades
-        run: node --test tests/brand-priorities.test.mjs && node --test tests/brand-themes.test.mjs
+        run: node --test tests/brand-priorities.test.mjs && node --test tests/brand-themes.test.mjs && node --test tests/theme-contrast-regression.test.mjs
 
       - name: Production build
         run: npm run build
