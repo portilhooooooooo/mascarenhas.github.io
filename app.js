@@ -18,7 +18,7 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   dashboard: 'analytics',
   acordos: 'operacao/pagamentos',
-  protocolo: 'controladoria/protocolos',
+  protocolo: 'operacao/protocolos',
   automacoes: 'automacoes',
   tarefas: 'tarefas',
   'tarefa-analise': 'tarefas/analise',
@@ -33,8 +33,10 @@ const pageRoutes = Object.freeze({
 });
 const nestedPageRoutes = Object.freeze({
   'analytics/encerramentos': 'dashboard',
-  'controladoria/defesas': 'protocolo',
-  'controladoria/indicadores': 'protocolo',
+  'operacao/liminar': 'acordos',
+  'operacao/encerramentos': 'acordos',
+  'operacao/protocolos': 'acordos',
+  'operacao/defesas': 'acordos',
   'tarefas/atribuicoes': 'tarefas',
   'tarefas/resultados': 'tarefas',
 });
@@ -43,9 +45,12 @@ const routeAliases = Object.freeze({
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
-  protocolo: 'controladoria/protocolos',
-  controladoria: 'controladoria/protocolos',
-  'automacoes/protocolos': 'controladoria/protocolos',
+  protocolo: 'operacao/protocolos',
+  controladoria: 'operacao/protocolos',
+  'controladoria/protocolos': 'operacao/protocolos',
+  'controladoria/defesas': 'operacao/defesas',
+  'controladoria/indicadores': 'operacao/protocolos',
+  'automacoes/protocolos': 'operacao/protocolos',
   tutelas: 'automacoes/liminares',
   encerramentos: 'automacoes/encerramentos',
 });
@@ -67,7 +72,7 @@ function resolvePageRoute(route) {
 }
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
-  if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
+  if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true && !(pageId === 'acordos' && window.MBA_PORTFOLIO_POLICY?.canAccess('protocolo') === true)) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
@@ -83,7 +88,7 @@ function publishRoute(route, pageId, replace = false) {
 }
 function authorizedPageId(pageId) {
   if (pageId === 'sem-acesso') return pageId;
-  if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
+  if (!document.getElementById(pageId) || (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true && !(pageId === 'acordos' && window.MBA_PORTFOLIO_POLICY?.canAccess('protocolo') === true))) return 'sem-acesso';
   return pageId;
 }
 function showPage(pageId, updateRoute = true) {
