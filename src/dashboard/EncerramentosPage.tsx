@@ -14,6 +14,7 @@ type Uf = { uf: string; vitorias: number; derrotas: number; tkm?: Numero; amostr
 type Comarca = { comarca: string; uf: string; derrotas: number };
 type Matriz = { tipo: string; faixa: string; quantidade: number };
 type Indicadores = { consultados: number; encontrados: number; analisados: number; ticket_medio: Numero; ticket_amostra: number; aging_medio: Numero };
+type ResumoBennerAnterior = { periodo_inicio: string; periodo_fim_exclusivo: string; enviados: number; encerrados: number; em_andamento: number; fonte: string };
 type Dados = {
   carteira: string;
   tipo: string | null;
@@ -75,6 +76,12 @@ async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, anal
   return api.request<Dados>('/api/operacao/encerramentos/dashboard?' + query.toString());
 }
 
+async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
+  const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
+  if (!api) throw new Error('Conexão com a API indisponível.');
+  return api.request<ResumoBennerAnterior>('/api/operacao/encerramentos/resumo-mes-anterior');
+}
+
 /** Números fictícios, calculados exclusivamente na interface de demonstração. */
 function makeDemo(carteira: string, tipo: Tipo, periodo: string, etapa: Etapa, analista: string): Dados {
   const factor = (periodo === 'mes' ? .16 : periodo === '30' ? .23 : periodo === '90' ? .55 : 1) * (carteira === 'Agibank Enter' ? .72 : 1);
@@ -134,15 +141,20 @@ function makeDemo(carteira: string, tipo: Tipo, periodo: string, etapa: Etapa, a
   };
 }
 
-function Metrics({ dados, demo, analista, selectedCount, acordo, etapa }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa }) {
+function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa; resumo: ResumoBennerAnterior | null }) {
   const m = dados?.indicadores;
   const accord = dados?.distribuicao_tipos.find(c => c.tipo === 'ACORDO')?.quantidade;
   const stage = dados?.etapas;
+  const mesAnterior = resumo?.periodo_inicio
+    ? new Intl.DateTimeFormat('pt-BR', { month: 'short', year: 'numeric' }).format(new Date(resumo.periodo_inicio.slice(0, 7) + '-02T12:00:00'))
+    : 'mês anterior';
   const cards = [
     { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados · Indícios DataJud' : 'Sem dados' },
     { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
+    { icon: CheckCircle2, name: 'Enviados', value: !demo && resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
+    { icon: Activity, name: 'Encerrados', value: !demo && resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
   ];
   return <div className="closing-kpis">
     {cards.map(item => <article className="closing-kpi" key={item.name}>
@@ -297,15 +309,22 @@ export function EncerramentosPage() {
   const [periodo,setPeriodo] = useState('mes');
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
-  const [demo,setDemo] = useState(true);
+  const [demo,setDemo] = useState(false);
   const [dados,setDados] = useState<Dados | null>(null);
+  const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refresh = useCallback(async () => {
     setPending(true);
-    try { const result = await loadDashboard(carteira,tipo,periodo,analista,etapa); setDados(result); setError(''); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.'); }
-    finally { setPending(false); }
+    try {
+      const [painel, historico] = await Promise.allSettled([
+        loadDashboard(carteira,tipo,periodo,analista,etapa),
+        loadResumoBennerAnterior(),
+      ]);
+      if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
+      else setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.');
+      setResumoBenner(historico.status === 'fulfilled' ? historico.value : null);
+    } finally { setPending(false); }
   },[carteira,tipo,periodo,analista,etapa]);
   useEffect(() => {void refresh();},[refresh]);
   useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
@@ -337,7 +356,7 @@ export function EncerramentosPage() {
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
     {!demo && error ? <p className="closing-error" role="alert">{error}</p> : null}
-    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa}/>
+    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
       <Composition dados={shown} etapa={etapa} periodo={periodo} analista={analista}/>
