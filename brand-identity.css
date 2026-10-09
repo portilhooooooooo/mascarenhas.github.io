@@ -1,0 +1,198 @@
+/*
+ * Mascarenhas Barbosa / Backoffice
+ * Identidade: grafite + superfícies neutras + cobre discreto.
+ * Aplicação sobre o shell existente; não altera fluxos ou permissões.
+ * Elementos ornamentais são reservados ao login, nunca ao workspace.
+ */
+:root {
+  --mba-bg: #f7f6f3;
+  --mba-surface: #ffffff;
+  --mba-subtle: #f9f8f6;
+  --mba-text: #292725;
+  --mba-text-2: #67615c;
+  --mba-muted: #918a83;
+  --mba-border: #e8e3dd;
+  --mba-border-strong: #d9d0c8;
+  --mba-blue: #b87555;
+  --mba-blue-dark: #94593f;
+  --mba-blue-soft: #fbf0ea;
+  --mba-green: #27805d;
+  --mba-red: #c64d48;
+  --mba-orange: #c18847;
+  --ink: #292725;
+  --muted: #67615c;
+  --muted-soft: #918a83;
+  --line: #e8e3dd;
+  --line-strong: #d9d0c8;
+  --surface: #ffffff;
+  --bg: #f7f6f3;
+  --accent: #b87555;
+  --accent-soft: #fbf0ea;
+}
+html { color-scheme: light; }
+body, button, input, select, textarea { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { background: var(--mba-bg); color: var(--mba-text); }
+
+/* Chrome: zero riscos diagonais, gradientes chamativos ou contornos decorativos. */
+.sidebar {
+  background: #1e1e20 !important;
+  color: #ded9d4;
+  border-right: 1px solid #302e2e !important;
+  box-shadow: none !important;
+}
+.sidebar::before,.sidebar::after,.sidebar-head::before,.sidebar-head::after,
+.topbar::before,.topbar::after,.main-nav::before,.main-nav::after { content:none !important; display:none !important; }
+.sidebar-head { border-bottom: 1px solid #343235; }
+.sidebar .brand, .sidebar .brand-word { color: #f6f2ee !important; }
+.sidebar .brand-symbol { filter: brightness(0) invert(1); object-fit: contain; }
+.sidebar .sidebar-toggle { background: transparent; color:#a59e99; }
+.sidebar .sidebar-toggle:hover,.sidebar .sidebar-toggle:focus-visible {
+  color:#f9f5f0; background:#303033; border-color:transparent;
+}
+.sidebar .nav-item,.sidebar .sidebar-logout { color:#ada7a3; border:0; box-shadow:none; background:transparent; font-weight:500; }
+.sidebar .nav-item svg,.sidebar .sidebar-logout svg { color:#98928f; }
+.sidebar .nav-item:hover { background:#2a292b; color:#f4eeea; }
+.sidebar .nav-item:hover svg { color:#f4eeea; }
+.sidebar .nav-item.active { background:#37302d !important; color:#fff5ee !important; font-weight:600; }
+.sidebar .nav-item.active svg { color:#e3a684 !important; }
+.sidebar .nav-item.active::before {
+  background:#cb8a66 !important; width:2px !important; border-radius:0 2px 2px 0;
+}
+.sidebar .nav-item-muted { opacity:.35; }
+.sidebar .sidebar-bottom { border-top:1px solid #353237; }
+.sidebar .sidebar-logout:hover { color:#fff; background:#343033; }
+.sidebar .nav-badge { background:#45352c; color:#f3c6a9; }
+.sidebar .sidebar-portfolio-label,.sidebar .sidebar-portfolio-active-name,.sidebar .sidebar-portfolio-active,
+.sidebar .sidebar-portfolio-trigger { color:#e6deda !important; }
+.sidebar .sidebar-portfolio-trigger,.sidebar .sidebar-portfolio-active {
+  background:#29282a !important; border-color:#413c3a !important;
+}
+.sidebar .sidebar-portfolio-menu { border-color:#444044; background:#29282a; }
+.sidebar .sidebar-portfolio-option { color:#e8dfd8; }
+.sidebar .sidebar-portfolio-option:hover { background:#3a3431; }
+
+/* Topbar: apenas utilidade e perfil. */
+.topbar { background:#fff !important; border-bottom:1px solid var(--mba-border) !important; box-shadow:none !important; backdrop-filter:none; }
+.topbar .notification-button { display:none !important; }
+.topbar .avatar { background:#f1e8e2; color:#815c4a; }
+.topbar .profile-menu { border-color:var(--mba-border); box-shadow:0 12px 26px rgba(36,28,25,.1); }
+.main-area,.content,.page { background:var(--mba-bg); }
+.content { color:var(--mba-text); }
+.page-title h1,.analytics-page-header h1,.operation-header h1,
+.tasks-management-header h1,.lobby-heading h1,.tasks-results h1 {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-weight:400 !important;
+  letter-spacing:-.025em !important;
+  color:#282625 !important;
+}
+.page-title p,.analytics-page-header p,.operation-header p { color:var(--mba-text-2); }
+
+/* Painéis do aplicativo inteiro: neutros, pouca saturação e bordas discretas. */
+.panel,.module-card,.card,.analytics-card,.operation-card,
+.mba-operational-panel,.metabase-card,.tasks-management-table-wrap {
+  border-color:var(--mba-border) !important;
+  box-shadow:none !important;
+}
+.primary-button,.analytics-button.primary,.operation-primary-button {
+  background:#b87555 !important; border-color:#b87555 !important; color:#fff !important;
+  box-shadow:none !important; border-radius:6px !important;
+}
+.primary-button:hover:not(:disabled),.analytics-button.primary:hover:not(:disabled) {
+  background:#9c6248 !important; border-color:#9c6248 !important;
+}
+.secondary-button,.icon-button { box-shadow:none !important; border-color:var(--mba-border); }
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible {
+  outline:2px solid #c99276; outline-offset:2px;
+}
+:is(.task-dialog,.task-react-modal) { border-color:var(--mba-border); }
+:is(.task-table,.payments-table,.agreements-table,.tasks-management-table) th {
+  background:#faf9f7 !important; color:#776f69 !important;
+}
+:is(.task-table,.payments-table,.agreements-table,.tasks-management-table) tr:hover td {
+  background:#fbf9f7;
+}
+
+/* Subnav das áreas: tipografia limpa e um único sublinhado funcional. */
+body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav) {
+  background:#fff !important; border-color:var(--mba-border) !important;
+  box-shadow:none !important;
+}
+body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button {
+  color:#817a74 !important; letter-spacing:0 !important;
+}
+body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button.active {
+  color:#574133 !important;
+}
+body :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button.active::after {
+  height:2px !important; background:#b87555 !important;
+}
+
+/* Tarefas: preservar a estação de trabalho atual, sem cards de KPI ou tabela nova. */
+#tarefas[data-react-tasks='true'] { background:#f7f6f3 !important; }
+#tarefas[data-react-tasks='true'] .tasks-react-root { color:#292725; }
+#tarefas[data-react-tasks='true'] .task-station .tasks-workspace {
+  grid-template-columns:270px minmax(0,1fr); gap:10px;
+}
+#tarefas .tasks-workspace-sidebar,#tarefas .tasks-renderer-card {
+  background:#fff; border:1px solid #e7e1db !important; border-radius:8px !important; box-shadow:none !important;
+}
+#tarefas .tasks-process-section { background:#fff; }
+#tarefas .tasks-process-title strong { color:#514843; font-size:10px; letter-spacing:0; text-transform:none; }
+#tarefas .tasks-process-title span { color:#948a83; }
+#tarefas .tasks-process-search,#tarefas .mba-react-select-trigger {
+  border:1px solid #e4ddd6 !important; background:#faf9f7 !important;
+  border-radius:6px !important; color:#645951 !important; box-shadow:none !important;
+}
+#tarefas .tasks-process-search input { color:#302c29 !important; }
+#tarefas .tasks-process-item { background:transparent; border-color:transparent; border-radius:6px; }
+#tarefas .tasks-process-item:hover { background:#faf8f5; border-color:#eee7df; }
+#tarefas .tasks-process-item.selected {
+  background:#faf1ec !important; border-color:#efdbcf !important;
+  box-shadow:inset 2px 0 0 #bd8064 !important;
+}
+#tarefas .tasks-process-item strong { color:#342d28; }
+#tarefas .tasks-process-item small { color:#988d85; }
+#tarefas .tasks-state-pill { border:0; font-weight:600; }
+#tarefas .queue-item-badges .tasks-state-pill.high { color:#a33e33; background:#faeae7; }
+#tarefas .queue-item-badges .tasks-state-pill.medium { color:#986b36; background:#fbf2e3; }
+#tarefas .queue-item-badges .tasks-state-pill.low { color:#597567; background:#edf4ef; }
+#tarefas .tasks-renderer-card>header,.execution-process-heading { background:#fff !important; border-bottom:1px solid #eee7df !important; }
+#tarefas .execution-process-heading small { color:#9b7059; font-weight:600; }
+#tarefas .execution-process-heading h2 { color:#2c2825; }
+#tarefas .execution-copy { color:#756960; }
+#tarefas .task-question { border-color:#f1e9e2 !important; }
+#tarefas .task-question h3 { color:#322d2a !important; font-weight:600; }
+#tarefas .task-question-number { background:#f8eee7 !important; color:#a86948 !important; }
+#tarefas .task-option-card>span {
+  border:1px solid #e9e2da !important; background:#fff !important;
+  border-radius:6px !important; box-shadow:none !important;
+}
+#tarefas .task-option-card>span:hover { background:#fbf8f5 !important; border-color:#d6c4b6 !important; }
+#tarefas .task-option-card input:checked+span {
+  border-color:#bc876b !important; background:#fcf3ed !important;
+  box-shadow:inset 2px 0 0 #ba7958 !important;
+}
+#tarefas .closing-summary.neutral { background:#faf9f7; border-color:#e9e2da; }
+#tarefas .closing-summary.positive { background:#f4f9f5; border-color:#cfe4d3; }
+#tarefas .closing-summary.negative { background:#fff8ee; border-color:#eedcc0; }
+#tarefas .closing-summary>span { color:#80776e; }
+#tarefas .task-renderer-footer { border-color:#eee7df !important; background:#fff !important; }
+#tarefas .tasks-team-table-wrap { background:#fff; border:1px solid var(--mba-border); border-radius:8px; }
+
+/* Indicadores: cobre é ação/marca; nunca usado como substituto dos estados funcionais. */
+.status-badge.success,.status-completed,.agreement-result-eligible { color:#26784d; }
+.status-badge.error,.status-failed,.agreement-result-ineligible { color:#b3453d; }
+
+@media(max-width:900px) {
+  #tarefas[data-react-tasks='true'] .task-station .tasks-workspace {
+    grid-template-columns:230px minmax(0,1fr);
+  }
+}
+@media(max-width:600px) {
+  #tarefas[data-react-tasks='true'] .task-station .tasks-workspace {
+    grid-template-columns:minmax(0,1fr); grid-template-rows:230px minmax(0,1fr);
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto !important; }
+}
