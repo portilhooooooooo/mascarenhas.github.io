@@ -1,9 +1,12 @@
-export type ClosingStatus = 'PENDENTES' | 'APTOS' | 'INAPTOS' | 'EM_FASE_RECURSAL' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'VITORIA' | 'ENVIADOS_BENNER';
+export type ClosingStatus = 'PENDENTES' | 'APTOS' | 'INAPTOS' | 'EM_FASE_RECURSAL' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'VITORIA' | 'ENVIADOS_BENNER' | 'CLASSIFICACAO_ERRADA';
 export type ClosingType = 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'VITORIA';
 
 export interface ClosingCase {
   portfolio_id: string;
   cnj: string;
+  task_process_id?: string;
+  classificacao_errada?: boolean;
+  reanalysis_status?: string;
   pasta?: string | null;
   comarca?: string | null;
   uf?: string | null;
@@ -54,5 +57,16 @@ export function getClosingCases(status: ClosingStatus, limit: number, offset: nu
 export function sendClosingsToBenner(items: {cnj: string; andamento: string}[]): Promise<ClosingSendResult> {
   return api().request('/api/operacao/encerramentos/enviar-benner', {
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({items}),
+  });
+}
+
+export function getClosingDivergences(limit: number, offset: number, search = ''): Promise<ClosingList> {
+  const query = new URLSearchParams({limit: String(limit), offset: String(offset)});
+  if (search.trim()) query.set('q',search.trim());
+  return api().request('/api/operacao/encerramentos/divergencias?' + query);
+}
+export function reanalyzeClosingTask(processId: string): Promise<unknown> {
+  return api().request('/api/task-processes/' + encodeURIComponent(processId) + '/reanalyze', {
+    method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}',
   });
 }
