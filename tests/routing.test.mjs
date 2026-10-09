@@ -74,8 +74,11 @@ test('links diretos e aliases antigos são restaurados sem recarregar', () => {
 test('abas React atualizam a rota e restauram a página pai', () => {
   const e = environment();
   assert.equal(e.window.MBA_NAVIGATE('controladoria/defesas'), true);
-  assert.equal(e.location.pathname, '/controladoria/defesas');
-  assert.equal(e.active.get('protocolo'), true);
+  assert.equal(e.location.pathname, '/operacao/defesas');
+  assert.equal(e.active.get('acordos'), true);
+  assert.equal(e.window.MBA_NAVIGATE('operacao/protocolos'), true);
+  assert.equal(e.location.pathname, '/operacao/protocolos');
+  assert.equal(e.active.get('acordos'), true);
   assert.equal(e.window.MBA_NAVIGATE('tarefas/resultados'), true);
   assert.equal(e.active.get('tarefas'), true);
   assert.equal(e.events.at(-1).detail.route, 'tarefas/resultados');
@@ -88,10 +91,13 @@ test('links sem permissão mostram sem-acesso, incluindo subrota', () => {
   e.window.restorePageRoute();
   assert.equal(e.active.get('sem-acesso'), true);
 });
-test('atribuições exigem permissão gerencial', () => {
+test('atribuições exigem permissão gerencial ou visualização de outras tarefas', () => {
   const e = environment('/tarefas', { permissions: { 'tasks.manage': false } });
   assert.equal(e.window.MBA_NAVIGATE('tarefas/atribuicoes'), false);
   assert.equal(e.active.get('sem-acesso'), true);
+  const readOnly = environment('/tarefas', {permissions:{'tasks.view_others':true}});
+  assert.equal(readOnly.window.MBA_NAVIGATE('tarefas/atribuicoes'), true);
+  assert.equal(readOnly.active.get('tarefas'), true);
 });
 test('prévia local preserva navegação em hash', () => {
   const e = environment('/#/tarefas', { preview: true });

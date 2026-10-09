@@ -2,7 +2,6 @@ import { StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
-import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
@@ -183,11 +182,10 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  const visiblePages = new Set(['tarefas', 'dashboard', 'acordos', 'protocolo', 'automacoes']);
+  const visiblePages = new Set(['tarefas', 'dashboard', 'acordos', 'automacoes']);
   const labels: Record<string, string> = {
     dashboard: 'Analytics',
     acordos: 'Operação',
-    protocolo: 'Controladoria',
     automacoes: 'Automações',
     tarefas: 'Tarefas',
   };
@@ -199,7 +197,7 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page) || button === baseDados;
-      const eligible = recognized && Boolean(page) && mayOpen(page);
+      const eligible = recognized && Boolean(page) && (mayOpen(page) || (page === 'acordos' && mayOpen('protocolo')));
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
@@ -222,7 +220,6 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
-    nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
     baseDados,
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
   ];
@@ -270,7 +267,7 @@ function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
   const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = mayOpen('acordos');
+  const allowed = mayOpen('acordos') || mayOpen('protocolo');
   if (visible && allowed) mountOperacaoPage();
   else unmountOperacaoPage();
 }
@@ -285,54 +282,6 @@ function configureOperacaoLifecycle() {
   window.addEventListener('mba:logged-out', unmountOperacaoPage);
   document.addEventListener('visibilitychange', syncOperacaoLifecycle);
   syncOperacaoLifecycle();
-}
-
-let protocolosRoot: Root | null = null;
-
-function mountProtocolosPage() {
-  const section = document.getElementById('protocolo');
-  if (!section || protocolosRoot) return;
-  section.dataset.reactMounted = 'true';
-  section.classList.add('protocolo-react-shell');
-  section.replaceChildren();
-  const mount = document.createElement('div');
-  mount.className = 'protocolos-react-root';
-  section.appendChild(mount);
-  protocolosRoot = createRoot(mount);
-  protocolosRoot.render(<StrictMode><ControladoriaPage/></StrictMode>);
-}
-
-function unmountProtocolosPage() {
-  if (!protocolosRoot) return;
-  protocolosRoot.unmount();
-  protocolosRoot = null;
-  const section = document.getElementById('protocolo');
-  if (section) {
-    delete section.dataset.reactMounted;
-    section.replaceChildren();
-  }
-}
-
-function syncProtocolosLifecycle() {
-  const section = document.getElementById('protocolo');
-  const user = (window as DashboardWindow).MBA_CURRENT_USER;
-  const visible = section?.classList.contains('active') === true && !document.hidden;
-  const allowed = mayOpen('protocolo');
-  if (visible && allowed) mountProtocolosPage();
-  else unmountProtocolosPage();
-}
-
-function configureProtocolosLifecycle() {
-  const section = document.getElementById('protocolo');
-  if (!section) return;
-
-  const observer = new MutationObserver(syncProtocolosLifecycle);
-  observer.observe(section, { attributes: true, attributeFilter: ['class'] });
-  window.addEventListener('mba:authenticated', syncProtocolosLifecycle);
-  window.addEventListener('mba:session-expired', unmountProtocolosPage);
-  window.addEventListener('mba:logged-out', unmountProtocolosPage);
-  document.addEventListener('visibilitychange', syncProtocolosLifecycle);
-  syncProtocolosLifecycle();
 }
 
 let usersRoot: Root | null = null;
@@ -409,5 +358,4 @@ if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontr
 createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
 mountTasksPage();
 configureOperacaoLifecycle();
-configureProtocolosLifecycle();
 configureUsersLifecycle();

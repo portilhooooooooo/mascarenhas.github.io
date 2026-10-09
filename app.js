@@ -18,7 +18,7 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   dashboard: 'analytics',
   acordos: 'operacao/pagamentos',
-  protocolo: 'controladoria/protocolos',
+  protocolo: 'operacao/protocolos',
   automacoes: 'automacoes',
   tarefas: 'tarefas',
   'tarefa-analise': 'tarefas/analise',
@@ -33,8 +33,10 @@ const pageRoutes = Object.freeze({
 });
 const nestedPageRoutes = Object.freeze({
   'analytics/encerramentos': 'dashboard',
-  'controladoria/defesas': 'protocolo',
-  'controladoria/indicadores': 'protocolo',
+  'operacao/liminar': 'acordos',
+  'operacao/encerramentos': 'acordos',
+  'operacao/protocolos': 'acordos',
+  'operacao/defesas': 'acordos',
   'tarefas/atribuicoes': 'tarefas',
   'tarefas/resultados': 'tarefas',
 });
@@ -43,9 +45,12 @@ const routeAliases = Object.freeze({
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
-  protocolo: 'controladoria/protocolos',
-  controladoria: 'controladoria/protocolos',
-  'automacoes/protocolos': 'controladoria/protocolos',
+  protocolo: 'operacao/protocolos',
+  controladoria: 'operacao/protocolos',
+  'controladoria/protocolos': 'operacao/protocolos',
+  'controladoria/defesas': 'operacao/defesas',
+  'controladoria/indicadores': 'operacao/protocolos',
+  'automacoes/protocolos': 'operacao/protocolos',
   tutelas: 'automacoes/liminares',
   encerramentos: 'automacoes/encerramentos',
 });
@@ -62,16 +67,17 @@ function resolvePageRoute(route) {
   if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
     return { pageId: 'tarefas', canonical: 'tarefas' };
   }
-  const pageId = Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical) || nestedPageRoutes[canonical];
+  // Submódulos de Operação devem montar a mesma página React, mesmo com rotas legadas homônimas.
+  const pageId = nestedPageRoutes[canonical] || Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical);
   return pageId ? { pageId, canonical } : null;
 }
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
-  if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
+  if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true && !(pageId === 'acordos' && window.MBA_PORTFOLIO_POLICY?.canAccess('protocolo') === true)) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
-    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
+    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true || user?.permissions?.['tasks.view_others'] === true;
   }
   return true;
 }
@@ -83,7 +89,7 @@ function publishRoute(route, pageId, replace = false) {
 }
 function authorizedPageId(pageId) {
   if (pageId === 'sem-acesso') return pageId;
-  if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
+  if (!document.getElementById(pageId) || (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true && !(pageId === 'acordos' && window.MBA_PORTFOLIO_POLICY?.canAccess('protocolo') === true))) return 'sem-acesso';
   return pageId;
 }
 function showPage(pageId, updateRoute = true) {
@@ -291,10 +297,10 @@ function renderPermissionEditor(user) {
   document.querySelector('#permission-grid').innerHTML = permissionSectionOrder.filter((section) => groups[section]?.length).map((section) => `<div class="permission-edit-card"><h3>${escapeHtml(permissionSections[section] || section)}</h3>${groups[section].map((permission) => {
     const state = effective[permission.key];
     const exclusive = permission.key.startsWith('users.') && !canReceiveUsersAccess;
-    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute', 'tasks.view_others'].includes(permission.key);
+    const taskOnlyRestricted = user.access_kind === 'operational' && !['tasks.view', 'tasks.execute', 'tasks.view_others', 'tasks.results_all'].includes(permission.key);
     // Visibility of colleagues' tasks is an explicit, scoped permission.
     // It is safe to configure without granting permission to execute or manage.
-    const locked = exclusive || (operational && permission.key !== 'tasks.view_others') || protectedIdentity;
+    const locked = exclusive || (operational && !['tasks.view_others', 'tasks.results_all'].includes(permission.key)) || protectedIdentity;
     const lockLabel = exclusive ? 'Exclusivo' : taskOnlyRestricted ? 'Escopo operacional' : '';
     return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O acesso operacional permite somente tarefas atribuídas' : 'Origem atual: ' + (state?.source || 'sem regra')}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
   }).join('')}</div>`).join('');

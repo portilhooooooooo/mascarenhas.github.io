@@ -167,7 +167,7 @@ try {
   await page.getByRole('button',{name:'Resultados',exact:true}).click();
   assert.equal(await page.getByRole('heading',{name:'Resultados',exact:true}).count(),1);
   assert.equal(await page.locator('.demo-navbar').isVisible(),true);
-  await page.locator('.tasks-react-subnav').getByRole('button',{name:'Tarefas',exact:true}).click();
+  await page.locator('.tasks-react-subnav').getByRole('button',{name:'Minhas tarefas',exact:true}).click();
   await page.locator('.execution-process-heading').waitFor();
   await page.evaluate(()=>{
     window.MBA_CURRENT_USER.permissions['automations.run']=true;
@@ -186,7 +186,7 @@ try {
       return original(path,options);
     };
   });
-  await page.getByRole('button',{name:'Controladoria',exact:true}).click();
+  await page.getByRole('button',{name:'Operação',exact:true}).first().click(); await page.locator('.operacao-module-subnav').getByRole('button',{name:'Protocolos',exact:true}).click();
   await page.getByText('Fazendo login…',{exact:true}).waitFor();
   assert.equal(await page.locator('.protocolos-page-react table').count(),1);
   assert.equal(await page.locator('.workbench-attention,.protocolos-page-react details').count(),0);
@@ -207,7 +207,7 @@ try {
   for(const [state,label] of [['in_use','Em produção'],['lost','Erro de sessão'],['idle','Aguardando execução']]) {
     await page.getByRole('button',{name:'Tarefas',exact:true}).first().click();
     await page.evaluate(value=>window.__automationState=value,state);
-    await page.getByRole('button',{name:'Controladoria',exact:true}).click();await page.getByRole('region',{name:'Status da automação'}).getByText(label,{exact:true}).waitFor();
+    await page.getByRole('button',{name:'Operação',exact:true}).first().click(); await page.locator('.operacao-module-subnav').getByRole('button',{name:'Protocolos',exact:true}).click();await page.getByRole('region',{name:'Status da automação'}).getByText(label,{exact:true}).waitFor();
   }
   await page.getByRole('button',{name:'Iniciar',exact:true}).click();await page.getByText('Em produção',{exact:true}).waitFor();
   await page.evaluate(()=>{window.MBA_CURRENT_USER.permissions['automations.run']=false;window.dispatchEvent(new Event('mba:authenticated'));});
@@ -217,7 +217,7 @@ try {
     assert.equal(await page.locator('.sidebar').isVisible(),true);assert.equal(await page.locator('.topbar').isVisible(),true);
     assert.equal((await layout()).documentScroll,false);assert.equal((await layout()).overflow,false);
     await page.screenshot({path:`${shots}/task-shell-${width}.png`});
-    await page.getByRole('button',{name:'Controladoria',exact:true}).click();
+    await page.getByRole('button',{name:'Operação',exact:true}).first().click(); await page.locator('.operacao-module-subnav').getByRole('button',{name:'Protocolos',exact:true}).click();
     await page.getByRole('heading',{name:'Correspondências',exact:true}).waitFor();
     assert.equal(await page.locator('.sidebar').isVisible(),true);assert.equal(await page.locator('.topbar').isVisible(),true);
     await page.screenshot({path:`${shots}/protocol-shell-${width}.png`});

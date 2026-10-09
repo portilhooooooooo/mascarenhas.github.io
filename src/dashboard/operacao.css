@@ -51,3 +51,9 @@
 .operacao-motivo-badge.no { background: #fff0ef; color: #b42318; }
 .operacao-motivo-badge.unknown { background: #f1f3f7; color: #596579; }
 .operacao-encerramentos-page .protocolos-toolbar-actions { flex-wrap: wrap; gap: 8px; }
+
+
+.operacao-encerramentos-status button.danger.active{border-color:#e9b3b3;background:#fff5f4;color:#9a3c3c}
+.operacao-encerramentos-status button.danger.active strong{color:#9a3c3c}
+.operacao-divergence-tag{font-size:10px!important;font-weight:600;color:#a13d38!important}
+.operacao-reanalyze{margin-top:7px;min-height:26px!important;padding:4px 8px!important;font-size:10px!important}
