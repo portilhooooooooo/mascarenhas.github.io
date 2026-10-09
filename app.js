@@ -67,7 +67,8 @@ function resolvePageRoute(route) {
   if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
     return { pageId: 'tarefas', canonical: 'tarefas' };
   }
-  const pageId = Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical) || nestedPageRoutes[canonical];
+  // Submódulos de Operação devem montar a mesma página React, mesmo com rotas legadas homônimas.
+  const pageId = nestedPageRoutes[canonical] || Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical);
   return pageId ? { pageId, canonical } : null;
 }
 function canAccessRoute(pageId, route) {
