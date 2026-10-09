@@ -201,7 +201,12 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page) || button === baseDados;
-      const eligible = recognized && Boolean(page) && mayOpen(page);
+      // Home é a entrada do workspace e não depende das permissões por carteira.
+      // O shell já está restrito à sessão autenticada.
+      const user = (window as DashboardWindow).MBA_CURRENT_USER;
+      const eligible = page === 'home'
+        ? Boolean(user)
+        : recognized && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
