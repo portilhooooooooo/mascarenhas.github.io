@@ -285,6 +285,7 @@ body.auth-signed-in .login-screen { display: none !important; }
    Automações
    ============================================================ */
 .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.automation-card[hidden] { display: none !important; }
 .automation-card { display: flex; flex-direction: column; gap: 16px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
 .module-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--radius-sm); color: var(--accent); background: var(--accent-soft); }
 .module-icon svg { width: 19px; }
