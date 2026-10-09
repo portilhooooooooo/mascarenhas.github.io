@@ -6,8 +6,8 @@ import { test } from 'node:test';
 const source = readFileSync(new URL('../app.js', import.meta.url), 'utf8').split('const appShell =')[0];
 
 function environment(initialPath = '/tarefas', options = {}) {
-  const allowed = new Set(options.allowed || ['home', 'dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'usuarios']);
-  const ids = ['home', 'dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'tutelas', 'usuarios', 'configuracoes', 'pagamentos', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'sem-acesso'];
+  const allowed = new Set(options.allowed || ['dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'usuarios']);
+  const ids = ['dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'tutelas', 'usuarios', 'configuracoes', 'pagamentos', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'sem-acesso'];
   const active = new Map(ids.map(id => [id, false]));
   const pages = ids.map(id => ({ id, classList: { toggle(_name, value) { active.set(id, value); } } }));
   const location = { pathname: '/', hash: '' };
@@ -40,14 +40,6 @@ function environment(initialPath = '/tarefas', options = {}) {
   return { window, location, active, events, listeners, setUrl };
 }
 
-test('Home restaura o link direto e preserva a rota /home', () => {
-  const e = environment('/home');
-  assert.equal(e.window.restorePageRoute(), true);
-  assert.equal(e.active.get('home'), true);
-  e.window.showPage('tarefas');
-  e.window.showPage('home');
-  assert.equal(e.location.pathname, '/home');
-});
 test('navbar muda a URL ao navegar para automações e analytics', () => {
   const e = environment();
   e.window.showPage('automacoes');
@@ -96,5 +88,4 @@ test('autenticação prioriza rota compartilhada', () => {
   const auth = readFileSync(new URL('../auth.js', import.meta.url), 'utf8');
   assert.match(auth, /const routeRestored = window\.restorePageRoute\?\.\(\) === true/);
   assert.match(auth, /else if \(!routeRestored\)/);
-  assert.match(auth, /\['home', null\]/, 'Home is the default post-login module');
 });

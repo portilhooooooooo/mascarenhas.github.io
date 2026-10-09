@@ -166,7 +166,6 @@ function syncTopModuleFromActivePage() {
     setTopModuleActive('tarefas');
     return;
   }
-  if (activePage.id === 'home') setTopModuleActive('home');
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
 }
 
@@ -184,9 +183,8 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  const visiblePages = new Set(['home', 'dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
+  const visiblePages = new Set(['dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
   const labels: Record<string, string> = {
-    home: 'Home',
     dashboard: 'Analytics',
     acordos: 'Operação',
     protocolo: 'Controladoria',
@@ -221,7 +219,6 @@ function configureApplicationShell() {
   });
 
   const orderedItems: Array<HTMLElement | null> = [
-    nav.querySelector<HTMLElement>('[data-page="home"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="protocolo"]'),

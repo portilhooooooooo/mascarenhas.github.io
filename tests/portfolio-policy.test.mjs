@@ -25,10 +25,6 @@ function createPolicy(id, overrides = {}) {
   vm.runInNewContext(policySource, { window });
   return window.MBA_PORTFOLIO_POLICY;
 }
-assert.equal(createPolicy('not-allowed').canAccess('home'), true, 'Home accessible to authenticated profiles even without an active portfolio');
-assert.equal(createPolicy('agibank_mba', { id: null }).canAccess('home'), false, 'Home denies invalid profiles');
-assert.match(html, /data-page="home"/, 'Home must appear in navigation');
-assert.match(html, /class="page active home-page" id="home"/, 'Home is the initial section');
 for (const id of ['agibank_mba', 'banco_pan_mba']) {
   const policy = createPolicy(id);
   assert.equal(policy.canAccess('dashboard'), true);
