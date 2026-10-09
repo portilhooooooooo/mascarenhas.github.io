@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
   getClosingCases, getClosingSummary, sendClosingsToBenner,
-  type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType,
+  type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType, type MotivoDerrotaFilter,
 } from './operacaoEncerramentosService';
 
 const STATUS: Array<{key: ClosingStatus; label: string; tone: string}> = [
@@ -36,8 +36,8 @@ function eligible(row:ClosingCase) {
     !row.enviado_benner_em && !['NA_FILA','PROCESSANDO','ENVIADO'].includes(row.status_envio||'');
 }
 function exportRows(rows:ClosingCase[]) {
-  const headers=['CNJ','PASTA','TIPO DATAJUD','INDÍCIO APTO','DECISÃO HUMANA','CLASSIFICAÇÃO CONFIRMADA','ANALISTA','VALIDADO EM','BENNER','REFERÊNCIA','ATUALIZADO EM'];
-  const data=rows.map(row=>[formatCnj(row.cnj),row.pasta,row.datajud_tipo,row.datajud_indicio_apto,row.validacao_decisao,row.tipo_validado,row.analista_id,row.validado_em,row.status_envio,row.benner_referencia,row.atualizado_em]);
+  const headers=['CNJ','PASTA','TIPO DATAJUD','INDÍCIO APTO','DECISÃO HUMANA','CLASSIFICAÇÃO CONFIRMADA','OBSERVAÇÕES DO ANALISTA','TEM MOTIVO DERROTA?','VERIFICADO EM','ANALISTA','VALIDADO EM','BENNER','ERRO BENNER','REFERÊNCIA','ATUALIZADO EM'];
+  const data=rows.map(row=>[formatCnj(row.cnj),row.pasta,row.datajud_tipo,row.datajud_indicio_apto,row.validacao_decisao,row.tipo_validado,row.observacoes_analista,row.tem_motivo_derrota===true?'Sim':row.tem_motivo_derrota===false?'Não':'Não verificado',row.motivo_derrota_verificado_em,row.analista_id,row.validado_em,row.status_envio,row.benner_erro,row.benner_referencia,row.atualizado_em]);
   const escape=(value:unknown)=>'"'+String(value??'').replace(/"/g,'""')+'"';
   const csv='\ufeff'+[headers,...data].map(row=>row.map(escape).join(';')).join('\r\n');
   const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
@@ -53,6 +53,7 @@ export function OperacaoEncerramentosPage() {
   const [tab,setTab]=useState<ClosingStatus>('PENDENTES');
   const [query,setQuery]=useState('');
   const [appliedQuery,setAppliedQuery]=useState('');
+  const [motivoFiltro,setMotivoFiltro]=useState<MotivoDerrotaFilter>('todos');
   const [pageSize,setPageSize]=useState(10);
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
@@ -70,13 +71,13 @@ export function OperacaoEncerramentosPage() {
     try {
       const [nextSummary,nextList]=await Promise.all([
         getClosingSummary(),
-        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery),
+        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro),
       ]);
       setSummary(nextSummary);setRows(nextList.rows||[]);setTotal(Number(nextList.total||0));setError('');
     } catch (cause) {
       setError(cause instanceof Error?cause.message:'Não foi possível consultar Encerramentos.');
     } finally {setLoading(false);}
-  },[canView,tab,page,pageSize,appliedQuery]);
+  },[canView,tab,page,pageSize,appliedQuery,motivoFiltro]);
 
   useEffect(()=>{
     const sync=()=>{
@@ -94,7 +95,7 @@ export function OperacaoEncerramentosPage() {
     const timer=window.setInterval(()=>{if(!document.hidden&&!submitting)void refresh();},15000);
     return ()=>window.clearInterval(timer);
   },[canView,refresh,submitting]);
-  useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery]);
+  useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro]);
 
   const candidates=useMemo(()=>rows.filter(row=>selected[row.cnj]&&eligible(row)),[rows,selected]);
   const isActionTab=['APTOS','DERROTA','DERROTA_VOLUNTARIA','VITORIA'].includes(tab);
@@ -165,16 +166,19 @@ export function OperacaoEncerramentosPage() {
           <Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar processo ou pasta…" aria-label="Buscar encerramentos"/>
         </form>
         <div className="protocolos-toolbar-actions">
+          <label className="protocolos-page-size"><span>Tem motivo derrota?</span><select aria-label="Filtrar por motivo derrota" value={motivoFiltro} onChange={event=>{setMotivoFiltro(event.target.value as MotivoDerrotaFilter);setPage(1);}}>
+            <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option><option value="nao_verificado">Não verificado</option>
+          </select></label>
           <button type="button" className="protocolos-button secondary operacao-download-button" disabled={loading||!rows.length} onClick={()=>exportRows(rows)}><Download size={14}/>Baixar</button>
           <label className="protocolos-page-size"><span>Exibir</span><select value={pageSize} onChange={event=>{setPageSize(Number(event.target.value));setPage(1);}}>{[10,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
         </div>
       </div>
       <div className="protocolos-table-wrap">
         <table className="protocolos-table-react operacao-encerramentos-table">
-          <thead><tr>{isActionTab?<th><input type="checkbox" aria-label="Selecionar elegíveis" checked={rows.some(eligible)&&rows.filter(eligible).every(row=>selected[row.cnj])} onChange={event=>setSelected(Object.fromEntries(rows.filter(eligible).map(row=>[row.cnj,event.target.checked])))}/></th>:null}<th>Processo / Pasta</th><th>Indício DataJud</th><th>Validação humana</th><th>Andamento</th><th>Benner</th><th>Atualização</th></tr></thead>
+          <thead><tr>{isActionTab?<th><input type="checkbox" aria-label="Selecionar elegíveis" checked={rows.some(eligible)&&rows.filter(eligible).every(row=>selected[row.cnj])} onChange={event=>setSelected(Object.fromEntries(rows.filter(eligible).map(row=>[row.cnj,event.target.checked])))}/></th>:null}<th>Processo / Pasta</th><th>Indício DataJud</th><th>Validação humana</th><th>Observações</th><th>Andamento</th><th>Tem motivo derrota?</th><th>Benner</th><th>Atualização</th></tr></thead>
           <tbody>
-            {loading?<tr><td colSpan={isActionTab?7:6}><div className="protocolos-empty"><LoaderCircle className="spin" size={20}/><strong>Carregando Encerramentos</strong></div></td></tr>:null}
-            {!loading&&!rows.length?<tr><td colSpan={isActionTab?7:6}><div className="protocolos-empty"><Clock3 size={20}/><strong>Nenhum processo neste status</strong><span>Confira os filtros ou aguarde a atualização do backend.</span></div></td></tr>:null}
+            {loading?<tr><td colSpan={isActionTab?9:8}><div className="protocolos-empty"><LoaderCircle className="spin" size={20}/><strong>Carregando Encerramentos</strong></div></td></tr>:null}
+            {!loading&&!rows.length?<tr><td colSpan={isActionTab?9:8}><div className="protocolos-empty"><Clock3 size={20}/><strong>Nenhum processo neste status</strong><span>Confira os filtros ou aguarde a atualização do backend.</span></div></td></tr>:null}
             {!loading&&rows.map(row=>{
               const canSelect=Boolean(eligible(row));
               const defaultMovement=MOVEMENTS[row.tipo_validado as ClosingType]||'';
@@ -183,10 +187,18 @@ export function OperacaoEncerramentosPage() {
                 <td><strong className="protocolos-cnj">{formatCnj(row.cnj)}</strong><small>{row.pasta?'Pasta '+row.pasta:'Pasta não encontrada'}{row.comarca?' · '+row.comarca+' / '+(row.uf||''):''}</small></td>
                 <td><span className="operacao-cell-main">{row.datajud_tipo||'Não classificado'}</span><small>{row.datajud_indicio_apto===true?'Indício favorável':row.datajud_indicio_apto===false?'Indício desfavorável':'Sem indício'}</small></td>
                 <td><span className="operacao-cell-main">{row.tipo_validado||statusLabel(row)}</span><small>{row.analisado_em?'Analisado em '+dt(row.analisado_em):row.validado_em?'Confirmado em '+dt(row.validado_em):'Aguardando validação do analista'}</small></td>
+                <td><div className="operacao-closing-observation">
+                  {row.observacoes_analista
+                    ? <details><summary title="Expandir conclusão do analista">{row.observacoes_analista.length>110?row.observacoes_analista.slice(0,110)+'…':row.observacoes_analista}</summary><p>{row.observacoes_analista}</p></details>
+                    : <small>Sem análise final registrada</small>}
+                </div></td>
                 <td>{canSelect&&isActionTab?<select className="operacao-encerramentos-select" aria-label={'Andamento de '+formatCnj(row.cnj)} value={movements[row.cnj]||defaultMovement} onChange={event=>setMovements(current=>({...current,[row.cnj]:event.target.value}))} disabled={submitting}>
                   {Object.entries(MOVEMENTS).map(([key,value])=><option key={key} value={value} disabled={key!==row.tipo_validado}>{value}</option>)}
                 </select>:<span className="operacao-cell-main">{defaultMovement||'—'}</span>}</td>
-                <td><span className="operacao-cell-main">{statusLabel(row)}</span><small>{row.benner_referencia||'Sem confirmação remota'}</small></td>
+                <td><span className={'operacao-motivo-badge '+(row.tem_motivo_derrota===true?'yes':row.tem_motivo_derrota===false?'no':'unknown')}>
+                  {row.tem_motivo_derrota===true?'Sim':row.tem_motivo_derrota===false?'Não':'Não verificado'}</span>
+                  {row.motivo_derrota_verificado_em?<small>Verificado em {dt(row.motivo_derrota_verificado_em)}</small>:null}</td>
+                <td><span className="operacao-cell-main">{statusLabel(row)}</span><small title={row.benner_erro||undefined}>{row.benner_erro||row.benner_referencia||'Sem confirmação remota'}</small></td>
                 <td><span className="protocolos-date">{dt(row.atualizado_em)}</span></td>
               </tr>;
             })}
