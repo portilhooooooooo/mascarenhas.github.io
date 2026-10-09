@@ -115,3 +115,9 @@
 .closing-map .closing-card-head{margin-bottom:9px}
 @media(max-width:1050px){.closing-filter-row{grid-template-columns:repeat(5,minmax(105px,1fr));overflow-x:auto}}
 @media(max-width:650px){.closing-filter-row{grid-template-columns:repeat(2,minmax(0,1fr));overflow-x:visible}.closing-breakdown-head,.closing-breakdown-row{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(49px,.55fr));column-gap:5px}.closing-breakdown-head>span{font-size:8px}.closing-breakdown-name>span{font-size:9px}}
+
+
+/* Seis indicadores, mantendo cartões compactos e legíveis. */
+.closing-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:1250px){.closing-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:750px){.closing-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
