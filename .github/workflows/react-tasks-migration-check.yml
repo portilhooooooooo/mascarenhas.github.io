@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - dev/tasks-workspace
+      - design/mascarenhas-identidade-20261009
       - feat/client-navbar-isolation-20261008
   workflow_dispatch:
 
@@ -40,6 +41,9 @@ jobs:
         run: |
           npm run test:metabase
           python3 -m py_compile scripts/metabase/*.py
+
+      - name: Identidade e prioridades
+        run: node --test tests/brand-priorities.test.mjs
 
       - name: Production build
         run: npm run build
