@@ -557,6 +557,7 @@ const integrationConfig = {
   liminar: { label: 'API de Liminar', run: '/api/integrations/liminar/run', status: (id) => `/api/integrations/liminar/jobs/${id}`, download: (id) => `/api/integrations/liminar/jobs/${id}/download`, done: ['DONE', 'ERROR'], progress: ['done'] },
   datajud: { label: 'CNJ / DataJud', run: '/api/integrations/datajud/run', status: (id) => `/api/integrations/datajud/jobs/${id}`, done: ['CONCLUIDO', 'CONCLUÍDO', 'ERRO'], progress: ['processados', 'done'] },
   encerramentos: { label: 'Agente de Encerramentos', run: '/api/integrations/encerramentos/run', status: (id) => `/api/integrations/encerramentos/jobs/${id}`, download: (id) => `/api/integrations/encerramentos/jobs/${id}/download`, done: ['DONE', 'ERROR'], progress: ['done'] },
+  'benner-andamentos': { label: 'Andamentos no Benner', run: '/api/automations/benner-andamentos/import', status: (id) => `/api/automations/benner-andamentos/jobs/${id}`, done: ['DONE', 'DONE_WITH_ERRORS', 'ERROR', 'DISPATCH_ERROR'], progress: ['processed'] },
 };
 
 function setIntegrationHealth(name, online) {
@@ -591,10 +592,14 @@ async function loadIntegrationHealth() {
     setIntegrationBusy('liminar', Boolean(health.liminar?.busy));
     setIntegrationBusy('encerramentos', Boolean(health.encerramentos?.busy));
     setIntegrationBusy('datajud', Boolean(health.datajud?.busy));
+    window.MBA_AUTOMATION_API.request('/api/automations/benner-andamentos/reasons')
+      .then(() => setIntegrationHealth('benner-andamentos', true))
+      .catch(() => setIntegrationHealth('benner-andamentos', false));
   } catch (_error) {
     setIntegrationHealth('liminar', false);
     setIntegrationHealth('datajud', false);
     setIntegrationHealth('encerramentos', false);
+    setIntegrationHealth('benner-andamentos', false);
   }
 }
 
@@ -611,6 +616,76 @@ function terminalIntegrationStatus(type, status) {
   return integrationConfig[type].done.some((terminal) => normalized === terminal || normalized.startsWith(terminal));
 }
 
+const integrationTemplateColumns = Object.freeze({
+  liminar: ['CNJ'],
+  datajud: ['CNJ'],
+  encerramentos: ['CNJ'],
+  'benner-andamentos': ['CNJ', 'RECEBIMENTO_DOCUMENTO', 'DATA_ANDAMENTO', 'ANDAMENTO', 'OBSERVAÇÕES', 'MOTIVO DERROTA'],
+});
+
+const integrationTemplateInstructions = Object.freeze({
+  liminar: ['CNJ: obrigatório; informar um processo por linha.', 'O conteúdo do XLSX será importado como lista de CNJs.'],
+  datajud: ['CNJ: obrigatório; informar um processo por linha.', 'Origem: preenchida no formulário de execução.'],
+  encerramentos: ['CNJ: obrigatório; informar um processo por linha.', 'Critérios: selecionados no formulário de execução.'],
+  'benner-andamentos': [
+    'CNJ: obrigatório, texto com 20 dígitos e formatação CNJ.',
+    'RECEBIMENTO_DOCUMENTO: data DD/MM/AAAA ou vazia para data atual.',
+    'DATA_ANDAMENTO: data DD/MM/AAAA ou vazia para data atual.',
+    'ANDAMENTO: descrição exata da opção no Benner, obrigatória.',
+    'OBSERVAÇÕES: campo opcional.',
+    'MOTIVO DERROTA: obrigatório somente se ANDAMENTO = Motivo derrota; usar opção exata do Benner.',
+  ],
+});
+
+function downloadIntegrationTemplate(type) {
+  const XLSX = window.XLSX;
+  if (!XLSX?.utils || !integrationTemplateColumns[type]) throw new Error('Gerador XLSX indisponível.');
+  const headers = integrationTemplateColumns[type];
+  const ws = XLSX.utils.aoa_to_sheet([headers]);
+  ws['!cols'] = headers.map((h) => ({ wch: Math.min(Math.max(h.length + 5, 22), 32) }));
+  // Preserve CNJ as text to avoid Excel's 15-digit numeric precision limit.
+  ws['A2'] = { t: 's', v: '' };
+  const guide = XLSX.utils.aoa_to_sheet([['Instruções'], ...integrationTemplateInstructions[type].map((text) => [text])]);
+  guide['!cols'] = [{ wch: 100 }];
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, ws, 'PROCESSOS');
+  XLSX.utils.book_append_sheet(book, guide, 'INSTRUCOES');
+  XLSX.writeFile(book, 'modelo_' + type.replace(/[^a-z0-9]+/gi, '_') + '.xlsx', { bookType: 'xlsx' });
+}
+
+async function readIntegrationCnjs(file) {
+  if (!window.XLSX?.read) throw new Error('Leitor XLSX indisponível.');
+  if (file.size > 5 * 1024 * 1024) throw new Error('A planilha excede 5 MB.');
+  const book = window.XLSX.read(await file.arrayBuffer(), { type: 'array', cellText: true });
+  const values = window.XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { header: 1, raw: false, defval: '' });
+  const headers = (values[0] || []).map((value) => String(value).trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase());
+  const index = headers.indexOf('CNJ');
+  if (index < 0) throw new Error('A planilha deve conter a coluna CNJ.');
+  const processes = [];
+  const seen = new Set();
+  for (const [i, row] of values.slice(1).entries()) {
+    const cnj = String(row[index] || '').trim();
+    if (!cnj) continue;
+    const digits = cnj.replace(/\D/g, '');
+    if (digits.length !== 20) throw new Error('CNJ inválido na linha ' + (i + 2) + '.');
+    if (seen.has(digits)) continue;
+    seen.add(digits);
+    processes.push(digits.slice(0, 7) + '-' + digits.slice(7, 9) + '.' + digits.slice(9, 13) + '.' + digits.slice(13, 14) + '.' + digits.slice(14, 16) + '.' + digits.slice(16));
+  }
+  if (!processes.length) throw new Error('A planilha não contém CNJs válidos.');
+  return processes;
+}
+
+document.querySelector('#integration-template-download')?.addEventListener('click', () => {
+  try {
+    downloadIntegrationTemplate(document.querySelector('#integration-type').value);
+  } catch (error) {
+    const box = document.querySelector('#integration-error');
+    box.textContent = error.message;
+    box.hidden = false;
+  }
+});
+
 document.querySelectorAll('.integration-run-button').forEach((button) => button.addEventListener('click', async () => {
   const type = button.dataset.integration;
   if (button.id === 'tutelas-run-button') {
@@ -622,6 +697,17 @@ document.querySelectorAll('.integration-run-button').forEach((button) => button.
   document.querySelector('#integration-dialog-title').textContent = `Executar ${integrationConfig[type].label}`;
   document.querySelector('#integration-origin-field').hidden = type !== 'datajud';
   document.querySelector('#integration-criteria-field').hidden = type !== 'encerramentos';
+  const isBenner = type === 'benner-andamentos';
+  document.querySelector('#integration-cnjs-field').hidden = isBenner;
+  document.querySelector('#integration-file-field').hidden = false;
+  document.querySelector('#integration-dialog-help').textContent = isBenner
+    ? 'Importe XLSX/CSV com os campos de andamento e motivo de derrota, quando necessário.'
+    : 'Informe CNJs ou envie uma planilha com a coluna CNJ.';
+  document.querySelector('#integration-template-help').textContent = isBenner
+    ? 'Modelo com seis campos e instruções específicas do Benner.'
+    : 'Modelo com coluna CNJ para esta automação.';
+  document.querySelector('#integration-file').value = '';
+  document.querySelector('#integration-form textarea[name="cnjs"]').required = false;
   document.querySelector('#integration-error').hidden = true;
   document.querySelector('#integration-result').hidden = true;
   document.querySelector('#integration-download').hidden = true;
@@ -643,6 +729,10 @@ async function pollIntegration(type, jobId) {
     document.querySelector('#integration-result-progress').textContent = `${job.last_msg || job.mensagem_atual || 'Em processamento'} · ${done} de ${total}`;
     document.querySelector(`#${type}-job-status`).textContent = job.status;
     document.querySelector(`#${type}-job-progress`).textContent = `${done}/${total}`;
+    if (type === 'benner-andamentos') {
+      document.querySelector('#integration-result-progress').textContent =
+        `${done}/${total} processados · ${Number(job.done || 0)} confirmados · ${Number(job.skipped || 0)} já existentes · ${Number(job.errors || 0)} erros/ressalvas`;
+    }
     const finished = terminalIntegrationStatus(type, status);
     if (!finished) integrationPollTimer = setTimeout(() => pollIntegration(type, jobId), 2000);
     if (config.download && status === 'DONE') {
@@ -667,17 +757,30 @@ document.querySelector('#integration-form')?.addEventListener('submit', async (e
   const submit = form.querySelector('[type="submit"]');
   const data = new FormData(form);
   const type = data.get('integration');
-  const cnjs = [...new Set(String(data.get('cnjs') || '').split(/[\r\n,;]+/).map((value) => value.trim()).filter(Boolean))];
+  const selectedFile = data.get('file');
+  const hasFile = selectedFile instanceof File && selectedFile.size > 0;
   const errorBox = document.querySelector('#integration-error');
   errorBox.hidden = true;
   submit.disabled = true;
   try {
-    if (!cnjs.length) throw new Error('Informe ao menos um processo CNJ.');
-    const payload = type === 'liminar' ? { cnj_list: cnjs }
-      : type === 'datajud' ? { origem: data.get('origem'), processos: cnjs }
-        : { source: 'enter', processos: cnjs, criterios: data.getAll('criterios') };
-    if (type === 'encerramentos' && !payload.criterios.length) throw new Error('Selecione ao menos um critério.');
-    const job = await window.MBA_AUTOMATION_API.request(integrationConfig[type].run, { method: 'POST', body: JSON.stringify(payload) });
+    let job;
+    if (type === 'benner-andamentos') {
+      if (!hasFile) throw new Error('Selecione um XLSX ou CSV para lançar os andamentos.');
+      if (!/\.(xlsx|csv)$/i.test(selectedFile.name)) throw new Error('Formato aceito: XLSX ou CSV.');
+      const upload = new FormData();
+      upload.set('file', selectedFile);
+      job = await window.MBA_AUTOMATION_API.request(integrationConfig[type].run, { method: 'POST', body: upload });
+    } else {
+      const cnjs = hasFile
+        ? await readIntegrationCnjs(selectedFile)
+        : [...new Set(String(data.get('cnjs') || '').split(/[\r\n,;]+/).map((value) => value.trim()).filter(Boolean))];
+      if (!cnjs.length) throw new Error('Informe CNJs ou selecione uma planilha XLSX/CSV.');
+      const payload = type === 'liminar' ? { cnj_list: cnjs }
+        : type === 'datajud' ? { origem: data.get('origem'), processos: cnjs }
+          : { source: 'enter', processos: cnjs, criterios: data.getAll('criterios') };
+      if (type === 'encerramentos' && !payload.criterios.length) throw new Error('Selecione ao menos um critério.');
+      job = await window.MBA_AUTOMATION_API.request(integrationConfig[type].run, { method: 'POST', body: JSON.stringify(payload) });
+    }
     const jobId = job.job_id || job.id;
     if (!jobId) throw new Error('A integração não retornou o identificador do job.');
     document.querySelector('#integration-result').hidden = false;
@@ -703,7 +806,8 @@ document.querySelector('#reset-task-otp')?.addEventListener('click', async () =>
 });
 
 async function loadIntegrationJobs(type) {
-  const jobs = await window.MBA_AUTOMATION_API.request(`/api/integrations/${type}/jobs`);
+  const path = type === 'benner-andamentos' ? '/api/automations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
+  const jobs = await window.MBA_AUTOMATION_API.request(path);
   window.dispatchEvent(new CustomEvent('mba:jobs-loaded', { detail: { integration: type, jobs } }));
   return jobs;
 }
