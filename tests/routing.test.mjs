@@ -19,7 +19,7 @@ function environment(initialPath = '/tarefas', options = {}) {
   const events = [];
   const listeners = new Map();
   const window = {
-    MBA_CURRENT_USER: { permissions: options.permissions || { 'tasks.manage': true }, is_master_admin: false },
+    MBA_CURRENT_USER: { id: 'test-user', email: 'test@example.com', permissions: options.permissions || { 'tasks.manage': true }, is_master_admin: false },
     MBA_PORTFOLIO_POLICY: { canAccess: id => allowed.has(id) },
     MBA_LOCAL_PREVIEW: Boolean(options.preview), MBA_REACT_TASKS: true,
     addEventListener(name, callback) { listeners.set(name, callback); },
@@ -48,6 +48,23 @@ test('Home restaura o deep link /home e publica a rota', () => {
   e.window.showPage('home');
   assert.equal(e.location.pathname, '/home');
 });
+test('Home não exige qualquer permissão operacional', () => {
+  const e = environment('/home', { allowed: [] });
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('home'), true);
+  assert.equal(e.window.MBA_NAVIGATE('home'), true);
+  assert.equal(e.location.pathname, '/home');
+});
+
+test('rota raiz e acesso negado anterior abrem na Home', () => {
+  for (const initial of ['/', '/sem-acesso']) {
+    const e = environment(initial, { allowed: [] });
+    assert.equal(e.window.restorePageRoute(), true);
+    assert.equal(e.active.get('home'), true);
+    assert.equal(e.location.pathname, '/home');
+  }
+});
+
 test('navbar muda a URL ao navegar para automações e analytics', () => {
   const e = environment();
   e.window.showPage('automacoes');
