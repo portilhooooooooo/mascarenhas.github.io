@@ -114,4 +114,6 @@ test('autenticação prioriza rota compartilhada', () => {
   assert.match(auth, /const routeRestored = window\.restorePageRoute\?\.\(\) === true/);
   assert.match(auth, /else if \(!routeRestored\)/);
   assert.match(auth, /\['home', null\]/, 'Home is first after login');
+  assert.match(auth, /const startOnHome = Boolean\(code\)/, 'Microsoft login triggers initial Home');
+  assert.match(auth, /if \(startOnHome\) window\.showPage\?\.\('home'\)/, 'Every new Microsoft login lands on Home');
 });
