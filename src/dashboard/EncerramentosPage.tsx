@@ -29,9 +29,21 @@ type Dados = {
   comarcas?: Comarca[];
   matriz?: Matriz[];
   meta_configurada?: boolean;
-  ranking?: { faixas: Array<{ id: string; rotulo: string; estoque: number | null; meta_percentual: number; meta_quantidade: number | null }> };
+  ranking?: RankingSummary;
   etapas?: { etapa: Etapa; total: number; tipos: TipoRow[]; aging: AgingRow[]; matriz: Matriz[]; fonte: string; mensagem: string;
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
+};
+type RankingSummary = {
+  carteira?: string;
+  ranking_rule_set?: string;
+  scope?: string;
+  aviso?: string;
+  dados_oficiais_suficientes?: boolean;
+  custo?: { atual?: number | null; nota?: number | null; limites?: number[] };
+  vitoria?: { taxa?: number | null; pontuacao?: number | null };
+  acordo?: { taxa?: number | null; pontuacao?: number | null };
+  pontuacao?: { nota_projetada?: number | null };
+  faixas?: Array<{ id:string; rotulo:string; estoque:number|null; meta_percentual:number; meta_quantidade:number|null; realizado?:number|null; faltam?:number|null }>;
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 const TIPOS: { value: Tipo; label: string }[] = [
@@ -51,11 +63,6 @@ const CLASSES = [
 const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   ? ['0–12 meses', '12–24 meses', '>24 meses', 'Sem tag / não reconhecida']
   : ['0–3 meses', '4–10 meses', '>10 meses', 'Sem tag / não reconhecida'];
-const STAFF = [
-  { id: 'demo-gabriel', nome: 'Gabriel', analisados: 43 },
-  { id: 'demo-elias', nome: 'Elias', analisados: 31 },
-  { id: 'demo-gessica', nome: 'Géssica', analisados: 26 },
-];
 const num = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 const money = (value: Numero | undefined) => value == null ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
 const percent = (value: number) => value.toFixed(1).replace('.', ',') + '%';
@@ -83,66 +90,7 @@ async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
   return api.request<ResumoBennerAnterior>('/api/operacao/encerramentos/resumo-mes-anterior');
 }
 
-/** Números fictícios, calculados exclusivamente na interface de demonstração. */
-function makeDemo(carteira: string, tipo: Tipo, periodo: string, etapa: Etapa, analista: string): Dados {
-  const factor = (periodo === 'mes' ? .16 : periodo === '30' ? .23 : periodo === '90' ? .55 : 1) * (carteira === 'Agibank Enter' ? .72 : 1);
-  const actorFactor = analista === 'todos' ? 1 : analista === 'gabriel' ? .43 : analista === 'elias' ? .31 : .26;
-  const stageFactor = (etapa === 'validados' ? .78 : .47) * actorFactor;
-  const bands = ageBands(carteira);
-  const seed = [
-    { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 },
-    { tipo: 'DERROTA', quantidade: 476 },
-    { tipo: 'VITORIA', quantidade: 330 },
-    { tipo: 'ACORDO', quantidade: 74 },
-    { tipo: 'EXTINCAO', quantidade: 32 },
-  ];
-  const selected = seed.filter(item => tipo === 'TODOS' || item.tipo === tipo)
-    .map(item => ({ ...item, quantidade: Math.max(1, Math.round(item.quantidade * factor)) }));
-  const classification = selected.filter(item => item.tipo !== 'ACORDO');
-  const found = classification.reduce((sum, row) => sum + row.quantidade, 0);
-  const divided = CLASSES.map(item => ({ tipo: item.tipo, quantidade: selected.find(s => s.tipo === item.tipo)?.quantidade || 0 }));
-  const stageTypes = divided.map(row => ({...row, quantidade: Math.round(row.quantidade * stageFactor)}));
-  const matriz: Matriz[] = stageTypes.flatMap((row, index) => {
-    const weights = [0.3 + index * .016, .33, .30 - index * .012, .07 - index * .004];
-    const numbers = weights.map((weight, i) => i === 3 ? 0 : Math.round(row.quantidade * weight));
-    numbers[3] = Math.max(0, row.quantidade - numbers[0] - numbers[1] - numbers[2]);
-    return bands.map((faixa, i) => ({ tipo: row.tipo, faixa, quantidade: numbers[i] }));
-  });
-  const aging: AgingRow[] = bands.map(faixa => ({ faixa, quantidade: matriz.filter(m => m.faixa === faixa).reduce((v, m) => v + m.quantidade, 0) }));
-  const map: Uf[] = BRAZIL_STATES.map((state, i) => ({
-    uf: state.uf,
-    vitorias: Math.round((stageTypes.find(x => x.tipo === 'VITORIA')?.quantidade || 0) * (5 + (i * 13 % 19)) / 345),
-    derrotas: Math.round((stageTypes[0].quantidade + stageTypes[1].quantidade) * (5 + (i * 7 % 21)) / 390),
-    tkm: 6100 + ((i * 1337) % 9100),
-    amostra: 7 + (i % 16),
-  }));
-  const demoComarcas: Comarca[] = BRAZIL_STATES.map((state,i) => ({
-    comarca: ['Porto Alegre','São Paulo','Campo Grande','Florianópolis','Rio de Janeiro','Salvador'][i] || state.name,
-    uf: state.uf, derrotas: Math.max(1,Math.round((155 - i*4)*factor*stageFactor)),
-  })).sort((a,b) => b.derrotas-a.derrotas);
-  return {
-    carteira, tipo: tipo === 'TODOS' ? null : tipo,
-    indicadores: { consultados: Math.round(found * 1.4), encontrados: found, analisados: 100, ticket_medio: 9356.74, ticket_amostra: 420, aging_medio: 224 },
-    aging, estados: [], analistas: STAFF, classificacoes: classification,
-    distribuicao_tipos: divided, matriz, mapa: map,
-    etapas: {
-      etapa, total: stageTypes.reduce((sum, row) => sum + row.quantidade, 0),
-      tipos: stageTypes, aging, matriz, mapa: map, comarcas: stageTypes[0].quantidade+stageTypes[1].quantidade>0?demoComarcas:[],
-      ticket_medio: 9356.74, ticket_amostra: 36, aging_medio: 224,
-      fonte: 'demonstracao',
-      mensagem: etapa === 'validados' ? 'Validações simuladas' : 'Envios confirmados simulados',
-    },
-    comarcas: stageTypes[0].quantidade+stageTypes[1].quantidade>0?demoComarcas:[],
-    ranking: {faixas: bands.slice(0,3).map((rotulo,i) => ({
-      id: rotulo, rotulo, estoque: [1240,2500,1850][i],
-      meta_percentual: carteira === 'Agibank Regular' ? 5 : [3,4,5][i],
-      meta_quantidade: carteira === 'Agibank Regular' ? [62,125,93][i] : [38,100,93][i],
-    }))},
-    meta_configurada: true,
-  };
-}
-
-function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa; resumo: ResumoBennerAnterior | null }) {
+function Metrics({ dados, analista, selectedCount, acordo, etapa, resumo }: { dados: Dados | null; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa; resumo: ResumoBennerAnterior | null }) {
   const m = dados?.indicadores;
   const accord = dados?.distribuicao_tipos.find(c => c.tipo === 'ACORDO')?.quantidade;
   const stage = dados?.etapas;
@@ -156,7 +104,7 @@ function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
     { icon: Activity, name: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', sub: 'Discordâncias aguardando validação' },
-    { icon: CheckCircle2, name: 'Enviados', value: !demo && resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
+    { icon: CheckCircle2, name: 'Enviados', value: resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
     { icon: Activity, name: 'Encerrados', value: !demo && resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
   ];
   return <div className="closing-kpis">
@@ -164,7 +112,6 @@ function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }
       <div className="closing-kpi-top"><span>{item.name}</span><item.icon size={17} strokeWidth={1.75}/></div>
       <strong>{item.value}</strong><small>{item.sub}</small>
     </article>)}
-    {demo ? null : null}
   </div>;
 }
 
@@ -306,6 +253,43 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
   </section>;
 }
 
+function RankingPanel({ ranking }: { ranking?: RankingSummary }) {
+  const isOfficial = ranking?.dados_oficiais_suficientes === true;
+  const number = (value: number | null | undefined, suffix = '') =>
+    value == null ? '—' : new Intl.NumberFormat('pt-BR', {maximumFractionDigits:1}).format(value) + suffix;
+  const regular = ranking?.scope !== 'operacional_parcial';
+  return <section className="closing-ranking" aria-label="Indicadores do Ranking Agibank">
+    <header className="closing-ranking-header"><div>
+      <h2>Ranking Agibank · Legal Day 2026</h2>
+      <p>Metas do edital para a carteira atual; não equivalem à pontuação oficial homologada.</p>
+    </div><span>{regular ? 'Participante MBA' : 'Operação parcial · Enter'}</span></header>
+    <div className="closing-ranking-kpis">
+      <article><span>Custo médio homologado</span><strong>{money(ranking?.custo?.atual)}</strong>
+        <small>Meta máxima: {money(ranking?.custo?.limites?.[0])} · Peso 3,2</small></article>
+      <article><span>Vitórias confirmadas</span><strong>{number(ranking?.vitoria?.taxa,'%')}</strong>
+        <small>Meta: ≥ 76% · Peso 2,0</small></article>
+      <article><span>Acordos confirmados</span><strong>{number(ranking?.acordo?.taxa,'%')}</strong>
+        <small>Meta: ≥ 14% · Peso 1,4</small></article>
+      <article><span>Nota do Ranking</span><strong>{isOfficial ? number(ranking?.pontuacao?.nota_projetada) : '—'}</strong>
+        <small>{isOfficial ? 'Projeção operacional' : 'Sem dados homologados suficientes'}</small></article>
+    </div>
+    <div className="closing-ranking-bands">
+      <h3>Encerramentos por maturidade · meta mensal</h3>
+      <div className="closing-ranking-band-grid">
+        {(ranking?.faixas || []).map(row => <div key={row.id}>
+          <strong>{row.rotulo}</strong>
+          <span>Estoque: {number(row.estoque)}</span>
+          <span>Meta: {number(row.meta_quantidade)} ({number(row.meta_percentual,'%')})</span>
+          <span>Validados no Backoffice: {number(row.realizado)}</span>
+          <small>Faltam para meta operacional: {number(row.faltam)}</small>
+        </div>)}
+        {!ranking?.faixas?.length && <p>Faixas indisponíveis para esta carteira.</p>}
+      </div>
+    </div>
+    <p className="closing-ranking-note">{ranking?.aviso || 'Os indicadores do Ranking dependem de conciliação com o Benner e a base oficial do Agibank.'}</p>
+  </section>;
+}
+
 export function EncerramentosPage() {
   const [carteira,setCarteira] = useState(() => {
     const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
@@ -315,7 +299,6 @@ export function EncerramentosPage() {
   const [periodo,setPeriodo] = useState('mes');
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
-  const [demo,setDemo] = useState(false);
   const [dados,setDados] = useState<Dados | null>(null);
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [pending,setPending] = useState(false);
@@ -339,20 +322,14 @@ export function EncerramentosPage() {
     window.addEventListener('mba:closing-analysis-saved', onSaved);
     return () => window.removeEventListener('mba:closing-analysis-saved', onSaved);
   }, [refresh]);
-  const fake = useMemo(() => makeDemo(carteira,tipo,periodo,etapa,analista),[carteira,tipo,periodo,etapa,analista]);
-  const shown = demo ? fake : dados;
-  const analysts = demo
-    ? STAFF.filter(a=>analista==='todos'||a.id==='demo-'+analista).map(a=>({
-        ...a, analisados: Math.round(a.analisados * (etapa==='validados'?1:.62)),
-      }))
-    : (dados?.etapas?.analistas || dados?.analistas || []);
-  const analysed = demo ? shown?.etapas?.total : shown?.etapas?.total;
+  const shown = dados;
+  const analysts = dados?.etapas?.analistas || dados?.analistas || [];
+  const analysed = dados?.etapas?.total;
 
   return <div className="closing-page-v2">
     <div className="closing-heading">
-      <div><h1>Encerramentos</h1><span>{demo ? 'Visualização de demonstração' : 'Visão da carteira'}</span></div>
+      <div><h1>Encerramentos</h1><span>Visão da carteira · dados operacionais</span></div>
       <div className="closing-heading-actions">
-        <label className="closing-demo-switch"><input type="checkbox" checked={demo} onChange={e=>setDemo(e.target.checked)}/> Demonstração</label>
         <button type="button" className="closing-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
       </div>
     </div>
@@ -366,8 +343,9 @@ export function EncerramentosPage() {
       </select></label>
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
-    {!demo && error ? <p className="closing-error" role="alert">{error}</p> : null}
-    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
+    {error ? <p className="closing-error" role="alert">{error}</p> : null}
+    <RankingPanel ranking={dados?.ranking}/>
+    <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
       <Composition dados={shown} etapa={etapa} periodo={periodo} analista={analista}/>
@@ -376,6 +354,6 @@ export function EncerramentosPage() {
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
       <AnalystsPanel analysts={analysts}/>
     </div>
-    <p className="closing-disclaimer">{demo ? 'Dados demonstrativos — sem impacto na base.' : 'Acordos não integram oportunidades aptas ao encerramento.'}</p>
+    <p className="closing-disclaimer">Acordos não integram oportunidades aptas ao encerramento. Os números exibidos dependem da fonte operacional.</p>
   </div>;
 }
