@@ -9,10 +9,14 @@ type Props = {
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  searchable?: boolean;
 };
 
-export function SelectMenu({ label, value, options, onChange, disabled = false, className = '' }: Props) {
+export function SelectMenu({ label, value, options, onChange, disabled = false, className = '', searchable = false }: Props) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+  const filteredOptions = searchable ? options.filter(item => item.label.toLocaleLowerCase('pt-BR').includes(query.trim().toLocaleLowerCase('pt-BR'))) : options;
   const root = useRef<HTMLDivElement>(null);
   const listId = useId();
   const current = options.find(option => option.value === value);
@@ -24,7 +28,8 @@ export function SelectMenu({ label, value, options, onChange, disabled = false, 
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
   }, [open]);
-  useEffect(() => { setOpen(false); }, [disabled, value]);
+  useEffect(() => { setOpen(false); setQuery(''); }, [disabled, value]);
+  useEffect(() => { if (open && searchable) searchRef.current?.focus(); }, [open, searchable]);
   return (
     <div ref={root} className={`mba-react-select ${className}`}>
       <span className="mba-react-select-label">{label}</span>
@@ -50,6 +55,7 @@ export function SelectMenu({ label, value, options, onChange, disabled = false, 
       </button>
       {open && (
         <div id={listId} className="mba-react-select-options" role="listbox" aria-label={label}
+          onWheel={event => event.stopPropagation()}
           onKeyDown={event => {
             if (event.key === 'Escape') setOpen(false);
             const buttons = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]')];
@@ -57,7 +63,9 @@ export function SelectMenu({ label, value, options, onChange, disabled = false, 
             if (event.key === 'ArrowDown') { event.preventDefault(); buttons[(index + 1) % buttons.length]?.focus(); }
             if (event.key === 'ArrowUp') { event.preventDefault(); buttons[(index - 1 + buttons.length) % buttons.length]?.focus(); }
           }}>
-          {options.map(option => (
+          {searchable ? <input ref={searchRef} className="mba-react-select-search" aria-label={'Pesquisar ' + label} placeholder="Buscar UF..." value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); } }} /> : null}
+          {filteredOptions.length === 0 ? <p className="mba-react-select-empty">Nenhuma opção encontrada</p> : null}
+          {filteredOptions.map(option => (
             <button role="option" aria-selected={option.value === value} key={option.value} type="button"
               className={option.value === value ? 'selected' : ''}
               onClick={() => { onChange(option.value); setOpen(false); }}>
