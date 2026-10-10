@@ -118,6 +118,8 @@ try {
   ]) {
     await page.setViewportSize({width:1440,height:900});
     await page.goto(base+'/?scenario='+scenario);
+    await page.evaluate(() => sessionStorage.clear());
+    await page.reload();
     await page.locator('.qa-stage-track').waitFor();
     const initial = await page.locator('.qa-stage-track .qa-stage-segment').count();
     assert.ok(initial > 0, scenario+' deve exibir faixa de progresso');
