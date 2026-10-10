@@ -3,7 +3,7 @@ import {
   type FormHTMLAttributes, type ReactNode,
 } from 'react';
 
-type QaNavigationValue = { advance: () => void; canSubmit: boolean };
+type QaNavigationValue = { canSubmit: boolean };
 const QaNavigation = createContext<QaNavigationValue | null>(null);
 
 export function TaskQuestion({ number, question, children }: { number: string; question: string; children: ReactNode }) {
@@ -23,7 +23,7 @@ type OptionGroupProps = {
 
 export function OptionGroup({ name, value, onChange, options, disabled = false }: OptionGroupProps) {
   const columns = options.length === 5 ? 3 : Math.min(Math.max(options.length, 2), 4);
-  const advance = useContext(QaNavigation)?.advance;
+  const isProgressive = useContext(QaNavigation) !== null;
   return (
     <div className={'task-option-grid task-option-grid-' + columns} role="radiogroup" aria-label={name}>
       {options.map((option, index) => (
@@ -31,10 +31,10 @@ export function OptionGroup({ name, value, onChange, options, disabled = false }
           <input
             type="radio" name={name} value={option.value} checked={value === option.value}
             disabled={disabled}
-            onChange={() => { onChange(option.value); advance?.(); }}
+            onChange={() => onChange(option.value)}
           />
           <span>
-            {advance && index < 9 ? <kbd className="qa-option-key" aria-hidden="true">{index + 1}</kbd> : null}
+            {isProgressive && index < 9 ? <kbd className="qa-option-key" aria-hidden="true">{index + 1}</kbd> : null}
             <strong>{option.label}</strong>
             {option.description ? <small>{option.description}</small> : null}
           </span>
@@ -90,18 +90,9 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
   const actions = nodes.filter(child => isValidElement(child) && child.type === TaskActionBar);
   const content = nodes.filter(child => !isValidElement(child) || child.type !== TaskActionBar);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [advanceTicket, setAdvanceTicket] = useState(0);
-  const handledTicket = useRef(0);
   const formRef = useRef<HTMLFormElement>(null);
   const total = questions.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
-
-  // O React já atualizou as perguntas condicionais quando este efeito avança.
-  useEffect(() => {
-    if (handledTicket.current === advanceTicket) return;
-    handledTicket.current = advanceTicket;
-    setActiveIndex(index => Math.min(index + 1, Math.max(0, total - 1)));
-  }, [advanceTicket, total]);
 
   useEffect(() => {
     setActiveIndex(index => Math.min(index, Math.max(0, total - 1)));
@@ -186,7 +177,6 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
 
   let questionIndex = -1;
   const navigation: QaNavigationValue = {
-    advance: () => setAdvanceTicket(ticket => ticket + 1),
     canSubmit: total > 0 && current === total - 1,
   };
   return <form {...props} ref={formRef} data-qa-progressive="true" data-qa-last={navigation.canSubmit ? 'true' : 'false'} data-qa-index={current}>
