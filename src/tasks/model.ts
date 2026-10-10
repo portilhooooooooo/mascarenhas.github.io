@@ -186,12 +186,11 @@ function processPosition(process: TaskProcess) {
 }
 
 export function compareTasks(a: Task, b: Task) {
-  const state = taskStateRank(a) - taskStateRank(b);
-  if (state) return state;
-  const deadline = safeTime(a.deadline_at) - safeTime(b.deadline_at);
-  if (deadline) return deadline;
+  // Prioridade é filtro e sinalização, não ordem automática de execução.
   const created = safeTime(a.created_at || a.updated_at) - safeTime(b.created_at || b.updated_at);
   if (created) return created;
+  const deadline = safeTime(a.deadline_at) - safeTime(b.deadline_at);
+  if (deadline) return deadline;
   return String(a.id).localeCompare(String(b.id));
 }
 
@@ -206,10 +205,6 @@ export function priorityLevel(item: WorkItem): 'high' | 'medium' | 'low' {
   // Valores legados "normal" e sem prioridade explícita permanecem na faixa média.
   return 'medium';
 }
-function priorityRank(item: WorkItem) {
-  const level = priorityLevel(item);
-  return level === 'high' ? 0 : level === 'medium' ? 1 : 2;
-}
 export function processStatus(item: WorkItem, skipped = false) {
   const status = normalize(item.process.status) || 'pending';
   return skipped && !['completed','error','erro','failed'].includes(status) ? 'skipped' : status;
@@ -217,8 +212,7 @@ export function processStatus(item: WorkItem, skipped = false) {
 export const PROCESS_STATUS_LABELS: Record<string,string> = { pending:'Pendente', in_progress:'Em execução', waiting:'Aguardando', queued:'Na fila', created:'Pendente', completed:'Concluído', skipped:'Pulado', error:'Erro', erro:'Erro', failed:'Erro', cancelled:'Cancelado', inactive:'Inativo' };
 
 export function compareWorkItems(a: WorkItem, b: WorkItem) {
-  const priority = priorityRank(a) - priorityRank(b);
-  if (priority) return priority;
+  // Ordem previsível de criação/importação; não reordena pelo nível de prioridade.
   const taskOrder = compareTasks(a.task, b.task);
   if (taskOrder) return taskOrder;
   const position = processPosition(a.process) - processPosition(b.process);
