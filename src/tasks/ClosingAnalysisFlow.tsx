@@ -24,6 +24,8 @@ export type ClosingAnalysisDraft = {
   execution_requested: boolean | null;
   full_payment: boolean | null;
   classifier_classification: string | null;
+  classification_agreed: boolean;
+  classification_disagreement_reason: string | null;
 };
 
 type Props = {
@@ -51,6 +53,11 @@ const OUTCOME_LABELS: Record<string, string> = {
   inapto_resultado_indeterminado: 'Inapto — resultado do recurso exige validação',
   inapto_sentenca_desconstituida: 'Inapto — sentença desconstituída; aguardando nova decisão',
 };
+
+const CLOSING_STAGES = [
+  'Cadastro de Sentença', 'Cadastro de Acórdão', 'Cadastro de Execução',
+  'Cadastro de Trânsito em Julgado', 'Cadastro de Encerramento',
+] as const;
 
 const SENTENCES = [
   { value: 'procedente', label: 'Procedente' },
@@ -118,7 +125,7 @@ function DateAnswer({ name, label, value, onChange, disabled }: {
 }
 
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, contextHint, draftKey = '', busy = false, error = null, onSubmit, onSkip,
+  cnj, classifierClassification, draftKey = '', busy = false, error = null, onSubmit, onSkip,
 }: Props) {
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
@@ -133,6 +140,7 @@ export function ClosingAnalysisFlow({
   const [executionRequested, setExecutionRequested] = useQaField<YesNo>(draftKey, 'closing.executionRequested', null);
   const [fullPayment, setFullPayment] = useQaField<YesNo>(draftKey, 'closing.fullPayment', null);
   const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.classificationAgreed', null);
+  const [disagreementReason, setDisagreementReason] = useQaField(draftKey, 'closing.disagreementReason', '');
   const [localError, setLocalError] = useState<string | null>(null);
 
   const clearAfterTransit = () => {
@@ -225,13 +233,38 @@ export function ClosingAnalysisFlow({
     if (lastReviewSignature.current !== reviewSignature) {
       lastReviewSignature.current = reviewSignature;
       setClassificationAgreed(null);
+      setDisagreementReason('');
     }
-  }, [reviewSignature, setClassificationAgreed]);
+  }, [reviewSignature, setClassificationAgreed, setDisagreementReason]);
+  const sentenceDescription: Record<TrialResult, string> = {
+    procedente: 'SENTENÇA PROCEDENTE', parcialmente_procedente: 'SENTENÇA PARCIALMENTE PROCEDENTE',
+    improcedente: 'SENTENÇA IMPROCEDENTE', extincao: 'SENTENÇA DE EXTINÇÃO',
+  };
+  const appealDescription: Record<AppealResult, string> = {
+    provido: 'ACÓRDÃO PROVIDO', improvido: 'ACÓRDÃO IMPROVIDO',
+    mantida_improcedencia: 'ACÓRDÃO MANTEVE A IMPROCEDÊNCIA',
+    convertida_procedencia: 'ACÓRDÃO CONVERTEU O RESULTADO EM PROCEDÊNCIA',
+    sentenca_desconstituida: 'SENTENÇA DESCONSTITUÍDA',
+  };
+  // A descrição utiliza somente respostas humanas. Indícios não entram no texto.
+  const proposedDescription = [
+    sentence ? sentenceDescription[sentence] : '',
+    hadAppeal === 'sim' && appealDecided === 'sim' && appealResult ? appealDescription[appealResult] : '',
+    transitConfirmed === 'sim' ? 'TRÂNSITO EM JULGADO' + (transitDate ? ' EM ' + formatDate(transitDate) : ' CONFIRMADO') : '',
+    costsPaid === 'sim' ? 'CUSTAS FINAIS PAGAS' : costsPaid === 'nao' ? 'CUSTAS FINAIS NÃO PAGAS' : '',
+    executionRequested === 'nao' ? 'SEM PEDIDO DE EXECUÇÃO' : executionRequested === 'sim' ? 'COM PEDIDO DE EXECUÇÃO' : '',
+    outcome === 'apto_derrota_voluntaria' ? 'PROCESSO APTO AO ENCERRAMENTO POR DERROTA VOLUNTÁRIA' : '',
+  ].filter(Boolean).join(', ') + '.';
+  const validReason = disagreementReason.trim().length >= 6 && disagreementReason.trim().length <= 2000;
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || hadAppeal === null || classificationAgreed !== 'sim') {
+    if (!outcome || !sentence || hadAppeal === null || classificationAgreed === null) {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
+      return;
+    }
+    if (classificationAgreed === 'nao' && !validReason) {
+      setLocalError('Explique a divergência (entre 6 e 2.000 caracteres) antes de enviar para revisão.');
       return;
     }
     setLocalError(null);
@@ -254,28 +287,27 @@ export function ClosingAnalysisFlow({
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
         && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
+      classification_agreed: classificationAgreed === 'sim',
+      classification_disagreement_reason: classificationAgreed === 'nao' ? disagreementReason.trim() : null,
     });
   };
 
-  return <TaskForm className="closing-flow" progressive draftKey={draftKey} onSubmit={submit}>
-    <section className="qa-context-note" role="note">
-      <strong>{contextHint || (classifierClassification ? 'Indício automático: ' + classifierClassification + '.' : 'Sem resultado de sentença identificado automaticamente.')}</strong>
-    </section>
+  return <TaskForm className="closing-flow" progressive stages={CLOSING_STAGES} draftKey={draftKey} onSubmit={submit}>
 
-    <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença?">
+    <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
         options={SENTENCES} onChange={value => {
           setSentence(value as TrialResult); setHadAppeal(null); clearAppeal();
         }} />
     </TaskQuestion>
 
-    {sentence ? <TaskQuestion number={String(++questionNumber)} question="Houve interposição de apelação?">
+    {sentence ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Houve interposição de apelação?">
       <BinaryChoice name="closing-appeal" value={hadAppeal} disabled={busy} onChange={value => {
         setHadAppeal(value); clearAppeal();
       }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Quem interpôs a apelação?">
+    {hadAppeal === 'sim' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Quem interpôs a apelação?">
       <OptionGroup name="closing-appellant" value={appellant} disabled={busy}
         options={[{ value: 'banco', label: 'Banco' }, { value: 'autora', label: 'Parte autora' }]}
         onChange={value => {
@@ -283,13 +315,13 @@ export function ClosingAnalysisFlow({
         }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' && appellant !== null ? <TaskQuestion number={String(++questionNumber)} question="O colegiado já julgou a apelação?">
+    {hadAppeal === 'sim' && appellant !== null ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="O colegiado já julgou a apelação?">
       <BinaryChoice name="closing-appeal-decided" value={appealDecided} disabled={busy} onChange={value => {
         setAppealDecided(value); setAppealResult(null); clearTransit();
       }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da apelação?">
+    {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Qual foi o resultado da apelação?">
       <OptionGroup name="closing-appeal-result" value={appealResult} disabled={busy}
         options={sentence === 'improcedente' || sentence === 'extincao'
           ? [{ value: 'mantida_improcedencia', label: 'Mantida a improcedência' },
@@ -300,14 +332,14 @@ export function ClosingAnalysisFlow({
         onChange={value => { setAppealResult(value as AppealResult); clearTransit(); }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'nao' ? <TaskQuestion number={String(++questionNumber)} question="Há prazo para recorrer?">
+    {hadAppeal === 'nao' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Há prazo para recorrer?">
       <BinaryChoice name="closing-deadline-open" value={deadlineOpen} disabled={busy}
         onChange={value => {
           setDeadlineOpen(value); setDeadlineDate(''); clearTransit();
         }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'nao' && deadlineOpen === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual é a data final do prazo recursal?">
+    {hadAppeal === 'nao' && deadlineOpen === 'sim' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Qual é a data final do prazo recursal?">
       <DateAnswer name="closing-deadline-date" label="Data final do prazo" value={deadlineDate}
         disabled={busy} onChange={value => { setDeadlineDate(value); setLocalError(null); }} />
       {deadlineAge !== null && deadlineAge > 0 ? <p className="closing-inline-note">
@@ -315,13 +347,13 @@ export function ClosingAnalysisFlow({
       </p> : null}
     </TaskQuestion> : null}
 
-    {canAnswerTransit ? <TaskQuestion number={String(++questionNumber)} question="Esse processo já transitou em julgado?">
+    {canAnswerTransit ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Trânsito em Julgado" question="Esse processo já transitou em julgado?">
       <BinaryChoice name="closing-transit-confirmed" value={transitConfirmed} disabled={busy}
         onChange={value => { setTransitConfirmed(value); setTransitDate(''); clearAfterTransit(); }} />
     </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} question="Houve o pagamento das custas finais?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve o pagamento das custas finais?">
         <BinaryChoice name="closing-costs" value={costsPaid} disabled={busy} onChange={value => {
           setCostsPaid(value); setExecutionRequested(null); setFullPayment(null);
           setTransitDate(''); setLocalError(null);
@@ -329,7 +361,7 @@ export function ClosingAnalysisFlow({
       </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} question="Houve pedido de execução?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pedido de execução?">
         <BinaryChoice name="closing-execution" value={executionRequested} disabled={busy} onChange={value => {
           setExecutionRequested(value); setFullPayment(null); setTransitDate(''); setLocalError(null);
         }} />
@@ -337,7 +369,7 @@ export function ClosingAnalysisFlow({
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' &&
       costsPaid === 'sim' && executionRequested === 'nao' ?
-      <TaskQuestion number={String(++questionNumber)} question="Qual foi a data do trânsito em julgado?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Trânsito em Julgado" question="Qual foi a data do trânsito em julgado?">
         <DateAnswer name="closing-transit-date" label="Data do trânsito em julgado"
           value={transitDate} disabled={busy} onChange={value => {
             setTransitDate(value); setLocalError(null);
@@ -349,24 +381,32 @@ export function ClosingAnalysisFlow({
       </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' && executionRequested === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} question="Houve pagamento do valor integral solicitado pela autora?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pagamento do valor integral solicitado pela autora?">
         <BinaryChoice name="closing-payment" value={fullPayment} disabled={busy} onChange={value => {
           setFullPayment(value); setLocalError(null);
         }} />
       </TaskQuestion> : null}
 
-    {outcome && confirmationText ? <TaskQuestion number={String(++questionNumber)} question={confirmationText}>
+    {outcome && confirmationText ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Encerramento" question={confirmationText}>
+      <div className="closing-review-observation">
+        <strong>Descrição proposta do andamento</strong>
+        <p>{proposedDescription}</p>
+      </div>
       <BinaryChoice name="closing-classification-agreement" value={classificationAgreed} disabled={busy}
-        onChange={value => { setClassificationAgreed(value); setLocalError(null); }} />
-      {classificationAgreed === 'nao' ? <p className="closing-inline-note" role="status">
-        A análise permanece em rascunho. Volte às respostas para revisar a classificação antes de salvar.
-      </p> : null}
+        onChange={value => { setClassificationAgreed(value); setLocalError(null); if (value === 'sim') setDisagreementReason(''); }} />
+      {classificationAgreed === 'nao' ? <label className="closing-disagreement-field">
+        <span>Por que você discorda da classificação ou da descrição?</span>
+        <textarea value={disagreementReason} required disabled={busy} maxLength={2000}
+          placeholder="Descreva a divergência encontrada no processo."
+          onChange={event => { setDisagreementReason(event.target.value); setLocalError(null); }}/>
+        <small>A análise será registrada para revisão, sem confirmar a classificação.</small>
+      </label> : null}
       {classificationAgreed === 'sim' && reopenAt ? <p className="closing-inline-note">
         Reanálise prevista em {formatDate(reopenAt)}.
       </p> : null}
     </TaskQuestion> : null}
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome && classificationAgreed === 'sim')} onSkip={() => void onSkip()}
+    <TaskActionBar busy={busy} ready={Boolean(outcome && (classificationAgreed === 'sim' || (classificationAgreed === 'nao' && validReason)))} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
 }
