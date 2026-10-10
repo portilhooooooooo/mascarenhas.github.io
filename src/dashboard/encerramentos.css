@@ -121,3 +121,23 @@
 .closing-kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
 @media(max-width:1250px){.closing-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:750px){.closing-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Ranking é uma camada gerencial e usa somente valores do backend. */
+.closing-ranking{display:grid;gap:14px;border:1px solid var(--mba-border,rgba(130,130,130,.25));border-radius:12px;padding:18px;background:var(--mba-surface,#fff);color:var(--mba-text,#1a1a1a);min-width:0}
+.closing-ranking-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.closing-ranking-header h2{margin:0;font-size:17px;letter-spacing:-.02em}
+.closing-ranking-header p,.closing-ranking-note{margin:5px 0 0;color:var(--mba-text-2,#666);font-size:11px;line-height:1.5}
+.closing-ranking-header>span{font-size:10px;color:var(--mba-text-2,#666);white-space:nowrap}
+.closing-ranking-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.closing-ranking-kpis article{display:grid;align-content:start;gap:7px;min-width:0;padding:13px;border:1px solid var(--mba-border,rgba(130,130,130,.25));border-radius:9px;background:var(--mba-bg,#faf9f7)}
+.closing-ranking-kpis article span{font-size:11px;color:var(--mba-text-2,#666)}
+.closing-ranking-kpis article strong{font-size:23px;font-weight:650;letter-spacing:-.04em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.closing-ranking-kpis article small{font-size:10px;color:var(--mba-text-2,#777)}
+.closing-ranking-bands{display:grid;gap:8px}
+.closing-ranking-bands h3{margin:0;font-size:12px}
+.closing-ranking-band-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.closing-ranking-band-grid>div{display:grid;gap:5px;min-width:0;padding:12px;border-radius:9px;border:1px solid var(--mba-border,rgba(130,130,130,.25))}
+.closing-ranking-band-grid :is(span,small){font-size:11px;color:var(--mba-text-2,#666)}
+.closing-ranking-band-grid strong{font-size:12px}
+@media(max-width:1020px){.closing-ranking-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.closing-ranking-kpis,.closing-ranking-band-grid{grid-template-columns:1fr}.closing-ranking-header{flex-wrap:wrap}}
