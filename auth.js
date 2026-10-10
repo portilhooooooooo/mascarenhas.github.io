@@ -106,6 +106,15 @@
   applyBranding();
   enforceMicrosoftOnlyUserUI();
 
+  // O seletor de carteira altera capacidades sem executar applyUser novamente.
+  // Sincronizar a visibilidade do container real, não apenas os botões da nav.
+  function syncAuthorizedPages() {
+    const user = window.MBA_CURRENT_USER;
+    if (!user?.permissions) return;
+    syncAuthorizedPages();
+    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
+  }
+
   function applyUser(user) {
     if (!user?.id || !user?.email || typeof user.permissions !== 'object') {
       throw new Error('O perfil autenticado retornado pela API é inválido.');
@@ -158,8 +167,9 @@
     } else if (!routeRestored) {
       window.showPage?.(pages[0][0]);
     }
-    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
   }
+
+  window.addEventListener('mba:portfolio-changed', syncAuthorizedPages);
 
   function activePageId() {
     return document.querySelector('main .page.active')?.id || 'dashboard';
