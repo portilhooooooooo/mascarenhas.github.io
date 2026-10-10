@@ -48,6 +48,10 @@ assert.ok(!portfolio.includes('Nubank'),'client portfolio selector must be scope
 s.role='analista';s.view='Análise';s.step=0;s.answers={};render();
 assert.ok(root.innerHTML.includes('Qual foi o resultado da sentença?'));
 assert.equal(questions.at(-1).question,'Você concorda com a classificação?');
+s.role='analista';s.view='Operação';render();
+for (const name of ['Encerramentos','Pagamentos','Liminar','Defesas','Protocolos','Acordos']) assert.ok(root.innerHTML.includes(name),'operation module '+name);
+s.view='Visão do processo';s.chosen='5007488-72.2024.8.21.0048';render();
+for (const text of ['Timeline · DataJud','Tarefas do processo','Criar tarefa']) assert.ok(root.innerHTML.includes(text),'process dossier '+text);
 s.role='gerente';s.view='Ranking';render();assert.ok(root.innerHTML.includes('Nota não calculada'));
 assert.ok(events.click && events.change && events.keydown,'basic demo interactions registered');
 console.log('Reimagined preview checks passed: 5 roles, client isolation in UI, Q&A and ranking.');
