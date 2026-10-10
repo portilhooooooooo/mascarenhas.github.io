@@ -30,10 +30,21 @@ function GoogleMark() {
   </svg>;
 }
 
+function greetingFor(date: Date): string {
+  const hour = date.getHours();
+  const day = date.getDay();
+  const salutation = hour < 12 ? 'Bom dia.' : hour < 18 ? 'Boa tarde.' : 'Boa noite.';
+  if (day === 1) return salutation + ' Uma nova semana começa aqui.';
+  if (day === 5) return salutation + ' Encerrando mais uma semana de trabalho.';
+  if (day === 0 || day === 6) return salutation + ' Seu espaço de trabalho está pronto.';
+  return salutation + ' Bem-vindo ao Backoffice.';
+}
+
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [authState, setAuthState] = useState<LoginState>({ busy: false, error: null });
   const media = (window as AuthWindow).MBA_BRAND_MEDIA;
+  const [greeting, setGreeting] = useState(() => greetingFor(new Date()));
 
   useLayoutEffect(() => {
     document.body.dataset.reactLogin = 'true';
@@ -45,8 +56,13 @@ function LoginPage() {
       const detail = (event as CustomEvent<LoginState>).detail;
       if (detail) setAuthState(detail);
     };
+    const refreshGreeting = () => setGreeting(greetingFor(new Date()));
+    window.addEventListener('focus', refreshGreeting);
     window.addEventListener('mba:auth-state', handleAuthState);
-    return () => window.removeEventListener('mba:auth-state', handleAuthState);
+    return () => {
+      window.removeEventListener('focus', refreshGreeting);
+      window.removeEventListener('mba:auth-state', handleAuthState);
+    };
   }, []);
 
   const startMicrosoftLogin = async () => {
@@ -69,8 +85,8 @@ function LoginPage() {
     </header>
     <main className="react-login-main">
       <section className="react-login-access" aria-labelledby="react-login-title">
-        <h1 id="react-login-title">Explore como estamos trabalhando.</h1>
-        <p className="react-login-subtitle">Tarefas, operação e automações em um único lugar.</p>
+        <h1 id="react-login-title">{greeting}</h1>
+        <p className="react-login-subtitle">Explore como estamos trabalhando!</p>
         <form className="react-login-form" onSubmit={submit}>
           <button className="react-login-corporate" type="button"
             disabled={authState.busy} aria-busy={authState.busy}

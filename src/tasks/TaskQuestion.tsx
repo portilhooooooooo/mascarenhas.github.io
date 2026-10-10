@@ -1,13 +1,13 @@
 import {
-  Children, Fragment, createContext, isValidElement, useContext, useEffect, useRef, useState,
-  type FormHTMLAttributes, type ReactNode,
+  Children, Fragment, cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState,
+  type FormHTMLAttributes, type ReactElement, type ReactNode,
 } from 'react';
 
 type QaNavigationValue = { canSubmit: boolean };
 const QaNavigation = createContext<QaNavigationValue | null>(null);
 
 export function TaskQuestion({ number, question, children }: { number: string; question: string; stage?: string; children: ReactNode }) {
-  return <section className="task-question"><h3><span className="task-question-number">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
+  return <section className="task-question"><h3><span className="task-question-number">{/^[0-9]+$/.test(number) ? number.padStart(2, '0') : number}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
 
 export function TaskActionBar({ busy, ready = true, onSkip, skipLabel = 'Pular esse prazo' }: { busy: boolean; ready?: boolean; onSkip: () => void; skipLabel?: string }) {
@@ -42,6 +42,17 @@ export function OptionGroup({ name, value, onChange, options, disabled = false }
       ))}
     </div>
   );
+}
+
+function questionLabel(index: number): string {
+  let value = index + 1;
+  let label = '';
+  do {
+    value -= 1;
+    label = String.fromCharCode(65 + (value % 26)) + label;
+    value = Math.floor(value / 26);
+  } while (value > 0);
+  return label;
 }
 
 function flattenNodes(children: ReactNode): ReactNode[] {
@@ -94,7 +105,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, ...props }: Task
   const formRef = useRef<HTMLFormElement>(null);
   const total = questions.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
-  const questionStages = questions.map(child => (child.props as { stage?: string }).stage || '');
+  const questionStages = questions.map(child => isValidElement(child) ? ((child.props as { stage?: string }).stage || '') : '');
   const activeStage = questionStages[current] || '';
   const completedStages = new Set(stages?.filter(stage =>
     questionStages.includes(stage) &&
@@ -204,7 +215,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, ...props }: Task
           if (isValidElement(child) && child.type === TaskQuestion) {
             questionIndex += 1;
             const stepIndex = questionIndex;
-            return <div className="qa-step" key={'qa-step-' + stepIndex} hidden={stepIndex !== current} aria-hidden={stepIndex !== current}>{child}</div>;
+            return <div className="qa-step" key={'qa-step-' + stepIndex} hidden={stepIndex !== current} aria-hidden={stepIndex !== current}>{cloneElement(child as ReactElement<{ number: string }>, { number: questionLabel(stepIndex) })}</div>;
           }
           return <Fragment key={'qa-aux-' + index}>{child}</Fragment>;
         })}

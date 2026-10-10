@@ -31,7 +31,8 @@ assert.match(questions, /selected\.click\(\)/, 'Atalho usa o onChange das opçõ
 assert.match(questions, /onChange=\{\(\) => onChange\(option\.value\)\}/, 'Seleção apenas registra a resposta');
 assert.doesNotMatch(questions, /advance\?\.\(\)|setAdvanceTicket|advanceTicket/, 'Somente Enter ou Próxima pode mudar a etapa');
 for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], ['Liminar/Pagamentos', legacy]]) {
-  assert.match(source, /progressive draftKey=\{draftKey\}/, name + ' usa Q&A progressivo');
+  assert.match(source, /<TaskForm[^>]*\bprogressive\b/, name + ' usa Q&A progressivo');
+  assert.match(source, /<TaskForm[^>]*draftKey=\{draftKey\}/, name + ' recebe chave de rascunho');
 }
 assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta da API');
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');

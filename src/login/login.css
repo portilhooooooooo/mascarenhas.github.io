@@ -2,6 +2,10 @@
  * Login editorial: referências Claude (estrutura e tipografia) + marca Mascarenhas.
  * Nenhuma navegação de produção é alterada; a mídia à direita é opcional.
  */
+#login-view .react-login-view,
+#login-view .react-login-view *,
+#login-view .react-login-view *::before,
+#login-view .react-login-view *::after { box-sizing:border-box; }
 body[data-react-login="true"] .login-screen { min-height:100dvh;display:block;padding:0;background:#161617; }
 body[data-react-login="true"] .login-panel,
 body[data-react-login="true"] .login-box,

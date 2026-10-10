@@ -88,7 +88,22 @@
   letter-spacing: -.035em;
   color: var(--qa-ink);
 }
-#tarefas[data-react-tasks='true'] .task-station .qa-step .task-question-number { display: none; }
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-question-number {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:28px;
+  min-height:28px;
+  margin-right:12px;
+  padding:3px 7px;
+  border:1px solid var(--qa-border,rgba(130,130,130,.35));
+  border-radius:8px;
+  background:var(--qa-soft,rgba(130,130,130,.08));
+  color:var(--qa-muted);
+  font:650 12px/1 Inter,system-ui,sans-serif;
+  letter-spacing:0;
+  vertical-align:middle;
+}
 #tarefas[data-react-tasks='true'] .task-station .qa-step .task-question-body { width: 100%; }
 #tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-grid {
   width: 100%;
