@@ -122,6 +122,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
         body: JSON.stringify(draft),
       });
       clearQaDraft(draftKey);
+      window.dispatchEvent(new CustomEvent('mba:closing-analysis-saved'));
       if (saved?.reopen_at) onDeferred(process, String(saved.reopen_at));
       else onCompleted(process);
     } catch (cause: any) {
