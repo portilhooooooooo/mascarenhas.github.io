@@ -113,7 +113,7 @@ function DateAnswer({ name, label, value, onChange, disabled }: {
   return <label className="closing-date-answer" htmlFor={name}>
     <span>{label}</span>
     <input id={name} name={name} type="date" value={value} disabled={disabled}
-      onChange={event => onChange(event.target.value)} />
+      required onChange={event => onChange(event.target.value)} />
   </label>;
 }
 
