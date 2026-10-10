@@ -103,7 +103,7 @@ try {
     await page.goto(base+'/results.html');
     await page.getByRole('heading',{name:/Ranking Agibank/}).waitFor();
     assert.equal(await page.getByText('Demonstração',{exact:true}).count(),0);
-    await page.getByRole('heading',{name:'Encerramentos'}).waitFor();
+    await page.getByRole('heading',{name:'Encerramentos',exact:true}).waitFor();
     await page.getByText('Respostas persistidas na mesma fonte das etapas e dos analistas').waitFor();
     await assertNoHorizontalOverflow('Resultados '+w);
     await page.screenshot({path:'.build/spec-ui/results-'+w+'.png',fullPage:true});
