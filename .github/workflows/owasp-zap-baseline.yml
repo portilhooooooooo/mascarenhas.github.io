@@ -1,0 +1,28 @@
+name: OWASP ZAP passive baseline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/owasp-zap-baseline.yml
+  schedule:
+    - cron: '20 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap-passive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Passive only, unauthenticated, one-minute discovery
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: https://local.portilhobackoffice.site/
+          cmd_options: '-m 1 -T 2'
+          allow_issue_writing: false
+          fail_action: false
+          artifact_name: owasp-zap-baseline
