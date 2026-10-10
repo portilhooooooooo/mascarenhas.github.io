@@ -37,3 +37,38 @@ test('login text is contextual, fixed caption matches spec', () => {
   assert.match(login, /Explore como estamos trabalhando!/);
   assert.doesNotMatch(login, /Tarefas, operação e automações em um único lugar/);
 });
+
+test('liminar, payments and defense expose conditional stage progress', () => {
+  const liminar = read('src/tasks/renderersLegacy.tsx');
+  const defense = read('src/tasks/DefenseAnalysisFlow.tsx');
+  const closing = read('src/tasks/ClosingAnalysisFlow.tsx');
+  const form = read('src/tasks/TaskQuestion.tsx');
+  for (const source of [liminar, defense]) {
+    assert.match(source, /dynamicStages/, 'flow uses stages matching the current decision branch');
+    assert.match(source, /stage="/, 'questions belong to named stages');
+  }
+  assert.match(form, /displayStages = dynamicStages/, 'stage track skips irrelevant branches');
+  assert.match(form, /displayStages\.length/, 'track uses the actual stage count');
+  assert.match(closing, /stages=\{CLOSING_STAGES\}/, 'closing preserves five fixed stages');
+});
+test('payment validation name is presentation-only', () => {
+  const model = read('src/tasks/model.ts');
+  assert.match(model, /comprovante_pagamento: 'Validação de Pagamento'/);
+  assert.match(read('src/tasks/TasksApp.tsx'), /normalize\(activeItem\.task\.type\) === 'comprovante_pagamento'/);
+});
+test('Results visibility synchronizes with portfolio changes', () => {
+  const auth = read('auth.js');
+  const results = read('src/dashboard/GestaoProcessualPage.tsx');
+  assert.match(auth, /function syncAuthorizedPages\(/);
+  assert.match(auth, /mba:portfolio-changed', syncAuthorizedPages/);
+  assert.match(auth, /window\.MBA_PORTFOLIO_POLICY\?\.canAccess\(pageId, user\) === true/);
+  assert.match(results, /mba:portfolio-changed', sync/);
+  assert.match(results, /forcePortfolioPolicySync/);
+});
+test('protocol requires actual Save activation, not implicit form submit', () => {
+  const protocol = read('src/tasks/ProtocolCollectionRenderer.tsx');
+  assert.match(protocol, /onSaveIntent=\{\(\) => \{ saveIntent\.current = true/);
+  assert.match(protocol, /if \(!saveIntent\.current \|\| submitting\.current \|\| busy\) return/);
+  assert.match(protocol, /onKeyDownCapture=/);
+  assert.match(protocol, /event\.preventDefault\(\)/);
+});
