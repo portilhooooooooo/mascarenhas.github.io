@@ -1,6 +1,6 @@
 import {
   Children, Fragment, cloneElement, createContext, isValidElement, useContext, useEffect, useRef, useState,
-  type FormHTMLAttributes, type ReactNode,
+  type FormHTMLAttributes, type ReactElement, type ReactNode,
 } from 'react';
 
 type QaNavigationValue = { canSubmit: boolean };
@@ -215,7 +215,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, ...props }: Task
           if (isValidElement(child) && child.type === TaskQuestion) {
             questionIndex += 1;
             const stepIndex = questionIndex;
-            return <div className="qa-step" key={'qa-step-' + stepIndex} hidden={stepIndex !== current} aria-hidden={stepIndex !== current}>{cloneElement(child as React.ReactElement<{ number: string }>, { number: questionLabel(stepIndex) })}</div>;
+            return <div className="qa-step" key={'qa-step-' + stepIndex} hidden={stepIndex !== current} aria-hidden={stepIndex !== current}>{cloneElement(child as ReactElement<{ number: string }>, { number: questionLabel(stepIndex) })}</div>;
           }
           return <Fragment key={'qa-aux-' + index}>{child}</Fragment>;
         })}
