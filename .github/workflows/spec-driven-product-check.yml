@@ -25,6 +25,8 @@ jobs:
           npm run test:metabase
       - name: Type check and production build
         run: npm run build
+      - name: Build isolated UX fixtures
+        run: npx vite build --config vite.ux.config.ts
       - name: Install browser
         run: npx playwright install --with-deps chromium
       - name: Responsive UI checks
