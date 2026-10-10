@@ -106,6 +106,24 @@
   applyBranding();
   enforceMicrosoftOnlyUserUI();
 
+  // O seletor de carteira altera capacidades sem executar applyUser novamente.
+  // Sincronizar a visibilidade do container real, não apenas os botões da nav.
+  function syncAuthorizedPages() {
+    const user = window.MBA_CURRENT_USER;
+    if (!user?.permissions) return;
+    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
+    document.querySelectorAll('[data-permission]').forEach(element => {
+      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
+      element.hidden = pageId
+        ? !canAccess(pageId)
+        : user.permissions[element.dataset.permission] !== true;
+    });
+    document.querySelectorAll('main .page[id]').forEach(page => {
+      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
+    });
+    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
+  }
+
   function applyUser(user) {
     if (!user?.id || !user?.email || typeof user.permissions !== 'object') {
       throw new Error('O perfil autenticado retornado pela API é inválido.');
@@ -123,16 +141,8 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
+    syncAuthorizedPages();
     const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
-    document.querySelectorAll('[data-permission]').forEach(element => {
-      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
-      element.hidden = pageId
-        ? !canAccess(pageId)
-        : user.permissions[element.dataset.permission] !== true;
-    });
-    document.querySelectorAll('main .page[id]').forEach(page => {
-      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
-    });
     document.querySelectorAll('.master-admin-only').forEach(element => {
       element.hidden = !user.is_master_admin;
     });
@@ -158,8 +168,9 @@
     } else if (!routeRestored) {
       window.showPage?.(pages[0][0]);
     }
-    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
   }
+
+  window.addEventListener('mba:portfolio-changed', syncAuthorizedPages);
 
   function activePageId() {
     return document.querySelector('main .page.active')?.id || 'dashboard';

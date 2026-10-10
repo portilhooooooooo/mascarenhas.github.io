@@ -109,6 +109,59 @@ try {
     await page.screenshot({path:'.build/spec-ui/results-'+w+'.png',fullPage:true});
   }
 
+
+  // Progressos por fase são visíveis em todos os Q&As; as fases se adaptam ao ramo.
+  for (const {scenario, group, answer, stage} of [
+    {scenario:'liminar',group:'liminar-requested',answer:'Sim',stage:'Decisão judicial'},
+    {scenario:'defesa',group:'defense-deadline',answer:'Não',stage:'Determinação judicial'},
+    {scenario:'comprovante_pagamento',group:'payment-status',answer:'Sim',stage:'Comprovante'},
+  ]) {
+    await page.setViewportSize({width:1440,height:900});
+    await page.goto(base+'/?scenario='+scenario);
+    await page.evaluate(() => sessionStorage.clear());
+    await page.reload();
+    await page.locator('.qa-stage-track').waitFor();
+    const initial = await page.locator('.qa-stage-track .qa-stage-segment').count();
+    assert.ok(initial > 0, scenario+' deve exibir faixa de progresso');
+    await page.getByRole('radiogroup',{name:group}).getByText(answer,{exact:true}).click();
+    await page.getByRole('button',{name:/Próxima/}).click();
+    assert.equal(await page.locator('.qa-stage-segment.active small').innerText(),stage,scenario+' etapa atual');
+  }
+
+  // Um Enter ou requestSubmit programático não pode concluir Protocolos.
+  await page.goto(base+'/?scenario=protocolo');
+  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByText('Não',{exact:true}).click();
+  await page.getByRole('radiogroup',{name:'protocol-error-reason'}).getByText('Ainda não foi protocolado nos autos',{exact:true}).click();
+  await page.keyboard.press('Enter');
+  await page.locator('form.protocol-collection-form').evaluate(form => form.requestSubmit());
+  let protocolWrites = await page.evaluate(() => window.__protocolWriteLog || []);
+  assert.equal(protocolWrites.length,0,'Nenhum erro/protocolo pode ser enviado sem Salvar e próximo');
+  await page.getByRole('button',{name:'Salvar e próximo'}).click();
+  await page.waitForFunction(() => (window.__protocolWriteLog || []).some(row => row.path.endsWith('protocol-collection-error')));
+  protocolWrites = await page.evaluate(() => window.__protocolWriteLog || []);
+  assert.equal(protocolWrites.filter(row => row.path.endsWith('protocol-collection-error')).length,1);
+
+  await page.goto(base+'/?scenario=protocolo');
+  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByText('Sim',{exact:true}).click();
+  const pdf = {name:'documento.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')};
+  await page.locator('.protocol-native-file').nth(0).setInputFiles(pdf);
+  await page.locator('.protocol-native-file').nth(1).setInputFiles({...pdf,name:'comprovante.pdf'});
+  await page.waitForFunction(() => (window.__protocolWriteLog || []).filter(row => row.path.endsWith('/stage')).length === 2);
+  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).locator('input[type="radio"][value="sim"]').focus();
+  await page.keyboard.press('Enter');
+  protocolWrites = await page.evaluate(() => window.__protocolWriteLog || []);
+  assert.equal(protocolWrites.filter(row => row.path.endsWith('/commit')).length,0,'Upload não encerra tarefa');
+  await page.getByRole('button',{name:'Salvar e próximo'}).click();
+  await page.waitForFunction(() => (window.__protocolWriteLog || []).some(row => row.path.endsWith('/commit')));
+
+  // A alteração de carteira deve ocultar e restaurar Resultados de forma consistente.
+  await page.goto(base+'/results.html');
+  await page.getByRole('heading',{name:/Ranking Agibank/}).waitFor();
+  await page.evaluate(() => window.__setResultsPortfolioAllowed(false));
+  await page.getByText('Sem autorização para visualizar Analytics.').waitFor();
+  await page.evaluate(() => window.__setResultsPortfolioAllowed(true));
+  await page.getByRole('heading',{name:/Ranking Agibank/}).waitFor();
+
   assert.deepEqual(errors, [], 'Não pode haver exceções JS em nenhuma das telas');
   console.log('UI: login, A/B/C, fila à esquerda, atribuições, 3 larguras e ausência de overflow validados.');
 } finally {
