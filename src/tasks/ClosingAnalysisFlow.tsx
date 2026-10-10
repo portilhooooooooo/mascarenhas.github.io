@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useState } from 'react';
+import { useQaField } from './qaDraft';
 import './closingAnalysisFlow.css';
 import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 
@@ -28,6 +29,8 @@ export type ClosingAnalysisDraft = {
 type Props = {
   cnj: string;
   classifierClassification?: string | null;
+  contextHint?: string;
+  draftKey?: string;
   busy?: boolean;
   error?: string | null;
   onSubmit: (draft: ClosingAnalysisDraft) => Promise<void> | void;
@@ -115,20 +118,20 @@ function DateAnswer({ name, label, value, onChange, disabled }: {
 }
 
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, busy = false, error = null, onSubmit, onSkip,
+  cnj, classifierClassification, contextHint, draftKey = '', busy = false, error = null, onSubmit, onSkip,
 }: Props) {
-  const [sentence, setSentence] = useState<TrialResult | null>(null);
-  const [hadAppeal, setHadAppeal] = useState<YesNo>(null);
-  const [appealDecided, setAppealDecided] = useState<YesNo>(null);
-  const [appealResult, setAppealResult] = useState<AppealResult | null>(null);
-  const [appellant, setAppellant] = useState<Appellant | null>(null);
-  const [deadlineOpen, setDeadlineOpen] = useState<YesNo>(null);
-  const [deadlineDate, setDeadlineDate] = useState('');
-  const [transitConfirmed, setTransitConfirmed] = useState<YesNo>(null);
-  const [transitDate, setTransitDate] = useState('');
-  const [costsPaid, setCostsPaid] = useState<YesNo>(null);
-  const [executionRequested, setExecutionRequested] = useState<YesNo>(null);
-  const [fullPayment, setFullPayment] = useState<YesNo>(null);
+  const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
+  const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
+  const [appealDecided, setAppealDecided] = useQaField<YesNo>(draftKey, 'closing.appealDecided', null);
+  const [appealResult, setAppealResult] = useQaField<AppealResult | null>(draftKey, 'closing.appealResult', null);
+  const [appellant, setAppellant] = useQaField<Appellant | null>(draftKey, 'closing.appellant', null);
+  const [deadlineOpen, setDeadlineOpen] = useQaField<YesNo>(draftKey, 'closing.deadlineOpen', null);
+  const [deadlineDate, setDeadlineDate] = useQaField(draftKey, 'closing.deadlineDate', '');
+  const [transitConfirmed, setTransitConfirmed] = useQaField<YesNo>(draftKey, 'closing.transitConfirmed', null);
+  const [transitDate, setTransitDate] = useQaField(draftKey, 'closing.transitDate', '');
+  const [costsPaid, setCostsPaid] = useQaField<YesNo>(draftKey, 'closing.costsPaid', null);
+  const [executionRequested, setExecutionRequested] = useQaField<YesNo>(draftKey, 'closing.executionRequested', null);
+  const [fullPayment, setFullPayment] = useQaField<YesNo>(draftKey, 'closing.fullPayment', null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const clearAfterTransit = () => {
@@ -142,9 +145,7 @@ export function ClosingAnalysisFlow({
     setAppealDecided(null); setAppealResult(null); setAppellant(null);
     setDeadlineOpen(null); setDeadlineDate(''); clearTransit();
   };
-  useEffect(() => {
-    setSentence(null); setHadAppeal(null); clearAppeal();
-  }, [cnj]);
+  // O workspace remonta o fluxo por processo; o rascunho é restaurado em useQaField.
 
   const appealPending = hadAppeal === 'sim' && appealDecided === 'nao';
   const appealJudged = hadAppeal === 'sim'
@@ -234,14 +235,17 @@ export function ClosingAnalysisFlow({
     });
   };
 
-  return <TaskForm className="closing-flow" onSubmit={submit}>
-    <section className={'closing-outcome closing-summary ' +
-      (outcome?.startsWith('apto_') ? 'positive' : outcome ? 'negative' : 'neutral')} aria-live="polite">
-      <span>Classificação final prevista</span>
-      <strong>{outcome ? OUTCOME_LABELS[outcome] : 'Aguardando validação das respostas'}</strong>
-      {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
-      {!outcome && classifierClassification ? <small>Indício do classificador: {classifierClassification}</small> : null}
+  return <TaskForm className="closing-flow" progressive draftKey={draftKey} onSubmit={submit}>
+    <section className="qa-context-note" role="note">
+      <strong>{contextHint || (classifierClassification ? 'Identificamos um indício de ' + classifierClassification.toLowerCase() + '.' : 'Ainda não identificamos o tipo da sentença.')}</strong>
+      <small>Confira o processo antes de responder. O indício não substitui a validação do analista.</small>
     </section>
+    {outcome ? <section className={'closing-outcome closing-summary ' +
+      (outcome.startsWith('apto_') ? 'positive' : 'negative')} aria-live="polite">
+      <span>Classificação final prevista</span>
+      <strong>{OUTCOME_LABELS[outcome]}</strong>
+      {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
+    </section> : null}
 
     <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
