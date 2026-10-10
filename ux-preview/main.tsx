@@ -41,7 +41,7 @@ const items = [
 const request = async (path:string,options?:RequestInit) => {
   if(path.endsWith('/next-agreement')) return {agreement:processes('demo-agreement')[0]};
   if (assignmentsFixture && path.startsWith('/api/task-assignees?module=')) return [{id:'fixture-analyst',name:'Analista de teste'}];
-  if (assignmentsFixture && options?.method === 'PATCH' && /^\\/api\\/task-processes\\//.test(path)) {
+  if (assignmentsFixture && options?.method === 'PATCH' && path.startsWith('/api/task-processes/')) {
     if (path.endsWith('-1')) throw new Error('Falha simulada de atribuição');
     return {id:path.split('/').at(-1),assignee_id:'fixture-analyst'};
   }
