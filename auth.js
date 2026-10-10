@@ -111,7 +111,16 @@
   function syncAuthorizedPages() {
     const user = window.MBA_CURRENT_USER;
     if (!user?.permissions) return;
-    syncAuthorizedPages();
+    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
+    document.querySelectorAll('[data-permission]').forEach(element => {
+      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
+      element.hidden = pageId
+        ? !canAccess(pageId)
+        : user.permissions[element.dataset.permission] !== true;
+    });
+    document.querySelectorAll('main .page[id]').forEach(page => {
+      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
+    });
     window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
   }
 
@@ -132,16 +141,8 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
+    syncAuthorizedPages();
     const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
-    document.querySelectorAll('[data-permission]').forEach(element => {
-      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
-      element.hidden = pageId
-        ? !canAccess(pageId)
-        : user.permissions[element.dataset.permission] !== true;
-    });
-    document.querySelectorAll('main .page[id]').forEach(page => {
-      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
-    });
     document.querySelectorAll('.master-admin-only').forEach(element => {
       element.hidden = !user.is_master_admin;
     });
