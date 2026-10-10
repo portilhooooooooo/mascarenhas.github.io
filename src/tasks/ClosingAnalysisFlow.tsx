@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useQaField } from './qaDraft';
 import './closingAnalysisFlow.css';
 import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
@@ -132,6 +132,7 @@ export function ClosingAnalysisFlow({
   const [costsPaid, setCostsPaid] = useQaField<YesNo>(draftKey, 'closing.costsPaid', null);
   const [executionRequested, setExecutionRequested] = useQaField<YesNo>(draftKey, 'closing.executionRequested', null);
   const [fullPayment, setFullPayment] = useQaField<YesNo>(draftKey, 'closing.fullPayment', null);
+  const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.classificationAgreed', null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const clearAfterTransit = () => {
@@ -205,10 +206,31 @@ export function ClosingAnalysisFlow({
     : outcome === 'inapto_prazo_recursal' ? afterDays(deadlineDate, 1) : null;
 
   const canAnswerTransit = finalMerit !== null && finalMerit !== 'indeterminado';
+  const confirmationText = outcome === 'apto_derrota_voluntaria'
+    ? 'Identificamos que esse processo pode ser encerrado como Derrota Voluntária. Você concorda com essa informação?'
+    : outcome === 'apto_derrota'
+      ? 'Identificamos que esse processo pode ser encerrado como Derrota. Você concorda com essa informação?'
+      : outcome === 'apto_vitoria'
+        ? 'Identificamos que esse processo pode ser encerrado como Vitória. Você concorda com essa informação?'
+        : outcome === 'apto_pending_custas'
+          ? 'Identificamos que esse processo está apto, mas ainda há custas finais pendentes. Você concorda com essa informação?'
+          : outcome ? 'Identificamos que esse processo ainda não está apto para encerramento: ' +
+            OUTCOME_LABELS[outcome].replace(/^Inapto(?: temporariamente)?\s*[—–]\s*/i, '') +
+            '. Você concorda com essa informação?' : null;
+  // Qualquer alteração nas respostas anteriores exige uma nova concordância.
+  const reviewSignature = JSON.stringify([sentence, hadAppeal, appellant, appealDecided, appealResult,
+    deadlineOpen, deadlineDate, transitConfirmed, transitDate, costsPaid, executionRequested, fullPayment]);
+  const lastReviewSignature = useRef(reviewSignature);
+  useEffect(() => {
+    if (lastReviewSignature.current !== reviewSignature) {
+      lastReviewSignature.current = reviewSignature;
+      setClassificationAgreed(null);
+    }
+  }, [reviewSignature, setClassificationAgreed]);
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || hadAppeal === null) {
+    if (!outcome || !sentence || hadAppeal === null || classificationAgreed !== 'sim') {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
       return;
     }
@@ -239,16 +261,6 @@ export function ClosingAnalysisFlow({
     <section className="qa-context-note" role="note">
       <strong>{contextHint || (classifierClassification ? 'Indício automático: ' + classifierClassification + '.' : 'Sem resultado de sentença identificado automaticamente.')}</strong>
     </section>
-    {outcome ? <section className={'closing-outcome closing-summary ' +
-      (outcome.startsWith('apto_') ? 'positive' : 'negative')} aria-live="polite">
-      <span>Resultado das respostas</span>
-      <strong>{OUTCOME_LABELS[outcome]}</strong>
-      {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
-      {classifierClassification && ((outcome === 'apto_vitoria' && classifierClassification !== 'Vitória')
-        || (outcome === 'apto_derrota_voluntaria' && classifierClassification !== 'Derrota voluntária')
-        || (outcome === 'apto_derrota' && classifierClassification !== 'Derrota')) ?
-        <small className="qa-classifier-difference">Diferente do indício automático ({classifierClassification}). O resultado considera as respostas informadas.</small> : null}
-    </section> : null}
 
     <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
@@ -343,8 +355,18 @@ export function ClosingAnalysisFlow({
         }} />
       </TaskQuestion> : null}
 
+    {outcome && confirmationText ? <TaskQuestion number={String(++questionNumber)} question={confirmationText}>
+      <BinaryChoice name="closing-classification-agreement" value={classificationAgreed} disabled={busy}
+        onChange={value => { setClassificationAgreed(value); setLocalError(null); }} />
+      {classificationAgreed === 'nao' ? <p className="closing-inline-note" role="status">
+        A análise permanece em rascunho. Volte às respostas para revisar a classificação antes de salvar.
+      </p> : null}
+      {classificationAgreed === 'sim' && reopenAt ? <p className="closing-inline-note">
+        Reanálise prevista em {formatDate(reopenAt)}.
+      </p> : null}
+    </TaskQuestion> : null}
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome)} onSkip={() => void onSkip()}
+    <TaskActionBar busy={busy} ready={Boolean(outcome && classificationAgreed === 'sim')} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
 }
