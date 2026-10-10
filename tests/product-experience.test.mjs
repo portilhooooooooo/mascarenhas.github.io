@@ -8,12 +8,19 @@ import { chromium } from 'playwright';
 const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--outDir', 'dist', '--host', '127.0.0.1', '--port', '5175', '--strictPort'], { stdio: ['ignore', 'pipe', 'pipe'] });
 let browser;
 try {
-  await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Preview did not start')), 15000);
-    server.stdout.on('data', data => { if (String(data).includes('Local:')) { clearTimeout(timeout); resolve(); } });
-    server.stderr.on('data', data => process.stderr.write(data));
-    server.on('exit', code => { clearTimeout(timeout); reject(new Error(`Preview exited: ${code}`)); });
-  });
+  let serverOutput = '';
+  server.stdout.on('data', data => { serverOutput += String(data); });
+  server.stderr.on('data', data => { serverOutput += String(data); });
+  const startedAt = Date.now();
+  while (true) {
+    if (server.exitCode !== null) throw new Error(`Preview exited: ${server.exitCode}\n${serverOutput}`);
+    try {
+      const response = await fetch('http://127.0.0.1:5175/', { signal: AbortSignal.timeout(1000) });
+      if (response.ok) break;
+    } catch { /* server may not be listening yet */ }
+    if (Date.now() - startedAt > 15000) throw new Error(`Preview did not start\n${serverOutput}`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
   browser = await chromium.launch({ headless: true, ...(process.env.UX_CHROMIUM_PATH ? { executablePath: process.env.UX_CHROMIUM_PATH, args: ['--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--no-zygote', '--single-process'] } : {}) });
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
   const errors = [], submissions = [], requests = [];
