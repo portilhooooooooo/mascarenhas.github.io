@@ -48,17 +48,17 @@ export function GestaoProcessualPage() {
     window.addEventListener('mba:route-changed', sync);
     return () => window.removeEventListener('mba:route-changed', sync);
   }, []);
-  useEffect(() => {
-    if (!canViewClosing && activeTab === 'encerramentos') setActiveTab('geral');
-  }, [activeTab, canViewClosing]);
+  // Mantém a intenção de navegação entre trocas de carteira.
+  // Enquanto a permissão não existir, exibe apenas a visão autorizada.
+  const displayedTab = activeTab === 'encerramentos' && canViewClosing ? 'encerramentos' : 'geral';
 
   if (!canViewAnalytics) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
   return <div className="gestao-metabase-page gestao-processual-react">
     <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
-      <button type="button" className={activeTab === 'geral' ? 'active' : ''} aria-current={activeTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Visão geral</button>
-      {canViewClosing && <button type="button" className={activeTab === 'encerramentos' ? 'active' : ''} aria-current={activeTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
+      <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Visão geral</button>
+      {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
     </nav>
-    {activeTab === 'encerramentos' && canViewClosing ? <EncerramentosPage/> : <MetabaseGestaoEmbed/>}
+    {displayedTab === 'encerramentos' ? <EncerramentosPage/> : <MetabaseGestaoEmbed/>}
   </div>;
 }
