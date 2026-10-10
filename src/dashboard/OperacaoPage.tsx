@@ -1,4 +1,8 @@
 import './operacao.css';
+import { ProtocolosPage } from './ProtocolosPage';
+import { DefesasPage } from './DefesasPage';
+import { MetabaseControladoriaEmbed } from './MetabaseControladoriaEmbed';
+import { OPERATION_MODULES, operationModuleForRoute, isProtocolIndicatorsRoute, type OperationModule } from './operationNavigation';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
 import {OperacaoLiminarPage} from './OperacaoLiminarPage';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
@@ -329,32 +333,39 @@ function PagamentosPage() {
 
 
 
+function currentOperationRoute() {
+  return window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname;
+}
+function navigateOperation(route: string) {
+  (window as Window & { MBA_NAVIGATE?: (route: string) => boolean }).MBA_NAVIGATE?.(route);
+}
 export function OperacaoPage() {
-  const [module,setModule]=useState<'pagamentos'|'liminar'|'encerramentos'>('pagamentos');
-  const [allowed,setAllowed]=useState({pagamentos:false,liminar:false,encerramentos:false});
-  useEffect(()=>{
-    const sync=()=>{
-      const permissions=(window as Window & {MBA_CURRENT_USER?:{permissions?:Record<string,boolean>}}).MBA_CURRENT_USER?.permissions||{};
-      const next={pagamentos:permissions['pagamentos.view']===true,liminar:permissions['tutelas.view']===true,encerramentos:permissions['encerramentos.view']===true};
-      setAllowed(next);
-      setModule(previous=>next[previous]?previous:next.pagamentos?'pagamentos':next.liminar?'liminar':'encerramentos');
+  const [route, setRoute] = useState(currentOperationRoute);
+  const [allowed, setAllowed] = useState<Partial<Record<OperationModule, boolean>>>({});
+  useEffect(() => {
+    const sync = () => {
+      const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
+      setAllowed(Object.fromEntries(OPERATION_MODULES.map(item => [item.id, policy?.canAccess(item.page) === true])));
+      setRoute(currentOperationRoute());
     };
     sync();
-    window.addEventListener('mba:authenticated',sync);
-    window.addEventListener('mba:profile-ready',sync);
-    window.addEventListener('mba:portfolio-changed',sync);
-    return ()=>{
-      window.removeEventListener('mba:authenticated',sync);
-      window.removeEventListener('mba:profile-ready',sync);
-      window.removeEventListener('mba:portfolio-changed',sync);
-    };
-  },[]);
+    const events = ['mba:authenticated', 'mba:profile-ready', 'mba:portfolio-changed', 'mba:route-changed'];
+    events.forEach(event => window.addEventListener(event, sync));
+    return () => events.forEach(event => window.removeEventListener(event, sync));
+  }, []);
+  const requested = operationModuleForRoute(route);
+  const module = allowed[requested] ? requested : OPERATION_MODULES.find(item => allowed[item.id])?.id;
+  const indicators = module === 'protocolos' && isProtocolIndicatorsRoute(route);
   return <div className="operacao-module-shell">
     <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
-      {allowed.pagamentos?<button type="button" className={module==='pagamentos'?'active':''} aria-current={module==='pagamentos'?'page':undefined} onClick={()=>setModule('pagamentos')}>Pagamentos</button>:null}
-      {allowed.liminar?<button type="button" className={module==='liminar'?'active':''} aria-current={module==='liminar'?'page':undefined} onClick={()=>setModule('liminar')}>Liminar</button>:null}
-      {allowed.encerramentos?<button type="button" className={module==='encerramentos'?'active':''} aria-current={module==='encerramentos'?'page':undefined} onClick={()=>setModule('encerramentos')}>Encerramentos</button>:null}
+      {OPERATION_MODULES.filter(item => allowed[item.id]).map(item => <button key={item.id} type="button" className={module === item.id ? 'active' : ''} aria-current={module === item.id ? 'page' : undefined} onClick={() => navigateOperation(item.route)}>{item.label}</button>)}
     </nav>
-    {module==='pagamentos'&&allowed.pagamentos?<PagamentosPage/>:module==='liminar'&&allowed.liminar?<OperacaoLiminarPage/>:module==='encerramentos'&&allowed.encerramentos?<OperacaoEncerramentosPage/>:<div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
+    {module === 'protocolos' ? <>
+      <nav className="operation-context-nav" aria-label="Protocolos">
+        <button type="button" aria-current={!indicators ? 'page' : undefined} onClick={() => navigateOperation('operacao/protocolos')}>Fila de protocolos</button>
+        <button type="button" aria-current={indicators ? 'page' : undefined} onClick={() => navigateOperation('operacao/protocolos/indicadores')}>Indicadores</button>
+      </nav>
+      {indicators ? <MetabaseControladoriaEmbed/> : <ProtocolosPage/>}
+    </> : module === 'defesas' ? <DefesasPage/> : module === 'pagamentos' ? <PagamentosPage/> : module === 'liminar' ? <OperacaoLiminarPage/> : module === 'encerramentos' ? <OperacaoEncerramentosPage/> : <div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
   </div>;
 }

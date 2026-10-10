@@ -2,7 +2,6 @@ import { StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
-import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
@@ -155,7 +154,7 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'protocolo') {
-    setTopModuleActive('protocolo');
+    setTopModuleActive(mayOpen('acordos') ? 'acordos' : 'protocolo');
     return;
   }
   if (activePage.id === 'automacoes') {
@@ -185,9 +184,9 @@ function configureApplicationShell() {
 
   const visiblePages = new Set(['tarefas', 'dashboard', 'acordos', 'protocolo', 'automacoes']);
   const labels: Record<string, string> = {
-    dashboard: 'Analytics',
+    dashboard: 'Resultados',
     acordos: 'Operação',
-    protocolo: 'Controladoria',
+    protocolo: 'Operação',
     automacoes: 'Automações',
     tarefas: 'Tarefas',
   };
@@ -199,7 +198,8 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page) || button === baseDados;
-      const eligible = recognized && Boolean(page) && mayOpen(page);
+      const duplicateOperation = page === 'protocolo' && mayOpen('acordos');
+      const eligible = recognized && !duplicateOperation && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
@@ -299,7 +299,7 @@ function mountProtocolosPage() {
   mount.className = 'protocolos-react-root';
   section.appendChild(mount);
   protocolosRoot = createRoot(mount);
-  protocolosRoot.render(<StrictMode><ControladoriaPage/></StrictMode>);
+  protocolosRoot.render(<StrictMode><OperacaoPage/></StrictMode>);
 }
 
 function unmountProtocolosPage() {

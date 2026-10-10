@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, BarChart3, CheckCircle2, Clock3, MapPinned, RefreshCcw, SearchCheck, UsersRound, Wallet } from 'lucide-react';
 import { BRAZIL_STATES } from './brazilStates';
 import './encerramentos.css';
@@ -50,11 +50,6 @@ const CLASSES = [
 const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   ? ['0–12 meses', '12–24 meses', '>24 meses', 'Sem tag / não reconhecida']
   : ['0–3 meses', '4–10 meses', '>10 meses', 'Sem tag / não reconhecida'];
-const STAFF = [
-  { id: 'demo-gabriel', nome: 'Gabriel', analisados: 43 },
-  { id: 'demo-elias', nome: 'Elias', analisados: 31 },
-  { id: 'demo-gessica', nome: 'Géssica', analisados: 26 },
-];
 const num = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 const money = (value: Numero | undefined) => value == null ? '—' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
 const percent = (value: number) => value.toFixed(1).replace('.', ',') + '%';
@@ -82,66 +77,7 @@ async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
   return api.request<ResumoBennerAnterior>('/api/operacao/encerramentos/resumo-mes-anterior');
 }
 
-/** Números fictícios, calculados exclusivamente na interface de demonstração. */
-function makeDemo(carteira: string, tipo: Tipo, periodo: string, etapa: Etapa, analista: string): Dados {
-  const factor = (periodo === 'mes' ? .16 : periodo === '30' ? .23 : periodo === '90' ? .55 : 1) * (carteira === 'Agibank Enter' ? .72 : 1);
-  const actorFactor = analista === 'todos' ? 1 : analista === 'gabriel' ? .43 : analista === 'elias' ? .31 : .26;
-  const stageFactor = (etapa === 'validados' ? .78 : .47) * actorFactor;
-  const bands = ageBands(carteira);
-  const seed = [
-    { tipo: 'DERROTA_VOLUNTARIA', quantidade: 190 },
-    { tipo: 'DERROTA', quantidade: 476 },
-    { tipo: 'VITORIA', quantidade: 330 },
-    { tipo: 'ACORDO', quantidade: 74 },
-    { tipo: 'EXTINCAO', quantidade: 32 },
-  ];
-  const selected = seed.filter(item => tipo === 'TODOS' || item.tipo === tipo)
-    .map(item => ({ ...item, quantidade: Math.max(1, Math.round(item.quantidade * factor)) }));
-  const classification = selected.filter(item => item.tipo !== 'ACORDO');
-  const found = classification.reduce((sum, row) => sum + row.quantidade, 0);
-  const divided = CLASSES.map(item => ({ tipo: item.tipo, quantidade: selected.find(s => s.tipo === item.tipo)?.quantidade || 0 }));
-  const stageTypes = divided.map(row => ({...row, quantidade: Math.round(row.quantidade * stageFactor)}));
-  const matriz: Matriz[] = stageTypes.flatMap((row, index) => {
-    const weights = [0.3 + index * .016, .33, .30 - index * .012, .07 - index * .004];
-    const numbers = weights.map((weight, i) => i === 3 ? 0 : Math.round(row.quantidade * weight));
-    numbers[3] = Math.max(0, row.quantidade - numbers[0] - numbers[1] - numbers[2]);
-    return bands.map((faixa, i) => ({ tipo: row.tipo, faixa, quantidade: numbers[i] }));
-  });
-  const aging: AgingRow[] = bands.map(faixa => ({ faixa, quantidade: matriz.filter(m => m.faixa === faixa).reduce((v, m) => v + m.quantidade, 0) }));
-  const map: Uf[] = BRAZIL_STATES.map((state, i) => ({
-    uf: state.uf,
-    vitorias: Math.round((stageTypes.find(x => x.tipo === 'VITORIA')?.quantidade || 0) * (5 + (i * 13 % 19)) / 345),
-    derrotas: Math.round((stageTypes[0].quantidade + stageTypes[1].quantidade) * (5 + (i * 7 % 21)) / 390),
-    tkm: 6100 + ((i * 1337) % 9100),
-    amostra: 7 + (i % 16),
-  }));
-  const demoComarcas: Comarca[] = BRAZIL_STATES.map((state,i) => ({
-    comarca: ['Porto Alegre','São Paulo','Campo Grande','Florianópolis','Rio de Janeiro','Salvador'][i] || state.name,
-    uf: state.uf, derrotas: Math.max(1,Math.round((155 - i*4)*factor*stageFactor)),
-  })).sort((a,b) => b.derrotas-a.derrotas);
-  return {
-    carteira, tipo: tipo === 'TODOS' ? null : tipo,
-    indicadores: { consultados: Math.round(found * 1.4), encontrados: found, analisados: 100, ticket_medio: 9356.74, ticket_amostra: 420, aging_medio: 224 },
-    aging, estados: [], analistas: STAFF, classificacoes: classification,
-    distribuicao_tipos: divided, matriz, mapa: map,
-    etapas: {
-      etapa, total: stageTypes.reduce((sum, row) => sum + row.quantidade, 0),
-      tipos: stageTypes, aging, matriz, mapa: map, comarcas: stageTypes[0].quantidade+stageTypes[1].quantidade>0?demoComarcas:[],
-      ticket_medio: 9356.74, ticket_amostra: 36, aging_medio: 224,
-      fonte: 'demonstracao',
-      mensagem: etapa === 'validados' ? 'Validações simuladas' : 'Envios confirmados simulados',
-    },
-    comarcas: stageTypes[0].quantidade+stageTypes[1].quantidade>0?demoComarcas:[],
-    ranking: {faixas: bands.slice(0,3).map((rotulo,i) => ({
-      id: rotulo, rotulo, estoque: [1240,2500,1850][i],
-      meta_percentual: carteira === 'Agibank Regular' ? 5 : [3,4,5][i],
-      meta_quantidade: carteira === 'Agibank Regular' ? [62,125,93][i] : [38,100,93][i],
-    }))},
-    meta_configurada: true,
-  };
-}
-
-function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }: { dados: Dados | null; demo: boolean; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa; resumo: ResumoBennerAnterior | null }) {
+function Metrics({ dados, analista, selectedCount, acordo, etapa, resumo }: { dados: Dados | null; analista: string; selectedCount: number | undefined; acordo: boolean; etapa: Etapa; resumo: ResumoBennerAnterior | null }) {
   const m = dados?.indicadores;
   const accord = dados?.distribuicao_tipos.find(c => c.tipo === 'ACORDO')?.quantidade;
   const stage = dados?.etapas;
@@ -153,15 +89,14 @@ function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }
     { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
-    { icon: CheckCircle2, name: 'Enviados', value: !demo && resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
-    { icon: Activity, name: 'Encerrados', value: !demo && resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
+    { icon: CheckCircle2, name: 'Enviados', value: resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
+    { icon: Activity, name: 'Encerrados', value: resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
   ];
   return <div className="closing-kpis">
     {cards.map(item => <article className="closing-kpi" key={item.name}>
       <div className="closing-kpi-top"><span>{item.name}</span><item.icon size={17} strokeWidth={1.75}/></div>
       <strong>{item.value}</strong><small>{item.sub}</small>
     </article>)}
-    {demo ? null : null}
   </div>;
 }
 
@@ -303,60 +238,78 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
   </section>;
 }
 
+function authorizedClosingPortfolio(): string | null {
+  const shell = window as Window & { MBA_API?: { getPortfolioId?: () => string }; MBA_CURRENT_USER?: { portfolios?: Array<{id: string}> } };
+  const id = shell.MBA_API?.getPortfolioId?.();
+  if (!id || !shell.MBA_CURRENT_USER?.portfolios?.some(item => item.id === id)) return null;
+  return ({ agibank_mba: 'Agibank Regular', agibank_enter: 'Agibank Enter' } as Record<string, string>)[id] || null;
+}
 export function EncerramentosPage() {
-  const [carteira,setCarteira] = useState('Agibank Regular');
+  const [carteira,setCarteira] = useState(authorizedClosingPortfolio);
+  const generation = useRef(0);
+  const [analystOptions, setAnalystOptions] = useState<Analista[]>([]);
+  useEffect(() => {
+    const sync = () => {
+      generation.current += 1;
+      setCarteira(authorizedClosingPortfolio());
+      setDados(null); setResumoBenner(null); setAnalista('todos'); setAnalystOptions([]);
+    };
+    window.addEventListener('mba:portfolio-changed', sync);
+    window.addEventListener('mba:profile-ready', sync);
+    return () => { generation.current += 1; window.removeEventListener('mba:portfolio-changed', sync); window.removeEventListener('mba:profile-ready', sync); };
+  }, []);
   const [tipo,setTipo] = useState<Tipo>('TODOS');
   const [periodo,setPeriodo] = useState('mes');
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
-  const [demo,setDemo] = useState(false);
   const [dados,setDados] = useState<Dados | null>(null);
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refresh = useCallback(async () => {
-    setPending(true);
+    if (!carteira) return;
+    const requestGeneration = ++generation.current;
+    setPending(true); setDados(null); setResumoBenner(null); setError('');
     try {
       const [painel, historico] = await Promise.allSettled([
         loadDashboard(carteira,tipo,periodo,analista,etapa),
         loadResumoBennerAnterior(),
       ]);
-      if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
+      if (generation.current !== requestGeneration) return;
+      if (painel.status === 'fulfilled') {
+        setDados(painel.value); setError('');
+        setAnalystOptions(previous => Array.from(new Map([...previous, ...(painel.value.analistas || []), ...(painel.value.etapas?.analistas || [])].map(item => [item.id, item])).values()));
+      }
       else setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.');
       setResumoBenner(historico.status === 'fulfilled' ? historico.value : null);
-    } finally { setPending(false); }
+    } finally { if (generation.current === requestGeneration) setPending(false); }
   },[carteira,tipo,periodo,analista,etapa]);
   useEffect(() => {void refresh();},[refresh]);
   useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
-  const fake = useMemo(() => makeDemo(carteira,tipo,periodo,etapa,analista),[carteira,tipo,periodo,etapa,analista]);
-  const shown = demo ? fake : dados;
-  const analysts = demo
-    ? STAFF.filter(a=>analista==='todos'||a.id==='demo-'+analista).map(a=>({
-        ...a, analisados: Math.round(a.analisados * (etapa==='validados'?1:.62)),
-      }))
-    : (dados?.etapas?.analistas || dados?.analistas || []);
-  const analysed = demo ? shown?.etapas?.total : shown?.etapas?.total;
+  const shown = dados;
+  const analysts = dados?.etapas?.analistas || dados?.analistas || [];
+  const analysed = shown?.etapas?.total;
+  if (!carteira) return <div className="closing-page-v2"><h1>Encerramentos</h1><p className="closing-nodata">Este painel ainda não está disponível para a carteira selecionada.</p></div>;
 
   return <div className="closing-page-v2">
     <div className="closing-heading">
-      <div><h1>Encerramentos</h1><span>{demo ? 'Visualização de demonstração' : 'Visão da carteira'}</span></div>
+      <div><h1>Encerramentos</h1><span>{carteira === 'Agibank Regular' ? 'Agibank · MBA' : 'Agibank · Enter'}</span></div>
       <div className="closing-heading-actions">
-        <label className="closing-demo-switch"><input type="checkbox" checked={demo} onChange={e=>setDemo(e.target.checked)}/> Demonstração</label>
         <button type="button" className="closing-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
       </div>
     </div>
     <div className="closing-filter-row">
-      <label>Carteira<select value={carteira} onChange={e=>setCarteira(e.target.value)}><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
       <label>Período<select value={periodo} onChange={e=>setPeriodo(e.target.value)}><option value="mes">Mês atual</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option></select></label>
       <label>Etapa<select value={etapa} onChange={e=>setEtapa(e.target.value as Etapa)}>
         <option value="validados">Validados</option>
         <option value="enviados_benner">Enviados ao Benner</option>
       </select></label>
-      <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
+      <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option>{analystOptions.map(item => <option key={item.id} value={item.id}>{item.nome}</option>)}</select></label>
     </div>
-    {!demo && error ? <p className="closing-error" role="alert">{error}</p> : null}
-    <Metrics dados={shown} demo={demo} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
+    {error ? <p className="closing-error" role="alert">{error}</p> : null}
+    {pending ? <p className="closing-nodata" role="status">Consultando resultados da carteira…</p> : null}
+    <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
       <Composition dados={shown} etapa={etapa} periodo={periodo} analista={analista}/>
@@ -365,6 +318,6 @@ export function EncerramentosPage() {
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
       <AnalystsPanel analysts={analysts}/>
     </div>
-    <p className="closing-disclaimer">{demo ? 'Dados demonstrativos — sem impacto na base.' : 'Acordos não integram oportunidades aptas ao encerramento.'}</p>
+    <p className="closing-disclaimer">Acordos não integram oportunidades aptas ao encerramento. Envio ao Benner e baixa efetiva são etapas distintas.</p>
   </div>;
 }
