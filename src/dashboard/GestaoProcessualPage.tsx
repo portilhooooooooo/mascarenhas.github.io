@@ -18,20 +18,27 @@ function getPermissions() {
 
 export function GestaoProcessualPage() {
   const [permissions, setPermissions] = useState(getPermissions);
+  const [, forcePortfolioPolicySync] = useState(0);
   const [activeTab, setActiveTab] = useState<'geral' | 'encerramentos'>(currentAnalyticsTab);
   const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
 
   useEffect(() => {
-    const sync = () => setPermissions(getPermissions());
+    const sync = () => {
+      setPermissions(getPermissions());
+      // canAccess depende da carteira ativa; grants podem manter a mesma referência.
+      forcePortfolioPolicySync(value => value + 1);
+    };
     window.addEventListener('mba:authenticated', sync);
     window.addEventListener('mba:profile-ready', sync);
+    window.addEventListener('mba:portfolio-changed', sync);
     window.addEventListener('mba:logged-out', sync);
     window.addEventListener('mba:session-expired', sync);
     return () => {
       window.removeEventListener('mba:authenticated', sync);
       window.removeEventListener('mba:profile-ready', sync);
+      window.removeEventListener('mba:portfolio-changed', sync);
       window.removeEventListener('mba:logged-out', sync);
       window.removeEventListener('mba:session-expired', sync);
     };
