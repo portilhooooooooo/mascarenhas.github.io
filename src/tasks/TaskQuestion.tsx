@@ -58,7 +58,10 @@ function hasCurrentAnswer(step: HTMLElement | null): boolean {
   const radios = step.querySelectorAll<HTMLInputElement>('input[type="radio"]');
   if (radios.length) return [...radios].some(input => input.checked);
   const dateFields = [...step.querySelectorAll<HTMLInputElement>('input[type="date"]')];
-  if (dateFields.length) return dateFields.some(input => Boolean(input.value));
+  if (dateFields.length) {
+    const mandatory = dateFields.filter(input => input.required);
+    return mandatory.length ? mandatory.every(input => Boolean(input.value)) : dateFields.some(input => Boolean(input.value));
+  }
   const criteria = step.querySelectorAll<HTMLButtonElement>('[aria-pressed="true"]');
   if (criteria.length) return [...criteria].some(button => button.getAttribute('aria-pressed') === 'true');
   const text = step.querySelector<HTMLInputElement | HTMLTextAreaElement>('input:not([type="hidden"]), textarea');
@@ -124,8 +127,13 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
       if (!form || !form.getClientRects().length || !form.closest('.page.active')) return;
       if (event.ctrlKey || event.altKey || event.metaKey || event.isComposing || isEditing(event.target)) return;
       const target = event.target;
-      if (target instanceof HTMLElement && (target.closest('[role="dialog"]') || target.closest('button'))) return;
-      if (target instanceof HTMLElement && target !== document.body && !form.contains(target) && target !== document.documentElement) return;
+      if (target instanceof HTMLElement && target.closest('[role="dialog"]')) return;
+      // Após escolher um processo na fila, o foco continua no botão da fila;
+      // atalhos numéricos devem funcionar ali sem exigir novo clique no formulário.
+      const workspace = form.closest('.task-station');
+      if (target instanceof HTMLElement && target !== document.body && target !== document.documentElement && !workspace?.contains(target)) return;
+      // Preserve a ativação por Enter de botões focados (salvar, pular, fila, navegação).
+      if (event.key === 'Enter' && target instanceof HTMLElement && target.closest('button')) return;
       if (event.key === 'Backspace') {
         event.preventDefault();
         setActiveIndex(index => Math.max(0, index - 1));
