@@ -7,8 +7,6 @@
 .closing-heading h1{font-size:20px;font-weight:700;letter-spacing:-.025em;line-height:1.25;margin:0 0 4px}
 .closing-heading>div>span{font-size:11px;color:var(--closing-muted)}
 .closing-heading-actions{display:flex;align-items:center;gap:15px}
-.closing-demo-switch{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--mba-text-2,#52647d);white-space:nowrap;cursor:pointer}
-.closing-demo-switch input{accent-color:var(--closing-blue);width:14px;height:14px;margin:0}
 .closing-refresh{border:1px solid var(--closing-line);border-radius:7px;color:var(--closing-ink);background:#fff;padding:8px 11px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:11px}
 .closing-refresh:hover{background:var(--mba-blue-soft,#f2f5fb)}
 .closing-refresh:disabled{opacity:.6;cursor:wait}
