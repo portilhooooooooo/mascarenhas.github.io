@@ -304,7 +304,10 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
 }
 
 export function EncerramentosPage() {
-  const [carteira,setCarteira] = useState('Agibank Regular');
+  const [carteira,setCarteira] = useState(() => {
+    const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
+    return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
+  });
   const [tipo,setTipo] = useState<Tipo>('TODOS');
   const [periodo,setPeriodo] = useState('mes');
   const [analista,setAnalista] = useState('todos');
@@ -322,12 +325,17 @@ export function EncerramentosPage() {
         loadResumoBennerAnterior(),
       ]);
       if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
-      else setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.');
+      else { setDados(null); setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.'); }
       setResumoBenner(historico.status === 'fulfilled' ? historico.value : null);
     } finally { setPending(false); }
   },[carteira,tipo,periodo,analista,etapa]);
   useEffect(() => {void refresh();},[refresh]);
   useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
+  useEffect(() => {
+    const onSaved = () => { void refresh(); };
+    window.addEventListener('mba:closing-analysis-saved', onSaved);
+    return () => window.removeEventListener('mba:closing-analysis-saved', onSaved);
+  }, [refresh]);
   const fake = useMemo(() => makeDemo(carteira,tipo,periodo,etapa,analista),[carteira,tipo,periodo,etapa,analista]);
   const shown = demo ? fake : dados;
   const analysts = demo
@@ -346,7 +354,7 @@ export function EncerramentosPage() {
       </div>
     </div>
     <div className="closing-filter-row">
-      <label>Carteira<select value={carteira} onChange={e=>setCarteira(e.target.value)}><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
+      <label>Carteira<select value={carteira} disabled aria-label="Carteira atual autorizada"><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
       <label>Período<select value={periodo} onChange={e=>setPeriodo(e.target.value)}><option value="mes">Mês atual</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option></select></label>
       <label>Etapa<select value={etapa} onChange={e=>setEtapa(e.target.value as Etapa)}>
