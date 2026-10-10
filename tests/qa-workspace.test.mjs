@@ -28,4 +28,11 @@ for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], 
 assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta da API');
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');
 assert.match(style, /\.qa-step\[hidden\]/, 'Somente etapa ativa visível');
+assert.match(questions, /data-qa-last=\{navigation\.canSubmit/, 'Ações refletem a etapa atual');
+assert.match(questions, /!qa\.canSubmit/, 'Salvar fica bloqueado em perguntas intermediárias');
+assert.match(style, /form\[data-qa-last='true'\][^\n]*\.closing-summary/, 'Resultado apenas na etapa final');
+assert.match(style, /form\[data-qa-index='0'\][^\n]*\.qa-context-note/, 'Indício contextual não ocupa todas as perguntas');
+assert.doesNotMatch(renderer, /\|\| task\.title/, 'Título da tarefa não pode ser indício daquele processo');
+assert.match(closing, /Resultado das respostas/, 'Resultado distinguido do indício automático');
+assert.match(closing, /qa-classifier-difference/, 'Divergência de classificação contextualizada');
 console.log('Q&A progressivo: atalhos, cache e gravação explícita verificados.');
