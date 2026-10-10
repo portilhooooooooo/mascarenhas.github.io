@@ -98,6 +98,17 @@ try {
     await assertNoHorizontalOverflow('Login '+w);
     await page.screenshot({path:'.build/spec-ui/login-'+w+'.png',fullPage:true});
   }
+  for(const [w,h] of [[1440,900],[390,844]]) {
+    await page.setViewportSize({width:w,height:h});
+    await page.goto(base+'/results.html');
+    await page.getByRole('heading',{name:/Ranking Agibank/}).waitFor();
+    assert.equal(await page.getByText('Demonstração',{exact:true}).count(),0);
+    await page.getByRole('heading',{name:'Encerramentos'}).waitFor();
+    await page.getByText('Respostas persistidas na mesma fonte das etapas e dos analistas').waitFor();
+    await assertNoHorizontalOverflow('Resultados '+w);
+    await page.screenshot({path:'.build/spec-ui/results-'+w+'.png',fullPage:true});
+  }
+
   assert.deepEqual(errors, [], 'Não pode haver exceções JS em nenhuma das telas');
   console.log('UI: login, A/B/C, fila à esquerda, atribuições, 3 larguras e ausência de overflow validados.');
 } finally {
