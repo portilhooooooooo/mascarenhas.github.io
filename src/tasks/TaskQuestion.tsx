@@ -125,8 +125,20 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
     const handle = (event: KeyboardEvent) => {
       const form = formRef.current;
       if (!form || !form.getClientRects().length || !form.closest('.page.active')) return;
-      if (event.ctrlKey || event.altKey || event.metaKey || event.isComposing || isEditing(event.target)) return;
+      if (event.altKey || event.metaKey || event.isComposing) return;
       const target = event.target;
+      if (isEditing(target)) {
+        // Impede o submit implícito do navegador em campos de data/texto.
+        // Enter avança; em textarea, Enter mantém sua função de nova linha.
+        if (event.key === 'Enter' && target instanceof HTMLInputElement) {
+          event.preventDefault();
+          if (event.ctrlKey || !hasCurrentAnswer(form.querySelector<HTMLElement>('.qa-step:not([hidden])'))) return;
+          if (current < total - 1) setActiveIndex(current + 1);
+          else form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)')?.focus();
+        }
+        return;
+      }
+      if (event.ctrlKey) return;
       if (target instanceof HTMLElement && target.closest('[role="dialog"]')) return;
       // Após escolher um processo na fila, o foco continua no botão da fila;
       // atalhos numéricos devem funcionar ali sem exigir novo clique no formulário.
