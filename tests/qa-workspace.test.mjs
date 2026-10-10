@@ -12,6 +12,12 @@ const renderer = read('src/tasks/renderers.tsx');
 const style = read('src/tasks/qaWorkspace.css');
 
 assert.match(shell, /mba-qa-v1:.*activeItem\.task\.id.*activeItem\.process\.id/, 'Rascunho isolado por tarefa/processo');
+assert.match(shell, /<SelectMenu label="Tipo de tarefa" value=\{selectedType\} options=\{typeOptions\}/, 'Filtro de fila seleciona tipo de tarefa');
+assert.match(shell, /normalize\(item\.task\.type\) !== selectedType/, 'Filtro aplica tipo nas linhas da fila');
+assert.match(shell, /relevantTasks\.map\(task => normalize\(task\.type\)\)/, 'Tipos provêm das tarefas disponíveis na carteira');
+assert.doesNotMatch(shell, /selectedDeadline|deadlineOptions|<SelectMenu label="Prazo"/, 'Filtro de prazo foi substituído');
+assert.match(read('src/tasks/model.ts'), /encerramento: 'Fluxo de Encerramento'/, 'Encerramentos são apresentados como fluxo');
+
 for (const name of ['ClosingRenderer', 'DefenseRenderer', 'LiminarRenderer', 'PaymentRenderer']) {
   assert.match(shell, new RegExp('<' + name + '.*draftKey=\\{qaDraftKey\\}'), name + ' recebe cache');
 }
