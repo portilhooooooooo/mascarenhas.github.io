@@ -219,11 +219,13 @@ export function PaymentRenderer({ api, process, draftKey = '', onCompleted, onSk
       ) : null}
 
       {paymentStatus === 'pago' && paidReceipt === 'com_comprovante' && manifested === 'false' ? (
-        <label className="task-text-field">
-          <span>Justificativa <b>(obrigatório)</b></span>
-          <textarea value={manifestationReason} maxLength={2000} rows={3} disabled={busy} onChange={event => setManifestationReason(event.target.value)} placeholder="Informe por que o comprovante ainda não foi manifestado nos autos..." />
-          <em>{manifestationReason.length}/2000</em>
-        </label>
+        <TaskQuestion number="4" question="Por que o comprovante ainda não foi apresentado nos autos?">
+          <label className="task-text-field">
+            <span>Justificativa <b>(obrigatório)</b></span>
+            <textarea required value={manifestationReason} maxLength={2000} rows={3} disabled={busy} onChange={event => setManifestationReason(event.target.value)} placeholder="Informe por que o comprovante ainda não foi manifestado nos autos..." />
+            <em>{manifestationReason.length}/2000</em>
+          </label>
+        </TaskQuestion>
       ) : null}
 
       {paymentStatus === 'nao_pago' ? (
@@ -245,7 +247,7 @@ export function PaymentRenderer({ api, process, draftKey = '', onCompleted, onSk
         </TaskQuestion>
       ) : null}
 
-      <TaskQuestion number={paymentStatus === 'pago' && paidReceipt === 'com_comprovante' || paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? '4' : paymentStatus ? '3' : '2'} question="Houve bloqueio relacionado ao pagamento?">
+      <TaskQuestion number={paymentStatus === 'pago' && manifested === 'false' && paidReceipt === 'com_comprovante' ? '5' : paymentStatus === 'pago' && paidReceipt === 'com_comprovante' || paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? '4' : paymentStatus ? '3' : '2'} question="Houve bloqueio relacionado ao pagamento?">
         <OptionGroup name="had-block" value={hadBlock} onChange={setHadBlock} disabled={busy} options={[
           { value: 'true', label: 'Sim', description: 'Foi identificado bloqueio relacionado' },
           { value: 'false', label: 'Não', description: 'Não foi identificado bloqueio' },
