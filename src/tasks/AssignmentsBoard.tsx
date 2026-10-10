@@ -26,6 +26,8 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   const activeTasks = useMemo(() => tasks.filter(isTaskActive), [tasks]);
   const types = useMemo(() => Array.from(new Set(activeTasks.map(item => normalize(item.type)))).filter(Boolean).sort(), [activeTasks]);
   const visibleTasks = useMemo(() => type === 'all' ? activeTasks : activeTasks.filter(item => normalize(item.type) === type), [activeTasks, type]);
+  const visibleTaskKey = visibleTasks.map(task => task.id).join(',');
+  const typeKey = types.join(',');
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +66,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
       }
     });
     return () => { cancelled = true; };
-  }, [api, visibleTasks, refresh]);
+  }, [api, visibleTaskKey, refresh]);
 
   useEffect(() => {
     if (!canAssign || !types.length) return;
@@ -79,7 +81,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
     };
     void request();
     return () => { cancelled = true; };
-  }, [api, types, canAssign]);
+  }, [api, typeKey, canAssign]);
 
   const nameOf = (row: Row): string => {
     const id = String(row.process.assignee_id || '');
