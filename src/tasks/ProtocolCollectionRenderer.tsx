@@ -125,6 +125,10 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const generations = useRef<Record<DocumentKind, number>>({ defesa: 0, protocolo: 0 });
+  // Somente um clique/ativação real no botão Salvar e próximo autoriza a gravação.
+  // Enter em opções de resposta não deve provocar submit implícito do navegador.
+  const saveIntent = useRef(false);
+  const submitting = useRef(false);
 
   useEffect(() => {
     const cached: Draft = { ...(draftCache.get(process.id) || emptyDraft()), mode: null, reason: null, notes: '' };
@@ -182,6 +186,8 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!saveIntent.current || submitting.current || busy) return;
+    saveIntent.current = false;
     setError(null);
 
     if (draft.mode === null) { setError('Informe se consegue anexar os documentos.'); return; }
@@ -190,6 +196,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
         setError('Selecione o motivo do erro.');
         return;
       }
+      submitting.current = true;
       setBusy(true);
       try {
         const clientActionAt = recordActionMetric('error', process.id);
@@ -206,6 +213,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
       } catch (cause: any) {
         setError(cause?.message || 'Não foi possível registrar o erro.');
       } finally {
+        submitting.current = false;
         setBusy(false);
       }
       return;
@@ -216,6 +224,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
       return;
     }
 
+    submitting.current = true;
     setBusy(true);
     try {
       const clientActionAt = recordActionMetric('save', process.id);
@@ -228,6 +237,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível concluir a coleta.');
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };
@@ -252,7 +262,20 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
   const documentsReady = draft.defesaStage === 'ready' && draft.protocoloStage === 'ready';
 
   return (
-    <TaskForm className="task-renderer-form protocol-collection-form" onSubmit={submit}>
+    <TaskForm
+      className="task-renderer-form protocol-collection-form"
+      onSubmit={submit}
+      onKeyDownCapture={event => {
+        if (event.key !== 'Enter' || event.isComposing) return;
+        const target = event.target;
+        // Botões continuam acessíveis via Enter (inclusive Salvar/Pular).
+        // Em radio, texto e demais campos, bloqueia o submit implícito.
+        if (target instanceof HTMLElement && target.closest('button')) return;
+        if (target instanceof HTMLTextAreaElement) return;
+        if (target instanceof HTMLInputElement && target.type === 'file') return;
+        event.preventDefault();
+      }}
+    >
       <div className="protocol-collection-content">
         <TaskQuestion number="01" question="Você consegue anexar a defesa e o protocolo na tarefa abaixo?"><OptionGroup name="protocol-can-attach" value={draft.mode === null ? null : draft.mode === 'documents' ? 'sim' : 'nao'} onChange={value => patchDraft({mode: value === 'sim' ? 'documents' : 'error', reason: null, notes: ''})} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]} disabled={busy}/></TaskQuestion>
         {draft.mode === 'documents' ? (
@@ -294,7 +317,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
         {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
       </div>
 
-      <TaskActionBar busy={busy} onSkip={() => void skip()} ready={draft.mode === 'documents' ? documentsReady : draft.mode === 'error' && Boolean(draft.reason)}/>
+      <TaskActionBar busy={busy} onSkip={() => void skip()} onSaveIntent={() => { saveIntent.current = true; }} ready={draft.mode === 'documents' ? documentsReady : draft.mode === 'error' && Boolean(draft.reason)}/>
     </TaskForm>
   );
 }
