@@ -266,7 +266,7 @@ export function ProtocolCollectionRenderer({ api, process, onCompleted, onSkippe
       className="task-renderer-form protocol-collection-form"
       onSubmit={submit}
       onKeyDownCapture={event => {
-        if (event.key !== 'Enter' || event.isComposing) return;
+        if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
         const target = event.target;
         // Botões continuam acessíveis via Enter (inclusive Salvar/Pular).
         // Em radio, texto e demais campos, bloqueia o submit implícito.
