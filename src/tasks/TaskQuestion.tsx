@@ -3,12 +3,16 @@ import {
   type FormHTMLAttributes, type ReactNode,
 } from 'react';
 
+type QaNavigationValue = { advance: () => void; canSubmit: boolean };
+const QaNavigation = createContext<QaNavigationValue | null>(null);
+
 export function TaskQuestion({ number, question, children }: { number: string; question: string; children: ReactNode }) {
   return <section className="task-question"><h3><span className="task-question-number">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
 
 export function TaskActionBar({ busy, ready = true, onSkip, skipLabel = 'Pular esse prazo' }: { busy: boolean; ready?: boolean; onSkip: () => void; skipLabel?: string }) {
-  return <footer className="task-renderer-footer"><button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>{skipLabel}</button><button className="primary-button" type="submit" disabled={busy || !ready}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>;
+  const qa = useContext(QaNavigation);
+  return <footer className="task-renderer-footer"><button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>{skipLabel}</button><button className="primary-button" type="submit" disabled={busy || !ready || (qa !== null && !qa.canSubmit)}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>;
 }
 
 type Option = { value: string; label: string; description?: string };
@@ -16,11 +20,10 @@ type OptionGroupProps = {
   name: string; value: string | null; onChange: (value: string) => void;
   options: Option[]; disabled?: boolean;
 };
-const QaNavigation = createContext<(() => void) | null>(null);
 
 export function OptionGroup({ name, value, onChange, options, disabled = false }: OptionGroupProps) {
   const columns = options.length === 5 ? 3 : Math.min(Math.max(options.length, 2), 4);
-  const advance = useContext(QaNavigation);
+  const advance = useContext(QaNavigation)?.advance;
   return (
     <div className={'task-option-grid task-option-grid-' + columns} role="radiogroup" aria-label={name}>
       {options.map((option, index) => (
@@ -173,19 +176,16 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
   }, [current, total]);
 
   let questionIndex = -1;
-  return <form {...props} ref={formRef} data-qa-progressive="true">
+  const navigation: QaNavigationValue = {
+    advance: () => setAdvanceTicket(ticket => ticket + 1),
+    canSubmit: total > 0 && current === total - 1,
+  };
+  return <form {...props} ref={formRef} data-qa-progressive="true" data-qa-last={navigation.canSubmit ? 'true' : 'false'}>
     <div className="qa-progress-header">
-      <strong>Etapa {String(current + 1).padStart(2, '0')}</strong>
-      <div className="qa-progress-points" aria-label="Etapas disponíveis">
-        {questions.map((_, index) => <button key={index} type="button"
-          className={index === current ? 'active' : index < current ? 'complete' : ''}
-          aria-label={'Ir para a etapa ' + (index + 1)} aria-current={index === current ? 'step' : undefined}
-          disabled={index > current}
-          onClick={() => setActiveIndex(index)}>{index + 1}</button>)}
-      </div>
-      <span className="qa-unsaved-state">Rascunho local · não enviado</span>
+      <strong>Pergunta {String(current + 1).padStart(2, '0')}</strong>
+      <span className="qa-unsaved-state">Rascunho não enviado</span>
     </div>
-    <QaNavigation.Provider value={() => setAdvanceTicket(ticket => ticket + 1)}>
+    <QaNavigation.Provider value={navigation}>
       <div className="task-form-content qa-form-content">
         {content.map((child, index) => {
           if (isValidElement(child) && child.type === TaskQuestion) {
@@ -203,7 +203,7 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
         <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> Avançar</span>
         <button type="button" onClick={next} disabled={total < 2 || current === total - 1}>Próxima <kbd>Enter</kbd> →</button>
       </nav>
-      {actions}
+      <QaNavigation.Provider value={navigation}>{actions}</QaNavigation.Provider>
     </div>
   </form>;
 }
