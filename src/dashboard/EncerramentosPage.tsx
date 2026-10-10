@@ -19,6 +19,7 @@ type Dados = {
   carteira: string;
   tipo: string | null;
   indicadores: Indicadores;
+  analises_humanas?: { total: number; aptos: number; inaptos: number; revisao: number; outros: number; fonte: string };
   aging: AgingRow[];
   estados: Array<{ uf: string; perdas: number; amostra: number; ticket_medio: Numero; faixa: string }>;
   analistas: Analista[];
@@ -150,9 +151,11 @@ function Metrics({ dados, demo, analista, selectedCount, acordo, etapa, resumo }
     : 'mês anterior';
   const cards = [
     { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados · Indícios DataJud' : 'Sem dados' },
+    { icon: UsersRound, name: 'Analisados', value: dados?.analises_humanas ? num(dados.analises_humanas.total) : '—', sub: 'Respostas registradas pelos analistas no período' },
     { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
+    { icon: Activity, name: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', sub: 'Discordâncias aguardando validação' },
     { icon: CheckCircle2, name: 'Enviados', value: !demo && resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
     { icon: Activity, name: 'Encerrados', value: !demo && resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
   ];
