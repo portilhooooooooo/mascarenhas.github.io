@@ -1,0 +1,38 @@
+name: Spec Driven Product Checks
+on:
+  push:
+    branches:
+      - feature/spec-driven-product-20261010
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  spec-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Contract and hardening tests
+        run: |
+          node --test tests/spec-product.test.mjs
+          npm run test:hardening
+          npm run test:metabase
+      - name: Type check and production build
+        run: npm run build
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Responsive UI checks
+        run: node tests/spec-product-ui.mjs
+      - name: Capture UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spec-ui-screenshots
+          path: .build/spec-ui
+          if-no-files-found: ignore
