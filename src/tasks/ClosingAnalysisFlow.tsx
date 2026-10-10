@@ -234,9 +234,9 @@ export function ClosingAnalysisFlow({
   return <TaskForm className="closing-flow" onSubmit={submit}>
     <section className={'closing-outcome closing-summary ' +
       (outcome?.startsWith('apto_') ? 'positive' : outcome ? 'negative' : 'neutral')} aria-live="polite">
-      <span>Classificação final prevista</span>
+      <span>Resultado preliminar</span>
       <strong>{outcome ? OUTCOME_LABELS[outcome] : 'Aguardando validação das respostas'}</strong>
-      {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
+      {reopenAt ? <small>Reanálise prevista em {formatDate(reopenAt)}.</small> : null}
       {!outcome && classifierClassification ? <small>Indício do classificador: {classifierClassification}</small> : null}
     </section>
 
@@ -318,7 +318,7 @@ export function ClosingAnalysisFlow({
           }} />
         {outcome === 'inapto_aguardando_transito_60d' ? <p className="closing-inline-note">
           Derrota Voluntária exige 60 dias após o trânsito.
-          Reanálise em {formatDate(reopenAt)}.
+          Reanálise prevista em {formatDate(reopenAt)}.
         </p> : null}
       </TaskQuestion> : null}
 

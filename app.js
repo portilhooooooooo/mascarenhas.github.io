@@ -32,6 +32,11 @@ const pageRoutes = Object.freeze({
   'sem-acesso': 'sem-acesso',
 });
 const nestedPageRoutes = Object.freeze({
+  'operacao/liminar': 'acordos',
+  'operacao/encerramentos': 'acordos',
+  'operacao/protocolos': 'protocolo',
+  'operacao/defesas': 'protocolo',
+  'operacao/protocolos/indicadores': 'protocolo',
   'analytics/encerramentos': 'dashboard',
   'controladoria/defesas': 'protocolo',
   'controladoria/indicadores': 'protocolo',
@@ -68,7 +73,9 @@ function resolvePageRoute(route) {
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
-  if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
+  if (route === 'operacao/liminar' && window.MBA_PORTFOLIO_POLICY?.canAccess('tutelas') !== true) return false;
+  if (route === 'operacao/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
+    if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
     return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
@@ -79,7 +86,12 @@ function publishRoute(route, pageId, replace = false) {
   const target = routeUrl(route);
   const current = window.MBA_LOCAL_PREVIEW ? location.hash : location.pathname;
   if (current !== target) history[replace ? 'replaceState' : 'pushState']({ pageId }, '', target);
+  lastPublishedRoute = route;
   window.dispatchEvent(new CustomEvent('mba:route-changed', { detail: { route, pageId } }));
+}
+let lastPublishedRoute = routeFromLocation();
+function confirmTaskNavigation(route) {
+  return route === lastPublishedRoute || window.MBA_CONFIRM_TASK_LEAVE?.() !== false;
 }
 function authorizedPageId(pageId) {
   if (pageId === 'sem-acesso') return pageId;
@@ -88,15 +100,18 @@ function authorizedPageId(pageId) {
 }
 function showPage(pageId, updateRoute = true) {
   pageId = authorizedPageId(pageId);
+  if (updateRoute && !confirmTaskNavigation(pageRoutes[pageId] || 'sem-acesso')) return false;
   pages.forEach(page => page.classList.toggle('active', page.id === pageId));
   navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
   if (updateRoute) publishRoute(pageRoutes[pageId] || 'sem-acesso', pageId);
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  return true;
 }
 window.showPage = showPage;
 function navigateRoute(route) {
   const match = resolvePageRoute(String(route || '').replace(/^\/+|\/+$/g, ''));
   if (!match || !window.MBA_CURRENT_USER) return false;
+  if (!confirmTaskNavigation(match.canonical)) return false;
   if (!canAccessRoute(match.pageId, match.canonical)) {
     showPage('sem-acesso');
     return false;
@@ -109,6 +124,10 @@ window.MBA_NAVIGATE = navigateRoute;
 function restorePageRoute() {
   if (!window.MBA_CURRENT_USER) return false;
   const route = routeFromLocation();
+  if (!confirmTaskNavigation(route)) {
+    history.replaceState({}, '', routeUrl(lastPublishedRoute));
+    return true;
+  }
   // Entradas antigas (/home), raiz e URLs de acesso negado retornam ao primeiro módulo autorizado.
   if (!route || route === 'home' || route === 'sem-acesso') {
     const landing = ['tarefas', 'dashboard', 'acordos', 'protocolo', 'automacoes', 'usuarios', 'configuracoes', 'tutelas', 'encerramentos', 'pagamentos']

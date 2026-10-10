@@ -197,7 +197,7 @@
     if (typeof originalShowPage === 'function' && !originalShowPage.__mbaLazyWrapped) {
       const wrapped = function(pageId, updateRoute = true) {
         const result = originalShowPage(pageId, updateRoute);
-        queueMicrotask(() => dispatchModuleAuthentication(pageId));
+        if (result !== false) queueMicrotask(() => dispatchModuleAuthentication(pageId));
         return result;
       };
       wrapped.__mbaLazyWrapped = true;
@@ -387,6 +387,7 @@
   };
 
   document.getElementById('logout-button')?.addEventListener('click', async () => {
+    if (window.MBA_CONFIRM_TASK_LEAVE?.() === false) return;
     try {
       await window.MBA_API.request('/auth/session', { method: 'DELETE' });
     } catch (_) {

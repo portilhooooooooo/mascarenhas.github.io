@@ -99,8 +99,9 @@ export function PortfolioSwitcher() {
 
   const switchTo = (nextId: string) => {
     if (!authorized.has(nextId) || !options.some(option => option.id === nextId)) return;
-    setOpen(false);
     if (nextId === active.id) return;
+    if (window.MBA_CONFIRM_TASK_LEAVE?.() === false) return;
+    setOpen(false);
     shellWindow.MBA_API?.setPortfolioId?.(nextId);
     // Reloads all modules, permissions and API caches in the new portfolio context.
     window.location.reload();

@@ -9,3 +9,26 @@
 @media(max-width:760px){.tasks-renderer-card.execution-card>header{flex-wrap:wrap}.execution-brief dl>div,.execution-review dl>div{grid-template-columns:1fr;gap:3px}.execution-card .task-renderer-footer{position:static;flex-wrap:wrap;bottom:auto}.execution-footer-hint{display:none}.execution-card .defesa-flow-question{grid-template-columns:1fr}.execution-card .task-option-grid{grid-template-columns:1fr!important}.execution-card .task-renderer-footer button{flex:1}.execution-card .task-question h3{font-size:14px}}
 .defesa-deadline-reference{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;background:#f3f6fa;border-radius:6px;font-size:12px;color:#52647d}.defesa-deadline-reference strong{color:#0f1f3d}.defesa-deadline-reference small{margin-left:auto;color:#8190a5;font-size:11px}
 .execution-card .primary-button:disabled{opacity:.5;cursor:not-allowed}.execution-card .task-renderer-footer button:disabled{cursor:not-allowed}
+
+/* Process inspection stays in the existing card; opening it never remounts Q&A. */
+#tarefas .execution-context {
+  flex:none; min-height:32px; max-height:28%; overflow:auto;
+  margin:0 20px; padding:8px 0;
+  color:var(--mba-text-2); font-size:12px;
+  border-bottom:1px solid var(--mba-border);
+}
+#tarefas .execution-context summary {cursor:pointer;font-weight:500;width:fit-content;line-height:1.5}
+#tarefas .execution-context summary:focus-visible {outline:2px solid var(--mba-accent,var(--mba-blue));outline-offset:3px}
+#tarefas .execution-context dl {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;margin:12px 0 4px}
+#tarefas .execution-context dl>div {min-width:0}
+#tarefas .execution-context dt {font-size:11px;color:var(--mba-text-2);margin-bottom:3px}
+#tarefas .execution-context dd {margin:0;color:var(--mba-text);overflow-wrap:anywhere;line-height:1.5}
+#tarefas .execution-context dd small {display:block;font-size:11px;color:var(--mba-text-2);margin-top:3px}
+#tarefas .execution-save-state {flex:none;padding:8px 20px 0;color:var(--mba-text-2);font-size:11px;line-height:1.4}
+#tarefas .station-update-state {flex:none;min-height:17px;padding:0 4px;color:var(--mba-text-2);font-size:11px;line-height:1.5}
+#tarefas .tasks-results .secondary-button {margin-top:12px}
+@media(max-width:760px) {
+  #tarefas .execution-context {margin-inline:14px;max-height:24%}
+  #tarefas .execution-context dl {grid-template-columns:minmax(0,1fr)}
+  #tarefas .execution-save-state {padding-inline:14px}
+}
