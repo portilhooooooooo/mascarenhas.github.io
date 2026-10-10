@@ -148,40 +148,17 @@
   font: 600 10px/1 Inter,system-ui,sans-serif;
 }
 
-/* Resultado apenas depois da última resposta, sem card verde e sem risco de confundí-lo com a sugestão do classificador. */
-#tarefas[data-react-tasks='true'] .task-station .qa-form-content .closing-summary { display: none; }
-#tarefas[data-react-tasks='true'] .task-station form[data-qa-last='true'] .qa-form-content .closing-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 5px 12px;
-  order: 3;
-  padding: 11px 0 0;
-  margin: 2px auto 0;
-  max-width: 760px;
-  background: transparent;
+/* A confirmação é a última pergunta do próprio Q&A, não um card de resultado. */
+#tarefas[data-react-tasks='true'] .task-station .qa-step .closing-inline-note {
+  margin-top: 12px;
+  padding: 9px 12px;
   border: 0;
-  border-top: 1px solid var(--qa-edge);
+  border-left: 2px solid var(--qa-accent);
   border-radius: 0;
-  box-shadow: none;
-  color: var(--qa-ink);
-}
-#tarefas[data-react-tasks='true'] .task-station .closing-summary > span {
-  font: 500 11px/1.4 Inter,system-ui,sans-serif;
-  letter-spacing: 0;
-  text-transform: none;
+  background: var(--mba-subtle, #f3f4f5);
   color: var(--qa-muted);
+  font: 450 12px/1.5 Inter,system-ui,sans-serif;
 }
-#tarefas[data-react-tasks='true'] .task-station .closing-summary > strong {
-  font: 600 12px/1.45 Inter,system-ui,sans-serif;
-  color: var(--qa-ink);
-}
-#tarefas[data-react-tasks='true'] .task-station .closing-summary > small {
-  flex-basis: 100%;
-  font: 450 11px/1.4 Inter,system-ui,sans-serif;
-  color: var(--qa-muted);
-}
-#tarefas[data-react-tasks='true'] .task-station .closing-summary .qa-classifier-difference { color: var(--qa-accent); }
 #tarefas[data-react-tasks='true'] .task-station .qa-form-content .task-renderer-error {
   order: 4;
   max-width: 760px;
