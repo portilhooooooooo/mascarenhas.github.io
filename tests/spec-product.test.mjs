@@ -64,6 +64,8 @@ test('Results visibility synchronizes with portfolio changes', () => {
   assert.match(auth, /window\.MBA_PORTFOLIO_POLICY\?\.canAccess\(pageId, user\) === true/);
   assert.match(results, /mba:portfolio-changed', sync/);
   assert.match(results, /forcePortfolioPolicySync/);
+  assert.match(results, /const displayedTab = activeTab === 'encerramentos' && canViewClosing/);
+  assert.doesNotMatch(results, /if \(!canViewClosing && activeTab === 'encerramentos'\) setActiveTab\('geral'\)/);
 });
 test('protocol requires actual Save activation, not implicit form submit', () => {
   const protocol = read('src/tasks/ProtocolCollectionRenderer.tsx');
