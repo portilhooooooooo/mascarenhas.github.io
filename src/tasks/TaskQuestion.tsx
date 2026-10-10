@@ -6,7 +6,7 @@ import {
 type QaNavigationValue = { canSubmit: boolean };
 const QaNavigation = createContext<QaNavigationValue | null>(null);
 
-export function TaskQuestion({ number, question, children }: { number: string; question: string; children: ReactNode }) {
+export function TaskQuestion({ number, question, children }: { number: string; question: string; stage?: string; children: ReactNode }) {
   return <section className="task-question"><h3><span className="task-question-number">{number.padStart(2, '0')}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
 
@@ -82,9 +82,10 @@ function isEditing(element: EventTarget | null): boolean {
 type TaskFormProps = FormHTMLAttributes<HTMLFormElement> & {
   progressive?: boolean;
   draftKey?: string;
+  stages?: readonly string[];
 };
 
-function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProps) {
+function ProgressiveTaskForm({ children, draftKey = '', stages, ...props }: TaskFormProps) {
   const nodes = flattenNodes(children);
   const questions = nodes.filter(child => isValidElement(child) && child.type === TaskQuestion);
   const actions = nodes.filter(child => isValidElement(child) && child.type === TaskActionBar);
@@ -93,6 +94,12 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
   const formRef = useRef<HTMLFormElement>(null);
   const total = questions.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
+  const questionStages = questions.map(child => (child.props as { stage?: string }).stage || '');
+  const activeStage = questionStages[current] || '';
+  const completedStages = new Set(stages?.filter(stage =>
+    questionStages.includes(stage) &&
+    questionStages.every((value, index) => value !== stage || index < current)
+  ) || []);
 
   useEffect(() => {
     setActiveIndex(index => Math.min(index, Math.max(0, total - 1)));
@@ -181,7 +188,14 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
   };
   return <form {...props} ref={formRef} data-qa-progressive="true" data-qa-last={navigation.canSubmit ? 'true' : 'false'} data-qa-index={current}>
     <div className="qa-progress-header">
-      <strong>Pergunta {String(current + 1).padStart(2, '0')}</strong>
+      <div className="qa-progress-title">
+        <strong>{activeStage || 'Pergunta'} · {String(current + 1).padStart(2, '0')} de {String(total).padStart(2, '0')}</strong>
+        {stages?.length ? <div className="qa-stage-track" aria-label="Progresso do fluxo">
+          {stages.map(stage => <div className={'qa-stage-segment ' + (stage === activeStage ? 'active' : completedStages.has(stage) ? 'complete' : 'pending')} key={stage} aria-current={stage === activeStage ? 'step' : undefined}>
+            <span className="qa-stage-bar"/><small>{stage}</small>
+          </div>)}
+        </div> : null}
+      </div>
       <span className="qa-unsaved-state">Rascunho não enviado</span>
     </div>
     <QaNavigation.Provider value={navigation}>
