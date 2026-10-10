@@ -1,0 +1,160 @@
+/* Estação Q&A: uma pergunta por vez, sem contexto lateral ou novo endpoint. */
+#tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] {
+  --qa-accent: var(--mba-blue, #a44b28);
+  --qa-soft: var(--mba-blue-soft, #f9eee9);
+  --qa-edge: var(--mba-border, #e3e6e8);
+  --qa-ink: var(--mba-text, #25292c);
+  --qa-muted: var(--mba-text-2, #657078);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+  background: var(--mba-surface, #fff);
+  color: var(--qa-ink);
+}
+#tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .qa-progress-header {
+  flex: none;
+  min-height: 61px;
+  padding: 13px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px;
+  border-bottom: 1px solid var(--qa-edge);
+}
+.qa-progress-header > strong { font-size: 11px; font-weight: 650; letter-spacing: .03em; white-space: nowrap; }
+.qa-progress-points { display: flex; gap: 6px; align-items: center; min-width: 0; overflow: auto; scrollbar-width: thin; }
+.qa-progress-points button {
+  font: 600 11px/1 system-ui,sans-serif;
+  width: 25px; height: 25px; flex: 0 0 25px;
+  border: 1px solid var(--qa-edge);
+  border-radius: 50%;
+  color: var(--qa-muted);
+  background: transparent;
+  cursor: pointer;
+}
+.qa-progress-points button.active { background: var(--qa-accent); color: #fff; border-color: var(--qa-accent); }
+.qa-progress-points button.complete { color: var(--qa-accent); border-color: var(--qa-accent); }
+.qa-progress-points button:disabled { cursor: default; opacity: .55; }
+.qa-unsaved-state { margin-left: auto; font-size: 11px; color: var(--qa-muted); white-space: nowrap; }
+#tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .task-form-content.qa-form-content {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: clamp(18px, 3vh, 35px) clamp(18px, 3.5vw, 56px);
+  overflow-y: auto;
+  align-items: stretch;
+  gap: 22px;
+}
+.qa-form-content > * { width: 100%; max-width: 920px; flex: none; }
+.qa-form-content .qa-step[hidden] { display: none !important; }
+.qa-form-content .qa-context-note {
+  padding: 15px 18px;
+  border-left: 3px solid var(--qa-accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--qa-soft);
+  color: var(--qa-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.5;
+}
+.qa-context-note strong { font-size: 13px; font-weight: 630; }
+.qa-context-note small { font-size: 11px; color: var(--qa-muted); line-height: 1.5; }
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-question { padding: 4px 0 10px; border: 0; gap: 18px; }
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-question h3 {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1.27;
+  margin: 0;
+}
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-question-number {
+  display: none;
+}
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-grid {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  gap: 10px;
+}
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card > span {
+  position: relative;
+  min-height: 63px;
+  height: auto;
+  padding: 15px 17px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 9px;
+  background: var(--mba-surface, #fff);
+  border: 1px solid var(--qa-edge);
+  color: var(--qa-ink);
+  box-shadow: none;
+  transition: border-color 110ms ease, background 110ms ease;
+}
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card input:checked + span {
+  background: var(--qa-soft);
+  border-color: var(--qa-accent);
+  box-shadow: inset 2px 0 var(--qa-accent);
+}
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card > span:hover { border-color: var(--qa-accent); }
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card strong { font-size: 14px; font-weight: 550; color: var(--qa-ink); }
+#tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card small { display: block; font-size: 11px; font-weight: 400; color: var(--qa-muted); }
+.qa-option-key, .qa-keyboard-nav kbd {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  min-width: 28px;
+  height: 28px;
+  border: 1px solid var(--qa-edge);
+  border-radius: 6px;
+  background: var(--mba-subtle, #f5f5f5);
+  color: var(--qa-ink);
+  font: 600 12px/1 system-ui,sans-serif;
+}
+.qa-footer { flex: none; width: 100%; border-top: 1px solid var(--qa-edge); background: var(--mba-surface, #fff); }
+.qa-keyboard-nav { min-height: 47px; padding: 4px 28px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--qa-edge); }
+.qa-keyboard-nav > span { margin: 0 auto; font-size: 11px; color: var(--qa-muted); display: flex; align-items: center; gap: 8px; }
+.qa-keyboard-nav kbd { width: auto; min-width: 25px; height: 24px; padding: 0 7px; font-size: 10px; }
+.qa-keyboard-nav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--qa-ink);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 8px;
+}
+.qa-keyboard-nav button:disabled { opacity: .35; cursor: default; }
+#tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .qa-footer .task-renderer-footer {
+  margin: 0;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 11px 28px;
+  display: flex;
+  justify-content: space-between;
+}
+.qa-form-content .closing-summary { order: 3; max-width: 760px; }
+html[data-mba-theme='lua'] .qa-context-note,html[data-mba-theme='lua'] .qa-option-key,html[data-mba-theme='lua'] .qa-keyboard-nav kbd { color: var(--mba-text); }
+@media (max-width: 760px) {
+  #tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .qa-progress-header { padding: 9px 15px; gap: 9px; }
+  #tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .task-form-content.qa-form-content { padding: 18px 15px; }
+  #tarefas[data-react-tasks='true'] .task-station .qa-step .task-question h3 { font-size: 19px; }
+  .qa-keyboard-nav { padding: 4px 15px; }
+  .qa-keyboard-nav > span { display: none; }
+  #tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .qa-footer .task-renderer-footer { padding: 10px 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card > span { transition: none; }
+}
