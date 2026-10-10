@@ -16,13 +16,21 @@ jobs:
   zap-passive:
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - name: production
+            url: https://backoffice.mba-advogados.workers.dev/
+          - name: staging
+            url: https://local.portilhobackoffice.site/
     steps:
       - uses: actions/checkout@v4
-      - name: Passive only, unauthenticated, one-minute discovery
+      - name: Passive only; no authenticated or active attacks
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: https://local.portilhobackoffice.site/
+          target: ${{ matrix.site.url }}
           cmd_options: '-m 1 -T 2'
           allow_issue_writing: false
           fail_action: false
-          artifact_name: owasp-zap-baseline
+          artifact_name: owasp-zap-${{ matrix.site.name }}
