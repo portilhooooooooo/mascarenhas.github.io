@@ -54,7 +54,7 @@ export interface WorkItem {
 }
 
 export const TASK_TYPE_LABELS: Record<string, string> = {
-  comprovante_pagamento: 'Validação de Comprovante',
+  comprovante_pagamento: 'Validação de Pagamento',
   liminar: 'Validação de Liminar',
   acordos: 'Saneamento de Acordos',
   // Fluxos agrupam várias etapas operacionais em uma única análise.
