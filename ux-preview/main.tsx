@@ -18,6 +18,7 @@ const defaultTasks = [
   {id:'demo-defesa',type:'defesa',title:'Análise de defesas',source:'automation',priority:'medium',status:'pending',total_processes:6,completed_processes:0,deadline_at:'2026-10-15T16:00:00-04:00'},
 ];
 const shellFixture = new URLSearchParams(location.search).get('fixture') === 'shell';
+const assignmentsFixture = new URLSearchParams(location.search).get('fixture') === 'assignments';
 const stateFixture = new URLSearchParams(location.search).get('fixture') === 'states';
 const scenario = new URLSearchParams(location.search).get('scenario') || '';
 const scenarioTasks = [
@@ -39,6 +40,12 @@ const items = [
 ].map(([status,stage,human_reason,retry_allowed],i)=>({id:`demo-protocol-${i}`,cnj:`DEMO ${String(i+1).padStart(4,'0')} · Protocolo`,task_id:'demo-task',task_url:'',status,stage,human_reason,retry_allowed,updated_at:'2026-10-03T20:30:00Z'}));
 const request = async (path:string,options?:RequestInit) => {
   if(path.endsWith('/next-agreement')) return {agreement:processes('demo-agreement')[0]};
+  if (assignmentsFixture && path.startsWith('/api/task-assignees?module=')) return [{id:'fixture-analyst',name:'Analista de teste'}];
+  if (assignmentsFixture && options?.method === 'PATCH' && /^\\/api\\/task-processes\\//.test(path)) {
+    if (path.endsWith('-1')) throw new Error('Falha simulada de atribuição');
+    return {id:path.split('/').at(-1),assignee_id:'fixture-analyst'};
+  }
+
   if(options?.method && options.method !== 'GET') throw new Error('Prévia visual: alterações de dados estão desativadas.');
   if(path === '/api/tasks' || path.startsWith('/api/tasks?')) return tasks;
   const task = path.match(/^\/api\/tasks\/([^/]+)\/processes$/);
