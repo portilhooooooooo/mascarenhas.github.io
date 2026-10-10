@@ -18,13 +18,6 @@ buildVersion = String(buildVersion || fallbackVersion).slice(0, 16);
 await rm(dist, { recursive: true, force: true });
 await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
 
-// Publica também a demonstração isolada de cinco perfis no site de testes.
-// Nunca importa credenciais nem conecta essa experiência à API de produção.
-await mkdir(`${dist}/reimagined`, { recursive: true });
-for (const file of ['index.html', 'app.js', 'design.css']) {
-  await cp(`ux-preview/reimagined/${file}`, `${dist}/reimagined/${file}`);
-}
-
 const files = [
   'index.html',
   'styles.css',

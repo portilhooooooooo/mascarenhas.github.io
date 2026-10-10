@@ -152,25 +152,3 @@ html[data-mba-theme] #tarefas .workbench-queue-pagination {border-top-color:var(
 @media(max-width:1020px) and (min-width:701px) {html[data-mba-theme] #tarefas[data-react-tasks="true"] .task-station .tasks-workspace {grid-template-columns:250px minmax(0,1fr)}}
 @media(max-width:700px) {html[data-mba-theme] #tarefas[data-react-tasks="true"] .task-station .tasks-workspace {grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(180px,32%) minmax(0,1fr)}}
 @media(prefers-reduced-motion:reduce) {*,*::before,*::after {scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
-
-
-/* Login-authenticated entry to the isolated five-profile test experience.
-   The actual operational routes and permissions are not replaced by sample data. */
-html[data-mba-theme] .topbar .mba-reimagined-link {
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-height:34px;padding:0 12px;border:1px solid var(--mba-accent,#B95A32);
-  border-radius:8px;background:var(--mba-accent-soft,#FBEFE8);
-  color:var(--mba-accent,#B95A32)!important;font:650 11px/1 var(--mba-font-ui,Inter,sans-serif);
-  letter-spacing:0;text-decoration:none;white-space:nowrap;transition:background .16s ease;
-}
-html[data-mba-theme] .topbar .mba-reimagined-link:hover {
-  filter:brightness(.97);border-color:var(--mba-accent);text-decoration:none;
-}
-html[data-mba-theme] .topbar .mba-reimagined-link:focus-visible {
-  outline:2px solid var(--mba-accent);outline-offset:3px;
-}
-html[data-mba-theme] .topbar .mba-reimagined-link svg{width:15px;height:15px;flex:none}
-@media(max-width:720px){
-  html[data-mba-theme] .topbar .mba-reimagined-link{padding:0 9px}
-  html[data-mba-theme] .topbar .mba-reimagined-link span{display:none}
-}

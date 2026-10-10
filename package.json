@@ -12,8 +12,7 @@
     "test:metabase": "node tests/metabase-only.test.mjs",
     "dev:ux": "vite --config vite.ux.config.ts --host 127.0.0.1",
     "build:ux": "vite build --config vite.ux.config.ts",
-    "test:ux": "node tests/operational-ux.test.mjs",
-    "test:reimagined": "node tests/reimagined-preview.test.mjs"
+    "test:ux": "node tests/operational-ux.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
