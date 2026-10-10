@@ -58,7 +58,7 @@
 .protocolos-button:hover:not(:disabled) { border-color: #b7c7d9; background: var(--mba-subtle); }
 .protocolos-button.primary { border-color: var(--mba-blue); background: var(--mba-blue); color: #fff; }
 .protocolos-button.primary:hover:not(:disabled) { border-color: var(--mba-blue-dark); background: var(--mba-blue-dark); }
-.protocolos-button:disabled { opacity: .45; cursor: not-allowed; }
+.protocolos-button:disabled { opacity: .72; cursor: not-allowed; }
 .protocolos-button.secondary { background: #fff; }
 
 .protocolos-session-bar {
@@ -70,7 +70,8 @@
   padding: 10px 12px 10px 14px;
   border: 1px solid var(--mba-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--mba-surface, #fff);
+  color: var(--mba-text, #0f1f3d);
 }
 .protocolos-session-copy { display: grid; gap: 4px; }
 .protocolos-session-copy > span { color: var(--mba-muted); font-size: 9.5px; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; }

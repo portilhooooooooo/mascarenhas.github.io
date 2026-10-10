@@ -1,220 +1,190 @@
-body[data-react-login="true"] .login-screen{
-  min-height:100dvh;
-  display:block;
-  padding:0;
-  background:var(--bg,#f8fafc);
-}
+/*
+ * Login editorial: referências Claude (estrutura e tipografia) + marca Mascarenhas.
+ * Nenhuma navegação de produção é alterada; a mídia à direita é opcional.
+ */
+body[data-react-login="true"] .login-screen { min-height:100dvh;display:block;padding:0;background:#161617; }
 body[data-react-login="true"] .login-panel,
 body[data-react-login="true"] .login-box,
-body[data-react-login="true"] #login-view{
-  width:100%;
-  min-height:100dvh;
-  display:block;
-  padding:0;
-  border:0;
-  border-radius:0;
-  background:transparent;
-  box-shadow:none;
-  text-align:left;
+body[data-react-login="true"] #login-view {
+  width:100%;min-height:100dvh;display:block;padding:0;border:0;border-radius:0;
+  background:transparent;box-shadow:none;text-align:left;
 }
 body[data-react-login="true"] .login-brand,
 body[data-react-login="true"] .login-divider,
 body[data-react-login="true"] .login-security,
-body[data-react-login="true"] #login-error{
-  display:none!important;
-}
+body[data-react-login="true"] #login-error { display:none!important; }
 
-#login-view .react-login-view{
-  --login-accent:#142b67;
-  --login-accent-hover:#0f2254;
-  --login-accent-soft:#eef2f8;
+#login-view .react-login-view {
+  --login-accent:#bb7d5b;
+  --login-accent-hover:#c78f6f;
+  --login-accent-soft:rgba(190,128,95,.15);
   min-height:100dvh;
   display:grid;
-  grid-template-rows:52px minmax(0,1fr);
-  color:var(--ink,#0f172a);
-  background:
-    radial-gradient(620px 340px at 15% -10%,rgba(20,43,103,.055),transparent 68%),
-    var(--bg,#f8fafc);
+  grid-template-rows:88px minmax(0,1fr);
+  background:#161617;
+  color:#f6f0ec;
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
 }
-#login-view .react-login-header{
-  height:52px;
-  display:flex;
-  align-items:center;
-  padding:0 16px;
-  border-bottom:1px solid var(--line,#e2e8f0);
-  background:rgba(255,255,255,.74);
-  backdrop-filter:blur(10px);
+#login-view .react-login-header {
+  height:88px;
+  display:flex;align-items:center;
+  padding:0 clamp(26px,5vw,82px);
+  background:#161617;
 }
-#login-view .react-login-brand{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  color:var(--ink,#0f172a);
-  font-size:13.5px;
-  font-weight:500;
-  letter-spacing:-.02em;
-  white-space:nowrap;
+#login-view .react-login-brand { display:flex;align-items:center;gap:12px;color:#fbf7f4; }
+#login-view .react-login-brand img {
+  height:40px;width:56px;object-fit:contain;filter:brightness(0) invert(1);
 }
-#login-view .react-login-brand img{
-  width:28px;
-  height:28px;
-  display:block;
-  object-fit:contain;
+#login-view .react-login-brand>span {
+  font:400 20px/1.13 Georgia,"Times New Roman",serif;
+  letter-spacing:-.028em;
 }
-#login-view .react-login-main{
-  min-height:0;
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  padding:clamp(72px,11vh,112px) 24px 48px;
+#login-view .react-login-brand small {
+  display:block;margin-top:5px;font:600 9px/1 Inter,system-ui,sans-serif;
+  letter-spacing:.25em;color:#c88d6d;
 }
-#login-view .react-login-access{
-  width:min(400px,100%);
+#login-view .react-login-main {
+  width:100%;max-width:1680px;margin:0 auto;
+  min-height:0;display:grid;
+  grid-template-columns:minmax(360px,.96fr) minmax(400px,1.12fr);
+  column-gap:clamp(24px,5vw,96px);
+  padding:0 clamp(26px,5vw,82px) clamp(26px,4vh,58px);
+  align-items:stretch;
 }
-#login-view .react-login-access h1{
-  margin:0;
-  color:var(--ink,#0f172a);
-  font-size:24px;
-  font-weight:600;
-  line-height:1.2;
-  letter-spacing:-.025em;
+#login-view .react-login-access {
+  width:min(520px,100%);align-self:center;justify-self:center;
+  padding:24px 0 48px;
 }
-#login-view .react-login-subtitle{
-  margin:7px 0 28px;
-  color:var(--muted,#475569);
-  font-size:13px;
-  line-height:1.55;
+#login-view .react-login-access h1 {
+  margin:0 0 13px;
+  font:400 clamp(37px,3.35vw,61px)/1.08 Georgia,"Times New Roman",serif;
+  letter-spacing:-.043em;color:#f8f3ef;
+  text-wrap:balance;
 }
-#login-view .react-login-form{
-  display:grid;
+#login-view .react-login-subtitle {
+  margin:0 0 clamp(23px,3.4vh,40px);
+  max-width:460px;color:#aaa39f;font-size:14px;line-height:1.65;
 }
-#login-view .react-login-field{
-  display:grid;
-  gap:7px;
-  color:var(--ink,#0f172a);
-  font-size:12px;
-  font-weight:500;
+#login-view .react-login-form {
+  display:grid;gap:10px;max-width:465px;
+  padding:24px 25px 25px;
+  border:1px solid #373436;border-radius:22px;background:#171719;
 }
-#login-view .react-login-field input{
-  width:100%;
-  height:44px;
-  padding:0 13px;
-  border:1px solid var(--line,#e2e8f0);
-  border-radius:8px;
-  background:var(--surface,#fff);
-  color:var(--ink,#0f172a);
-  font-size:13px;
-  outline:0;
-  transition:border-color .15s ease,box-shadow .15s ease,background .15s ease;
+#login-view .react-login-corporate,#login-view .react-login-primary {
+  position:relative;width:100%;height:44px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  border:1px solid #3a3839;border-radius:10px;
+  font:500 13px/1 Inter,system-ui,sans-serif;
+  cursor:pointer;transition:background .15s,border-color .15s;
 }
-#login-view .react-login-field input::placeholder{
-  color:var(--muted-soft,#94a3b8);
+#login-view .react-login-corporate {
+  background:#292829;color:#faf7f3;
 }
-#login-view .react-login-field input:focus{
-  border-color:var(--login-accent);
-  box-shadow:0 0 0 3px var(--login-accent-soft);
+#login-view .react-login-corporate:hover:not(:disabled) {
+  background:#353234;border-color:#57504c;
 }
-#login-view .react-login-field input:disabled{
-  cursor:wait;
-  background:#f8fafc;
+#login-view .react-login-corporate svg { width:16px;height:16px;flex:none; }
+#login-view .react-login-unavailable { opacity:.45;cursor:not-allowed; }
+#login-view .react-login-unavailable small {
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  font-size:9px;color:#e2bda8;
 }
-#login-view .react-login-primary,
-#login-view .react-login-corporate{
-  width:100%;
-  height:44px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  border-radius:8px;
-  font:600 12.5px/1 Inter,ui-sans-serif,system-ui,sans-serif;
-  cursor:pointer;
-  transition:background .15s ease,border-color .15s ease,box-shadow .15s ease,transform .1s ease;
-}
-#login-view .react-login-primary{
-  margin-top:12px;
-  border:1px solid var(--login-accent);
-  background:var(--login-accent);
-  color:#fff;
-}
-#login-view .react-login-primary:hover:not(:disabled){
-  border-color:var(--login-accent-hover);
-  background:var(--login-accent-hover);
-}
-#login-view .react-login-corporate{
-  border:1px solid var(--line,#e2e8f0);
-  background:var(--surface,#fff);
-  color:var(--ink,#0f172a);
-  font-weight:500;
-}
-#login-view .react-login-corporate:hover:not(:disabled){
-  border-color:#b9c3d4;
-  background:#fff;
-  color:var(--login-accent);
-}
-#login-view .react-login-primary:focus-visible,
-#login-view .react-login-corporate:focus-visible{
-  outline:0;
-  border-color:var(--login-accent);
-  box-shadow:0 0 0 3px var(--login-accent-soft);
-}
-#login-view .react-login-primary:active:not(:disabled),
-#login-view .react-login-corporate:active:not(:disabled){
-  transform:translateY(1px);
-}
-#login-view .react-login-primary:disabled,
-#login-view .react-login-corporate:disabled{
-  cursor:wait;
-  opacity:.64;
-  transform:none;
-}
-#login-view .react-login-corporate svg{
-  width:16px;
-  height:16px;
-  flex:0 0 16px;
-}
-#login-view .react-login-divider{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin:20px 0;
-  color:var(--muted-soft,#94a3b8);
-  font-size:11px;
+#login-view .react-login-divider {
+  display:flex;align-items:center;gap:12px;color:#858080;
+  font-size:11px;text-transform:uppercase;margin:4px 0;
 }
 #login-view .react-login-divider::before,
-#login-view .react-login-divider::after{
-  content:"";
-  height:1px;
-  flex:1;
-  background:var(--line,#e2e8f0);
+#login-view .react-login-divider::after {
+  content:"";height:1px;flex:1;background:#373436;
 }
-#login-view .react-login-error{
-  width:100%;
-  margin-top:16px;
-  padding:11px 12px;
-  border:1px solid #f6d3d3;
-  border-radius:8px;
-  background:var(--danger-soft,#fef2f2);
-  color:#a52121;
-  font-size:11.5px;
-  line-height:1.5;
+#login-view .react-login-field { display:grid;gap:7px;font-size:11px;color:#bbb3ad; }
+#login-view .react-login-field input {
+  width:100%;height:44px;
+  padding:0 13px;border:1px solid #393739;border-radius:9px;
+  outline:0;background:#202022;color:#fff8f3;font-size:13px;
 }
-#login-view .react-login-security{
-  margin:18px 0 0;
-  color:var(--muted-soft,#94a3b8);
-  font-size:11px;
-  line-height:1.4;
-  text-align:center;
+#login-view .react-login-field input::placeholder { color:#888183; }
+#login-view .react-login-field input:focus {
+  border-color:#be8d74;box-shadow:0 0 0 3px var(--login-accent-soft);
 }
-
-@media(max-width:520px){
-  #login-view .react-login-header{padding:0 14px}
-  #login-view .react-login-main{padding:56px 20px 32px}
-  #login-view .react-login-access h1{font-size:22px}
+#login-view .react-login-primary {
+  margin-top:4px;
+  background:#b97a58;border-color:#b97a58;color:#fff;
+  font-weight:600;
 }
-@media(max-height:680px){
-  #login-view .react-login-main{padding-top:44px}
-  #login-view .react-login-subtitle{margin-bottom:20px}
-  #login-view .react-login-divider{margin:14px 0}
-  #login-view .react-login-security{margin-top:12px}
+#login-view .react-login-primary:hover:not(:disabled) {
+  background:#c38b69;border-color:#c38b69;
+}
+#login-view .react-login-primary:disabled { opacity:.55;cursor:wait; }
+#login-view .react-login-primary:focus-visible,
+#login-view .react-login-corporate:focus-visible {
+  outline:2px solid #c78f6f;outline-offset:3px;
+}
+#login-view .react-login-error {
+  margin-top:17px;padding:12px 14px;
+  background:#382220;border:1px solid #713a35;border-radius:8px;
+  color:#f5c8c1;font-size:12px;line-height:1.5;
+}
+#login-view .react-login-security {
+  text-align:center;color:#777175;font-size:11px;margin:18px auto 0;
+}
+#login-view .react-login-visual {
+  position:relative;min-height:min(670px,75vh);
+  overflow:hidden;border-radius:22px;
+  background:#252525;
+  isolation:isolate;
+}
+#login-view .react-login-visual video {
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;
+  filter:contrast(1.08) saturate(.88) brightness(.79);
+}
+#login-view .react-login-visual-fallback {
+  position:absolute;inset:0;display:grid;place-items:center;z-index:-1;
+  background:
+    radial-gradient(ellipse at 75% 22%,rgba(165,122,100,.33),transparent 52%),
+    linear-gradient(155deg,#413b3b 0%,#28282a 48%,#191a1d 100%);
+}
+#login-view .react-login-visual-fallback:before,
+#login-view .react-login-visual-fallback:after {
+  content:"";position:absolute;height:120%;width:1px;
+  background:linear-gradient(0deg,transparent,rgba(203,137,101,.3),transparent);
+  transform:rotate(34deg);
+}
+#login-view .react-login-visual-fallback:before { left:27%; }
+#login-view .react-login-visual-fallback:after { right:19%; }
+#login-view .react-login-visual-fallback img {
+  width:min(180px,35%);opacity:.11;filter:brightness(0) invert(1);
+}
+#login-view .react-login-visual:after {
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(0deg,rgba(16,16,17,.82),transparent 45%);
+  pointer-events:none;
+}
+#login-view .react-login-visual-caption {
+  position:absolute;bottom:38px;left:38px;right:38px;display:grid;gap:9px;
+}
+#login-view .react-login-visual-caption span {
+  font-size:10px;letter-spacing:.19em;font-weight:650;color:#e4b294;
+}
+#login-view .react-login-visual-caption strong {
+  max-width:460px;font:400 clamp(22px,2.2vw,33px)/1.16 Georgia,serif;
+  letter-spacing:-.02em;color:#fff6ef;
+}
+@media(max-width:880px) {
+  #login-view .react-login-view { grid-template-rows:72px minmax(0,1fr); }
+  #login-view .react-login-header { height:72px;padding-inline:24px; }
+  #login-view .react-login-main { grid-template-columns:1fr;padding:0 24px 48px; }
+  #login-view .react-login-access { width:min(470px,100%);padding:38px 0; }
+  #login-view .react-login-visual { display:none; }
+}
+@media(max-width:480px) {
+  #login-view .react-login-brand img { width:42px;height:33px; }
+  #login-view .react-login-brand>span { font-size:17px; }
+  #login-view .react-login-main { padding:0 18px 30px; }
+  #login-view .react-login-access h1 { font-size:38px; }
+  #login-view .react-login-form { padding:18px;border-radius:15px; }
+  #login-view .react-login-unavailable small { display:none; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #login-view .react-login-view *,#login-view .react-login-view *::before { transition:none !important; }
 }

@@ -21,6 +21,10 @@ await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
 const files = [
   'index.html',
   'styles.css',
+  'brand-identity.css',
+  'brand-themes.css',
+  'design-system-v2.css',
+  'brand-theme.js',
   'agreements.css',
   'payment-receipt.css',
   'protocolo.css',
@@ -41,6 +45,20 @@ const files = [
 
 for (const file of files) {
   await cp(file, `${dist}/${file}`);
+}
+
+/* Mídia institucional opcional: sem o vídeo o login usa fallback local. */
+let hasBrandVideo = false;
+try {
+  await cp('assets/mascarenhas-login.mp4', `${dist}/assets/mascarenhas-login.mp4`);
+  hasBrandVideo = true;
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
+try {
+  await cp('assets/mascarenhas-login-poster.jpg', `${dist}/assets/mascarenhas-login-poster.jpg`);
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
 }
 
 await cp(
@@ -68,7 +86,11 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
   .replace('</head>', `  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
   .replace(/(<script src="\/?app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
-  .replace('</body>', `  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
+  .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
+  .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
+  .replace(/brand-theme\.js(?:\?v=[^"']+)?/g, `brand-theme.js?v=${buildVersion}`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)
   .replace(/payment-receipt\.css(?:\?v=[^"']+)?/g, `payment-receipt.css?v=${buildVersion}`)
