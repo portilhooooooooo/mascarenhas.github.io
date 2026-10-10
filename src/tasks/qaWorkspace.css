@@ -241,3 +241,16 @@ html[data-mba-theme='lua'] .qa-option-key,html[data-mba-theme='lua'] .qa-keyboar
 @media (prefers-reduced-motion: reduce) {
   #tarefas[data-react-tasks='true'] .task-station .qa-step .task-option-card > span { transition: none; }
 }
+
+/* Etapas fixas do fluxo; perguntas condicionais não criam mais barras. */
+#tarefas[data-react-tasks='true'] .qa-progress-header:has(.qa-stage-track) { align-items: flex-start; min-height: 76px; }
+.qa-progress-title { flex: 1; min-width: 0; display: grid; gap: 9px; }
+.qa-progress-title > strong { font: 600 11px/1.3 Inter,system-ui,sans-serif; color: var(--mba-muted); }
+.qa-stage-track { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px; width:100%; }
+.qa-stage-segment { display:grid; gap:4px; min-width:0; }
+.qa-stage-segment .qa-stage-bar { width:100%; height:4px; border-radius:8px; background:var(--mba-border); }
+.qa-stage-segment.complete .qa-stage-bar { background:#8ba993; }
+.qa-stage-segment.active .qa-stage-bar { background:var(--mba-blue,#c76b36); }
+.qa-stage-segment small { font:500 10px/1.2 Inter,system-ui,sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--mba-muted); }
+.qa-stage-segment.active small { font-weight:650; color:var(--mba-text); }
+@media(max-width:850px) { .qa-stage-segment small { font-size:9px; } }
