@@ -237,14 +237,17 @@ export function ClosingAnalysisFlow({
 
   return <TaskForm className="closing-flow" progressive draftKey={draftKey} onSubmit={submit}>
     <section className="qa-context-note" role="note">
-      <strong>{contextHint || (classifierClassification ? 'Identificamos um indício de ' + classifierClassification.toLowerCase() + '.' : 'Ainda não identificamos o tipo da sentença.')}</strong>
-      <small>Confira o processo antes de responder. O indício não substitui a validação do analista.</small>
+      <strong>{contextHint || (classifierClassification ? 'Indício automático: ' + classifierClassification + '.' : 'Sem resultado de sentença identificado automaticamente.')}</strong>
     </section>
     {outcome ? <section className={'closing-outcome closing-summary ' +
       (outcome.startsWith('apto_') ? 'positive' : 'negative')} aria-live="polite">
-      <span>Classificação final prevista</span>
+      <span>Resultado das respostas</span>
       <strong>{OUTCOME_LABELS[outcome]}</strong>
       {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
+      {classifierClassification && ((outcome === 'apto_vitoria' && classifierClassification !== 'Vitória')
+        || (outcome === 'apto_derrota_voluntaria' && classifierClassification !== 'Derrota voluntária')
+        || (outcome === 'apto_derrota' && classifierClassification !== 'Derrota')) ?
+        <small className="qa-classifier-difference">Diferente do indício automático ({classifierClassification}). O resultado considera as respostas informadas.</small> : null}
     </section> : null}
 
     <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença?">
