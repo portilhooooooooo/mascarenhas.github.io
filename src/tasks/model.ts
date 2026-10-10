@@ -57,7 +57,8 @@ export const TASK_TYPE_LABELS: Record<string, string> = {
   comprovante_pagamento: 'Validação de Comprovante',
   liminar: 'Validação de Liminar',
   acordos: 'Saneamento de Acordos',
-  encerramento: 'Validação de Encerramento',
+  // Fluxos agrupam várias etapas operacionais em uma única análise.
+  encerramento: 'Fluxo de Encerramento',
   bloqueio: 'Validação de Bloqueio',
   citacao: 'Validação de Citação',
   protocolo: 'Protocolo',
