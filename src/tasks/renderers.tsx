@@ -78,7 +78,7 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
   />;
 }
 
-function closingClassifierClassification(task: Task, process: TaskProcess) {
+function closingClassifierClassification(process: TaskProcess) {
   const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
   const raw = process.indicio
     || process.indication
@@ -86,8 +86,7 @@ function closingClassifierClassification(task: Task, process: TaskProcess) {
     || metadata.classifier_classification
     || metadata.classification
     || metadata.classificacao
-    || metadata.resultado
-    || task.title;
+    || metadata.resultado;
   const normalized = String(raw || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (normalized.includes('derrota voluntaria')) return 'Derrota voluntária';
   if (normalized.includes('vitoria')) return 'Vitória';
@@ -112,7 +111,7 @@ function closingSentenceHint(process: TaskProcess): string | undefined {
 export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted, onSkipped, onDeferred }: BaseRendererProps & { onDeferred: (process: TaskProcess, reopenAt: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const classifierClassification = closingClassifierClassification(task, process);
+  const classifierClassification = closingClassifierClassification(process);
 
   const submit = async (draft: ClosingAnalysisDraft) => {
     setBusy(true);
