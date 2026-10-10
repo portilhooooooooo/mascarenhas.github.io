@@ -23,6 +23,7 @@ const files = [
   'styles.css',
   'brand-identity.css',
   'brand-themes.css',
+  'design-system-v2.css',
   'brand-theme.js',
   'agreements.css',
   'payment-receipt.css',
@@ -89,6 +90,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
   .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
+  .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
   .replace(/brand-theme\.js(?:\?v=[^"']+)?/g, `brand-theme.js?v=${buildVersion}`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)

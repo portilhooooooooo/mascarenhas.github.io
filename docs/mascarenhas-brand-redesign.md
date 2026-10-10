@@ -25,3 +25,12 @@ Os botões e o campo de e-mail reproduzem a linguagem visual solicitada. O OAuth
 
 ## Validação
 A branch foi adicionada ao workflow `React Tasks Migration Check` para verificar hardening, escopo da execução, arquitetura do Metabase, testes de prioridade e build.
+
+
+## Reimaginado v2 — referência das plataformas de IA
+
+A camada final `design-system-v2.css` consolida a identidade: Sol neutro (#F4F5F3) e Lua grafite (#171A1B), acentos laranja/cobre, tipografia operacional Inter, densidade de tarefas e foco claro. Ela é intencionalmente carregada depois de `brand-identity.css` e `brand-themes.css`; não modifica contratos de API, login, autorização, backend nem a lógica jurídica de Q&A.
+
+Em Tarefas, a fila e o workspace continuam lado a lado com scroll próprio. O filtro UF usa campos explícitos do processo e, em último caso, o código de tribunal do CNJ da Justiça Estadual (8.01–8.27); regiões federais e trabalhistas sem UF explícita aparecem em **Não informada**. O filtro só afeta exibição; dados ausentes não são convertidos em informação artificial.
+
+Fora do escopo: timeline DataJud sem integração verificada, simulação de salvamento, produtividade sem fonte de dados, e endpoints de ajuda inexistentes. Build e testes são verificados pelo workflow da branch; não mesclar na main sem validação visual e operacional.
