@@ -76,6 +76,18 @@ try {
     await page.screenshot({path:'.build/spec-ui/assignments-'+w+'.png',fullPage:true});
   }
 
+  await page.setViewportSize({width:1440,height:900});
+  await page.goto(base+'/tarefas/atribuicoes?fixture=assignments');
+  await page.locator('.assignments-board').waitFor();
+  await page.locator('.assignments-table tbody tr').first().locator('input[type="checkbox"]').waitFor();
+  await page.locator('.assignments-table tbody tr').nth(0).locator('input[type="checkbox"]').check();
+  await page.locator('.assignments-table tbody tr').nth(1).locator('input[type="checkbox"]').check();
+  await page.locator('.assignments-bulk select').selectOption('fixture-analyst');
+  await page.getByRole('button',{name:'Atribuir selecionadas'}).click();
+  await page.locator('.assignments-notice').getByText(/1 atribuição\(ões\) confirmada\(s\)/).waitFor();
+  await page.locator('.assignments-notice').getByText(/Não concluídas/).waitFor();
+  await page.screenshot({path:'.build/spec-ui/assignments-partial-error.png',fullPage:true});
+
   for(const [w,h] of [[1440,900],[390,844]]) {
     await page.setViewportSize({width:w,height:h});
     await page.goto(base+'/login.html');
