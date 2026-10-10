@@ -59,6 +59,7 @@ try {
   assert.equal(await page.locator('.qa-step:not([hidden]) .task-question-number').innerText(), 'A');
   const stepBefore = await page.locator('form[data-qa-progressive]').getAttribute('data-qa-index');
   await page.keyboard.press('1');
+  await page.waitForFunction(() => document.querySelectorAll('form[data-qa-progressive] .qa-step').length >= 2);
   assert.equal(await page.locator('form[data-qa-progressive]').getAttribute('data-qa-index'), stepBefore, 'Tecla numérica não avança automaticamente');
   await page.keyboard.press('Enter');
   const stepAfter = await page.locator('form[data-qa-progressive]').getAttribute('data-qa-index');
