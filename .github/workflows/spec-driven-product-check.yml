@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/spec-driven-product-20261010
+      - fix/protocol-explicit-confirm-20261010
   workflow_dispatch:
 permissions:
   contents: read
