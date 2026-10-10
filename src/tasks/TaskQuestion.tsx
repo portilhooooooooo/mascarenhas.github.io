@@ -180,7 +180,7 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
     advance: () => setAdvanceTicket(ticket => ticket + 1),
     canSubmit: total > 0 && current === total - 1,
   };
-  return <form {...props} ref={formRef} data-qa-progressive="true" data-qa-last={navigation.canSubmit ? 'true' : 'false'}>
+  return <form {...props} ref={formRef} data-qa-progressive="true" data-qa-last={navigation.canSubmit ? 'true' : 'false'} data-qa-index={current}>
     <div className="qa-progress-header">
       <strong>Pergunta {String(current + 1).padStart(2, '0')}</strong>
       <span className="qa-unsaved-state">Rascunho não enviado</span>
