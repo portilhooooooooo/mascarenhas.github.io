@@ -22,6 +22,8 @@ assert.match(questions, /event\.key === 'Enter'/, 'Enter avança etapas');
 assert.match(questions, /\^\[1-9\]\$/, 'Números selecionam as opções');
 assert.match(questions, /event\.preventDefault\(\); \/\/ Nunca envia o formulário implicitamente\./, 'Enter não deve submeter o formulário');
 assert.match(questions, /selected\.click\(\)/, 'Atalho usa o onChange das opções');
+assert.match(questions, /onChange=\{\(\) => onChange\(option\.value\)\}/, 'Seleção apenas registra a resposta');
+assert.doesNotMatch(questions, /advance\?\.\(\)|setAdvanceTicket|advanceTicket/, 'Somente Enter ou Próxima pode mudar a etapa');
 for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], ['Liminar/Pagamentos', legacy]]) {
   assert.match(source, /progressive draftKey=\{draftKey\}/, name + ' usa Q&A progressivo');
 }
