@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
+import { useQaField } from './qaDraft';
 import { Check } from 'lucide-react';
 import './defenseAnalysisFlow.css';
 import { TaskQuestion, TaskActionBar, TaskForm, OptionGroup } from './TaskQuestion';
@@ -19,6 +20,7 @@ export type DefenseAnalysisDraft = {
 
 type Props = {
   cnj: string;
+  draftKey?: string;
   controlDeadline?: string | null;
   busy?: boolean;
   error?: string | null;
@@ -63,28 +65,19 @@ function BinaryChoice({ value, onChange, disabled, name }: { value: YesNo; onCha
   return <OptionGroup name={name} value={value} onChange={next => onChange(next as Exclude<YesNo, null>)} disabled={disabled} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/>;
 }
 
-export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error = null, onSubmit, onSkip }: Props) {
+export function DefenseAnalysisFlow({ cnj, draftKey = '', controlDeadline, busy = false, error = null, onSubmit, onSkip }: Props) {
   const deadline = dateOnly(controlDeadline);
-  const [deadlineCorrect, setDeadlineCorrect] = useState<YesNo>(null);
-  const [activeDefense, setActiveDefense] = useState<YesNo>(null);
-  const [courtDeadlineValid, setCourtDeadlineValid] = useState<YesNo>(null);
-  const [correctFatal, setCorrectFatal] = useState('');
-  const [criteria, setCriteria] = useState<Record<DefenseCriterionKey, string>>(EMPTY_CRITERIA);
-  const [criterionKeys, setCriterionKeys] = useState<DefenseCriterionKey[]>([]);
-  const [reason, setReason] = useState<DefenseReason | null>(null);
-  const [suspensionOpen, setSuspensionOpen] = useState(false);
+  const [deadlineCorrect, setDeadlineCorrect] = useQaField<YesNo>(draftKey, 'defense.deadlineCorrect', null);
+  const [activeDefense, setActiveDefense] = useQaField<YesNo>(draftKey, 'defense.activeDefense', null);
+  const [courtDeadlineValid, setCourtDeadlineValid] = useQaField<YesNo>(draftKey, 'defense.courtDeadlineValid', null);
+  const [correctFatal, setCorrectFatal] = useQaField(draftKey, 'defense.correctFatal', '');
+  const [criteria, setCriteria] = useQaField<Record<DefenseCriterionKey, string>>(draftKey, 'defense.criteria', EMPTY_CRITERIA);
+  const [criterionKeys, setCriterionKeys] = useQaField<DefenseCriterionKey[]>(draftKey, 'defense.criterionKeys', []);
+  const [reason, setReason] = useQaField<DefenseReason | null>(draftKey, 'defense.reason', null);
+  const [suspensionOpen, setSuspensionOpen] = useQaField(draftKey, 'defense.suspensionOpen', false);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setDeadlineCorrect(null);
-    setActiveDefense(null);
-    setCourtDeadlineValid(null); setCorrectFatal('');
-    setCriteria({ ...EMPTY_CRITERIA });
-    setCriterionKeys([]);
-    setReason(null);
-    setSuspensionOpen(false);
-    setLocalError(null);
-  }, [cnj]);
+  // Restauração local automática por processo; persistência definitiva apenas no submit.
 
   const completedCriteria = useMemo(() => CRITERIA.filter(item => criterionKeys.includes(item.key) && Boolean(criteria[item.key])), [criteria, criterionKeys]);
   const criteriaComplete = criterionKeys.length > 0 && completedCriteria.length === criterionKeys.length;
@@ -125,8 +118,8 @@ export function DefenseAnalysisFlow({ cnj, controlDeadline, busy = false, error 
     });
   };
 
-  return <TaskForm className="defesa-flow" onSubmit={submit}>
-    <div className="defesa-enter-deadline"><p>{deadline ? <>A Enter determinou que essa defesa deve ser apresentada em <strong>{formatDate(deadline)}</strong>.</> : 'A Enter não informou a data para apresentação desta defesa.'}</p></div>
+  return <TaskForm className="defesa-flow" progressive draftKey={draftKey} onSubmit={submit}>
+    <div className="defesa-enter-deadline qa-context-note"><p>{deadline ? <>A Enter determinou que essa defesa deve ser apresentada em <strong>{formatDate(deadline)}</strong>.</> : 'A Enter não informou a data para apresentação desta defesa.'}</p></div>
     <TaskQuestion number="01" question="Você concorda que o fatal determinado está correto?"><BinaryChoice name="defense-deadline" value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></TaskQuestion>
 
     {deadlineCorrect === 'nao' ? <TaskQuestion number="02" question="Existe determinação para apresentação da defesa?"><BinaryChoice name="defense-active" value={activeDefense} onChange={chooseActiveDefense} disabled={busy}/></TaskQuestion> : null}
