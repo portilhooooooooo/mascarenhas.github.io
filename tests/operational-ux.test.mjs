@@ -110,7 +110,7 @@ try {
   await choose('protocol-can-attach','Não'); assert.equal(await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByRole('radio',{name:'Não',exact:true}).isChecked(),true); assert.equal(await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByRole('radio',{name:'Sim',exact:true}).isChecked(),false); assert.equal(await page.locator('[name="protocol-error-reason"]:checked').count(),0); assert.equal(await save().isEnabled(),false);
   await page.screenshot({path:`${shots}/protocol-review.png`});
 
-  await open('comprovante_pagamento'); assert.equal(await page.locator('.execution-brief').count(),0);
+  await open('comprovante_pagamento'); assert.equal(await page.locator('.execution-brief').count(),1); assert.match(await page.locator('.execution-brief').innerText(), /Pasta DEMO 1032/);
   await choose('payment-status','Sim'); await choose('paid-receipt','Não'); await choose('had-block','Não');
   assert.equal(await page.getByRole('heading',{name:/03.*Houve bloqueio/}).count(),1);
   await page.screenshot({path:`${shots}/payment-answers-clean.png`});
@@ -134,13 +134,13 @@ try {
   await page.screenshot({path:`${shots}/agreement-full.png`});
 
   await page.setViewportSize({width:1600,height:900}); await open('liminar','states');
-  await page.getByLabel('Situação',{exact:true}).selectOption('high');
+  const filter = async (label, option) => { await page.getByRole('button',{name:label,exact:true}).click(); await page.getByRole('listbox',{name:label,exact:true}).getByRole('option',{name:option,exact:true}).click(); };
+  await filter('Prioridade','Alta');
   await page.getByRole('heading',{name:'DEMO 0004 · SP',exact:true}).waitFor();
   assert.equal(await page.locator('.tasks-process-item').count(),1);
-  await page.getByLabel('Situação',{exact:true}).selectOption('normal');
+  await filter('Prioridade','Baixa');
   assert.equal(await page.locator('.tasks-process-item').filter({hasText:'DEMO 0002'}).count(),0);
-  await page.getByLabel('Situação',{exact:true}).selectOption('all');
-  await page.getByLabel('Prazo',{exact:true}).selectOption('liminar');
+  await filter('Prioridade','Todas');
   await page.getByLabel('Buscar processo',{exact:true}).fill('Parte demonstrativa'); assert.equal(await page.locator('.tasks-process-item').count(),0);
   await page.getByLabel('Buscar processo',{exact:true}).fill('0004'); assert.equal(await page.locator('.tasks-process-item').count(),1);
   await page.getByLabel('Buscar processo',{exact:true}).fill('');
@@ -163,11 +163,11 @@ try {
   await page.getByLabel('Buscar processo',{exact:true}).fill('RS'); await page.getByRole('radiogroup',{name:'defense-deadline'}).waitFor();
   assert.equal(await page.locator('.execution-process-heading small').textContent(),'Validação de Defesa');
   const keyboard=page.getByRole('radiogroup',{name:'defense-deadline'}).getByRole('radio',{name:'Não',exact:true}); await keyboard.focus(); await keyboard.press('Enter'); assert.equal(await keyboard.isChecked(),true);
-  await page.getByRole('button',{name:'Atribuições',exact:true}).click(); assert.equal(await page.locator('.demo-navbar').isVisible(),true);
+  page.once('dialog',dialog=>dialog.accept()); await page.getByRole('button',{name:'Atribuições',exact:true}).click(); assert.equal(await page.locator('.demo-navbar').isVisible(),true);
   await page.getByRole('button',{name:'Resultados',exact:true}).click();
   assert.equal(await page.getByRole('heading',{name:'Resultados',exact:true}).count(),1);
   assert.equal(await page.locator('.demo-navbar').isVisible(),true);
-  await page.locator('.tasks-react-subnav').getByRole('button',{name:'Tarefas',exact:true}).click();
+  await page.locator('.tasks-react-subnav').getByRole('button',{name:'Minhas tarefas',exact:true}).click();
   await page.locator('.execution-process-heading').waitFor();
   await page.evaluate(()=>{
     window.MBA_CURRENT_USER.permissions['automations.run']=true;

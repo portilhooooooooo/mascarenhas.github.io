@@ -108,3 +108,26 @@ test('login não referencia Home e prioriza Tarefas sem perder deep links', () =
   assert.ok(firstModule !== -1 && firstModule < secondModule);
   assert.doesNotMatch(auth, /startOnHome|\['home', null\]/);
 });
+
+test('operação mantém subrotas e autorizações de cada módulo', () => {
+  const e = environment();
+  for (const route of ['operacao/liminar', 'operacao/encerramentos', 'operacao/protocolos', 'operacao/defesas', 'operacao/protocolos/indicadores']) {
+    const expected = route.includes('protocolo') || route.includes('defesas') ? 'protocolo' : 'acordos';
+    if (route.includes('liminar')) continue; // tutelas is absent in this permission fixture
+    assert.equal(e.window.MBA_NAVIGATE(route), true);
+    assert.equal(e.active.get(expected), true);
+  }
+  assert.equal(e.window.MBA_NAVIGATE('operacao/liminar'), false);
+});
+test('respostas pendentes permitem cancelar navegação e restaurar histórico', () => {
+  const e = environment();
+  e.window.restorePageRoute();
+  e.window.MBA_CONFIRM_TASK_LEAVE = () => false;
+  assert.equal(e.window.MBA_NAVIGATE('analytics'), false);
+  assert.equal(e.window.showPage('dashboard'), false);
+  assert.equal(e.location.pathname, '/tarefas');
+  e.setUrl('/analytics');
+  e.window.restorePageRoute();
+  assert.equal(e.location.pathname, '/tarefas');
+  assert.equal(e.active.get('tarefas'), true);
+});

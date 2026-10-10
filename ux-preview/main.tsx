@@ -40,14 +40,14 @@ const items = [
 const request = async (path:string,options?:RequestInit) => {
   if(path.endsWith('/next-agreement')) return {agreement:processes('demo-agreement')[0]};
   if(options?.method && options.method !== 'GET') throw new Error('Prévia visual: alterações de dados estão desativadas.');
-  if(path === '/api/tasks') return tasks;
+  if(path === '/api/tasks' || path.startsWith('/api/tasks?')) return tasks;
   const task = path.match(/^\/api\/tasks\/([^/]+)\/processes$/);
   if(task) return processes(task[1]);
   if(path === '/api/protocolo/summary') return {session:{state:'idle'},automatic_active:false,controladoria:null,documents:null,statuses:{HUMAN_NECESSARY:2,SEM_DOCUMENTOS:1,RUNNING:1,DOCUMENTOS_ENVIADOS:1,PENDING:1,DONE:1}};
   if(path.startsWith('/api/protocolo/items')) return {rows:items};
   return [];
 };
-Object.assign(window,{MBA_CURRENT_USER:{id:'demo-user',is_master_admin:true,permissions:{'tasks.view':true,'tasks.manage':true,'automations.view':true,'automations.run':false}},MBA_API:{request},MBA_AUTOMATION_API:{request,fetch:async()=>{throw new Error('Exportação desativada nesta prévia.');}}});
+Object.assign(window,{MBA_NAVIGATE:(route:string)=>{window.history.replaceState(null,'',`#/${route}`);window.dispatchEvent(new CustomEvent('mba:route-changed',{detail:{route}}));return true;},MBA_CURRENT_USER:{id:'demo-user',is_master_admin:true,permissions:{'tasks.view':true,'tasks.manage':true,'automations.view':true,'automations.run':false}},MBA_API:{request},MBA_AUTOMATION_API:{request,fetch:async()=>{throw new Error('Exportação desativada nesta prévia.');}}});
 function Preview(){
   const [page,setPage]=useState<'tasks'|'control'>('tasks');
   return <>{shellFixture?<aside className="sidebar"><div className="sidebar-head"><strong>MBA Backoffice</strong></div><nav aria-label="Menu lateral"><span className="nav-item">Início</span><span className="nav-item">Operação</span><span className="nav-item active">Tarefas</span></nav></aside>:null}<div className={shellFixture?"main-area":""}><div className="demo-notice">PROPOSTA EM TESTE · Dados fictícios · Nenhuma conexão com produção <label className="demo-scenario">Fluxo da prévia<select value={scenario} onChange={event => { location.search = event.target.value ? `?scenario=${event.target.value}` : ''; }}><option value="">Fila geral</option><option value="liminar">Liminar</option><option value="defesa">Defesa</option><option value="comprovante_pagamento">Comprovante de pagamento</option><option value="protocolo">Coleta de documentos</option><option value="acordos">Acordos</option></select></label></div><header className={`demo-navbar ${shellFixture?"topbar":""}`}><div className="demo-brand"><b>MBA</b> Backoffice</div><nav aria-label="Navegação principal"><span>Gestão Processual</span><span>Operação</span><button aria-current={page==='control'?'page':undefined} onClick={()=>setPage('control')}>Controladoria</button><span>Automações</span><button aria-current={page==='tasks'?'page':undefined} onClick={()=>setPage('tasks')}>Tarefas</button></nav><span className="demo-profile">GP</span></header><div id="tarefas" data-react-tasks="true" className={page==='tasks'?'active':''} hidden={page!=='tasks'}><TasksApp/></div>{page==='control'?<div className="demo-control"><ControladoriaPage/></div>:null}</div></>;
