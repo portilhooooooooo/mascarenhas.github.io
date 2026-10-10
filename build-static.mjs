@@ -24,6 +24,7 @@ const files = [
   'brand-identity.css',
   'brand-themes.css',
   'design-system-v2.css',
+  'reimagined-workspace.css',
   'brand-theme.js',
   'agreements.css',
   'payment-receipt.css',
@@ -90,6 +91,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
   .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
   .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
+  .replace(/reimagined-workspace\.css(?:\?v=[^"\']+)?/g, `reimagined-workspace.css?v=${buildVersion}`)
   .replace(/brand-theme\.js(?:\?v=[^"']+)?/g, `brand-theme.js?v=${buildVersion}`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)

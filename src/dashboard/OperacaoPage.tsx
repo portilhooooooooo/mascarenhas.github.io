@@ -1,6 +1,8 @@
 import './operacao.css';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
 import {OperacaoLiminarPage} from './OperacaoLiminarPage';
+import {ProtocolosPage} from './ProtocolosPage';
+import {DefesasPage} from './DefesasPage';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {
   AlertTriangle,
@@ -334,32 +336,61 @@ function PagamentosPage() {
 
 
 
+type OperationModule = 'pagamentos' | 'liminar' | 'encerramentos' | 'protocolos' | 'defesas';
+type OperationVisibility = Record<OperationModule, boolean>;
+
 export function OperacaoPage() {
-  const [module,setModule]=useState<'pagamentos'|'liminar'|'encerramentos'>('pagamentos');
-  const [allowed,setAllowed]=useState({pagamentos:false,liminar:false,encerramentos:false});
-  useEffect(()=>{
-    const sync=()=>{
-      const permissions=(window as Window & {MBA_CURRENT_USER?:{permissions?:Record<string,boolean>}}).MBA_CURRENT_USER?.permissions||{};
-      const next={pagamentos:permissions['pagamentos.view']===true,liminar:permissions['tutelas.view']===true,encerramentos:permissions['encerramentos.view']===true};
+  const [module, setModule] = useState<OperationModule>('pagamentos');
+  const [allowed, setAllowed] = useState<OperationVisibility>({
+    pagamentos: false, liminar: false, encerramentos: false, protocolos: false, defesas: false,
+  });
+
+  useEffect(() => {
+    const sync = () => {
+      const shell = window as Window & {
+        MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
+        MBA_PORTFOLIO_POLICY?: { canAccess: (pageId: string) => boolean };
+      };
+      const permissions = shell.MBA_CURRENT_USER?.permissions || {};
+      // O filtro por carteira vem da policy existente. Uma permissão isolada
+      // nunca deve abrir Protocolos ou Defesas em carteiras sem esse módulo.
+      const canAccessProtocols = shell.MBA_PORTFOLIO_POLICY?.canAccess('protocolo') === true;
+      const next: OperationVisibility = {
+        pagamentos: permissions['pagamentos.view'] === true,
+        liminar: permissions['tutelas.view'] === true,
+        encerramentos: permissions['encerramentos.view'] === true,
+        protocolos: canAccessProtocols,
+        defesas: canAccessProtocols,
+      };
       setAllowed(next);
-      setModule(previous=>next[previous]?previous:next.pagamentos?'pagamentos':next.liminar?'liminar':'encerramentos');
+      setModule(previous => next[previous] ? previous :
+        (['pagamentos', 'liminar', 'encerramentos', 'protocolos', 'defesas'] as OperationModule[])
+          .find(key => next[key]) || 'pagamentos');
     };
     sync();
-    window.addEventListener('mba:authenticated',sync);
-    window.addEventListener('mba:profile-ready',sync);
-    window.addEventListener('mba:portfolio-changed',sync);
-    return ()=>{
-      window.removeEventListener('mba:authenticated',sync);
-      window.removeEventListener('mba:profile-ready',sync);
-      window.removeEventListener('mba:portfolio-changed',sync);
+    window.addEventListener('mba:authenticated', sync);
+    window.addEventListener('mba:profile-ready', sync);
+    window.addEventListener('mba:portfolio-changed', sync);
+    return () => {
+      window.removeEventListener('mba:authenticated', sync);
+      window.removeEventListener('mba:profile-ready', sync);
+      window.removeEventListener('mba:portfolio-changed', sync);
     };
-  },[]);
+  }, []);
+
   return <div className="operacao-module-shell">
-    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Módulos de Operação">
-      {allowed.pagamentos?<button type="button" className={module==='pagamentos'?'active':''} aria-current={module==='pagamentos'?'page':undefined} onClick={()=>setModule('pagamentos')}>Pagamentos</button>:null}
-      {allowed.liminar?<button type="button" className={module==='liminar'?'active':''} aria-current={module==='liminar'?'page':undefined} onClick={()=>setModule('liminar')}>Liminar</button>:null}
-      {allowed.encerramentos?<button type="button" className={module==='encerramentos'?'active':''} aria-current={module==='encerramentos'?'page':undefined} onClick={()=>setModule('encerramentos')}>Encerramentos</button>:null}
+    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
+      {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => setModule('pagamentos')}>Pagamentos</button> : null}
+      {allowed.liminar ? <button type="button" className={module === 'liminar' ? 'active' : ''} aria-current={module === 'liminar' ? 'page' : undefined} onClick={() => setModule('liminar')}>Liminar</button> : null}
+      {allowed.encerramentos ? <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => setModule('encerramentos')}>Encerramentos</button> : null}
+      {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => setModule('protocolos')}>Protocolos</button> : null}
+      {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => setModule('defesas')}>Defesas</button> : null}
     </nav>
-    {module==='pagamentos'&&allowed.pagamentos?<PagamentosPage/>:module==='liminar'&&allowed.liminar?<OperacaoLiminarPage/>:module==='encerramentos'&&allowed.encerramentos?<OperacaoEncerramentosPage/>:<div className="protocolos-empty">Nenhum módulo autorizado nesta carteira.</div>}
+    {module === 'pagamentos' && allowed.pagamentos ? <PagamentosPage/> :
+      module === 'liminar' && allowed.liminar ? <OperacaoLiminarPage/> :
+      module === 'encerramentos' && allowed.encerramentos ? <OperacaoEncerramentosPage/> :
+      module === 'protocolos' && allowed.protocolos ? <ProtocolosPage/> :
+      module === 'defesas' && allowed.defesas ? <DefesasPage/> :
+      <div className="protocolos-empty">Nenhum fluxo autorizado nesta carteira.</div>}
   </div>;
 }

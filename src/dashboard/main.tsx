@@ -144,6 +144,9 @@ function setTopModuleActive(page: string) {
   nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
   if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') candidate.classList.add('active');
+  const label = document.getElementById('mba-active-module');
+  const titles: Record<string, string> = { tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
+  if (label) label.textContent = titles[page] || 'Workspace';
 }
 
 function syncTopModuleFromActivePage() {
@@ -154,8 +157,8 @@ function syncTopModuleFromActivePage() {
     setTopModuleActive('acordos');
     return;
   }
-  if (activePage.id === 'protocolo') {
-    setTopModuleActive('protocolo');
+  if (['protocolo', 'pagamentos', 'tutelas', 'encerramentos'].includes(activePage.id)) {
+    setTopModuleActive('acordos');
     return;
   }
   if (activePage.id === 'automacoes') {
@@ -167,6 +170,11 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
+  if (activePage.id === 'usuarios') {
+    nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    const label = document.getElementById('mba-active-module');
+    if (label) label.textContent = 'Usuários';
+  }
 }
 
 function configureApplicationShell() {
@@ -183,13 +191,14 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  const visiblePages = new Set(['dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
+  // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
+  // A página /controladoria permanece montável para preservar links legados.
+  const visiblePages = new Set(['tarefas', 'acordos', 'automacoes', 'dashboard']);
   const labels: Record<string, string> = {
-    dashboard: 'Analytics',
-    acordos: 'Operação',
-    protocolo: 'Controladoria',
-    automacoes: 'Automações',
     tarefas: 'Tarefas',
+    acordos: 'Operação',
+    automacoes: 'Automações',
+    dashboard: 'Resultados',
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
@@ -219,12 +228,10 @@ function configureApplicationShell() {
   });
 
   const orderedItems: Array<HTMLElement | null> = [
-    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
-    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
-    nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
-    baseDados,
-    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
+    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
+    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
+    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
@@ -232,6 +239,8 @@ function configureApplicationShell() {
   document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
     observer.observe(page, { attributes: true, attributeFilter: ['class'] });
   });
+  window.addEventListener('mba:authenticated', syncVisibility);
+  window.addEventListener('mba:profile-ready', syncVisibility);
   window.addEventListener('mba:module-visibility-updated', syncVisibility);
   window.addEventListener('mba:portfolio-changed', syncVisibility);
   window.addEventListener('mba:session-expired', syncVisibility);

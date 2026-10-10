@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="brand-identity.css">
   <link rel="stylesheet" href="brand-themes.css">
   <link rel="stylesheet" href="design-system-v2.css">
+  <link rel="stylesheet" href="reimagined-workspace.css">
 </head>
 <body class="auth-loading">
   <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
@@ -63,19 +64,17 @@
       </div>
       <p class="brand-caption">Hub de Gestão</p>
       <nav class="main-nav" aria-label="Navegação principal">
-        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
-        <button class="nav-item" data-page="automacoes" data-permission="automations.view"><i data-lucide="folder-kanban"></i><span>Processos</span></button>
-        <button class="nav-item" data-page="tarefas" data-permission="tasks.view"><i data-lucide="clipboard-check"></i><span>Tarefas</span><em class="nav-badge" id="tasks-nav-count" aria-label="Pendências" hidden></em></button>
-        <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view"><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
-        <button class="nav-item" data-page="acordos" data-permission="agreements.view"><i data-lucide="wallet-cards"></i><span>Operação</span></button>
-        <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view"><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
-        <button class="nav-item" data-page="tutelas" data-permission="tutelas.view"><i data-lucide="shield-check"></i><span>Tutelas</span></button>
-        <button class="nav-item" data-page="protocolo" data-permission="automations.view"><i data-lucide="send"></i><span>Protocolos</span></button>
-        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="lock-keyhole"></i><span>Bloqueios</span></button>
-        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="send"></i><span>Envios ERP</span></button>
-        <button class="nav-item nav-item-muted" type="button" disabled title="Módulo em preparação"><i data-lucide="chart-no-axes-combined"></i><span>Relatórios</span></button>
-        <button class="nav-item" data-page="usuarios" data-permission="users.view"><i data-lucide="users"></i><span>Usuários</span></button>
-        <button class="nav-item" data-page="configuracoes" data-permission="settings.view"><i data-lucide="settings"></i><span>Configurações</span></button>
+        <button class="nav-item" data-page="tarefas" data-permission="tasks.view" type="button"><i data-lucide="list-checks"></i><span>Tarefas</span><em class="nav-badge" id="tasks-nav-count" aria-label="Pendências" hidden></em></button>
+        <button class="nav-item" data-page="acordos" type="button"><i data-lucide="layers-3"></i><span>Operação</span></button>
+        <button class="nav-item" data-page="automacoes" data-permission="automations.view" type="button"><i data-lucide="workflow"></i><span>Automações</span></button>
+        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view" type="button"><i data-lucide="chart-no-axes-combined"></i><span>Resultados</span></button>
+        <!-- Rotas legadas: a policy e o shell mantêm acessos existentes sem duplicar a navegação. -->
+        <button class="nav-item" data-page="protocolo" data-permission="automations.view" type="button" hidden><i data-lucide="send"></i><span>Protocolos</span></button>
+        <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view" type="button" hidden><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
+        <button class="nav-item" data-page="encerramentos" data-permission="encerramentos.view" type="button" hidden><i data-lucide="file-check-2"></i><span>Encerramentos</span></button>
+        <button class="nav-item" data-page="tutelas" data-permission="tutelas.view" type="button" hidden><i data-lucide="shield-check"></i><span>Tutelas</span></button>
+        <button class="nav-item" data-page="usuarios" data-permission="users.view" type="button" hidden><i data-lucide="users"></i><span>Usuários</span></button>
+        <button class="nav-item" data-page="configuracoes" data-permission="settings.view" type="button" hidden><i data-lucide="settings"></i><span>Configurações</span></button>
       </nav>
 
       <div class="sidebar-bottom">
@@ -86,6 +85,7 @@
 
     <div class="main-area">
       <header class="topbar">
+        <div class="mba-context-label" aria-label="Localização atual"><span>Backoffice</span><i aria-hidden="true">/</i><strong id="mba-active-module">Resultados</strong></div>
         <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         <div class="top-actions">
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>

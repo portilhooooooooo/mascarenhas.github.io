@@ -1,0 +1,377 @@
+/*
+ * MBA Backoffice / Workspace editorial
+ * Patch visual: Claude (calma) + Linear (densidade) + identidade Mascarenhas.
+ * CSS aditivo: não altera lógica, permissões, payloads ou automações.
+ */
+
+/* Superfícies neutras — Sol não é creme; Lua não mistura painéis claros. */
+html[data-mba-theme="sol"] {
+  --mba-bg: #f6f7f8;
+  --mba-surface: #ffffff;
+  --mba-subtle: #f1f3f4;
+  --mba-text: #25292c;
+  --mba-text-2: #5e676e;
+  --mba-muted: #758088;
+  --mba-border: #e3e6e8;
+  --mba-border-strong: #cbd1d5;
+  --mba-blue: #a44b28;
+  --mba-blue-dark: #87391d;
+  --mba-blue-soft: #f9eee9;
+  --ink: var(--mba-text);
+  --muted: var(--mba-text-2);
+  --line: var(--mba-border);
+  --surface: var(--mba-surface);
+  --bg: var(--mba-bg);
+  --accent: var(--mba-blue);
+  --accent-soft: var(--mba-blue-soft);
+}
+html[data-mba-theme="lua"] {
+  --mba-bg: #151719;
+  --mba-surface: #1c1f22;
+  --mba-subtle: #262a2e;
+  --mba-text: #eff0f1;
+  --mba-text-2: #c1c6ca;
+  --mba-muted: #a4acb2;
+  --mba-border: #34393e;
+  --mba-border-strong: #4d545b;
+  --mba-blue: #e78b56;
+  --mba-blue-dark: #f4a36e;
+  --mba-blue-soft: #372922;
+  --ink: var(--mba-text);
+  --muted: var(--mba-text-2);
+  --line: var(--mba-border);
+  --surface: var(--mba-surface);
+  --bg: var(--mba-bg);
+  --accent: var(--mba-blue);
+  --accent-soft: var(--mba-blue-soft);
+  background: var(--mba-bg);
+}
+html[data-mba-theme="sol"] body,
+html[data-mba-theme="sol"] .app-shell,
+html[data-mba-theme="sol"] .main-area,
+html[data-mba-theme="sol"] .content,
+html[data-mba-theme="sol"] .page,
+html[data-mba-theme="sol"] #tarefas[data-react-tasks='true'] {
+  background: var(--mba-bg) !important;
+}
+html[data-mba-theme="lua"] body,
+html[data-mba-theme="lua"] .app-shell,
+html[data-mba-theme="lua"] .main-area,
+html[data-mba-theme="lua"] .content,
+html[data-mba-theme="lua"] .page,
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
+  background: var(--mba-bg) !important;
+  color: var(--mba-text);
+}
+
+/* Navegação principal: uma só hierarquia, sem cards ou separadores excessivos. */
+:root { --mba-sidebar-width: 196px; --mba-sidebar-collapsed: 60px; --mba-topbar-height: 50px; }
+.app-shell .sidebar {
+  background: #191b1e !important;
+  border-color: #2c3034 !important;
+  padding-inline: 11px;
+}
+.sidebar-head { border-color: #2c3034 !important; }
+.sidebar .brand { font-size: 13px; gap: 6px; letter-spacing: -.025em; }
+.sidebar .brand > span:first-child { color: #e8b08d !important; font-weight: 650; }
+.sidebar .brand .brand-word { font-weight: 450; color: #e9e8e6 !important; }
+.sidebar .main-nav { gap: 3px; padding-top: 15px; }
+.sidebar .nav-item {
+  height: 37px;
+  min-height: 37px;
+  padding: 0 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 470;
+  letter-spacing: 0;
+  color: #b6bac0;
+  transition: background-color .14s ease, color .14s ease;
+}
+.sidebar .nav-item svg { width: 15px; height: 15px; color: #939ba2; stroke-width: 1.75; }
+.sidebar .nav-item:hover { color: #f0f0f0; background: #24282c !important; }
+.sidebar .nav-item:hover svg { color: #d9dce0 !important; }
+.sidebar .nav-item.active {
+  color: #fff !important;
+  background: #2c2a28 !important;
+  font-weight: 600;
+}
+.sidebar .nav-item.active svg { color: #e9a374 !important; }
+.sidebar .nav-item.active::before { content: none !important; }
+.sidebar .nav-badge {
+  min-width: 19px;
+  height: 18px;
+  border-radius: 5px;
+  background: #44332b;
+  color: #edbc9d;
+  font-size: 10px;
+}
+.sidebar .sidebar-bottom { border-color: #313439 !important; }
+.sidebar .sidebar-portfolio-trigger {
+  border: 1px solid #373c41 !important;
+  background: #23262a !important;
+  border-radius: 7px;
+  min-height: 37px;
+  font-size: 11px;
+}
+.sidebar .sidebar-portfolio-heading { color: #92999f !important; font-size: 9px; }
+.sidebar .sidebar-logout { color: #aeb6bc; }
+.sidebar .sidebar-logout:hover { background: #2b292a; color: #fff; }
+
+/* Barra superior: contexto + tema + usuário. */
+.app-shell .topbar {
+  height: var(--mba-topbar-height);
+  min-height: var(--mba-topbar-height);
+  padding-inline: 25px;
+  gap: 14px;
+  background: var(--mba-surface) !important;
+  color: var(--mba-text);
+  border-bottom: 1px solid var(--mba-border) !important;
+  backdrop-filter: none;
+}
+.mba-context-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  min-width: 0;
+  color: var(--mba-muted);
+  white-space: nowrap;
+  font-size: 11.5px;
+  line-height: 1;
+}
+.mba-context-label span { font-weight: 450; }
+.mba-context-label i { color: var(--mba-border-strong); font-size: 15px; font-style: normal; }
+.mba-context-label strong { color: var(--mba-text); font-size: 11.5px; font-weight: 620; }
+.app-shell .local-preview-badge { margin: 0; }
+.app-shell .top-actions { flex-shrink: 0; }
+.topbar .mba-theme-switch {
+  height: 30px; min-width: 64px;
+  color: var(--mba-text-2); border-color: var(--mba-border);
+}
+html[data-mba-theme="lua"] .topbar,
+html[data-mba-theme="lua"] .app-shell .topbar {
+  background: var(--mba-surface) !important;
+  border-color: var(--mba-border) !important;
+}
+html[data-mba-theme="lua"] .topbar .mba-theme-switch {
+  background: #25292d !important;
+  border-color: #40464c !important;
+  color: #e3e6e9 !important;
+}
+html[data-mba-theme="lua"] .topbar .avatar { background: #332c29; color: #f3b489; }
+
+/* Tipografia editorial só nos títulos: dados e perguntas seguem fonte de interface. */
+.app-shell :is(.page-title h1, .analytics-page-header h1, .tasks-management-header h1,
+  .protocolos-header h1, .operation-header h1, .lobby-heading h1) {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: clamp(23px, 1.8vw, 29px) !important;
+  font-weight: 400 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -.035em !important;
+  color: var(--mba-text) !important;
+}
+.app-shell :is(.tasks-process-title strong, .execution-process-heading h2,
+  .task-question h3, .protocolos-table-react, .tasks-management-table,
+  .protocolos-status-strip-react, .task-option-card strong) {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+.app-shell :is(.page-title p, .analytics-page-header p, .operation-header p,
+  .protocolos-header p, .tasks-management-header p) {
+  color: var(--mba-text-2) !important;
+  font-size: 12px !important;
+}
+
+/* Abas secundárias: linguagem consistente, sem underline duplicado. */
+body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) {
+  background: var(--mba-surface) !important;
+  border-bottom-color: var(--mba-border) !important;
+  gap: 22px !important;
+}
+body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button {
+  color: var(--mba-text-2) !important;
+  font-weight: 500 !important;
+}
+body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button.active {
+  color: var(--mba-blue) !important;
+  font-weight: 650 !important;
+}
+body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button.active::after {
+  height: 2px !important;
+  background: var(--mba-blue) !important;
+}
+html[data-mba-theme="lua"] body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) {
+  background: var(--mba-bg) !important;
+  border-color: var(--mba-border) !important;
+}
+html[data-mba-theme="lua"] body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button.active {
+  color: var(--mba-blue) !important;
+}
+html[data-mba-theme="lua"] body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button.active::after {
+  background: var(--mba-blue) !important;
+}
+
+/* Tarefas — fila densa, área de execução ampla e Q&A mantido no lugar. */
+#tarefas[data-react-tasks='true'] .task-station .tasks-workspace {
+  gap: 10px !important;
+  grid-template-columns: minmax(240px, 276px) minmax(0, 1fr) !important;
+}
+#tarefas[data-react-tasks='true'] .task-station .tasks-workspace-sidebar,
+#tarefas[data-react-tasks='true'] .task-station .tasks-renderer-card {
+  background: var(--mba-surface) !important;
+  border: 1px solid var(--mba-border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-section {
+  background: var(--mba-surface) !important;
+  padding: 12px !important;
+}
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-title strong {
+  color: var(--mba-text-2) !important;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-title span { color: var(--mba-muted) !important; }
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-list { gap: 2px; }
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-item {
+  min-height: 59px !important;
+  height: 59px !important;
+  border: 1px solid transparent !important;
+  border-radius: 6px;
+  background: transparent !important;
+  padding: 7px 9px;
+}
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-item:hover {
+  background: var(--mba-subtle) !important;
+}
+#tarefas[data-react-tasks='true'] .task-station .tasks-process-item.selected {
+  background: var(--mba-blue-soft) !important;
+  border-color: color-mix(in srgb, var(--mba-blue) 28%, transparent) !important;
+  box-shadow: inset 2px 0 0 var(--mba-blue) !important;
+}
+#tarefas[data-react-tasks='true'] .tasks-process-item strong { color: var(--mba-text) !important; font-size: 11.3px; }
+#tarefas[data-react-tasks='true'] .tasks-process-item small { color: var(--mba-muted) !important; font-size: 10px; }
+#tarefas[data-react-tasks='true'] .tasks-process-search,
+#tarefas[data-react-tasks='true'] .mba-react-select-trigger {
+  background: var(--mba-surface) !important;
+  border-color: var(--mba-border) !important;
+  color: var(--mba-text) !important;
+}
+#tarefas[data-react-tasks='true'] .tasks-process-search input { color: var(--mba-text) !important; }
+#tarefas[data-react-tasks='true'] .tasks-renderer-card > header,
+#tarefas[data-react-tasks='true'] .execution-process-heading {
+  background: var(--mba-surface) !important;
+  border-color: var(--mba-border) !important;
+}
+#tarefas[data-react-tasks='true'] .execution-process-heading small { color: var(--mba-blue) !important; }
+#tarefas[data-react-tasks='true'] .execution-process-heading h2 { color: var(--mba-text) !important; }
+#tarefas[data-react-tasks='true'] .task-form-content { gap: 16px; }
+#tarefas[data-react-tasks='true'] .task-question { border-color: var(--mba-border) !important; }
+#tarefas[data-react-tasks='true'] .task-question h3 { color: var(--mba-text) !important; font-weight: 600; }
+#tarefas[data-react-tasks='true'] .task-question-number {
+  background: var(--mba-blue-soft) !important;
+  color: var(--mba-blue) !important;
+}
+#tarefas[data-react-tasks='true'] .task-option-card > span {
+  border: 1px solid var(--mba-border) !important;
+  border-radius: 6px !important;
+  background: var(--mba-surface) !important;
+}
+#tarefas[data-react-tasks='true'] .task-option-card > span:hover {
+  background: var(--mba-subtle) !important;
+  border-color: var(--mba-border-strong) !important;
+}
+#tarefas[data-react-tasks='true'] .task-option-card input:checked + span {
+  background: var(--mba-blue-soft) !important;
+  border-color: var(--mba-blue) !important;
+  box-shadow: inset 2px 0 0 var(--mba-blue) !important;
+}
+#tarefas[data-react-tasks='true'] .task-option-card strong { color: var(--mba-text) !important; }
+#tarefas[data-react-tasks='true'] .task-renderer-footer {
+  background: var(--mba-surface) !important;
+  border-color: var(--mba-border) !important;
+}
+#tarefas[data-react-tasks='true'] .queue-station-filters label { color: var(--mba-text-2); }
+#tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.high { background: #fbece7; color: #9d3d29; }
+#tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.medium { background: #fff5e7; color: #8c5b20; }
+#tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.low { background: #eaf4ee; color: #2f7050; }
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.high { background: #4d2d2a; color: #ffc4ac; }
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.medium { background: #453929; color: #efcc94; }
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .queue-item-badges .tasks-state-pill.low { background: #283d34; color: #a7d6b7; }
+
+/* Tabelas: dados em linhas, nunca blocos idênticos de KPI para cada processo. */
+.app-shell :is(.tasks-management-table-wrap, .protocolos-table-wrap, .table-wrap) {
+  border: 1px solid var(--mba-border) !important;
+  border-radius: 8px !important;
+  background: var(--mba-surface) !important;
+  box-shadow: none !important;
+}
+.app-shell :is(.tasks-management-table th, .protocolos-table-react th) {
+  background: var(--mba-subtle) !important;
+  border-bottom-color: var(--mba-border) !important;
+  color: var(--mba-text-2) !important;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .025em;
+}
+.app-shell :is(.tasks-management-table td, .protocolos-table-react td) {
+  border-bottom-color: var(--mba-border) !important;
+  color: var(--mba-text-2);
+  font-size: 11.5px;
+}
+.app-shell :is(.tasks-management-table tbody tr:hover, .protocolos-table-react tbody tr:hover) td {
+  background: var(--mba-subtle);
+}
+.app-shell :is(.analytics-card, .operation-card, .protocolos-card, .users-card) {
+  border-color: var(--mba-border) !important;
+  background: var(--mba-surface) !important;
+  box-shadow: none !important;
+}
+
+/* Lua: componentes da estação e formulários não podem retornar ao branco. */
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .task-station :is(
+  .tasks-workspace-sidebar, .tasks-renderer-card, .tasks-process-section,
+  .tasks-renderer-body, .task-form-content, .task-option-card > span,
+  .tasks-process-search, .mba-react-select-trigger, .task-renderer-footer
+) {
+  background: var(--mba-surface) !important;
+  border-color: var(--mba-border) !important;
+  color: var(--mba-text) !important;
+}
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .tasks-process-item.selected {
+  background: #372922 !important;
+}
+html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .task-option-card input:checked + span {
+  background: #372922 !important;
+  color: var(--mba-text) !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(
+  .protocolos-card, .analytics-card, .operation-card,
+  .tasks-management-table-wrap, .protocolos-table-wrap,
+  .tasks-team-table-wrap, .tasks-management-table, .tasks-management-table td
+) {
+  background: var(--mba-surface) !important;
+  border-color: var(--mba-border) !important;
+  color: var(--mba-text) !important;
+}
+html[data-mba-theme="lua"] .app-shell :is(.tasks-management-table th, .protocolos-table-react th) {
+  background: var(--mba-subtle) !important;
+  color: var(--mba-text-2) !important;
+}
+@media(max-width:900px) {
+  :root { --mba-sidebar-width: 60px; }
+  .app-shell .topbar { padding-inline: 14px; }
+  .mba-context-label { gap: 6px; }
+  #tarefas[data-react-tasks='true'] .task-station .tasks-workspace {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+@media(max-width:600px) {
+  .mba-context-label span, .mba-context-label i { display: none; }
+  .sidebar .nav-item { height: 38px; min-height: 38px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .sidebar .nav-item { transition: none !important; }
+}
