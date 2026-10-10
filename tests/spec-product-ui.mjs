@@ -121,15 +121,15 @@ try {
     await page.locator('.qa-stage-track').waitFor();
     const initial = await page.locator('.qa-stage-track .qa-stage-segment').count();
     assert.ok(initial > 0, scenario+' deve exibir faixa de progresso');
-    await page.getByRole('radiogroup',{name:group}).getByRole('radio',{name:answer,exact:true}).check();
+    await page.getByRole('radiogroup',{name:group}).getByText(answer,{exact:true}).click();
     await page.getByRole('button',{name:/Próxima/}).click();
     assert.equal(await page.locator('.qa-stage-segment.active small').innerText(),stage,scenario+' etapa atual');
   }
 
   // Um Enter ou requestSubmit programático não pode concluir Protocolos.
   await page.goto(base+'/?scenario=protocolo');
-  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByRole('radio',{name:'Não',exact:true}).check();
-  await page.getByRole('radiogroup',{name:'protocol-error-reason'}).getByRole('radio',{name:'Ainda não foi protocolado nos autos'}).check();
+  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByText('Não',{exact:true}).click();
+  await page.getByRole('radiogroup',{name:'protocol-error-reason'}).getByText('Ainda não foi protocolado nos autos',{exact:true}).click();
   await page.keyboard.press('Enter');
   await page.locator('form.protocol-collection-form').evaluate(form => form.requestSubmit());
   let protocolWrites = await page.evaluate(() => window.__protocolWriteLog || []);
@@ -140,12 +140,12 @@ try {
   assert.equal(protocolWrites.filter(row => row.path.endsWith('protocol-collection-error')).length,1);
 
   await page.goto(base+'/?scenario=protocolo');
-  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByRole('radio',{name:'Sim',exact:true}).check();
+  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByText('Sim',{exact:true}).click();
   const pdf = {name:'documento.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\n%%EOF')};
   await page.locator('.protocol-native-file').nth(0).setInputFiles(pdf);
   await page.locator('.protocol-native-file').nth(1).setInputFiles({...pdf,name:'comprovante.pdf'});
   await page.waitForFunction(() => (window.__protocolWriteLog || []).filter(row => row.path.endsWith('/stage')).length === 2);
-  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).getByRole('radio',{name:'Sim',exact:true}).focus();
+  await page.getByRole('radiogroup',{name:'protocol-can-attach'}).locator('input[type="radio"][value="sim"]').focus();
   await page.keyboard.press('Enter');
   protocolWrites = await page.evaluate(() => window.__protocolWriteLog || []);
   assert.equal(protocolWrites.filter(row => row.path.endsWith('/commit')).length,0,'Upload não encerra tarefa');
