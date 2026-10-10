@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { EncerramentosPage } from '../src/dashboard/EncerramentosPage';
+import { GestaoProcessualPage } from '../src/dashboard/GestaoProcessualPage';
 import '../src/dashboard/shell.css';
 
 // Only test-only data, isolated from actual backend; null means unavailable.
@@ -16,7 +16,17 @@ const dashboard = {
   },
   etapas:{etapa:'validados',total:8,tipos:[],aging:[],matriz:[],fonte:'fixture',mensagem:'Dados de teste'}
 };
+// Emula a troca de carteira sem mudar as permissões do usuário.
+let resultsPortfolioAllowed = true;
+history.replaceState({}, '', '/analytics/encerramentos');
 Object.assign(window,{
+  MBA_CURRENT_USER:{permissions:{'dashboard.view':true,'encerramentos.view':true}},
+  MBA_PORTFOLIO_POLICY:{canAccess:(page:string)=>resultsPortfolioAllowed && ['dashboard','encerramentos'].includes(page)},
+  __setResultsPortfolioAllowed:(allowed:boolean)=>{
+    resultsPortfolioAllowed = allowed;
+    window.dispatchEvent(new Event('mba:portfolio-changed'));
+  },
+
   MBA_API:{getPortfolioId:()=> 'agibank_mba'},
   MBA_AUTOMATION_API:{request:async(path:string)=>{
     if(path.startsWith('/api/operacao/encerramentos/dashboard?')) return dashboard;
@@ -24,4 +34,4 @@ Object.assign(window,{
     throw new Error('Endpoint indisponível na prévia: '+path);
   }}
 });
-createRoot(document.getElementById('results-root')!).render(<EncerramentosPage/>);
+createRoot(document.getElementById('results-root')!).render(<GestaoProcessualPage/>);
