@@ -121,7 +121,10 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
     const step = formRef.current?.querySelector<HTMLElement>('.qa-step:not([hidden])') || null;
     if (!hasCurrentAnswer(step)) return;
     if (current < total - 1) setActiveIndex(current + 1);
-    else formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)')?.focus();
+    else {
+      const save = formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
+      if (save) formRef.current?.requestSubmit(save);
+    }
   };
 
   useEffect(() => {
@@ -137,7 +140,10 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
           event.preventDefault();
           if (event.ctrlKey || !hasCurrentAnswer(form.querySelector<HTMLElement>('.qa-step:not([hidden])'))) return;
           if (current < total - 1) setActiveIndex(current + 1);
-          else form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)')?.focus();
+          else {
+            const save = form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
+            if (save) form.requestSubmit(save);
+          }
         }
         return;
       }
@@ -159,7 +165,10 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
         const step = form.querySelector<HTMLElement>('.qa-step:not([hidden])');
         if (!hasCurrentAnswer(step)) return;
         if (current < total - 1) setActiveIndex(current + 1);
-        else form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)')?.focus();
+        else {
+          const save = form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
+          if (save) form.requestSubmit(save);
+        }
         return;
       }
       if (/^[1-9]$/.test(event.key)) {
@@ -200,7 +209,7 @@ function ProgressiveTaskForm({ children, draftKey = '', ...props }: TaskFormProp
     <div className="qa-footer">
       <nav className="qa-keyboard-nav" aria-label="Navegação da análise">
         <button type="button" onClick={previous} disabled={current === 0}>← Anterior <kbd>Backspace</kbd></button>
-        <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> Avançar</span>
+        <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> {navigation.canSubmit ? 'Salvar análise' : 'Avançar'}</span>
         <button type="button" onClick={next} disabled={total < 2 || current === total - 1}>Próxima <kbd>Enter</kbd> →</button>
       </nav>
       <QaNavigation.Provider value={navigation}>{actions}</QaNavigation.Provider>
