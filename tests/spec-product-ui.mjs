@@ -8,14 +8,21 @@ const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--conf
 });
 let browser;
 try {
-  await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error('Servidor da prévia não iniciou')), 20000);
-    server.stdout.on('data', data => {
-      if (data.toString().includes('Local:')) { clearTimeout(timeout); resolve(); }
-    });
-    server.stderr.on('data', data => process.stderr.write(data));
-    server.on('exit', code => { clearTimeout(timeout); reject(new Error('Vite encerrou: ' + code)); });
-  });
+  // Readiness must be a real HTTP response, not a fragile stdout log
+  // (Vite prints different address labels and formatting across environments).
+  let startupError = '';
+  server.stdout.on('data', data => { startupError += String(data); });
+  server.stderr.on('data', data => { startupError += String(data); });
+  let ready = false;
+  for (let attempt = 0; attempt < 120; attempt++) {
+    try {
+      const response = await fetch('http://127.0.0.1:5174/');
+      if (response.ok) { ready = true; break; }
+    } catch { /* ainda iniciando */ }
+    if (server.exitCode !== null) break;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  if (!ready) throw new Error('Servidor da prévia não respondeu em http://127.0.0.1:5174/. ' + startupError.slice(-1200));
   browser = await chromium.launch({ headless: true });
   await mkdir('.build/spec-ui', { recursive: true });
   const errors = [];
