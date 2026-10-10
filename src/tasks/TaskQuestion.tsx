@@ -105,7 +105,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, ...props }: Task
   const formRef = useRef<HTMLFormElement>(null);
   const total = questions.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
-  const questionStages = questions.map(child => (child.props as { stage?: string }).stage || '');
+  const questionStages = questions.map(child => isValidElement(child) ? ((child.props as { stage?: string }).stage || '') : '');
   const activeStage = questionStages[current] || '';
   const completedStages = new Set(stages?.filter(stage =>
     questionStages.includes(stage) &&
