@@ -1,6 +1,6 @@
 # MBA Backoffice Reimagined — especificação de protótipo
 
-**Branch:** `design/backoffice-reimagined-five-roles-20261009`  
+**Branch:** `design/mascarenhas-identidade-20261009`  
 **Entrada de demonstração:** `ux-preview/reimagined/index.html`  
 **Estado:** protótipo navegável, com dados 100% fictícios; sem autenticação e sem APIs externas.
 
