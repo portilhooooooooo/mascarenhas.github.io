@@ -36,6 +36,13 @@ for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], 
 assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta da API');
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');
 assert.match(style, /\.qa-step\[hidden\]/, 'Somente etapa ativa visível');
+assert.match(questions, /qa-stage-track/, 'Fluxos exibem as etapas');
+assert.match(closing, /stages=\{CLOSING_STAGES\}/, 'Encerramento apresenta etapas fixas');
+assert.match(closing, /classification_disagreement_reason/, 'Discordância tem justificativa');
+assert.match(closing, /closing-disagreement-field/, 'Campo de divergência visível ao selecionar Não');
+assert.doesNotMatch(closing, /Indício automático:/, 'Não influenciar a validação humana com indício automático');
+assert.match(shell, /<SelectMenu label="UF" searchable/, 'Filtro UF tem pesquisa');
+assert.doesNotMatch(read('src/tasks/model.ts'), /const priority = priorityRank/, 'Prioridade não determina ordenação');
 assert.match(questions, /data-qa-last=\{navigation\.canSubmit/, 'Ações refletem a etapa atual');
 assert.match(questions, /!qa\.canSubmit/, 'Salvar fica bloqueado em perguntas intermediárias');
 assert.match(questions, /form\.requestSubmit\(save\)/, 'Enter salva explicitamente na última pergunta');
@@ -45,9 +52,9 @@ assert.doesNotMatch(closing, /className=\{'closing-outcome closing-summary '/, '
 assert.doesNotMatch(style, /\.closing-summary/, 'Sem CSS de card de classificação');
 assert.match(closing, /closing-classification-agreement/, 'Confirmação final Sim/Não');
 assert.match(closing, /pode ser encerrado como Derrota Voluntária\. Você concorda/, 'Texto da Derrota Voluntária');
-assert.match(closing, /ready=\{Boolean\(outcome && classificationAgreed === 'sim'\)\}/, 'Apenas Sim habilita o salvamento');
+assert.match(closing, /classificationAgreed === 'nao' && validReason/, 'Discordância justificada libera registro de revisão');
 assert.match(closing, /setClassificationAgreed\(null\)/, 'Alterar respostas invalida confirmação anterior');
-assert.match(closing, /classificação antes de salvar/, 'Não mantém rascunho para revisão');
+assert.match(closing, /A análise será registrada para revisão/, 'A discordância não confirma a classificação');
 assert.match(style, /form\[data-qa-index='0'\][^\n]*\.qa-context-note/, 'Indício contextual não ocupa todas as perguntas');
 assert.doesNotMatch(renderer, /\|\| task\.title/, 'Título da tarefa não pode ser indício daquele processo');
 console.log('Q&A progressivo: atalhos, cache e gravação explícita verificados.');
