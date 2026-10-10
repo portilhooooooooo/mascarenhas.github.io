@@ -171,7 +171,7 @@ function syncTopModuleFromActivePage() {
   }
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
   if (activePage.id === 'usuarios') {
-    nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.main-nav .nav-item').forEach(item => item.classList.remove('active'));
     const label = document.getElementById('mba-active-module');
     if (label) label.textContent = 'Usuários';
   }
