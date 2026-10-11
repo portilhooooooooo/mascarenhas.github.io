@@ -14,7 +14,6 @@ const selectedCnj = () => {
 };
 const date = (value?: string | null) => { if (!value) return 'Não disponível'; const d = new Date(value); return isNaN(d.getTime()) ? value : d.toLocaleString('pt-BR'); };
 const statusLabel = (s: string) => ({pending:'Pendente',in_progress:'Em execução',waiting:'Aguardando',completed:'Concluída',error:'Erro',inactive:'Inativa',cancelled:'Cancelada'}[s] || s);
-const KIND_LABELS = {judicial:'Movimentação judicial',system:'Sistema',human_analysis:'Análise',automation:'Automação',task:'Tarefa'};
 const eventTitle = (e: TimelineEvent) => ({task_created:'Tarefa criada',analysis_completed:'Análise concluída',analysis_deferred:'Análise reagendada',process_skipped:'Processo pulado',task_updated:'Tarefa atualizada'}[e.title] || e.title);
 
 function Pagination({page, more, busy, total, onChange}: {page: number; more: boolean; busy: boolean; total?: number; onChange: (page: number) => void}) {
@@ -68,7 +67,6 @@ function CreateProcessTask({cnj, types, onCreated, onClose}: {cnj: string; types
 function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
   const [detail, setDetail] = useState<ProcessDetail | null>(null);
   const [error, setError] = useState('');
-  const [view, setView] = useState<'important'|'all'>('important');
   const [eventPage, setEventPage] = useState(1);
   const [taskPage, setTaskPage] = useState(1);
   const [events, setEvents] = useState<Timeline | null>(null);
@@ -96,12 +94,12 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
     let active = true;
     setEventsLoading(true); setEventError(''); setEvents(null);
     processRequest<Timeline>(processPath(cnj) + '/timeline?' +
-      new URLSearchParams({page:String(eventPage),page_size:'25',view}))
+      new URLSearchParams({page:String(eventPage),page_size:'25'}))
       .then(data => { if(active) setEvents(data); })
       .catch(e => { if(active) setEventError(e.message); })
       .finally(() => { if(active) setEventsLoading(false); });
     return () => { active = false; };
-  }, [cnj, detail, view, eventPage]);
+  }, [cnj, detail, eventPage]);
 
   useEffect(() => {
     if (!detail) return;
@@ -129,7 +127,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
             ? <button ref={createTrigger} className="primary-button" type="button" onClick={() => setCreate(true)}>Criar tarefa</button> : null}
         </header>
         <dl className="processos-identification">
-          <div><dt>Situação</dt><dd>{detail.process.situation_benner || 'Não informada'}</dd></div>
+          <div><dt>Situação</dt><dd title={detail.process.situation_source==='presumido'?'Situação provisória: ainda não confirmada pelo Benner.':undefined}>{detail.process.situation || 'Não verificada'}</dd></div>
           <div><dt>Fase</dt><dd>{detail.process.fase || 'Não informada'}</dd></div>
           <div><dt>UF</dt><dd>{detail.process.state || '—'}</dd></div>
           <div><dt>Última movimentação</dt><dd>{date(detail.process.last_movement_at)}</dd></div>
@@ -139,10 +137,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
           <section className="processos-history" aria-label="Histórico processual">
             <div className="processos-workspace-header">
               <div><h2>Movimentações</h2><p>Andamentos relevantes do processo</p></div>
-              <div className="processos-view-choice" role="group" aria-label="Filtrar histórico">
-                <button type="button" aria-pressed={view==='important'} onClick={() => {setView('important');setEventPage(1);}}>Principais</button>
-                <button type="button" aria-pressed={view==='all'} onClick={() => {setView('all');setEventPage(1);}}>Todas</button>
-              </div>
+
             </div>
             {eventError ? <div role="alert" className="processos-state">{eventError}<button type="button" onClick={() => setRevision(r=>r+1)}>Tentar novamente</button></div>
               : eventsLoading ? <div role="status" className="processos-state">Carregando movimentações…</div>
@@ -152,13 +147,12 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
                   <li key={e.id} data-event-kind={e.kind}>
                     <div className="processos-event-date"><time dateTime={e.occurred_at}>{date(e.occurred_at)}</time>{e.degree ? <span>{e.degree}</span> : null}</div>
                     <h3>{eventTitle(e)}</h3>
-                    {view === 'all' ? <p>{KIND_LABELS[e.kind] || e.source}{e.code ? ' · Código ' + e.code : ''}</p> : null}
                     <details><summary>Detalhes do registro</summary>
                       <dl><div><dt>Origem</dt><dd>{e.source}</dd></div><div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div><div><dt>Identificador</dt><dd>{e.source_id || e.id}</dd></div></dl>
                       {e.references?.map((r,i) => <p key={i}>Captura {date(r.captured_at)} · Job {r.job_id || '—'}</p>)}
                     </details>
                   </li>
-                )}</ol> : <div className="processos-state">{view==='important' ? 'Nenhuma movimentação relevante identificada. Consulte “Todas” para ver o histórico completo.' : 'Nenhum registro disponível nas fontes consultadas.'}</div>}
+                )}</ol> : <div className="processos-state">Nenhuma movimentação relevante identificada nas fontes disponíveis.</div>}
                 <Pagination page={eventPage} more={events.has_more} busy={eventsLoading} onChange={setEventPage}/>
               </> : null}
           </section>
@@ -189,8 +183,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
 export function ProcessosPage() {
   const [cnj, setCnj] = useState(selectedCnj);
   const [search, setSearch] = useState('');
-  const [situationSearch, setSituationSearch] = useState('');
-  const [filters, setFilters] = useState({q:'',situation:'',uf:''});
+  const [filters, setFilters] = useState({q:'',situation:'',uf:'',movement:''});
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Paged<ProcessRecord> | null>(null);
   const [error, setError] = useState('');
@@ -221,13 +214,14 @@ export function ProcessosPage() {
   return <section className="processos-page">
     <header className="processos-heading"><h1>Processos</h1></header>
     <form className="processos-filters" onSubmit={e=>{
-      e.preventDefault();setPage(1);setFilters(f=>({...f,q:search.trim(),situation:situationSearch.trim()}));
+      e.preventDefault();setPage(1);setFilters(f=>({...f,q:search.trim()}));
     }}>
       <label className="processos-search">Número CNJ<input type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
-      <label className="processos-situation-filter">Situação<input type="search" value={situationSearch} maxLength={100} placeholder="Ex.: Em Andamento" onChange={e=>setSituationSearch(e.target.value)}/></label>
+      <label className="processos-situation-filter">Situação<select value={filters.situation} onChange={e=>filter('situation',e.target.value)}><option value="">Todas</option><option value="Em andamento">Em andamento</option><option value="Encerrado">Encerrado</option><option value="Reativado">Reativado</option></select></label>
       <label className="processos-uf-filter">UF<select value={filters.uf} onChange={e=>filter('uf',e.target.value)}><option value="">Todas</option>{BRAZIL_STATES.map(s=><option key={s.uf} value={s.uf}>{s.uf}</option>)}</select></label>
+      <label className="processos-movement-filter">Movimentações<select value={filters.movement} onChange={e=>filter('movement',e.target.value)}><option value="">Todas</option><option value="sentence">Com sentença</option><option value="sentence_improcedente">Sentença improcedente</option><option value="tutela_deferida">Tutela deferida</option><option value="suspended">Suspensos</option></select></label>
       <button className="primary-button" type="submit">Buscar</button>
-      <button type="button" className="processos-clear" onClick={()=>{setSearch('');setSituationSearch('');setPage(1);setFilters({q:'',situation:'',uf:''});}}>Limpar</button>
+      <button type="button" className="processos-clear" onClick={()=>{setSearch('');setPage(1);setFilters({q:'',situation:'',uf:'',movement:''});}}>Limpar</button>
     </form>
     {error ? <div role="alert" className="processos-state">{error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
       : loading ? <div role="status" className="processos-state">Carregando processos…</div>
@@ -235,7 +229,7 @@ export function ProcessosPage() {
         <thead><tr><th>Processo</th><th>Situação</th><th>UF</th><th>Data da última movimentação</th></tr></thead>
         <tbody>{data.rows.map(p=><tr key={p.id}>
           <td><button type="button" onClick={()=>win.MBA_NAVIGATE?.('processos/'+encodeURIComponent(p.cnj))}>{p.cnj}</button></td>
-          <td>{p.situation_benner || 'Não informada'}</td>
+          <td title={p.situation_source==='presumido'?'Situação provisória: ainda não confirmada pelo Benner.':undefined}>{p.situation || 'Não verificada'}</td>
           <td>{p.state || '—'}</td>
           <td>{p.last_movement_at ? date(p.last_movement_at) : '—'}</td>
         </tr>)}</tbody>
