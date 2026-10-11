@@ -90,7 +90,8 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
   }, [cnj, revision]);
 
   useEffect(() => {
-    if (!detail) return;
+    // The judicial history and the case header are independent reads: load
+    // concurrently instead of waiting for the header before requesting DataJud.
     let active = true;
     setEventsLoading(true); setEventError(''); setEvents(null);
     processRequest<Timeline>(processPath(cnj) + '/timeline?' +
@@ -99,7 +100,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
       .catch(e => { if(active) setEventError(e.message); })
       .finally(() => { if(active) setEventsLoading(false); });
     return () => { active = false; };
-  }, [cnj, detail, eventPage]);
+  }, [cnj, eventPage, revision]);
 
   useEffect(() => {
     if (!detail) return;
@@ -130,7 +131,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
           <div><dt>Situação</dt><dd title={detail.process.situation_source==='presumido'?'Situação provisória: ainda não confirmada pelo Benner.':undefined}>{detail.process.situation || 'Não verificada'}</dd></div>
           <div><dt>Fase</dt><dd>{detail.process.fase || 'Não informada'}</dd></div>
           <div><dt>UF</dt><dd>{detail.process.state || '—'}</dd></div>
-          <div><dt>Última movimentação</dt><dd>{date(detail.process.last_movement_at)}</dd></div>
+          <div><dt>Última movimentação</dt><dd>{date(detail.process.last_movement_at)}{detail.process.last_movement_title ? <span className="processos-last-movement-title">{detail.process.last_movement_title}</span> : null}</dd></div>
         </dl>
         {notice ? <p className="processos-notice" role="status">{notice}</p> : null}
         <div className={'processos-workspace' + (!detail.permissions.tasks ? ' processos-workspace-single' : '')}>
@@ -142,14 +143,14 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
             {eventError ? <div role="alert" className="processos-state">{eventError}<button type="button" onClick={() => setRevision(r=>r+1)}>Tentar novamente</button></div>
               : eventsLoading ? <div role="status" className="processos-state">Carregando movimentações…</div>
               : events ? <>
-                {events.sources.datajud.state === 'unavailable' ? <p className="processos-source-status" role="status">{events.sources.datajud.message}</p> : null}
+                {['unavailable','partial'].includes(events.sources.datajud.state) ? <p className="processos-source-status" role="status">{events.sources.datajud.message || 'Histórico DataJud parcial.'}</p> : null}
                 {events.rows.length ? <ol className="processos-timeline">{events.rows.map(e =>
                   <li key={e.id} data-event-kind={e.kind}>
                     <div className="processos-event-date"><time dateTime={e.occurred_at}>{date(e.occurred_at)}</time>{e.degree ? <span>{e.degree}</span> : null}</div>
                     <h3>{eventTitle(e)}</h3>
-                    <details><summary>Detalhes do registro</summary>
-                      <dl><div><dt>Origem</dt><dd>{e.source}</dd></div><div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div><div><dt>Identificador</dt><dd>{e.source_id || e.id}</dd></div></dl>
-                      {e.references?.map((r,i) => <p key={i}>Captura {date(r.captured_at)} · Job {r.job_id || '—'}</p>)}
+                    <p className="processos-event-meta">{e.source}{e.degree ? ' · ' + e.degree : ''}</p>
+                    <details><summary>Rastreabilidade</summary>
+                      <dl><div><dt>Fonte</dt><dd>{e.source}</dd></div><div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div></dl>
                     </details>
                   </li>
                 )}</ol> : <div className="processos-state">Nenhuma movimentação relevante identificada nas fontes disponíveis.</div>}
@@ -223,7 +224,7 @@ export function ProcessosPage() {
       <button className="primary-button" type="submit">Buscar</button>
       <button type="button" className="processos-clear" onClick={()=>{setSearch('');setPage(1);setFilters({q:'',situation:'',uf:'',movement:''});}}>Limpar</button>
     </form>
-    {error ? <div role="alert" className="processos-state">{error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
+    {error ? <div role="alert" className="processos-state">{error === 'Filtros inválidos.' && filters.movement ? 'O servidor ainda não reconhece o filtro de movimentações. É necessário publicar a versão atualizada da API.' : error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
       : loading ? <div role="status" className="processos-state">Carregando processos…</div>
       : data?.rows.length ? <div className="processos-table-wrap"><table>
         <thead><tr><th>Processo</th><th>Situação</th><th>UF</th><th>Data da última movimentação</th></tr></thead>
