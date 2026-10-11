@@ -204,8 +204,11 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
           <div><dt>Situação</dt><dd title={detail.process.situation_source==='presumido'?'Situação provisória: ainda não confirmada pelo Benner.':undefined}>{detail.process.situation || 'Não verificada'}</dd></div>
           <div><dt>Fase</dt><dd>{detail.process.fase || 'Não informada'}</dd></div>
           <div><dt>UF</dt><dd>{detail.process.state || '—'}</dd></div>
-          <div><dt>Última movimentação</dt><dd>{date(detail.process.last_movement_at)}{detail.process.last_movement_title ? <span className="processos-last-movement-title">{detail.process.last_movement_title}</span> : null}</dd></div>
+          <div><dt>Última movimentação</dt><dd className="processos-last-movement"><time>{date(detail.process.last_movement_at)}</time>{detail.process.last_movement_title ? <span className="processos-last-movement-title">{detail.process.last_movement_title.toLocaleLowerCase("pt-BR") === "definitivo" ? "Arquivamento definitivo" : detail.process.last_movement_title}</span> : null}</dd></div>
         </dl>
+        {detail.process.situation === 'Em andamento' && detail.process.last_movement_title?.toLocaleLowerCase('pt-BR') === 'definitivo'
+          ? <p className="processos-sources-differ" role="status">O cadastro indica “Em andamento”, mas o DataJud registra arquivamento definitivo. Confirme a situação no Benner/CPJ.</p>
+          : null}
         {notice ? <p className="processos-notice" role="status">{notice}</p> : null}
         <div className={'processos-workspace' + (!detail.permissions.tasks ? ' processos-workspace-single' : '')}>
           <section className="processos-history" aria-label="Histórico processual">
@@ -223,7 +226,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
                     <h3>{eventTitle(e)}</h3>
                     <p className="processos-event-meta">{e.source}{e.degree ? ' · ' + e.degree : ''}</p>
                     <details><summary>Rastreabilidade</summary>
-                      <dl><div><dt>Fonte</dt><dd>{e.source}</dd></div><div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div></dl>
+                      <dl><div><dt>Fonte</dt><dd>{e.source}</dd></div>{e.code != null ? <div><dt>Código TPU</dt><dd>{e.code}</dd></div> : null}{e.raw_title && e.raw_title !== e.title ? <div><dt>Movimento original</dt><dd>{e.raw_title}</dd></div> : null}<div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div></dl>
                     </details>
                   </li>
                 )}</ol> : <div className="processos-state">Nenhuma movimentação relevante identificada nas fontes disponíveis.</div>}

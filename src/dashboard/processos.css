@@ -109,3 +109,8 @@
 .processos-filter-empty{font-size:11px;color:var(--mba-text-2);padding:13px}
 @media(max-width:940px){.processos-filters .processos-movement-filter{flex:1 1 205px}.processos-filters .processos-situation-filter{flex:1 1 145px}}
 @media(max-width:600px){.processos-filters .processos-uf-filter{flex:0 1 100px}.processos-filter-popover{max-width:calc(100vw - 42px)}}
+
+.processos-last-movement{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.processos-last-movement time{font:inherit}
+.processos-last-movement-title{font-weight:560;color:var(--mba-text)}
+.processos-sources-differ{margin:-6px 0 18px;font-size:11.5px;line-height:1.55;color:var(--mba-text-2)}

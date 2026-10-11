@@ -11,7 +11,7 @@ export type LinkedTask = {
 export type TimelineEvent = {
   id: string; kind: 'judicial' | 'system' | 'human_analysis' | 'automation' | 'task';
   source: string; source_id?: string; occurred_at?: string; captured_at?: string;
-  title: string; degree?: string; code?: string; actor_id?: string;
+  title: string; raw_title?: string; degree?: string; code?: string | number; actor_id?: string;
   references?: {source_id?: string; job_id?: string; captured_at?: string; payload_sha256?: string}[];
 };
 export type Paged<T> = {rows: T[]; total: number; page: number; page_size: number};
