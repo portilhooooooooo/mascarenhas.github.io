@@ -12,7 +12,7 @@ const selectedCnj = () => {
   const path = route(); if (!path.startsWith('processos/')) return '';
   try { return decodeURIComponent(path.slice(10)); } catch { return path.slice(10); }
 };
-const date = (value?: string) => { if (!value) return 'Não disponível'; const d = new Date(value); return isNaN(d.getTime()) ? value : d.toLocaleString('pt-BR'); };
+const date = (value?: string | null) => { if (!value) return 'Não disponível'; const d = new Date(value); return isNaN(d.getTime()) ? value : d.toLocaleString('pt-BR'); };
 const statusLabel = (s: string) => ({pending:'Pendente',in_progress:'Em execução',waiting:'Aguardando',completed:'Concluída',error:'Erro',inactive:'Inativa',cancelled:'Cancelada'}[s] || s);
 const KIND_LABELS = {judicial:'Movimentação judicial',system:'Sistema',human_analysis:'Análise',automation:'Automação',task:'Tarefa'};
 const eventTitle = (e: TimelineEvent) => ({task_created:'Tarefa criada',analysis_completed:'Análise concluída',analysis_deferred:'Análise reagendada',process_skipped:'Processo pulado',task_updated:'Tarefa atualizada'}[e.title] || e.title);
