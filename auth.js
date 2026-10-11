@@ -68,7 +68,7 @@
   };
 
   function applyBranding() {
-    document.title = 'Mascarenhas Backoffice';
+    document.title = 'Mascarenhas Barbosa';
 
     const description = document.querySelector('meta[name="description"]');
     if (description) description.setAttribute('content', 'Mascarenhas Backoffice');
@@ -76,7 +76,7 @@
     const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
     favicon.rel = 'icon';
     favicon.type = 'image/svg+xml';
-    favicon.href = '/favicon.svg?v=20260917-exact-symbol';
+    favicon.href = '/favicon-white.svg?v=20261011';
     if (!favicon.parentNode) document.head.appendChild(favicon);
 
     const appBrand = document.querySelector('.brand');
