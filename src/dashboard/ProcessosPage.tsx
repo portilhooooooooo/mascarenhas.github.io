@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown, Search } from 'lucide-react';
 import { processRequest, processPath, type ProcessRecord, type ProcessDetail, type Paged, type LinkedTask, type Timeline, type TimelineEvent } from './processosService';
 import { taskTypeLabel } from '../tasks/model';
 import { BRAZIL_STATES } from './brazilStates';
@@ -15,6 +16,98 @@ const selectedCnj = () => {
 const date = (value?: string | null) => { if (!value) return 'Não disponível'; const d = new Date(value); return isNaN(d.getTime()) ? value : d.toLocaleString('pt-BR'); };
 const statusLabel = (s: string) => ({pending:'Pendente',in_progress:'Em execução',waiting:'Aguardando',completed:'Concluída',error:'Erro',inactive:'Inativa',cancelled:'Cancelada'}[s] || s);
 const eventTitle = (e: TimelineEvent) => ({task_created:'Tarefa criada',analysis_completed:'Análise concluída',analysis_deferred:'Análise reagendada',process_skipped:'Processo pulado',task_updated:'Tarefa atualizada'}[e.title] || e.title);
+
+
+type FilterOption = {value:string; label:string; group?:string};
+const situationOptions:FilterOption[]=[
+  {value:'',label:'Todas'}, {value:'Em andamento',label:'Em andamento'},
+  {value:'Encerrado',label:'Encerrado'}, {value:'Reativado',label:'Reativado'}
+];
+const movementOptions:FilterOption[]=[
+  {value:'',label:'Todas as movimentações'},
+  {value:'distribuicao',label:'Distribuição',group:'Formação'},
+  {value:'emenda_inicial',label:'Emenda à inicial',group:'Formação'},
+  {value:'citacao',label:'Citação',group:'Formação'},
+  {value:'contestacao',label:'Contestação',group:'Formação'},
+  {value:'decisao',label:'Decisão interlocutória',group:'Decisões e tutela'},
+  {value:'tutela_deferida',label:'Tutela deferida',group:'Decisões e tutela'},
+  {value:'tutela_indeferida',label:'Tutela indeferida',group:'Decisões e tutela'},
+  {value:'tutela_revogada',label:'Tutela revogada',group:'Decisões e tutela'},
+  {value:'sentence',label:'Todas as sentenças',group:'Sentença'},
+  {value:'sentence_procedente',label:'Procedente',group:'Sentença'},
+  {value:'sentence_improcedente',label:'Improcedente',group:'Sentença'},
+  {value:'sentence_parcial',label:'Parcialmente procedente',group:'Sentença'},
+  {value:'sentence_extincao',label:'Extinção sem mérito',group:'Sentença'},
+  {value:'sentence_merito',label:'Julgamento do mérito',group:'Sentença'},
+  {value:'agravo',label:'Agravo',group:'Recursos e acórdãos'},
+  {value:'recurso',label:'Recurso / apelação',group:'Recursos e acórdãos'},
+  {value:'contrarrazoes',label:'Contrarrazões',group:'Recursos e acórdãos'},
+  {value:'embargos_declaracao',label:'Embargos de declaração',group:'Recursos e acórdãos'},
+  {value:'acordao',label:'Todos os acórdãos',group:'Recursos e acórdãos'},
+  {value:'acordao_provido',label:'Acórdão — provido',group:'Recursos e acórdãos'},
+  {value:'acordao_desprovido',label:'Acórdão — desprovido',group:'Recursos e acórdãos'},
+  {value:'acordao_mantido',label:'Acórdão — decisão mantida',group:'Recursos e acórdãos'},
+  {value:'acordao_reformado',label:'Acórdão — decisão reformada',group:'Recursos e acórdãos'},
+  {value:'execucao_pedido',label:'Pedido de execução',group:'Execução e bloqueio'},
+  {value:'execucao',label:'Execução / cumprimento',group:'Execução e bloqueio'},
+  {value:'bloqueio_pedido',label:'Pedido de bloqueio',group:'Execução e bloqueio'},
+  {value:'bloqueio_efetivado',label:'Bloqueio efetivado',group:'Execução e bloqueio'},
+  {value:'bloqueio_levantado',label:'Bloqueio levantado',group:'Execução e bloqueio'},
+  {value:'penhora',label:'Penhora',group:'Execução e bloqueio'},
+  {value:'audiencia_agendada',label:'Audiência agendada',group:'Audiências'},
+  {value:'audiencia_realizada',label:'Audiência realizada',group:'Audiências'},
+  {value:'audiencia_cancelada',label:'Audiência cancelada',group:'Audiências'},
+  {value:'suspensao',label:'Suspensão',group:'Suspensão e encerramento'},
+  {value:'retomada',label:'Retomada do processo',group:'Suspensão e encerramento'},
+  {value:'acordo_homologado',label:'Acordo homologado',group:'Suspensão e encerramento'},
+  {value:'desistencia',label:'Desistência homologada',group:'Suspensão e encerramento'},
+  {value:'transito',label:'Trânsito em julgado',group:'Suspensão e encerramento'},
+  {value:'arquivamento',label:'Arquivamento',group:'Suspensão e encerramento'},
+  {value:'baixa_definitiva',label:'Baixa definitiva',group:'Suspensão e encerramento'},
+];
+
+function ProcessFilter({label,value,options,onChange,className=''}:{
+  label:string;value:string;options:FilterOption[];
+  onChange:(next:string)=>void;className?:string
+}) {
+  const [open,setOpen]=useState(false);
+  const [query,setQuery]=useState('');
+  const parent=useRef<HTMLDivElement>(null);
+  const opener=useRef<HTMLButtonElement>(null);
+  const search=useRef<HTMLInputElement>(null);
+  const selected=options.find(x=>x.value===value);
+  const visible=options.filter(x=>(x.label+' '+(x.group||'')).toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')));
+  useEffect(()=>{
+    if(!open)return;
+    const closeOutside=(ev:MouseEvent)=>{if(!parent.current?.contains(ev.target as Node)){setOpen(false);setQuery('');}};
+    const escape=(ev:KeyboardEvent)=>{if(ev.key==='Escape'){setOpen(false);setQuery('');opener.current?.focus();}};
+    document.addEventListener('pointerdown',closeOutside);
+    document.addEventListener('keydown',escape);
+    search.current?.focus();
+    return ()=>{document.removeEventListener('pointerdown',closeOutside);document.removeEventListener('keydown',escape);};
+  },[open]);
+  return <div className={'processos-filter-field '+className} ref={parent}>
+    <span className="processos-filter-label">{label}</span>
+    <button type="button" ref={opener} className={'processos-filter-trigger'+(open?' is-open':'')}
+      aria-label={label} aria-haspopup="listbox" aria-expanded={open}
+      onClick={()=>setOpen(v=>!v)}><span>{selected?.label || options[0]?.label || 'Todas'}</span><ChevronDown size={15}/></button>
+    {open ? <div className="processos-filter-popover">
+      <div className="processos-filter-search"><Search size={14}/><input ref={search} type="search" aria-label={'Pesquisar '+label}
+        value={query} placeholder="Filtrar opções…" onChange={e=>setQuery(e.target.value)}
+        onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();parent.current?.querySelector<HTMLButtonElement>('[role=option]')?.focus();}}}/></div>
+      <div className="processos-filter-options" role="listbox" aria-label={label}>
+        {visible.length ? visible.map((item,i)=><div key={item.value||'all'}>
+          {item.group && (i===0||item.group!==visible[i-1]?.group) ? <div className="processos-filter-group">{item.group}</div> : null}
+          <button type="button" role="option" aria-selected={value===item.value} className="processos-filter-option"
+            onClick={()=>{onChange(item.value);setOpen(false);setQuery('');opener.current?.focus();}}
+            onKeyDown={e=>{
+              if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const siblings=[...parent.current!.querySelectorAll<HTMLButtonElement>('[role=option]')];siblings[Math.min(siblings.length-1,Math.max(0,siblings.indexOf(e.currentTarget)+(e.key==='ArrowDown'?1:-1)))]?.focus();}
+            }}><span>{item.label}</span>{value===item.value?<Check size={14}/>:null}</button>
+        </div>) : <p className="processos-filter-empty">Nenhuma opção encontrada</p>}
+      </div>
+    </div> : null}
+  </div>;
+}
 
 function Pagination({page, more, busy, total, onChange}: {page: number; more: boolean; busy: boolean; total?: number; onChange: (page: number) => void}) {
   return <nav className="processos-pagination" aria-label="Paginação"><span>{total !== undefined ? `${total} processo(s) · ` : ''}Página {page}</span><button type="button" disabled={busy || page === 1} onClick={() => onChange(page - 1)}>Anterior</button><button type="button" disabled={busy || !more || page >= 200} onClick={() => onChange(page + 1)}>Próxima</button></nav>;
@@ -218,9 +311,9 @@ export function ProcessosPage() {
       e.preventDefault();setPage(1);setFilters(f=>({...f,q:search.trim()}));
     }}>
       <label className="processos-search">Número CNJ<input type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
-      <label className="processos-situation-filter">Situação<select value={filters.situation} onChange={e=>filter('situation',e.target.value)}><option value="">Todas</option><option value="Em andamento">Em andamento</option><option value="Encerrado">Encerrado</option><option value="Reativado">Reativado</option></select></label>
-      <label className="processos-uf-filter">UF<select value={filters.uf} onChange={e=>filter('uf',e.target.value)}><option value="">Todas</option>{BRAZIL_STATES.map(s=><option key={s.uf} value={s.uf}>{s.uf}</option>)}</select></label>
-      <label className="processos-movement-filter">Movimentações<select value={filters.movement} onChange={e=>filter('movement',e.target.value)}><option value="">Todas</option><option value="sentence">Com sentença</option><option value="sentence_improcedente">Sentença improcedente</option><option value="tutela_deferida">Tutela deferida</option><option value="suspended">Suspensos</option></select></label>
+      <ProcessFilter label="Situação" className="processos-situation-filter" value={filters.situation} onChange={v=>filter('situation',v)} options={situationOptions}/>
+      <ProcessFilter label="UF" className="processos-uf-filter" value={filters.uf} onChange={v=>filter('uf',v)} options={[{value:'',label:'Todas'},...BRAZIL_STATES.map(s=>({value:s.uf,label:s.uf}))]}/>
+      <ProcessFilter label="Movimentações" className="processos-movement-filter" value={filters.movement} onChange={v=>filter('movement',v)} options={movementOptions}/>
       <button className="primary-button" type="submit">Buscar</button>
       <button type="button" className="processos-clear" onClick={()=>{setSearch('');setPage(1);setFilters({q:'',situation:'',uf:'',movement:''});}}>Limpar</button>
     </form>
