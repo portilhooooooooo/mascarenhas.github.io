@@ -14,12 +14,7 @@ type AuthWindow = Window & typeof globalThis & {
 
 function greetingFor(date: Date): string {
   const hour = date.getHours();
-  const day = date.getDay();
-  const salutation = hour < 12 ? 'Bom dia.' : hour < 18 ? 'Boa tarde.' : 'Boa noite.';
-  if (day === 1) return salutation + ' Uma nova semana começa aqui.';
-  if (day === 5) return salutation + ' Encerrando mais uma semana de trabalho.';
-  if (day === 0 || day === 6) return salutation + ' Bem-vindo ao Backoffice.';
-  return salutation + ' Bem-vindo ao Backoffice.';
+  return hour < 12 ? 'Bom dia.' : hour < 18 ? 'Boa tarde.' : 'Boa noite.';
 }
 
 function LoginPage() {
