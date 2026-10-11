@@ -115,6 +115,7 @@ try {
  await page.screenshot({path:out+'/encerramento-revisao.png',fullPage:true});
  await page.getByRole('button',{name:'Salvar e próximo'}).click();
  await page.waitForFunction(()=>!document.querySelector('button[aria-busy="true"]'));
+ for(let retry=0;retry<40&&!writes.some(w=>w.path.includes('encerramento')&&w.body.classification_agreed===false);retry++)await page.waitForTimeout(75);
  assert.ok(writes.some(w=>w.path.includes('encerramento')&&w.body.classification_agreed===false),JSON.stringify(writes));
  // Server errors, real empty results, absent process and missing permissions.
  await page.goto(base+'/processos/inexistente');await page.getByRole('alert').filter({hasText:'Processo não encontrado.'}).waitFor();
