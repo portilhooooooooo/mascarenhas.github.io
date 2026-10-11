@@ -90,7 +90,7 @@ function Metrics({ dados, analista, selectedCount, acordo, etapa, resumo }: { da
     { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
-    { icon: Activity, name: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', sub: 'Discordâncias aguardando validação' },
+    { icon: Activity, name: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', sub: 'Análises pendentes de validação' },
     { icon: CheckCircle2, name: 'Enviados', value: resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
     { icon: Activity, name: 'Encerrados', value: resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
   ];
@@ -226,7 +226,7 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
   const total = analysts.reduce((sum,a) => sum+a.analisados,0);
   const max = Math.max(1,...analysts.map(a=>a.analisados));
   return <section className="closing-surface closing-bottom">
-    <div className="closing-card-head"><div><h2>Produtividade dos analistas</h2><p>Análises do dia</p></div></div>
+    <div className="closing-card-head"><div><h2>Produtividade dos analistas</h2><p>Análises registradas no período selecionado</p></div></div>
     {analysts.length ? <div className="closing-staff">
       {analysts.map(a => <div className="closing-staff-row" key={a.id}>
         <span className="closing-avatar">{a.nome.slice(0,2).toUpperCase()}</span>
@@ -244,7 +244,7 @@ export function EncerramentosPage() {
     return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
   });
   const [tipo,setTipo] = useState<Tipo>('TODOS');
-  const [periodo,setPeriodo] = useState('30');
+  const [periodo,setPeriodo] = useState('mes');
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
   const [dados,setDados] = useState<Dados | null>(null);
@@ -264,14 +264,14 @@ export function EncerramentosPage() {
     } finally { setPending(false); }
   },[carteira,tipo,periodo,analista,etapa]);
   useEffect(() => {void refresh();},[refresh]);
-  useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
+  useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},30000); return () => clearInterval(id);},[refresh]);
   useEffect(() => {
     const onSaved = () => { void refresh(); };
     window.addEventListener('mba:closing-analysis-saved', onSaved);
     return () => window.removeEventListener('mba:closing-analysis-saved', onSaved);
   }, [refresh]);
   const shown = dados;
-  const analysts = dados?.etapas?.analistas || dados?.analistas || [];
+  const analysts = dados?.analistas?.length ? dados.analistas : dados?.etapas?.analistas || [];
   const analysed = dados?.etapas?.total;
 
   return <div className="closing-page-v2">
