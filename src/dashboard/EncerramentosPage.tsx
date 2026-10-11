@@ -165,10 +165,9 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
   const quantity = (kind: string) => valueOrZero(types.find(row=>row.tipo===kind)?.quantidade);
   const typeCount = Math.max(1,...CLASSES.map(t=>quantity(t.tipo)));
   const rows = (section: 'tipos'|'aging') => section==='tipos'
-    ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo),goal:null as number|null}))
+    ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo)}))
     : bands.map((faixa,index)=>({
         key:faixa,label:faixa,found:valueOrZero(ages.find(a=>a.faixa===faixa)?.quantidade),
-        goal:null as number|null,
       }));
   return <section className="closing-surface closing-composition">
     <div className="closing-card-head"><div>
@@ -178,7 +177,7 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
     {(['tipos','aging'] as const).map(section => <div className="closing-composition-table" key={section}>
       <div className="closing-breakdown-head">
         <h3>{section==='tipos'?'Tipos':'Aging'}</h3>
-        <span>{first}</span><span>Meta</span><span>Restantes</span>
+        <span>{first}</span>
       </div>
       {rows(section).map(row=><div className="closing-breakdown-row" key={row.key}>
         <div className="closing-breakdown-name">
@@ -186,8 +185,8 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
           <div className="closing-rail"><i style={{width:(row.found/(section==='tipos'?typeCount:Math.max(1,...rows('aging').map(x=>x.found))))*100+'%'}}/></div>
         </div>
         <strong>{num(row.found)}</strong>
-        <span title={section==='tipos'?'Edital sem meta por tipo':currentMonth?'Meta mensal por faixa':'Meta mensal disponível somente no mês atual'}>{row.goal==null?'—':num(row.goal)}</span>
-        <strong>{row.goal==null?'—':num(Math.max(0,row.goal-row.found))}</strong>
+        
+        
       </div>)}
     </div>)}
     <div className="closing-card-foot">Análises efetivamente registradas; sem metas de ranking.</div>
