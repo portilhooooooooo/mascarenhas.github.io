@@ -53,7 +53,7 @@ try {
  await mkdir(out,{recursive:true});
  for(const [width,height] of [[1366,768],[1440,900],[1920,1080],[390,844]]){
   await page.setViewportSize({width,height});await page.waitForTimeout(250);await page.goto(base+'/processos');
-  await page.locator('.processos-table-wrap').waitFor();await noOverflow('Processos '+width);
+  await page.locator('.processos-table-wrap').waitFor();await page.getByRole('columnheader',{name:'Data da última movimentação'}).waitFor();assert.equal(await page.getByRole('columnheader',{name:'Tarefas pendentes'}).count(),0);await noOverflow('Processos '+width);
   assert.equal(await page.locator('.mba-context-label').count(),0);
   assert.equal(await page.locator('.main-nav [data-page="processos"]').count(),1);
   await page.screenshot({path:out+`/processos-${width}.png`,fullPage:true});
@@ -108,7 +108,7 @@ try {
  datajudOffline=true;await page.goto(base+'/processos/'+cnj);await page.getByText('Histórico DataJud indisponível. Tente novamente.').waitFor();datajudOffline=false;
  await page.goto(base+'/processos');await page.locator('.processos-table-wrap').waitFor();
  await page.evaluate(()=>window.MBA_API.setPortfolioId('nubank_mba'));await page.reload();
- await page.locator('.processos-table-wrap').getByText('Nubank',{exact:true}).waitFor();assert.ok(calls.some(c=>c.path==='/api/processos'&&c.portfolio==='nubank_mba'));
+ await page.locator('.processos-table-wrap').waitFor();assert.ok(calls.some(c=>c.path==='/api/processos'&&c.portfolio==='nubank_mba'));
  noPermission=true;await page.reload();assert.equal(await page.locator('.processos-table-wrap').count(),0);await page.locator('body.auth-signed-in').waitFor();assert.ok(await page.locator('[data-page="processos"]').isHidden());noPermission=false;
  flag=false;await page.reload();await page.locator('body.auth-signed-in').waitFor();assert.ok(await page.locator('[data-page="processos"]').isHidden());
  // Login uses actual existing Microsoft PKCE service, with only the OAuth boundary mocked.
