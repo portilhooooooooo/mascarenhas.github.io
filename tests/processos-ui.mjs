@@ -72,7 +72,7 @@ try {
  assert.ok(calls.some(c=>c.path==='/api/processos'&&c.query.includes('page=2')&&c.portfolio==='agibank_enter'));
  await page.getByRole('button',{name:cnj,exact:true}).click();await page.locator('.processos-timeline').waitFor();
  assert.equal(await page.locator('[data-event-kind]').count(),1,'Principais deve mostrar apenas atos judiciais relevantes');
- await page.locator('summary').first().click();await page.getByText('fixture-job',{exact:false}).waitFor();
+ await page.locator('summary').first().click();await page.getByText('Capturado em',{exact:true}).first().waitFor();assert.equal(await page.getByText('fixture-job',{exact:false}).count(),0,'Identificadores internos não aparecem na timeline');
  await page.screenshot({path:out+'/processo-historico.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await noOverflow('Detalhe mobile');await page.screenshot({path:out+'/processo-historico-mobile.png',fullPage:true});
  await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(250);await page.evaluate(()=>document.documentElement.dataset.mbaTheme='lua');await page.screenshot({path:out+'/processo-historico-lua.png',fullPage:true});await page.evaluate(()=>document.documentElement.dataset.mbaTheme='sol');
