@@ -73,3 +73,39 @@
 .processos-filters .processos-movement-filter{flex:0 0 196px}
 @media(max-width:1100px){.processos-filters .processos-search{flex:1 1 310px}.processos-filters .processos-movement-filter{flex:1 1 185px}}
 @media(max-width:600px){.processos-filters .processos-search{flex:1 1 100%}.processos-filters .processos-situation-filter{flex:1 1 145px}.processos-filters .processos-movement-filter{flex:1 1 180px}}
+
+/* React search-first filters — custom accessible controls, not native select chrome. */
+.processos-filters .processos-filter-field{position:relative;display:flex;flex-direction:column;gap:5px;min-width:0}
+.processos-filters .processos-situation-filter{flex:0 1 162px}
+.processos-filters .processos-uf-filter{flex:0 0 105px}
+.processos-filters .processos-movement-filter{flex:0 1 235px}
+.processos-filter-label{font-size:11px;font-weight:550;line-height:1.5;color:var(--mba-text-2)}
+.processos-filters .processos-filter-trigger{
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ width:100%;min-width:0;height:37px;border:1px solid var(--mba-border-strong);
+ border-radius:8px;padding:0 12px;background:var(--mba-surface);color:var(--mba-text);
+ font:500 12px Inter,system-ui,sans-serif;text-align:left;cursor:pointer;
+ transition:border-color .15s,box-shadow .15s;
+}
+.processos-filter-trigger span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.processos-filter-trigger svg{flex:0 0 auto;color:var(--mba-text-2);transition:transform .15s}
+.processos-filter-trigger.is-open svg{transform:rotate(180deg)}
+.processos-filter-trigger.is-open,.processos-filter-trigger:focus-visible{outline:none;border-color:var(--mba-accent,#b85d37);box-shadow:0 0 0 2px color-mix(in srgb,var(--mba-accent,#b85d37) 15%,transparent)}
+.processos-filter-popover{
+ position:absolute;top:calc(100% + 5px);right:0;min-width:max(100%,230px);
+ max-width:min(350px,calc(100vw - 32px));z-index:80;
+ border:1px solid var(--mba-border-strong);border-radius:10px;
+ background:var(--mba-surface);box-shadow:0 14px 34px #00000020;overflow:hidden;
+}
+.processos-situation-filter .processos-filter-popover,.processos-uf-filter .processos-filter-popover{min-width:205px}
+.processos-filter-search{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--mba-border);padding:9px 11px;color:var(--mba-text-2)}
+.processos-filters .processos-filter-search input{height:25px;border:0;outline:none;box-shadow:none;padding:0;background:transparent;min-width:0;font:500 12px Inter,system-ui,sans-serif}
+.processos-filter-options{max-height:300px;overflow:auto;overscroll-behavior:contain;padding:5px}
+.processos-filter-group{padding:11px 9px 5px;color:var(--mba-text-2);font:650 10px Inter,system-ui,sans-serif;letter-spacing:.025em}
+.processos-filters .processos-filter-option{height:auto;min-height:33px;width:100%;display:flex;align-items:center;justify-content:space-between;gap:9px;text-align:left;background:transparent;border:0;border-radius:6px;padding:8px 10px;color:var(--mba-text);font:500 12px Inter,system-ui,sans-serif;cursor:pointer}
+.processos-filter-option:hover,.processos-filter-option:focus-visible{background:var(--mba-subtle);outline:none}
+.processos-filter-option[aria-selected="true"]{color:var(--mba-accent,#b85d37);background:var(--mba-subtle);font-weight:650}
+.processos-filter-option svg{flex:0 0 auto}
+.processos-filter-empty{font-size:11px;color:var(--mba-text-2);padding:13px}
+@media(max-width:940px){.processos-filters .processos-movement-filter{flex:1 1 205px}.processos-filters .processos-situation-filter{flex:1 1 145px}}
+@media(max-width:600px){.processos-filters .processos-uf-filter{flex:0 1 100px}.processos-filter-popover{max-width:calc(100vw - 42px)}}
