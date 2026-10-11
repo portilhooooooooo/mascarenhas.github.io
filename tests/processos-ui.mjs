@@ -59,14 +59,24 @@ try {
   await page.screenshot({path:out+`/processos-${width}.png`,fullPage:true});
  }
  await page.setViewportSize({width:1440,height:900});
+ await page.getByRole('button',{name:'Movimentações',exact:true}).click();
+ await page.getByRole('searchbox',{name:'Pesquisar Movimentações'}).fill('improcedente');
  const movementRequest=page.waitForResponse(r=>r.url().includes('/api/processos?')&&r.url().includes('movement=sentence_improcedente'));
- await page.locator('.processos-movement-filter select').selectOption('sentence_improcedente');
+ await page.getByRole('listbox',{name:'Movimentações'}).getByRole('option',{name:'Improcedente'}).click();
  await movementRequest;
- await page.locator('.processos-movement-filter select').selectOption('');
+ await page.getByRole('button',{name:'Movimentações',exact:true}).click();
+ await page.getByRole('searchbox',{name:'Pesquisar Movimentações'}).fill('acórdãos');
+ const acordaoRequest=page.waitForResponse(r=>r.url().includes('/api/processos?')&&r.url().includes('movement=acordao'));
+ await page.getByRole('listbox',{name:'Movimentações'}).getByRole('option',{name:'Todos os acórdãos'}).click();
+ await acordaoRequest;
+ await page.getByRole('button',{name:'Movimentações',exact:true}).click();
+ await page.getByRole('listbox',{name:'Movimentações'}).getByRole('option',{name:'Todas as movimentações'}).click();
+ await page.getByRole('button',{name:'Situação',exact:true}).click();
  const situationRequest=page.waitForResponse(r=>r.url().includes('/api/processos?')&&r.url().includes('situation=Encerrado'));
- await page.locator('.processos-situation-filter select').selectOption('Encerrado');
+ await page.getByRole('listbox',{name:'Situação'}).getByRole('option',{name:'Encerrado'}).click();
  await situationRequest;
- await page.locator('.processos-situation-filter select').selectOption('');
+ await page.getByRole('button',{name:'Situação',exact:true}).click();
+ await page.getByRole('listbox',{name:'Situação'}).getByRole('option',{name:'Todas'}).click();
  await page.getByRole('button',{name:'Próxima',exact:true}).click();
  await page.getByText('Página 2',{exact:false}).waitFor();
  assert.ok(calls.some(c=>c.path==='/api/processos'&&c.query.includes('page=2')&&c.portfolio==='agibank_enter'));
