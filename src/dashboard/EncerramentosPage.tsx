@@ -29,21 +29,8 @@ type Dados = {
   comarcas?: Comarca[];
   matriz?: Matriz[];
   meta_configurada?: boolean;
-  ranking?: RankingSummary;
   etapas?: { etapa: Etapa; total: number; tipos: TipoRow[]; aging: AgingRow[]; matriz: Matriz[]; fonte: string; mensagem: string;
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
-};
-type RankingSummary = {
-  carteira?: string;
-  ranking_rule_set?: string;
-  scope?: string;
-  aviso?: string;
-  dados_oficiais_suficientes?: boolean;
-  custo?: { atual?: number | null; nota?: number | null; limites?: number[] };
-  vitoria?: { taxa?: number | null; pontuacao?: number | null };
-  acordo?: { taxa?: number | null; pontuacao?: number | null };
-  pontuacao?: { nota_projetada?: number | null };
-  faixas?: Array<{ id:string; rotulo:string; estoque:number|null; meta_percentual:number; meta_quantidade:number|null; realizado?:number|null; faltam?:number|null }>;
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 const TIPOS: { value: Tipo; label: string }[] = [
@@ -99,7 +86,7 @@ function Metrics({ dados, analista, selectedCount, acordo, etapa, resumo }: { da
     : 'mês anterior';
   const cards = [
     { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados · Indícios DataJud' : 'Sem dados' },
-    { icon: UsersRound, name: 'Analisados', value: dados?.etapas ? num(dados.etapas.total) : '—', sub: 'Respostas persistidas na mesma fonte das etapas e dos analistas' },
+    { icon: UsersRound, name: 'Analisados', value: m ? num(m.analisados) : '—', sub: 'Respostas de análise registradas no período' },
     { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
@@ -173,7 +160,6 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
   const bands = ageBands(dados?.carteira || 'Agibank Regular');
   const types = dados?.etapas?.tipos || [];
   const ages = dados?.etapas?.aging || [];
-  const rules = dados?.ranking?.faixas || [];
   const first = etapa === 'validados' ? 'Validados' : 'Enviados';
   const currentMonth = periodo === 'mes';
   const quantity = (kind: string) => valueOrZero(types.find(row=>row.tipo===kind)?.quantidade);
@@ -182,7 +168,7 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
     ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo),goal:null as number|null}))
     : bands.map((faixa,index)=>({
         key:faixa,label:faixa,found:valueOrZero(ages.find(a=>a.faixa===faixa)?.quantidade),
-        goal:index===3||analista!=='todos'?null:(currentMonth?rules.find(r=>r.rotulo===faixa)?.meta_quantidade??null:null),
+        goal:null as number|null,
       }));
   return <section className="closing-surface closing-composition">
     <div className="closing-card-head"><div>
@@ -204,7 +190,7 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
         <strong>{row.goal==null?'—':num(Math.max(0,row.goal-row.found))}</strong>
       </div>)}
     </div>)}
-    <div className="closing-card-foot">Meta mensal apenas para aging. Tipo não tem meta individual no edital.</div>
+    <div className="closing-card-foot">Análises efetivamente registradas; sem metas de ranking.</div>
   </section>;
 }
 
@@ -253,50 +239,13 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
   </section>;
 }
 
-function RankingPanel({ ranking }: { ranking?: RankingSummary }) {
-  const isOfficial = ranking?.dados_oficiais_suficientes === true;
-  const number = (value: number | null | undefined, suffix = '') =>
-    value == null ? '—' : new Intl.NumberFormat('pt-BR', {maximumFractionDigits:1}).format(value) + suffix;
-  const regular = ranking?.scope !== 'operacional_parcial';
-  return <section className="closing-ranking" aria-label="Indicadores do Ranking Agibank">
-    <header className="closing-ranking-header"><div>
-      <h2>Ranking Agibank · Legal Day 2026</h2>
-      <p>Metas do edital para a carteira atual; não equivalem à pontuação oficial homologada.</p>
-    </div><span>{regular ? 'Participante MBA' : 'Operação parcial · Enter'}</span></header>
-    <div className="closing-ranking-kpis">
-      <article><span>Custo médio homologado</span><strong>{money(ranking?.custo?.atual)}</strong>
-        <small>Meta máxima: {money(ranking?.custo?.limites?.[0])} · Peso 3,2</small></article>
-      <article><span>Vitórias confirmadas</span><strong>{number(ranking?.vitoria?.taxa,'%')}</strong>
-        <small>Meta: ≥ 76% · Peso 2,0</small></article>
-      <article><span>Acordos confirmados</span><strong>{number(ranking?.acordo?.taxa,'%')}</strong>
-        <small>Meta: ≥ 14% · Peso 1,4</small></article>
-      <article><span>Nota do Ranking</span><strong>{isOfficial ? number(ranking?.pontuacao?.nota_projetada) : '—'}</strong>
-        <small>{isOfficial ? 'Projeção operacional' : 'Sem dados homologados suficientes'}</small></article>
-    </div>
-    <div className="closing-ranking-bands">
-      <h3>Encerramentos por maturidade · meta mensal</h3>
-      <div className="closing-ranking-band-grid">
-        {(ranking?.faixas || []).map(row => <div key={row.id}>
-          <strong>{row.rotulo}</strong>
-          <span>Estoque: {number(row.estoque)}</span>
-          <span>Meta: {number(row.meta_quantidade)} ({number(row.meta_percentual,'%')})</span>
-          <span>Validados no Backoffice: {number(row.realizado)}</span>
-          <small>Faltam para meta operacional: {number(row.faltam)}</small>
-        </div>)}
-        {!ranking?.faixas?.length && <p>Faixas indisponíveis para esta carteira.</p>}
-      </div>
-    </div>
-    <p className="closing-ranking-note">{ranking?.aviso || 'Os indicadores do Ranking dependem de conciliação com o Benner e a base oficial do Agibank.'}</p>
-  </section>;
-}
-
 export function EncerramentosPage() {
   const [carteira,setCarteira] = useState(() => {
     const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
     return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
   });
   const [tipo,setTipo] = useState<Tipo>('TODOS');
-  const [periodo,setPeriodo] = useState('mes');
+  const [periodo,setPeriodo] = useState('30');
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
   const [dados,setDados] = useState<Dados | null>(null);
@@ -311,7 +260,7 @@ export function EncerramentosPage() {
         loadResumoBennerAnterior(),
       ]);
       if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
-      else { setDados(null); setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.'); }
+      else { setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.'); }
       setResumoBenner(historico.status === 'fulfilled' ? historico.value : null);
     } finally { setPending(false); }
   },[carteira,tipo,periodo,analista,etapa]);
@@ -344,7 +293,6 @@ export function EncerramentosPage() {
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
     {error ? <p className="closing-error" role="alert">{error}</p> : null}
-    <RankingPanel ranking={dados?.ranking}/>
     <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
