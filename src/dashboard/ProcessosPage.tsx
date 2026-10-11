@@ -40,8 +40,8 @@ const movementOptions:FilterOption[]=[
   {value:'acordao_reformado',label:'Acórdão reformado',group:'Acórdão'},
   {value:'execucao',label:'Execução ou cumprimento',group:'Execução'},
   {value:'execucao_pedido',label:'Pedido de execução',group:'Execução'},
-  {value:'bloqueio',label:'Todos os bloqueios',group:'Bloqueio'},
-  {value:'bloqueio_pedido',label:'Pedido de bloqueio',group:'Bloqueio'},
+  {value:'bloqueio',label:'Indícios de bloqueio',group:'Bloqueio'},
+  {value:'bloqueio_pedido',label:'Pedido de bloqueio identificado',group:'Bloqueio'},
   {value:'bloqueio_efetivado',label:'Bloqueio efetivado',group:'Bloqueio'},
   {value:'bloqueio_levantado',label:'Bloqueio levantado',group:'Bloqueio'},
 ];
