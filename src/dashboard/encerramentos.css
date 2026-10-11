@@ -141,3 +141,8 @@
 .closing-ranking-band-grid strong{font-size:12px}
 @media(max-width:1020px){.closing-ranking-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.closing-ranking-kpis,.closing-ranking-band-grid{grid-template-columns:1fr}.closing-ranking-header{flex-wrap:wrap}}
+
+/* No Agibank ranking or fabricated progress-to-goal columns. */
+.closing-composition .closing-breakdown-head,
+.closing-composition .closing-breakdown-row{grid-template-columns:minmax(0,1fr) 110px}
+@media(max-width:650px){.closing-composition .closing-breakdown-head,.closing-composition .closing-breakdown-row{grid-template-columns:minmax(0,1fr) 78px}}
