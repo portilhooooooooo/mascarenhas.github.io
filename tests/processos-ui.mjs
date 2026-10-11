@@ -9,7 +9,7 @@ const actor='11111111-1111-4111-8111-111111111111', taskId='22222222-2222-4222-8
 const cnj='0000001-74.2026.8.26.0001';
 const permissions=Object.fromEntries(['processos.view','tasks.view','tasks.execute','tasks.create','tasks.assign','tasks.view_others','dashboard.view','pagamentos.view','encerramentos.view','automations.view'].map(p=>[p,true]));
 const profile={id:actor,email:'analista@fixture.invalid',name:'Analista de teste',role:'user',permissions,capabilities:{processos:true},portfolios:[{id:'agibank_enter',display_name:'Agibank · Enter'},{id:'nubank_mba',display_name:'Nubank · MBA'}],default_portfolio_id:'agibank_enter'};
-const record={id:1,cnj,portfolio_id:'agibank_enter',carteira:'Agibank',state:'SP',fase:'Conhecimento',situation_benner:'Ativo',integration:'Base processual',updated_at:'2026-10-10T15:00:00Z',has_pending_tasks:true};
+const record={id:1,cnj,portfolio_id:'agibank_enter',carteira:'Agibank',state:'SP',fase:'Conhecimento',situation_benner:'Ativo',integration:'Base processual',updated_at:'2026-10-10T15:00:00Z',last_movement_at:'2026-10-09T12:00:00Z',has_pending_tasks:true};
 const task={id:taskId,type:'encerramento',title:'Análise de encerramento',priority:'high',status:'pending',responsible_id:actor,responsible_name:'Analista de teste',created_by:actor,total_processes:1,completed_processes:0};
 const fixtureProcess={id:processId,task_id:taskId,case_number:cnj,status:'pending',assignee_id:actor,position:1,source:'api',source_metadata:{}};
 let browser;
@@ -43,7 +43,7 @@ try {
    {id:'analysis',kind:'human_analysis',source:'Backoffice',title:'analysis_completed',occurred_at:'2026-10-09T00:00:00Z'},
    {id:'automation',kind:'automation',source:'Backoffice',title:'Automation run',occurred_at:'2026-10-08T00:00:00Z'},
    {id:'task',kind:'task',source:'Backoffice',title:'task_created',occurred_at:'2026-10-07T00:00:00Z'},
-   {id:'system',kind:'system',source:'Backoffice',title:'Atualização',occurred_at:'2026-10-06T00:00:00Z'}],page:1,has_more:false,sources:{datajud:{state:datajudOffline?'unavailable':'available',message:'Histórico DataJud indisponível. Tente novamente.'},operational:{state:'available'}}});
+   {id:'system',kind:'system',source:'Backoffice',title:'Atualização',occurred_at:'2026-10-06T00:00:00Z'}].filter(e=>url.searchParams.get('view')!=='important'||e.kind==='judicial'),page:1,has_more:false,sources:{datajud:{state:datajudOffline?'unavailable':'available',message:'Histórico DataJud indisponível. Tente novamente.'},operational:{state:'available'}}});
   if(path.endsWith('/tasks'))return reply({rows:[{task_id:taskId,process_id:processId,type:'encerramento',title:task.title,priority:'high',status:'pending',responsible_name:'Analista de teste'}],total:1,page:1,page_size:25});
   if(path.startsWith('/api/processos/'))return reply({error:'Processo não encontrado.'},404);
   return reply([]);
@@ -63,19 +63,22 @@ try {
  await page.getByText('Página 2',{exact:false}).waitFor();
  assert.ok(calls.some(c=>c.path==='/api/processos'&&c.query.includes('page=2')&&c.portfolio==='agibank_enter'));
  await page.getByRole('button',{name:cnj,exact:true}).click();await page.locator('.processos-timeline').waitFor();
- assert.equal(await page.locator('[data-event-kind]').count(),5);
+ assert.equal(await page.locator('[data-event-kind]').count(),1,'Principais deve mostrar apenas atos judiciais relevantes');
+ await page.getByRole('button',{name:'Todas',exact:true}).click();
+ await page.locator('[data-event-kind]').nth(4).waitFor();
+ assert.equal(await page.locator('[data-event-kind]').count(),5,'Todas preserva auditoria integral');
  await page.locator('summary').first().click();await page.getByText('fixture-job',{exact:false}).waitFor();
  await page.screenshot({path:out+'/processo-historico.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);await noOverflow('Detalhe mobile');await page.screenshot({path:out+'/processo-historico-mobile.png',fullPage:true});
  await page.setViewportSize({width:1440,height:900});await page.waitForTimeout(250);await page.evaluate(()=>document.documentElement.dataset.mbaTheme='lua');await page.screenshot({path:out+'/processo-historico-lua.png',fullPage:true});await page.evaluate(()=>document.documentElement.dataset.mbaTheme='sol');
- await page.getByRole('button',{name:'Tarefas',exact:true}).last().click();await page.getByRole('button',{name:'Abrir tarefa'}).waitFor();
+ await page.getByRole('complementary',{name:'Tarefas do processo'}).getByRole('button',{name:/Abrir tarefa/}).waitFor();
  await page.screenshot({path:out+'/processo-tarefas.png',fullPage:true});
  await page.getByRole('button',{name:'Criar tarefa',exact:true}).click();
  await page.getByRole('dialog').getByLabel('Responsável',{exact:false}).selectOption(actor);
  assert.equal(writes.length,0,'Abrir formulário não persiste');await page.screenshot({path:out+'/processo-criar-tarefa.png',fullPage:true});
  await page.getByRole('button',{name:'Criar tarefa',exact:true}).last().click();await page.getByText('Tarefa criada e vinculada ao processo.').waitFor();
  assert.equal(writes[0].body.process_cnj,cnj);assert.equal(writes[0].body.source,'api');
- await page.getByRole('button',{name:'Abrir tarefa'}).click();await page.getByRole('radiogroup',{name:'closing-sentence'}).waitFor();
+ await page.getByRole('complementary',{name:'Tarefas do processo'}).getByRole('button',{name:/Abrir tarefa/}).click();await page.getByRole('radiogroup',{name:'closing-sentence'}).waitFor();
  const choose=async(group,label)=>{await page.getByRole('radiogroup',{name:group}).getByText(label,{exact:true}).click();await page.getByRole('button',{name:/Próxima/}).click();};
  await choose('closing-sentence','Extinção');await choose('closing-appeal','Sim');await choose('closing-appellant','Parte autora');await choose('closing-appeal-decided','Sim');await choose('closing-appeal-result','Mantida a improcedência');await choose('closing-transit-confirmed','Sim');
  const execution=page.locator('.qa-stage-segment').filter({hasText:'Cadastro de Execução'});
