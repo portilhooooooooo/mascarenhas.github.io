@@ -55,7 +55,7 @@ assert.match(closing, /closing-classification-agreement/, 'Confirmação final S
 assert.match(closing, /pode ser encerrado como Derrota Voluntária\. Você concorda/, 'Texto da Derrota Voluntária');
 assert.match(closing, /classificationAgreed === 'nao' && validReason/, 'Discordância justificada libera registro de revisão');
 assert.match(closing, /setClassificationAgreed\(null\)/, 'Alterar respostas invalida confirmação anterior');
-assert.match(closing, /A análise será registrada para revisão/, 'A discordância não confirma a classificação');
+assert.doesNotMatch(closing, /A análise será registrada para revisão/, 'Texto redundante removido; justificativa e revisão continuam no contrato');
 assert.match(style, /form\[data-qa-index='0'\][^\n]*\.qa-context-note/, 'Indício contextual não ocupa todas as perguntas');
 assert.doesNotMatch(renderer, /\|\| task\.title/, 'Título da tarefa não pode ser indício daquele processo');
 console.log('Q&A progressivo: atalhos, cache e gravação explícita verificados.');

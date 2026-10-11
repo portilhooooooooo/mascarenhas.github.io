@@ -15,7 +15,7 @@ try {
     server.stderr.on('data', chunk => process.stderr.write(chunk));
     server.on('exit', code => { clearTimeout(timeout); reject(new Error('Preview stopped: ' + code)); });
   });
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+  browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const capturedHeaders = [];
   await page.route('**/api/**', async route => {

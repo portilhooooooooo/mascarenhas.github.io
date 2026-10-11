@@ -64,6 +64,7 @@
       </div>
       <p class="brand-caption">Hub de Gestão</p>
       <nav class="main-nav" aria-label="Navegação principal">
+        <button class="nav-item" data-page="processos" data-permission="processos.view" type="button" hidden><i data-lucide="files"></i><span>Processos</span></button>
         <button class="nav-item" data-page="tarefas" data-permission="tasks.view" type="button"><i data-lucide="list-checks"></i><span>Tarefas</span><em class="nav-badge" id="tasks-nav-count" aria-label="Pendências" hidden></em></button>
         <button class="nav-item" data-page="acordos" type="button"><i data-lucide="layers-3"></i><span>Operação</span></button>
         <button class="nav-item" data-page="automacoes" data-permission="automations.view" type="button"><i data-lucide="workflow"></i><span>Automações</span></button>
@@ -85,7 +86,6 @@
 
     <div class="main-area">
       <header class="topbar">
-        <div class="mba-context-label" aria-label="Localização atual"><span>Backoffice</span><i aria-hidden="true">/</i><strong id="mba-active-module">Resultados</strong></div>
         <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         <div class="top-actions">
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
@@ -99,6 +99,7 @@
       </header>
 
       <main class="content">
+        <section class="page" id="processos" data-permission="processos.view" aria-label="Processos"></section>
         <section class="page active dashboard-page" id="dashboard" data-permission="dashboard.view" aria-label="Dashboard executivo">
           <div id="dashboard-root"></div>
         </section>
@@ -654,7 +655,7 @@
     </div>
   </dialog>
 
-  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="assets/vendor/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="config.js?v=20260818"></script>
   <script src="mock-api.js?v=20260818"></script>

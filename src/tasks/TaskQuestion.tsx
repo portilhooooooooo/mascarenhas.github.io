@@ -90,14 +90,17 @@ function isEditing(element: EventTarget | null): boolean {
   return false;
 }
 
+export type StageState = 'pending' | 'active' | 'completed' | 'not_applicable';
+
 type TaskFormProps = FormHTMLAttributes<HTMLFormElement> & {
   progressive?: boolean;
   draftKey?: string;
   stages?: readonly string[];
   dynamicStages?: boolean;
+  stageStates?: Record<string, StageState>;
 };
 
-function ProgressiveTaskForm({ children, draftKey = '', stages, dynamicStages = false, ...props }: TaskFormProps) {
+function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dynamicStages = false, ...props }: TaskFormProps) {
   const nodes = flattenNodes(children);
   const questions = nodes.filter(child => isValidElement(child) && child.type === TaskQuestion);
   const actions = nodes.filter(child => isValidElement(child) && child.type === TaskActionBar);
@@ -204,9 +207,19 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, dynamicStages = 
       <div className="qa-progress-title">
         <strong>{activeStage || 'Pergunta'} · {String(current + 1).padStart(2, '0')} de {String(total).padStart(2, '0')}</strong>
         {displayStages?.length ? <div className="qa-stage-track" aria-label="Progresso do fluxo" style={{ gridTemplateColumns: `repeat(${displayStages.length},minmax(0,1fr))` }}>
-          {displayStages.map(stage => <div className={'qa-stage-segment ' + (stage === activeStage ? 'active' : completedStages.has(stage) ? 'complete' : 'pending')} key={stage} aria-current={stage === activeStage ? 'step' : undefined}>
-            <span className="qa-stage-bar"/><small>{stage}</small>
-          </div>)}
+          {displayStages.map(stage => {
+            const effective = stageStates?.[stage];
+            const state: StageState = effective === 'not_applicable' ? effective
+              : stage === activeStage && effective !== 'completed' ? 'active'
+              : effective || (stage === activeStage ? 'active' : completedStages.has(stage) ? 'completed' : 'pending');
+            const done = state === 'completed' || state === 'not_applicable';
+            const statusLabel = state === 'not_applicable' ? 'Dispensada pela lógica' : done ? 'Respondida' : state === 'active' ? 'Em análise' : 'Pendente';
+            return <div className={'qa-stage-segment ' + (done ? 'complete' : state)} key={stage}
+              data-stage-state={state} aria-current={stage === activeStage ? 'step' : undefined}
+              aria-label={stage + ': ' + statusLabel} title={statusLabel}>
+              <span className="qa-stage-bar"/><small>{stage.startsWith('Cadastro de ') ? <><span className="qa-stage-prefix">Cadastro de </span>{stage.slice(12)}</> : stage}</small>
+            </div>;
+          })}
         </div> : null}
       </div>
       <span className="qa-unsaved-state">Rascunho não enviado</span>
@@ -234,8 +247,8 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, dynamicStages = 
   </form>;
 }
 
-export function TaskForm({ children, progressive = false, draftKey, stages, dynamicStages, ...props }: TaskFormProps) {
-  if (progressive) return <ProgressiveTaskForm {...props} draftKey={draftKey} stages={stages} dynamicStages={dynamicStages}>{children}</ProgressiveTaskForm>;
+export function TaskForm({ children, progressive = false, draftKey, stages, stageStates, dynamicStages, ...props }: TaskFormProps) {
+  if (progressive) return <ProgressiveTaskForm {...props} draftKey={draftKey} stages={stages} stageStates={stageStates} dynamicStages={dynamicStages}>{children}</ProgressiveTaskForm>;
   const items = Children.toArray(children);
   const actions = items.filter(child => isValidElement(child) && child.type === TaskActionBar);
   const content = items.filter(child => !isValidElement(child) || child.type !== TaskActionBar);

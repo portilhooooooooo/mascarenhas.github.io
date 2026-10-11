@@ -1,5 +1,6 @@
 import { StrictMode, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { ProcessosPage } from './ProcessosPage';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
@@ -25,6 +26,7 @@ const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao',
 const mayOpen = (pageId: string) => (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
 
 function labelNavItem(button: Element, label: string) {
+  button.setAttribute('aria-label', label);
   const span = button.querySelector('span');
   if (span) span.textContent = label;
 }
@@ -141,11 +143,11 @@ function configureProfileControl() {
 function setTopModuleActive(page: string) {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) return;
-  nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  nav.querySelectorAll('.nav-item').forEach(item => { item.classList.remove('active'); item.removeAttribute('aria-current'); });
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
-  if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') candidate.classList.add('active');
+  if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
   const label = document.getElementById('mba-active-module');
-  const titles: Record<string, string> = { tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
   if (label) label.textContent = titles[page] || 'Workspace';
 }
 
@@ -153,6 +155,7 @@ function syncTopModuleFromActivePage() {
   const activePage = document.querySelector<HTMLElement>('main .page.active');
   if (!activePage?.id) return;
 
+  if (activePage.id === 'processos') { setTopModuleActive('processos'); return; }
   if (activePage.id === 'acordos') {
     setTopModuleActive('acordos');
     return;
@@ -193,8 +196,9 @@ function configureApplicationShell() {
 
   // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
   // A página /controladoria permanece montável para preservar links legados.
-  const visiblePages = new Set(['tarefas', 'acordos', 'automacoes', 'dashboard']);
+  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
   const labels: Record<string, string> = {
+    processos: 'Processos',
     tarefas: 'Tarefas',
     acordos: 'Operação',
     automacoes: 'Automações',
@@ -228,6 +232,7 @@ function configureApplicationShell() {
   });
 
   const orderedItems: Array<HTMLElement | null> = [
+    nav.querySelector<HTMLElement>('[data-page="processos"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
@@ -420,3 +425,22 @@ mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
 configureUsersLifecycle();
+
+// Drop the previous root on every portfolio transition; no stale client data persists.
+let processosRoot: Root | null = null;
+function unmountProcessos() {
+  processosRoot?.unmount(); processosRoot = null;
+  document.getElementById('processos')?.replaceChildren();
+}
+function syncProcessos() {
+  const section = document.getElementById('processos');
+  if (!section?.classList.contains('active') || !mayOpen('processos')) { unmountProcessos(); return; }
+  if (!processosRoot) { processosRoot = createRoot(section); processosRoot.render(<StrictMode><ProcessosPage/></StrictMode>); }
+}
+const processosHost = document.getElementById('processos');
+if (processosHost) {
+  new MutationObserver(syncProcessos).observe(processosHost, {attributes:true,attributeFilter:['class']});
+  for (const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated']) window.addEventListener(event,syncProcessos);
+  for (const event of ['mba:portfolio-changed','mba:session-expired','mba:logged-out']) window.addEventListener(event,unmountProcessos);
+  syncProcessos();
+}

@@ -1,0 +1,95 @@
+Evidências locais; UI usa fixtures de teste exclusivamente.
+
+=== frontend-build.log ===
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> mba-backoffice-frontend@1.0.0 build
+> tsc --noEmit && vite build && node build-static.mjs
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1634 modules transformed.
+rendering chunks...
+computing gzip size...
+.build/react-dashboard/dashboard-react.css  161.61 kB │ gzip: 26.20 kB
+.build/react-dashboard/login-react.js         5.29 kB │ gzip:  1.77 kB
+.build/react-dashboard/client-CKaQoZDw.js   213.20 kB │ gzip: 52.60 kB
+.build/react-dashboard/dashboard-react.js   419.71 kB │ gzip: 99.13 kB
+✓ built in 2.09s
+dist preparado para deploy e preview local (1846e10).
+
+=== frontend-hardening-final.log ===
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> mba-backoffice-frontend@1.0.0 test:hardening
+> node tests/hardening.test.mjs && node tests/portfolio-policy.test.mjs && node tests/routing.test.mjs && node tests/qa-workspace.test.mjs
+
+hardening regression checks passed
+PASS: portfolio access, module visibility, selectors, and task badge regression checks
+✔ navbar muda a URL ao navegar para automações e analytics (2.879434ms)
+✔ links diretos e aliases antigos são restaurados sem recarregar (1.191668ms)
+✔ abas React atualizam a rota e restauram a página pai (0.913027ms)
+✔ links sem permissão mostram sem-acesso, incluindo subrota (0.852264ms)
+✔ atribuições exigem permissão gerencial (0.808762ms)
+✔ prévia local preserva navegação em hash (0.813821ms)
+✔ autenticação prioriza rota compartilhada (0.403774ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16.551244
+Q&A progressivo: atalhos, cache e gravação explícita verificados.
+
+=== frontend-focused.log ===
+✔ Sol é o padrão e o seletor acessível alterna para Lua (3.939907ms)
+✔ preferência Lua é restaurada antes de renderizar a interface (1.08051ms)
+✔ mudança em outra aba atualiza tema e seletor (1.086672ms)
+✔ Sol mantém a paleta clara e Lua define as superfícies de trabalho grafite (0.356136ms)
+✔ script executa antes das folhas e acompanha o build de produção (0.444651ms)
+✔ v2 is last stylesheet and deployed with cache version (1.547283ms)
+✔ Sol and Lua use neutral palettes and semantic accent (0.26197ms)
+✔ task workstation layout, keyboard focus and reduced motion are preserved (0.252342ms)
+✔ administrador mestre carrega todas as tarefas na fila de execução, inclusive no refresh (1.169736ms)
+✔ usuários comuns continuam limitados às próprias atribuições (0.276637ms)
+✔ processos de terceiros são executáveis por mestre sem alterar o desenho da tela (0.303106ms)
+✔ A/B/C labels do not change the answer keyboard contract (2.845731ms)
+✔ workspace still has left queue and right answers (0.748871ms)
+✔ assignments operate per task_process with server-side enforcement (0.718223ms)
+✔ login text is contextual, fixed caption matches spec (0.246341ms)
+✔ liminar, payments and defense expose conditional stage progress (0.659263ms)
+✔ payment validation name is presentation-only (1.552692ms)
+✔ Results visibility synchronizes with portfolio changes (0.306723ms)
+✔ protocol requires actual Save activation, not implicit form submit (0.274814ms)
+Assignment and fail-closed identity checks passed
+✔ tests/task-access.test.mjs (472.098998ms)
+✔ explicit valid state takes precedence (1.085881ms)
+✔ infer UF only for state courts (0.356987ms)
+✔ unknown and non-state courts remain unknown (0.188503ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 497.022936
+
+=== frontend-metabase.log ===
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> mba-backoffice-frontend@1.0.0 test:metabase
+> node tests/metabase-only.test.mjs
+
+metabase-only checks passed
+
+=== frontend-ui-final.log ===
+UI: login, A/B/C, fila à esquerda, atribuições, 3 larguras e ausência de overflow validados.
+
+=== processos-ui.log ===
+Built UI: Processos, paginação, timeline, criação explícita, tarefa vinculada, Encerramento NA/revisão, 4 viewports, troca de carteira, erros, permissões e login validados.
+
+Suite ampla inicial, iguais à base:41 passaram/5 falharam; falhas não ocultadas.
+Com Chromium:client-switcher-local falha em expectativa antiga de Automações indisponíveis em agibank_mba; operational-ux assume avanço automático ao selecionar.

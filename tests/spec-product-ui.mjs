@@ -23,7 +23,7 @@ try {
     await new Promise(resolve => setTimeout(resolve, 250));
   }
   if (!ready) throw new Error('Servidor da prévia não respondeu em http://127.0.0.1:5174/. ' + startupError.slice(-1200));
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, args:['--no-sandbox'] });
   await mkdir('.build/spec-ui', { recursive: true });
   const errors = [];
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -37,7 +37,7 @@ try {
     assert.ok(size.scroll <= size.viewport + 2, label + ': overflow horizontal: ' + JSON.stringify(size));
   };
 
-  for (const [w,h] of [[1440,900],[1024,768],[390,844]]) {
+  for (const [w,h] of [[1366,768],[1440,900],[1920,1080],[390,844]]) {
     await page.setViewportSize({ width:w, height:h });
     await page.goto(base + '/?scenario=liminar');
     await page.locator('.tasks-workspace-sidebar').waitFor();
@@ -94,7 +94,7 @@ try {
     await page.goto(base+'/login.html');
     await page.locator('#react-login-title').waitFor();
     assert.match(await page.locator('#react-login-title').innerText(), /^(Bom dia|Boa tarde|Boa noite)\./);
-    assert.equal(await page.locator('.react-login-subtitle').innerText(),'Explore como estamos trabalhando!');
+    assert.equal(await page.locator('.react-login-subtitle').innerText(),'Faça login abaixo e explore como estamos trabalhando');
     await assertNoHorizontalOverflow('Login '+w);
     await page.screenshot({path:'.build/spec-ui/login-'+w+'.png',fullPage:true});
   }
