@@ -1,7 +1,8 @@
 export type ProcessRecord = {
   id: number; cnj: string; portfolio_id: string; carteira?: string; cliente?: string; state?: string;
   fase?: string; situation_cpj?: string; situation_benner?: string; integration?: string;
-  product?: string; updated_at?: string; last_movement_at?: string | null; has_pending_tasks?: boolean | null;
+  product?: string; updated_at?: string; last_movement_at?: string | null; last_movement_title?: string | null;
+  situation?: 'Em andamento' | 'Encerrado' | 'Reativado'; situation_source?: 'sistema' | 'movimentacao' | 'presumido'; has_pending_tasks?: boolean | null;
 };
 export type LinkedTask = {
   task_id: string; process_id: string; type: string; title: string; priority: string;
