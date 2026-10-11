@@ -59,12 +59,14 @@ try {
   await page.screenshot({path:out+`/processos-${width}.png`,fullPage:true});
  }
  await page.setViewportSize({width:1440,height:900});
- await page.getByLabel('Movimentações',{exact:true}).selectOption('sentence_improcedente');
- assert.ok(calls.some(c=>c.path==='/api/processos'&&c.query.includes('movement=sentence_improcedente')));
- await page.getByLabel('Movimentações',{exact:true}).selectOption('');
- await page.getByLabel('Situação',{exact:true}).selectOption('Encerrado');
- assert.ok(calls.some(c=>c.path==='/api/processos'&&c.query.includes('situation=Encerrado')));
- await page.getByLabel('Situação',{exact:true}).selectOption('');
+ const movementRequest=page.waitForResponse(r=>r.url().includes('/api/processos?')&&r.url().includes('movement=sentence_improcedente'));
+ await page.locator('.processos-movement-filter select').selectOption('sentence_improcedente');
+ await movementRequest;
+ await page.locator('.processos-movement-filter select').selectOption('');
+ const situationRequest=page.waitForResponse(r=>r.url().includes('/api/processos?')&&r.url().includes('situation=Encerrado'));
+ await page.locator('.processos-situation-filter select').selectOption('Encerrado');
+ await situationRequest;
+ await page.locator('.processos-situation-filter select').selectOption('');
  await page.getByRole('button',{name:'Próxima',exact:true}).click();
  await page.getByText('Página 2',{exact:false}).waitFor();
  assert.ok(calls.some(c=>c.path==='/api/processos'&&c.query.includes('page=2')&&c.portfolio==='agibank_enter'));
