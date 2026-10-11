@@ -4,6 +4,8 @@ on:
     branches:
       - feature/spec-driven-product-20261010
       - fix/protocol-explicit-confirm-20261010
+  pull_request:
+    branches: [dev/tasks-workspace]
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,11 +33,15 @@ jobs:
       - name: Install browser
         run: npx playwright install --with-deps chromium
       - name: Responsive UI checks
-        run: node tests/spec-product-ui.mjs
+        run: |
+          node tests/spec-product-ui.mjs
+          node tests/processos-ui.mjs
       - name: Capture UI screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: spec-ui-screenshots
-          path: .build/spec-ui
+          path: |
+            .build/spec-ui
+            docs/ux-processos-evidence
           if-no-files-found: ignore

@@ -292,7 +292,13 @@ export function ClosingAnalysisFlow({
     });
   };
 
-  return <TaskForm className="closing-flow" progressive stages={CLOSING_STAGES} draftKey={draftKey} onSubmit={submit}>
+  return <TaskForm className="closing-flow" progressive stages={CLOSING_STAGES} stageStates={{
+    'Cadastro de Sentença': sentence ? 'completed' : 'pending',
+    'Cadastro de Acórdão': appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
+    'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
+    'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid === 'sim' && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
+    'Cadastro de Encerramento': classificationAgreed === 'sim' || (classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
+  }} draftKey={draftKey} onSubmit={submit}>
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
@@ -399,7 +405,6 @@ export function ClosingAnalysisFlow({
         <textarea value={disagreementReason} required disabled={busy} maxLength={2000}
           placeholder="Descreva a divergência encontrada no processo."
           onChange={event => { setDisagreementReason(event.target.value); setLocalError(null); }}/>
-        <small>A análise será registrada para revisão, sem confirmar a classificação.</small>
       </label> : null}
       {classificationAgreed === 'sim' && reopenAt ? <p className="closing-inline-note">
         Reanálise prevista em {formatDate(reopenAt)}.

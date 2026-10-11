@@ -12,6 +12,7 @@
 
   const pagePermissionScopes = Object.freeze({
     dashboard: ['dashboard.view'],
+    processos: ['processos.view'],
     automacoes: ['automations.view'],
     protocolo: [],
     tutelas: ['tutelas.view'],
@@ -150,6 +151,7 @@
     // Prefer actual shell modules as the post-login landing page.
     const pages = [
       ['dashboard', 'dashboard.view'],
+      ['processos', 'processos.view'],
       ['acordos', 'pagamentos.view'],
       ['tarefas', 'tasks.view'],
       ['protocolo', 'automations.view'],

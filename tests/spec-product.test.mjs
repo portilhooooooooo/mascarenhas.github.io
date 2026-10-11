@@ -34,7 +34,7 @@ test('login text is contextual, fixed caption matches spec', () => {
   assert.match(login, /greetingFor\(date: Date\)/);
   assert.match(login, /date\.getDay\(\)/);
   assert.match(login, /date\.getHours\(\)/);
-  assert.match(login, /Explore como estamos trabalhando!/);
+  assert.match(login, /Faça login abaixo e explore como estamos trabalhando/);
   assert.doesNotMatch(login, /Tarefas, operação e automações em um único lugar/);
 });
 

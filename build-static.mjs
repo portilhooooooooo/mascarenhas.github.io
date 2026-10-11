@@ -87,7 +87,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
   .replace('</head>', `  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
   .replace(/(<script src="\/?app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
-  .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
   .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
   .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
@@ -134,3 +134,7 @@ await writeFile(
 console.log(`dist preparado para deploy e preview local (${buildVersion}).`);
 
 await cp('assets/vendor', `${dist}/assets/vendor`, { recursive: true });
+
+// Pin and serve the existing icon library with the application, without a CDN dependency.
+await cp('node_modules/lucide/dist/umd/lucide.min.js', `${dist}/assets/vendor/lucide.min.js`);
+await cp('node_modules/lucide/LICENSE', `${dist}/assets/vendor/lucide-LICENSE`);
