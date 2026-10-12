@@ -18,7 +18,7 @@ type Person = {
 type ResultPayload = {
   period: string;
   people: Person[];
-  summary: { completed: number; people: number; measured_analyses: number; measured_transitions: number; slowest: Person | null };
+  summary: { completed: number; today_completed: number; pending: number; growth_percent: number | null; previous_completed: number; people: number; measured_analyses: number; measured_transitions: number; slowest: Person | null };
   methodology: string;
   generated_at: string;
   truncated: boolean;
@@ -183,10 +183,12 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     {shown && <>
       {shown.truncated && <div role="alert" className="task-results-notice">Volume superior ao limite de consulta. Reduza o período para obter indicadores completos.</div>}
       <div className="task-results-stats">
-        {stat('Análises concluídas', formatInt(shown.summary.completed), 'Concluídas por pessoas no recorte', CheckCircle2)}
-        {stat('Colaboradores', formatInt(shown.summary.people), 'Com atividade no recorte', Users)}
+        {stat('Analisados hoje', formatInt(shown.summary.today_completed), 'Concluídos hoje, no recorte selecionado', CheckCircle2)}
+        {stat('Pendentes', formatInt(shown.summary.pending), 'Fila atribuída ainda em aberto', Clock3)}
+        {stat('Crescimento', shown.summary.growth_percent === null ? '—' : `${shown.summary.growth_percent > 0 ? '+' : ''}${shown.summary.growth_percent.toLocaleString('pt-BR')}%`, shown.summary.growth_percent === null ? 'Sem período comparável' : 'Ante o período anterior equivalente', Activity)}
+        {stat('Análises no período', formatInt(shown.summary.completed), 'Concluídas por pessoas no recorte', CheckCircle2)}
         {stat('Análises com tempo', formatInt(shown.summary.measured_analyses), 'Cronometradas pelo novo fluxo', Clock3)}
-        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Entre fases consecutivas', Activity)}
+        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Entre fases consecutivas', Users)}
       </div>
       <div className="task-results-grid">
         <article className="task-results-card task-results-ranking">
