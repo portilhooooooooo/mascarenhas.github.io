@@ -74,11 +74,18 @@ async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, anal
   // reset should not blank all KPIs; retry briefly without repeating mutations.
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return await api.request<Dados>(path);
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
+      try {
+        return await api.request<Dados>(path, { signal: controller.signal });
+      } finally {
+        window.clearTimeout(timeout);
+      }
     } catch (error) {
       const status = (error as Error & { status?: number })?.status;
       const transient = status === 429 || status === 500 || status === 502
-        || status === 503 || status === 504 || (status == null && error instanceof TypeError);
+        || status === 503 || status === 504
+        || (status == null && (error instanceof TypeError || (error as Error)?.name === 'AbortError'));
       if (!transient || attempt === 2) throw error;
       await new Promise<void>(resolve => window.setTimeout(resolve, (attempt + 1) * 450));
     }
@@ -254,6 +261,7 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
 }
 
 export function EncerramentosPage() {
+  const [portfolioRevision,setPortfolioRevision] = useState(0);
   const [carteira,setCarteira] = useState(() => {
     const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
     return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
@@ -267,6 +275,7 @@ export function EncerramentosPage() {
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refreshSequence = useRef(0);
+  const activeRequest = useRef<{ key: string; sequence: number } | null>(null);
   // The page can remain mounted while the authenticated portfolio changes.
   // A stale disabled portfolio selector previously caused INVALID_FILTERS 400s.
   useEffect(() => {
@@ -274,6 +283,9 @@ export function EncerramentosPage() {
       const id=(window as Window & {MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.();
       const next=id==='agibank_enter'?'Agibank Enter':'Agibank Regular';
       refreshSequence.current += 1;
+      // A portfolio event can re-select the same portfolio. Re-fetch anyway
+      // instead of clearing the KPIs with no state dependency to reload them.
+      setPortfolioRevision(revision => revision + 1);
       setCarteira(next);
       setDados(null);
       setResumoBenner(null);
@@ -282,11 +294,14 @@ export function EncerramentosPage() {
     window.addEventListener('mba:portfolio-changed',syncPortfolio);
     return () => window.removeEventListener('mba:portfolio-changed',syncPortfolio);
   },[]);
-  const filterKey = [carteira,tipo,periodo,analista,etapa].join('|');
+  const filterKey = [carteira,tipo,periodo,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
   const refresh = useCallback(async () => {
-    // Outdated responses must never replace the active filter's KPIs.
+    // Duplicate realtime events must not continually supersede pending data.
+    // A change of filters or portfolio still starts a new request.
+    if (activeRequest.current?.key === filterKey) return;
     const sequence = ++refreshSequence.current;
+    activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
       const painel = await loadDashboard(carteira,tipo,periodo,analista,etapa);
@@ -298,11 +313,19 @@ export function EncerramentosPage() {
       if (sequence === refreshSequence.current) {
         setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.');
       }
-    } finally { if (sequence === refreshSequence.current) setPending(false); }
+    } finally {
+      if (activeRequest.current?.sequence === sequence) activeRequest.current = null;
+      if (sequence === refreshSequence.current) setPending(false);
+    }
   },[carteira,tipo,periodo,analista,etapa,filterKey]);
 
   useEffect(() => {void refresh();},[refresh]);
-  useEffect(() => () => {refreshSequence.current += 1;},[]);
+  useEffect(() => () => {
+    // React StrictMode runs effect cleanup/setup twice. Clearing the request
+    // lease allows the second setup to load rather than showing blank KPIs.
+    refreshSequence.current += 1;
+    activeRequest.current = null;
+  },[]);
 
   // Historical Benner data is a previous-month snapshot, not a live KPI.
   useEffect(() => {
@@ -311,7 +334,7 @@ export function EncerramentosPage() {
       if (active) setResumoBenner(value);
     }).catch(() => {/* Keep the previous snapshot on network errors. */});
     return () => {active=false;};
-  },[carteira]);
+  },[carteira,portfolioRevision]);
 
   // Events drive normal updates. The 5-minute check recovers missed events.
   useEffect(() => {
@@ -360,6 +383,7 @@ export function EncerramentosPage() {
       </select></label>
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
+    {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
