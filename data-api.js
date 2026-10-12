@@ -338,15 +338,17 @@
     const controller = new AbortController();
     eventController = controller;
     const portfolioId = getPortfolioId();
+    let reconnectAllowed = true;
     void consumeRealtime(current, controller, portfolioId).catch(error => {
       if (controller.signal.aborted) return;
       // 401/403: wait for refreshed profile rather than repeatedly requesting.
       if (error?.status === 401 || error?.status === 403) {
+        reconnectAllowed = false;
         console.warn('Canal de eventos sem autorização; aguardando nova autenticação.');
         return;
       }
     }).finally(() => {
-      if (current !== eventSequence || controller.signal.aborted || document.hidden || !getStoredToken()) return;
+      if (!reconnectAllowed || current !== eventSequence || controller.signal.aborted || document.hidden || !getStoredToken()) return;
       eventController = null;
       eventRetryTimer = setTimeout(() => {
         eventRetryTimer = null;
