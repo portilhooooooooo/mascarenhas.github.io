@@ -28,3 +28,7 @@
 .assignments-pagination button:disabled{opacity:.4;cursor:default}
 .assignments-board button:focus-visible,.assignments-board select:focus-visible,.assignments-board input:focus-visible{outline:2px solid var(--mba-blue,#b47957);outline-offset:2px}
 @media(max-width:760px){.assignments-filters{grid-template-columns:1fr}.assignments-header{flex-wrap:wrap}.assignments-bulk{align-items:stretch}.assignments-bulk>button{min-height:38px}}
+
+/* Group headers follow the selected perspective without changing row semantics. */
+.assignments-group-row th{padding:9px 13px;background:var(--mba-subtle,#f3f5f7);color:var(--mba-text,#222);font-size:11px;font-weight:650;text-transform:none;letter-spacing:0}
+.assignments-group-row small{margin-left:7px;color:var(--mba-text-2,#64748b);font-size:10px;font-weight:400}
