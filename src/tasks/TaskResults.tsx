@@ -186,11 +186,11 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         {stat('Análises concluídas', formatInt(shown.summary.completed), 'Concluídas por pessoas no recorte', CheckCircle2)}
         {stat('Colaboradores', formatInt(shown.summary.people), 'Com atividade no recorte', Users)}
         {stat('Análises com tempo', formatInt(shown.summary.measured_analyses), 'Cronometradas pelo novo fluxo', Clock3)}
-        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Entre perguntas consecutivas', Activity)}
+        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Entre fases consecutivas', Activity)}
       </div>
       <div className="task-results-grid">
         <article className="task-results-card task-results-ranking">
-          <header><h2>Tempo para avançar de etapa</h2><p>Média dos intervalos entre perguntas consecutivas, em ordem decrescente.</p></header>
+          <header><h2>Tempo para avançar de etapa</h2><p>Média do tempo para passar de uma fase do fluxo à seguinte, em ordem decrescente.</p></header>
           {winner ? <div className="task-results-leader">
             <div><small>Maior tempo médio mensurado</small><strong>{winner.name}</strong><span>{winner.step_samples} avanços registrados</span></div>
             <strong>{clock(winner.mean_step_seconds)}</strong>
@@ -214,7 +214,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         </article>
       </div>
       <article className="task-results-card">
-        <header className="task-results-table-heading"><div><h2>Desempenho por colaborador</h2><p>Tempo médio para concluir uma análise e tempo médio para passar à próxima pergunta.</p></div>
+        <header className="task-results-table-heading"><div><h2>Desempenho por colaborador</h2><p>Tempo médio para concluir uma análise e tempo médio para passar à próxima fase.</p></div>
           <div className="task-results-sort">
             <ArrowDownUp size={14}/>
             <select aria-label="Ordenar colaboradores" value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
