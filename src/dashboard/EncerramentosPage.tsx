@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, BarChart3, CheckCircle2, Clock3, MapPinned, RefreshCcw, SearchCheck, UsersRound, Wallet } from 'lucide-react';
 import { BRAZIL_STATES } from './brazilStates';
 import './encerramentos.css';
@@ -18,6 +18,7 @@ type ResumoBennerAnterior = { periodo_inicio: string; periodo_fim_exclusivo: str
 type Dados = {
   carteira: string;
   tipo: string | null;
+  _dashboard_stale?: boolean;
   indicadores: Indicadores;
   analises_humanas?: { total: number; aptos: number; inaptos: number; revisao: number; outros: number; fonte: string };
   aging: AgingRow[];
@@ -68,7 +69,21 @@ async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, anal
   if (periodo === '30') query.set('inicio', localISO(29));
   if (periodo === '90') query.set('inicio', localISO(89));
   if (analista !== 'todos') query.set('analista', analista);
-  return api.request<Dados>('/api/operacao/encerramentos/dashboard?' + query.toString());
+  const path = '/api/operacao/encerramentos/dashboard?' + query.toString();
+  // The dashboard is a read-only request. A momentary 502/503 or transport
+  // reset should not blank all KPIs; retry briefly without repeating mutations.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await api.request<Dados>(path);
+    } catch (error) {
+      const status = (error as Error & { status?: number })?.status;
+      const transient = status === 429 || status === 500 || status === 502
+        || status === 503 || status === 504 || (status == null && error instanceof TypeError);
+      if (!transient || attempt === 2) throw error;
+      await new Promise<void>(resolve => window.setTimeout(resolve, (attempt + 1) * 450));
+    }
+  }
+  throw new Error('Não foi possível carregar os indicadores.');
 }
 
 async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
@@ -251,19 +266,24 @@ export function EncerramentosPage() {
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
+  const refreshSequence = useRef(0);
   const refresh = useCallback(async () => {
+    // Older requests must not overwrite a more recent filter selection.
+    const sequence = ++refreshSequence.current;
     setPending(true);
     try {
       const [painel, historico] = await Promise.allSettled([
         loadDashboard(carteira,tipo,periodo,analista,etapa),
         loadResumoBennerAnterior(),
       ]);
+      if (sequence !== refreshSequence.current) return;
       if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
       else { setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.'); }
-      setResumoBenner(historico.status === 'fulfilled' ? historico.value : null);
-    } finally { setPending(false); }
+      if (historico.status === 'fulfilled') setResumoBenner(historico.value);
+    } finally { if (sequence === refreshSequence.current) setPending(false); }
   },[carteira,tipo,periodo,analista,etapa]);
   useEffect(() => {void refresh();},[refresh]);
+  useEffect(() => () => {refreshSequence.current += 1;},[]);
   useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},30000); return () => clearInterval(id);},[refresh]);
   useEffect(() => {
     const onSaved = () => { void refresh(); };
@@ -291,7 +311,8 @@ export function EncerramentosPage() {
       </select></label>
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
-    {error ? <p className="closing-error" role="alert">{error}</p> : null}
+    {error ? <p className="closing-error" role="alert">{dados ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
+    {dados?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
