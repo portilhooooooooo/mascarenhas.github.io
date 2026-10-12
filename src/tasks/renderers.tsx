@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft } from './ClosingAnalysisFlow';
@@ -26,6 +26,12 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controlDeadline = defenseControlDeadline(task, process);
+  const onPhaseEntered = useCallback((index: number, stage: string) => {
+    if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
+    void api(`/api/task-processes/${process.id}/analysis-activity`, {
+      method: 'POST', body: JSON.stringify({ index, stage }),
+    }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
+  }, [api, process.id]);
 
   const submit = async (draft: DefenseAnalysisDraft) => {
     setBusy(true);
@@ -75,6 +81,7 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
     error={error}
     onSubmit={submit}
     onSkip={skip}
+    onPhaseEntered={onPhaseEntered}
   />;
 }
 
@@ -112,6 +119,12 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const classifierClassification = closingClassifierClassification(process);
+  const onPhaseEntered = useCallback((index: number, stage: string) => {
+    if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
+    void api(`/api/task-processes/${process.id}/analysis-activity`, {
+      method: 'POST', body: JSON.stringify({ index, stage }),
+    }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
+  }, [api, process.id]);
 
   const submit = async (draft: ClosingAnalysisDraft) => {
     setBusy(true);
@@ -155,6 +168,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     error={error}
     onSubmit={submit}
     onSkip={skip}
+    onPhaseEntered={onPhaseEntered}
   />;
 }
 
