@@ -34,7 +34,7 @@ const portfolioLabel = (id: string) => ({
   banco_pan_mba: 'Banco Pan · MBA',
   nubank_mba: 'Nubank · MBA',
   nubank: 'Nubank',
-}[id] || id.replaceAll('_',' '));
+}[id] || id.replace(/_/g,' '));
 
 function Filter({ title, value, onChange, choices }: { title: string; value: string; onChange: (value: string) => void; choices: Array<{value: string; text: string}> }) {
   return <label className="overview-filter"><span>{title}</span>
