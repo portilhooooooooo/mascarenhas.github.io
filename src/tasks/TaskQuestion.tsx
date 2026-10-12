@@ -98,9 +98,10 @@ type TaskFormProps = FormHTMLAttributes<HTMLFormElement> & {
   stages?: readonly string[];
   dynamicStages?: boolean;
   stageStates?: Record<string, StageState>;
+  onPhaseEntered?: (index: number, stage: string) => void;
 };
 
-function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dynamicStages = false, ...props }: TaskFormProps) {
+function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dynamicStages = false, onPhaseEntered, ...props }: TaskFormProps) {
   const nodes = flattenNodes(children);
   const questions = nodes.filter(child => isValidElement(child) && child.type === TaskQuestion);
   const actions = nodes.filter(child => isValidElement(child) && child.type === TaskActionBar);
@@ -111,6 +112,9 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
   const current = Math.min(activeIndex, Math.max(0, total - 1));
   const questionStages = questions.map(child => isValidElement(child) ? ((child.props as { stage?: string }).stage || '') : '');
   const activeStage = questionStages[current] || '';
+  useEffect(() => {
+    if (onPhaseEntered && activeStage) onPhaseEntered(current, activeStage);
+  }, [onPhaseEntered, current, activeStage]);
   const displayStages = dynamicStages ? stages?.filter(stage => questionStages.includes(stage)) : stages;
   const completedStages = new Set(displayStages?.filter(stage =>
     questionStages.includes(stage) &&
@@ -247,8 +251,8 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
   </form>;
 }
 
-export function TaskForm({ children, progressive = false, draftKey, stages, stageStates, dynamicStages, ...props }: TaskFormProps) {
-  if (progressive) return <ProgressiveTaskForm {...props} draftKey={draftKey} stages={stages} stageStates={stageStates} dynamicStages={dynamicStages}>{children}</ProgressiveTaskForm>;
+export function TaskForm({ children, progressive = false, draftKey, stages, stageStates, dynamicStages, onPhaseEntered, ...props }: TaskFormProps) {
+  if (progressive) return <ProgressiveTaskForm {...props} draftKey={draftKey} stages={stages} stageStates={stageStates} dynamicStages={dynamicStages} onPhaseEntered={onPhaseEntered}>{children}</ProgressiveTaskForm>;
   const items = Children.toArray(children);
   const actions = items.filter(child => isValidElement(child) && child.type === TaskActionBar);
   const content = items.filter(child => !isValidElement(child) || child.type !== TaskActionBar);
