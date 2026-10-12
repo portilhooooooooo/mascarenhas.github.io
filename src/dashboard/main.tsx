@@ -1,4 +1,4 @@
-import { StrictMode, useEffect } from 'react';
+import { Component, StrictMode, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ProcessosPage } from './ProcessosPage';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
@@ -407,6 +407,22 @@ function mountPortfolioSwitcher() {
   portfolioRoot.render(<PortfolioSwitcher />);
 }
 
+class ResultsErrorBoundary extends Component<{children: ReactNode}, {failed: boolean}> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('results_react_render_failed', error, info.componentStack);
+  }
+  render() {
+    if (this.state.failed) return <div role="alert" className="mba-results-load-error">
+      <strong>Não foi possível carregar Resultados.</strong>
+      <p>A navegação permanece disponível. Recarregue a página para tentar novamente.</p>
+      <button type="button" onClick={() => window.location.reload()}>Recarregar</button>
+    </div>;
+    return this.props.children;
+  }
+}
+
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
@@ -417,7 +433,7 @@ function RootApp() {
     return () => cleanupBaseTaskImport();
   }, []);
 
-  return <GestaoProcessualPage/>;
+  return <ResultsErrorBoundary><GestaoProcessualPage/></ResultsErrorBoundary>;
 }
 
 const root = document.getElementById('dashboard-root');
