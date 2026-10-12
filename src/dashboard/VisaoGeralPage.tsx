@@ -174,9 +174,9 @@ export function VisaoGeralPage() {
   const closures = shown?.movement?.closures ?? 0;
   const periodLabel = period==='all'?'Todo o histórico':period==='month'?'Entradas do mês':period==='90'?'Entradas dos últimos 90 dias':'Entradas dos últimos 12 meses';
 
-  return <section className="overview-page" aria-label="Visão geral da carteira processual">
+  return <section className="overview-page" aria-label="Entradas da carteira processual">
     <div className="overview-heading">
-      <div><h1>Visão geral</h1><p>Indicadores e evolução da carteira processual</p></div>
+      <div><h1>Entradas</h1><p>Indicadores e evolução da carteira processual</p></div>
       <div className="overview-heading-actions">
         <span className="overview-portfolio">{portfolioLabel(portfolio)}</span>
         <button type="button" className="overview-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCw size={15} className={pending?'overview-spin':''}/> Atualizar</button>
