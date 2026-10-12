@@ -146,3 +146,6 @@
 .closing-composition .closing-breakdown-head,
 .closing-composition .closing-breakdown-row{grid-template-columns:minmax(0,1fr) 110px}
 @media(max-width:650px){.closing-composition .closing-breakdown-head,.closing-composition .closing-breakdown-row{grid-template-columns:minmax(0,1fr) 78px}}
+
+/* API em recuperação: manter KPIs anteriores sem sugerir ausência de dados. */
+.closing-stale-note{margin:0 0 12px;padding:10px 14px;border:1px solid var(--mba-border,rgba(130,130,130,.22));border-radius:8px;color:var(--mba-text-2,#667085);font-size:12px;line-height:1.45;background:transparent}
