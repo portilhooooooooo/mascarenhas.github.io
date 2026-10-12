@@ -56,7 +56,7 @@ export function GestaoProcessualPage() {
 
   return <div className="gestao-metabase-page gestao-processual-react">
     <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
-      {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Visão geral</button>}
+      {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Entradas</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
     </nav>
     {displayedTab === 'encerramentos' ? <EncerramentosPage/> : <VisaoGeralPage/>}
