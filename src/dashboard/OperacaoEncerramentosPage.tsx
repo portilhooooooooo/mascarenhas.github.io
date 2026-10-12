@@ -92,8 +92,23 @@ export function OperacaoEncerramentosPage() {
   useEffect(()=>{setLoading(true);void refresh();},[refresh]);
   useEffect(()=>{
     if(!canView)return;
-    const timer=window.setInterval(()=>{if(!document.hidden&&!submitting)void refresh();},15000);
-    return ()=>window.clearInterval(timer);
+    let debounce:number|undefined;
+    const update=()=>{if(!document.hidden&&!submitting)void refresh();};
+    const onEvent=(event:Event)=>{
+      const module=(event as CustomEvent<{module?:string}>).detail?.module;
+      if(module!=='encerramentos')return;
+      window.clearTimeout(debounce);
+      debounce=window.setTimeout(update,450);
+    };
+    const timer=window.setInterval(update,300000);
+    window.addEventListener('mba:realtime-invalidate',onEvent);
+    document.addEventListener('visibilitychange',update);
+    return ()=>{
+      window.clearTimeout(debounce);
+      window.clearInterval(timer);
+      window.removeEventListener('mba:realtime-invalidate',onEvent);
+      document.removeEventListener('visibilitychange',update);
+    };
   },[canView,refresh,submitting]);
   useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro]);
 
