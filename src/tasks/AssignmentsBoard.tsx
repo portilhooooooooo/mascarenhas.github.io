@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { isTaskActive, normalize, PROCESS_STATUS_LABELS, taskTypeLabel, type Task, type TaskProcess } from './model';
 import type { ApiRequest } from './renderers';
 import './assignmentsBoard.css';
 
 type Row = { task: Task; process: TaskProcess };
 type Assignee = { id: string; name?: string; email?: string };
-type View = 'people' | 'unassigned' | 'attention';
+type View = 'people' | 'task' | 'deadline';
 
 export function AssignmentsBoard({ tasks, api, canAssign }: {
   tasks: Task[]; api: ApiRequest; canAssign: boolean;
@@ -99,9 +99,6 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   };
   const keyOf = (row: Row) => row.task.id + ':' + row.process.id;
   const filtered = useMemo(() => rows.filter(row => {
-    const closed = ['completed', 'inactive', 'cancelled'].includes(normalize(row.process.status));
-    if (view === 'unassigned' && (row.process.assignee_id || closed)) return false;
-    if (view === 'attention' && (!late(row) || closed)) return false;
     if (analyst !== 'all' && String(row.process.assignee_id || '__none__') !== analyst) return false;
     const needle = normalize(search);
     return !needle || normalize(row.process.case_number).includes(needle)
@@ -116,12 +113,45 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   const selectedRows = rows.filter(row => selected.includes(keyOf(row)) && !['completed', 'inactive', 'cancelled'].includes(normalize(row.process.status)));
   const eligible = selectedRows.length && selectedRows.every(row =>
     (assignees[normalize(row.task.type)] || []).some(person => String(person.id) === recipient));
+
+  const deadlineGroup = (row: Row): { key: string; label: string; rank: number } => {
+    const raw = row.task.deadline_at;
+    if (!raw) return { key: 'none', label: 'Sem vencimento', rank: 4 };
+    const day = new Date(raw);
+    if (Number.isNaN(day.getTime())) return { key: 'none', label: 'Sem vencimento', rank: 4 };
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const offset = new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime() - start.getTime();
+    if (offset < 0) return { key: 'overdue', label: 'Vencidas', rank: 0 };
+    if (offset === 0) return { key: 'today', label: 'Vencem hoje', rank: 1 };
+    if (offset <= 7 * 86400000) return { key: 'soon', label: 'Próximos 7 dias', rank: 2 };
+    return { key: 'future', label: 'Vencimentos futuros', rank: 3 };
+  };
+  const groupKey = (row: Row) => view === 'people'
+    ? 'person:' + String(row.process.assignee_id || '__none__')
+    : view === 'task' ? 'task:' + row.task.id : 'due:' + deadlineGroup(row).key;
+  const groupLabel = (row: Row) => view === 'people'
+    ? nameOf(row)
+    : view === 'task' ? (row.task.title || taskTypeLabel(row.task.type))
+    : deadlineGroup(row).label;
+  const ordered = [...filtered].sort((a, b) => {
+    const label = (row: Row) => view === 'deadline'
+      ? String(deadlineGroup(row).rank).padStart(2, '0')
+      : view === 'people' ? normalize(nameOf(row)) : normalize(row.task.title || taskTypeLabel(row.task.type));
+    const groupCompare = label(a).localeCompare(label(b), 'pt-BR');
+    if (groupCompare) return groupCompare;
+    const aDate = a.task.deadline_at ? new Date(a.task.deadline_at).getTime() : Number.POSITIVE_INFINITY;
+    const bDate = b.task.deadline_at ? new Date(b.task.deadline_at).getTime() : Number.POSITIVE_INFINITY;
+    if (aDate !== bDate && Number.isFinite(aDate) && Number.isFinite(bDate)) return aDate - bDate;
+    return String(a.process.case_number || a.process.id).localeCompare(String(b.process.case_number || b.process.id), 'pt-BR');
+  });
+  const groupTotals = new Map<string, number>();
+  ordered.forEach(row => groupTotals.set(groupKey(row), (groupTotals.get(groupKey(row)) || 0) + 1));
   const pageSize = 40;
   const [page, setPage] = useState(0);
   useEffect(() => { setPage(0); setSelected([]); }, [type, view, analyst, search]);
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pages = Math.max(1, Math.ceil(ordered.length / pageSize));
   const safePage = Math.min(page, pages - 1);
-  const shown = filtered.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const shown = ordered.slice(safePage * pageSize, (safePage + 1) * pageSize);
   const selectable = shown.filter(row => !['completed', 'cancelled', 'inactive'].includes(normalize(row.process.status)));
   const allPageSelected = selectable.length > 0 && selectable.every(row => selected.includes(keyOf(row)));
 
@@ -158,8 +188,8 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
     </header>
     <nav className="assignments-views" aria-label="Visões das atribuições">
       <button type="button" className={view === 'people' ? 'active' : ''} aria-pressed={view === 'people'} onClick={() => setView('people')}>Por pessoa</button>
-      <button type="button" className={view === 'unassigned' ? 'active' : ''} aria-pressed={view === 'unassigned'} onClick={() => setView('unassigned')}>Não atribuídas</button>
-      <button type="button" className={view === 'attention' ? 'active' : ''} aria-pressed={view === 'attention'} onClick={() => setView('attention')}>Vencidas</button>
+      <button type="button" className={view === 'task' ? 'active' : ''} aria-pressed={view === 'task'} onClick={() => setView('task')}>Por tarefa</button>
+      <button type="button" className={view === 'deadline' ? 'active' : ''} aria-pressed={view === 'deadline'} onClick={() => setView('deadline')}>Por vencimento</button>
     </nav>
     <div className="assignments-filters">
       <label>Tipo de tarefa<select value={type} onChange={event => setType(event.target.value)}>
@@ -197,7 +227,9 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
           onChange={event => setSelected(old => event.target.checked ? Array.from(new Set([...old, ...selectable.map(keyOf)])) : old.filter(id => !selectable.some(row => keyOf(row) === id)))}/></th>}
         <th>Processo</th><th>Tipo</th><th>Responsável</th><th>Situação</th><th>Prazo</th>
       </tr></thead>
-      <tbody>{!loading && shown.map(row => <tr key={keyOf(row)}>
+      <tbody>{!loading && shown.map((row, index) => <Fragment key={keyOf(row)}>
+        {(index === 0 || groupKey(shown[index - 1]) !== groupKey(row)) && <tr className="assignments-group-row"><th scope="rowgroup" colSpan={canAssign ? 6 : 5}>{groupLabel(row)} <small>{groupTotals.get(groupKey(row))} tarefa(s)</small></th></tr>}
+        <tr>
         {canAssign && <td><input type="checkbox" aria-label={'Selecionar ' + (row.process.case_number || row.process.id)}
           disabled={working || ['completed','inactive','cancelled'].includes(normalize(row.process.status))}
           checked={selected.includes(keyOf(row))} onChange={event => setSelected(old => event.target.checked ? [...old, keyOf(row)] : old.filter(id => id !== keyOf(row)))}/></td>}
@@ -205,7 +237,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
         <td>{taskTypeLabel(row.task.type)}</td><td>{nameOf(row)}</td>
         <td>{PROCESS_STATUS_LABELS[normalize(row.process.status)] || row.process.status || 'Pendente'}</td>
         <td>{row.task.deadline_at ? new Date(row.task.deadline_at).toLocaleDateString('pt-BR') : '—'}{late(row) ? ' · Vencida' : ''}</td>
-      </tr>)}
+        </tr></Fragment>)}
       {!loading && shown.length === 0 && <tr><td colSpan={canAssign ? 6 : 5}>Nenhuma tarefa individual encontrada.</td></tr>}
       {loading && <tr><td colSpan={canAssign ? 6 : 5}>Consultando processos atribuídos…</td></tr>}
       </tbody>
