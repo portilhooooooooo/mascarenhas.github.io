@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
-import { MetabaseGestaoEmbed } from './MetabaseGestaoEmbed';
+import { VisaoGeralPage } from './VisaoGeralPage';
 import './gestaoMetabase.css';
 
 function currentAnalyticsTab(): 'geral' | 'encerramentos' {
@@ -59,6 +59,6 @@ export function GestaoProcessualPage() {
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Visão geral</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
     </nav>
-    {displayedTab === 'encerramentos' ? <EncerramentosPage/> : <MetabaseGestaoEmbed/>}
+    {displayedTab === 'encerramentos' ? <EncerramentosPage/> : <VisaoGeralPage/>}
   </div>;
 }
