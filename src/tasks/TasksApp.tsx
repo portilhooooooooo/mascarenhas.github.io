@@ -34,6 +34,7 @@ import {
 } from './renderers';
 import { ProtocolCollectionRenderer } from './ProtocolCollectionRenderer';
 import { TeamTasksView } from './TeamTasksView';
+import { TaskResults } from './TaskResults';
 import { AssignmentsBoard } from './AssignmentsBoard';
 import { ProcessHeading, TaskBrief } from './TaskExecution';
 import { SelectMenu } from '../dashboard/SelectMenu';
@@ -703,7 +704,7 @@ export function TasksApp() {
       <button type="button" disabled={!manager} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
       <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Resultados</button>
     </nav>
-    {tab === 'results' ? <section className="tasks-results" aria-label="Resultados das tarefas"><h1>Resultados</h1><p>O painel do Metabase será disponibilizado aqui.</p></section> : null}
+    {tab === 'results' ? <TaskResults api={apiRequest} visible={pageVisible} canViewOthers={canViewOtherTasks} userId={user?.id} /> : null}
 
     {tab === 'management' && manager ? <AssignmentsBoard tasks={allVisibleTasks} api={apiRequest} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /> : null}
 
