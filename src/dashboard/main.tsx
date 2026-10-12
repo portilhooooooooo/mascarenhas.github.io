@@ -220,7 +220,9 @@ function configureApplicationShell() {
     const current = document.querySelector<HTMLElement>('main .page.active');
     if ((window as DashboardWindow).MBA_CURRENT_USER && current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
       const fallback = [...visiblePages].find(page => mayOpen(page));
-      (window as DashboardWindow).showPage?.(fallback || 'sem-acesso');
+      // Keep the current URL during permission/profile refresh; navigation
+      // remains gated by canAccess and can recover after reauthentication.
+      (window as DashboardWindow).showPage?.(fallback || 'sem-acesso', false);
     }
     syncTopModuleFromActivePage();
   };
