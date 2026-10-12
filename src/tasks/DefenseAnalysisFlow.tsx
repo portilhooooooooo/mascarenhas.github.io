@@ -26,6 +26,7 @@ type Props = {
   error?: string | null;
   onSubmit: (draft: DefenseAnalysisDraft) => Promise<void> | void;
   onSkip: () => Promise<void> | void;
+  onPhaseEntered?: (index: number, stage: string) => void;
 };
 
 const DEFENSE_STAGES = ['Validação do fatal', 'Determinação judicial', 'Data fatal e citação', 'Motivo da dispensa'] as const;
@@ -67,7 +68,7 @@ function BinaryChoice({ value, onChange, disabled, name }: { value: YesNo; onCha
   return <OptionGroup name={name} value={value} onChange={next => onChange(next as Exclude<YesNo, null>)} disabled={disabled} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/>;
 }
 
-export function DefenseAnalysisFlow({ cnj, draftKey = '', controlDeadline, busy = false, error = null, onSubmit, onSkip }: Props) {
+export function DefenseAnalysisFlow({ cnj, draftKey = '', controlDeadline, busy = false, error = null, onSubmit, onSkip, onPhaseEntered }: Props) {
   const deadline = dateOnly(controlDeadline);
   const [deadlineCorrect, setDeadlineCorrect] = useQaField<YesNo>(draftKey, 'defense.deadlineCorrect', null);
   const [activeDefense, setActiveDefense] = useQaField<YesNo>(draftKey, 'defense.activeDefense', null);
@@ -120,7 +121,7 @@ export function DefenseAnalysisFlow({ cnj, draftKey = '', controlDeadline, busy 
     });
   };
 
-  return <TaskForm className="defesa-flow" progressive stages={DEFENSE_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit}>
+  return <TaskForm className="defesa-flow" progressive stages={DEFENSE_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
     <div className="defesa-enter-deadline qa-context-note"><p>{deadline ? <>A Enter determinou que essa defesa deve ser apresentada em <strong>{formatDate(deadline)}</strong>.</> : 'A Enter não informou a data para apresentação desta defesa.'}</p></div>
     <TaskQuestion number="01" stage="Validação do fatal" question="Você concorda que o fatal determinado está correto?"><BinaryChoice name="defense-deadline" value={deadlineCorrect} onChange={chooseDeadline} disabled={busy}/></TaskQuestion>
 
