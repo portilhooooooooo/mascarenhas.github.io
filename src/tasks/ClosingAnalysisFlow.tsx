@@ -37,6 +37,7 @@ type Props = {
   error?: string | null;
   onSubmit: (draft: ClosingAnalysisDraft) => Promise<void> | void;
   onSkip: () => Promise<void> | void;
+  onPhaseEntered?: (index: number, stage: string) => void;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -125,7 +126,7 @@ function DateAnswer({ name, label, value, onChange, disabled }: {
 }
 
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, draftKey = '', busy = false, error = null, onSubmit, onSkip,
+  cnj, classifierClassification, draftKey = '', busy = false, error = null, onSubmit, onSkip, onPhaseEntered,
 }: Props) {
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
@@ -298,7 +299,7 @@ export function ClosingAnalysisFlow({
     'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
     'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid === 'sim' && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
     'Cadastro de Encerramento': classificationAgreed === 'sim' || (classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
-  }} draftKey={draftKey} onSubmit={submit}>
+  }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
