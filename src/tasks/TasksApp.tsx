@@ -43,7 +43,7 @@ import '../dashboard/operationalWorkspace.css';
 import './taskStation.css';
 import './qaWorkspace.css';
 
-const REFRESH_MS = 20000;
+const REFRESH_MS = 300000;
 const LAST_TASK_TYPE_KEY = 'mba-last-task-type';
 const HYDRATION_CONCURRENCY = 3;
 type TaskStatusFilter = string;
@@ -441,6 +441,25 @@ export function TasksApp() {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return;
     void loadTaskList(false);
   }, [pageVisible, user]);
+
+  // Another authorized user completed/assigned a task in this portfolio.
+  // Coalesce simultaneous events; never reset active forms while typing.
+  useEffect(() => {
+    if (!pageVisible || !user?.permissions?.['tasks.view']) return undefined;
+    let pending: number | undefined;
+    const changed = (event: Event) => {
+      if ((event as CustomEvent<{module?: string}>).detail?.module !== 'tarefas') return;
+      window.clearTimeout(pending);
+      pending = window.setTimeout(() => {
+        void loadTaskList(false);
+      }, 600);
+    };
+    window.addEventListener('mba:realtime-invalidate', changed);
+    return () => {
+      window.clearTimeout(pending);
+      window.removeEventListener('mba:realtime-invalidate', changed);
+    };
+  }, [pageVisible, user?.id, loadTaskList]);
 
   useEffect(() => {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return undefined;
