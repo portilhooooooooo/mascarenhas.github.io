@@ -267,32 +267,66 @@ export function EncerramentosPage() {
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refreshSequence = useRef(0);
+  const filterKey = [carteira,tipo,periodo,analista,etapa].join('|');
+  const [loadedKey,setLoadedKey] = useState('');
   const refresh = useCallback(async () => {
-    // Older requests must not overwrite a more recent filter selection.
+    // Outdated responses must never replace the active filter's KPIs.
     const sequence = ++refreshSequence.current;
     setPending(true);
     try {
-      const [painel, historico] = await Promise.allSettled([
-        loadDashboard(carteira,tipo,periodo,analista,etapa),
-        loadResumoBennerAnterior(),
-      ]);
+      const painel = await loadDashboard(carteira,tipo,periodo,analista,etapa);
       if (sequence !== refreshSequence.current) return;
-      if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
-      else { setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.'); }
-      if (historico.status === 'fulfilled') setResumoBenner(historico.value);
+      setDados(painel);
+      setLoadedKey(filterKey);
+      setError('');
+    } catch (cause) {
+      if (sequence === refreshSequence.current) {
+        setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.');
+      }
     } finally { if (sequence === refreshSequence.current) setPending(false); }
-  },[carteira,tipo,periodo,analista,etapa]);
+  },[carteira,tipo,periodo,analista,etapa,filterKey]);
+
   useEffect(() => {void refresh();},[refresh]);
   useEffect(() => () => {refreshSequence.current += 1;},[]);
-  useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},30000); return () => clearInterval(id);},[refresh]);
+
+  // Historical Benner data is a previous-month snapshot, not a live KPI.
   useEffect(() => {
-    const onSaved = () => { void refresh(); };
-    window.addEventListener('mba:closing-analysis-saved', onSaved);
-    return () => window.removeEventListener('mba:closing-analysis-saved', onSaved);
-  }, [refresh]);
-  const shown = dados;
-  const analysts = dados?.analistas?.length ? dados.analistas : dados?.etapas?.analistas || [];
-  const analysed = dados?.etapas?.total;
+    let active = true;
+    void loadResumoBennerAnterior().then(value => {
+      if (active) setResumoBenner(value);
+    }).catch(() => {/* Keep the previous snapshot on network errors. */});
+    return () => {active=false;};
+  },[carteira]);
+
+  // Events drive normal updates. The 5-minute check recovers missed events.
+  useEffect(() => {
+    const id = window.setInterval(() => {if(!document.hidden)void refresh();},300000);
+    const visible = () => {if(!document.hidden)void refresh();};
+    document.addEventListener('visibilitychange', visible);
+    return () => {window.clearInterval(id);document.removeEventListener('visibilitychange',visible);};
+  },[refresh]);
+  useEffect(() => {
+    let timeout: number | undefined;
+    const schedule = () => {
+      if (document.hidden) return;
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {void refresh();},350);
+    };
+    const onRealtime = (event: Event) => {
+      const module = (event as CustomEvent<{module?: string}>).detail?.module;
+      if (module === 'encerramentos') schedule();
+    };
+    window.addEventListener('mba:realtime-invalidate', onRealtime);
+    window.addEventListener('mba:closing-analysis-saved', schedule);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener('mba:realtime-invalidate', onRealtime);
+      window.removeEventListener('mba:closing-analysis-saved', schedule);
+    };
+  },[refresh]);
+  const shown = loadedKey === filterKey ? dados : null;
+  const analysts = shown?.analistas?.length ? shown.analistas : shown?.etapas?.analistas || [];
+  const analysed = shown?.etapas?.total;
 
   return <div className="closing-page-v2">
     <div className="closing-heading">
@@ -311,8 +345,8 @@ export function EncerramentosPage() {
       </select></label>
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
-    {error ? <p className="closing-error" role="alert">{dados ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
-    {dados?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
+    {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
+    {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
