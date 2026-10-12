@@ -102,6 +102,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/dashboard-react\.js\?v=[^"']+/g, `dashboard-react.js?v=${buildVersion}`)
   .replace(/config\.js(?:\?v=[^"']+)?/g, `config.js?v=${buildVersion}`)
   .replace(/data-api\.js(?:\?v=[^"']+)?/g, `data-api.js?v=${buildVersion}`)
+  .replace(/portfolio-policy\.js(?:\?v=[^"']+)?/g, `portfolio-policy.js?v=${buildVersion}`)
   .replace(/auth\.js(?:\?v=[^"']+)?/g, `auth.js?v=${buildVersion}`)
   .replace(/app\.js(?:\?v=[^"']+)?/g, `app.js?v=${buildVersion}`)
   .replace(/agreements\.js(?:\?v=[^"']+)?/g, `agreements.js?v=${buildVersion}`)
