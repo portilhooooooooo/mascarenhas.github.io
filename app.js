@@ -114,8 +114,9 @@ function restorePageRoute() {
   const match = resolvePageRoute(routeFromLocation());
   if (!match) return false;
   if (!canAccessRoute(match.pageId, match.canonical)) {
+    // Preserve the original deep link when authorization temporarily changes.
+    // The forbidden page remains hidden; a later profile refresh can restore it.
     showPage('sem-acesso', false);
-    publishRoute('sem-acesso', 'sem-acesso', true);
     return true;
   }
   showPage(match.pageId, false);
