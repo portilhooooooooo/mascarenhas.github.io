@@ -59,21 +59,19 @@ function stat(title: string, value: string, description: string, Icon: typeof Cl
   </div>;
 }
 
-function exportCSV(rows: Person[]) {
-  const sanitize = (input: unknown) => {
-    const value = String(input ?? '').replace(/[\r\n]+/g, ' ');
-    const safe = /^[=+@\-\t]/.test(value) ? "'" + value : value;
-    return '"' + safe.replace(/"/g, '""') + '"';
-  };
-  const lines = [
-    ['Colaborador','Análises concluídas','Análises cronometradas','Tempo médio de análise','Tempo mediano','Transições medidas','Média por transição'],
-    ...rows.map(row => [row.name, row.completed, row.analysis_samples, clock(row.mean_analysis_seconds), clock(row.median_analysis_seconds), row.step_samples, clock(row.mean_step_seconds)]),
-  ];
-  const blob = new Blob(['\ufeff' + lines.map(row => row.map(sanitize).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+function downloadXlsx(encoded: string, filename: string) {
+  const binary = atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url; link.download = 'resultados-equipe.csv'; link.click();
-  URL.revokeObjectURL(url);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename || 'resultados-equipe.xlsx';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function TaskResults({ api, visible, canViewOthers, userId }: {
@@ -87,6 +85,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const [options, setOptions] = useState<{id: string; name: string}[]>([]);
   const [sortBy, setSortBy] = useState<'completed' | 'step' | 'analysis'>('completed');
   const [pending, setPending] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const requestId = useRef(0);
@@ -136,6 +135,21 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const updateFilter = (field: keyof Filters, value: string) => {
     setFilters(current => ({ ...current, [field]: value }));
   };
+  const exportResults = async () => {
+    if (exporting || !data || loadedKey !== key) return;
+    setExporting(true);
+    setError('');
+    try {
+      const params = new URLSearchParams({ period: filters.period, deadline: filters.deadline, person: filters.person, duration: filters.duration });
+      const result = await api('/api/tasks/results/export?' + params);
+      if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
+      downloadXlsx(result.content_base64, result.filename);
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível exportar os resultados.');
+    } finally {
+      setExporting(false);
+    }
+  };
   const shown = loadedKey === key ? data : null;
   const sorted = useMemo(() => [...(shown?.people || [])].sort((a, b) => {
     if (sortBy === 'step') return (b.mean_step_seconds ?? -1) - (a.mean_step_seconds ?? -1) || b.step_samples - a.step_samples;
@@ -155,7 +169,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     <div className="task-results-heading">
       <div><h1>Resultados</h1><p>Produtividade, tempos de análise e progressão no fluxo por colaborador.</p></div>
       <div className="task-results-actions">
-        <button type="button" className="secondary-button" onClick={() => exportCSV(sorted)} disabled={!shown?.people?.length}><Download size={15}/> Exportar CSV</button>
+        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={exporting || pending || !shown?.people?.length}><Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}</button>
         <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
       </div>
     </div>
