@@ -240,7 +240,8 @@
   padding: 7px 12px;
   font-size: 11px;
 }
-#tarefas[data-react-tasks='true'] .task-station form[data-qa-last='false'] .task-renderer-footer button[type='submit'] { display: none; }
+/* Save stays visible for mouse and keyboard users on every step.
+   TaskActionBar continues to disable it until the final question is reached. */
 html[data-mba-theme='lua'] .qa-option-key,html[data-mba-theme='lua'] .qa-keyboard-nav kbd { color: var(--mba-text-2); }
 
 @media (max-width: 1130px) {
