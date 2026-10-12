@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { TaskQuestion, TaskActionBar, TaskForm, OptionGroup } from './TaskQuestion';
 import { useQaField, clearQaDraft } from './qaDraft';
@@ -21,6 +21,15 @@ type BaseRendererProps = {
   onSkipped: (process: TaskProcess) => void;
 };
 
+function usePhaseTelemetry(api: ApiRequest, processId: string) {
+  return useCallback((index: number, stage: string) => {
+    if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
+    void api(`/api/task-processes/${processId}/analysis-activity`, {
+      method: 'POST', body: JSON.stringify({ index, stage }),
+    }).catch(() => { /* Telemetria nunca bloqueia a análise. */ });
+  }, [api, processId]);
+}
+
 const LIMINAR_STAGES = ['Pedido de tutela', 'Decisão judicial', 'Resultado da análise'] as const;
 const PAYMENT_STAGES = ['Situação do pagamento', 'Comprovante', 'Pendências', 'Bloqueio'] as const;
 
@@ -32,6 +41,7 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
   const decision = requested === 'nao' ? 'nao_solicitada' : requested === 'sim' && decided === 'sim' ? result : requested === 'sim' && decided === 'nao' && judgment ? judgment === 'sim' ? 'com_sentenca' : 'sem_decisao' : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const onPhaseEntered = usePhaseTelemetry(api, process.id);
 
   // O componente recebe key por processo e recupera seu rascunho local.
 
@@ -72,7 +82,7 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
   };
 
   return (
-    <TaskForm className="task-renderer-form" progressive stages={LIMINAR_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit}>
+    <TaskForm className="task-renderer-form" progressive stages={LIMINAR_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
       <TaskQuestion number="01" stage="Pedido de tutela" question="Há pedido de tutela antecipada na inicial desse processo?"><OptionGroup name="liminar-requested" value={requested} onChange={value => { setRequested(value); setDecided(null); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion>
       {requested === 'sim' ? <TaskQuestion number="02" stage="Decisão judicial" question="A tutela de urgência já foi decidida pelo juiz?"><OptionGroup name="liminar-decided" value={decided} onChange={value => { setDecided(value); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
       {requested === 'sim' && decided === 'sim' ? <TaskQuestion number="03" stage="Resultado da análise" question="Qual foi a decisão do juiz sobre a tutela de urgência?"><OptionGroup name="liminar-result" value={result} onChange={setResult} disabled={busy} options={[{value:'deferida',label:'Deferida'},{value:'indeferida',label:'Indeferida'}]}/></TaskQuestion> : null}
@@ -94,6 +104,7 @@ export function PaymentRenderer({ api, process, draftKey = '', onCompleted, onSk
   const [hadBlock, setHadBlock] = useQaField<string | null>(draftKey, 'payment.hadBlock', null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const onPhaseEntered = usePhaseTelemetry(api, process.id);
 
   // O componente recebe key por processo e recupera seu rascunho local.
 
@@ -194,7 +205,7 @@ export function PaymentRenderer({ api, process, draftKey = '', onCompleted, onSk
   const analysisReady = (() => { try { buildPayload(); return true; } catch { return false; } })();
 
   return (
-    <TaskForm className="task-renderer-form" progressive stages={PAYMENT_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit}>
+    <TaskForm className="task-renderer-form" progressive stages={PAYMENT_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
       <TaskQuestion number="1" stage="Situação do pagamento" question="O pagamento foi efetivado?">
 
         <OptionGroup name="payment-status" value={paymentStatus} onChange={choosePaymentStatus} disabled={busy} options={[
