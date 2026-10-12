@@ -267,6 +267,21 @@ export function EncerramentosPage() {
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refreshSequence = useRef(0);
+  // The page can remain mounted while the authenticated portfolio changes.
+  // A stale disabled portfolio selector previously caused INVALID_FILTERS 400s.
+  useEffect(() => {
+    const syncPortfolio = () => {
+      const id=(window as Window & {MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.();
+      const next=id==='agibank_enter'?'Agibank Enter':'Agibank Regular';
+      refreshSequence.current += 1;
+      setCarteira(next);
+      setDados(null);
+      setResumoBenner(null);
+      setError('');
+    };
+    window.addEventListener('mba:portfolio-changed',syncPortfolio);
+    return () => window.removeEventListener('mba:portfolio-changed',syncPortfolio);
+  },[]);
   const filterKey = [carteira,tipo,periodo,analista,etapa].join('|');
   const [loadedKey,setLoadedKey] = useState('');
   const refresh = useCallback(async () => {
