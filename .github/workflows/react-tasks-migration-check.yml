@@ -35,6 +35,9 @@ jobs:
       - name: Acórdão four-option regression
         run: node tests/closing-appeal-regression.test.mjs
 
+      - name: Encerramentos evidence-based preselection
+        run: node tests/closing-prefill-regression.test.mjs
+
       - name: Master task execution scope
         run: node --test tests/master-task-scope.test.mjs
 
