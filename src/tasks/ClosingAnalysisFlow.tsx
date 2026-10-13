@@ -30,8 +30,16 @@ export type ClosingAnalysisDraft = {
   classification_disagreement_reason: string | null;
 };
 
+export type ClosingPrefill = Partial<Pick<ClosingAnalysisDraft,
+  'first_instance_merit' | 'had_appeal' | 'appeal_decided' | 'appeal_result'
+  | 'appeal_other_description' | 'appellant' | 'appeal_deadline_open'
+  | 'appeal_deadline_date' | 'transit_confirmed' | 'transit_date'
+  | 'final_costs_paid' | 'execution_requested' | 'full_payment'
+>>;
+
 type Props = {
   cnj: string;
+  prefill?: ClosingPrefill;
   classifierClassification?: string | null;
   contextHint?: string;
   draftKey?: string;
@@ -155,8 +163,17 @@ function DateAnswer({ name, label, value, onChange, disabled }: {
   </label>;
 }
 
+function hasStoredClosingDraft(key: string): boolean {
+  if (!key) return false;
+  try { return sessionStorage.getItem(key) !== null; } catch { return false; }
+}
+function yesNo(value: boolean | null | undefined): YesNo {
+  return value === true ? 'sim' : value === false ? 'nao' : null;
+}
+
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, draftKey = '', busy = false, error = null, onSubmit, onSkip, onPhaseEntered,
+  cnj, classifierClassification, prefill, draftKey = '', busy = false, error = null,
+  onSubmit, onSkip, onPhaseEntered,
 }: Props) {
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
@@ -174,6 +191,35 @@ export function ClosingAnalysisFlow({
   const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.classificationAgreed', null);
   const [disagreementReason, setDisagreementReason] = useQaField(draftKey, 'closing.disagreementReason', '');
   const [localError, setLocalError] = useState<string | null>(null);
+
+  // Prefill is an initial radio selection, never an automatic confirmation.
+  // Restore existing analyst drafts first; never overwrite an edit made while
+  // the read-only evidence request was running.
+  const hadDraftAtMount = useRef<boolean | null>(null);
+  if (hadDraftAtMount.current === null) hadDraftAtMount.current = hasStoredClosingDraft(draftKey);
+  const interactedBeforePrefill = useRef(false);
+  const prefillApplied = useRef(false);
+  useEffect(() => {
+    if (!prefill || prefillApplied.current) return;
+    prefillApplied.current = true;
+    if (hadDraftAtMount.current || interactedBeforePrefill.current) return;
+    if (prefill.first_instance_merit) setSentence(current => current ?? prefill.first_instance_merit!);
+    if (prefill.had_appeal != null) setHadAppeal(current => current ?? yesNo(prefill.had_appeal));
+    if (prefill.appeal_decided != null) setAppealDecided(current => current ?? yesNo(prefill.appeal_decided));
+    if (prefill.appellant) setAppellant(current => current ?? prefill.appellant!);
+    if (prefill.appeal_result) setAppealResult(current => current ?? prefill.appeal_result!);
+    if (prefill.appeal_other_description) setAppealOtherDescription(current => current || prefill.appeal_other_description!);
+    if (prefill.appeal_deadline_open != null) setDeadlineOpen(current => current ?? yesNo(prefill.appeal_deadline_open));
+    if (prefill.appeal_deadline_date) setDeadlineDate(current => current || prefill.appeal_deadline_date!);
+    if (prefill.transit_confirmed != null) setTransitConfirmed(current => current ?? yesNo(prefill.transit_confirmed));
+    if (prefill.transit_date) setTransitDate(current => current || prefill.transit_date!);
+    if (prefill.final_costs_paid != null) setCostsPaid(current => current ?? yesNo(prefill.final_costs_paid));
+    if (prefill.execution_requested != null) setExecutionRequested(current => current ?? yesNo(prefill.execution_requested));
+    if (prefill.full_payment != null) setFullPayment(current => current ?? yesNo(prefill.full_payment));
+    // classificationAgreed deliberately stays null; the analyst must confirm.
+  }, [prefill, setSentence, setHadAppeal, setAppealDecided, setAppellant, setAppealResult,
+    setAppealOtherDescription, setDeadlineOpen, setDeadlineDate, setTransitConfirmed,
+    setTransitDate, setCostsPaid, setExecutionRequested, setFullPayment]);
 
   const clearAfterTransit = () => {
     setCostsPaid(null); setExecutionRequested(null); setFullPayment(null);
@@ -344,7 +390,9 @@ export function ClosingAnalysisFlow({
     'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
     'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid === 'sim' && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
     'Cadastro de Encerramento': classificationAgreed === 'sim' || (!appealOther && classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
-  }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
+  }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}
+    onChangeCapture={() => { interactedBeforePrefill.current = true; }}
+    onKeyDownCapture={() => { interactedBeforePrefill.current = true; }}>
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
