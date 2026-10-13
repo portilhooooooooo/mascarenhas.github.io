@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
@@ -185,3 +185,52 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
   />;
 }
 
+
+/**
+ * Dependência pós-encerramento: somente Derrota confirmada no Benner, nunca DV.
+ * Responder "não" mantém o prazo aberto. Não presume ausência com base em dado nulo.
+ */
+export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendererProps) {
+  const [cadastrado, setCadastrado] = useState<boolean | null>(null);
+  const [observacao, setObservacao] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  useEffect(() => {
+    setCadastrado(null); setObservacao(''); setError(''); setNotice('');
+  }, [process.id]);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (cadastrado === null || busy) return;
+    setBusy(true);
+    setError(''); setNotice('');
+    try {
+      const saved = await api('/api/task-processes/' + process.id + '/motivo-derrota-answer', {
+        method: 'POST', body: JSON.stringify({ cadastrado, observacao }),
+      });
+      if (saved?.completed) {
+        window.dispatchEvent(new CustomEvent('mba:realtime-invalidate', { detail: { module: 'encerramentos' } }));
+        onCompleted(process);
+      } else {
+        setNotice('Motivo ainda não cadastrado. A tarefa permanece pendente.');
+      }
+    } catch (cause: any) {
+      setError(cause?.message || 'Não foi possível salvar a verificação.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return <form className="task-form-content motivo-derrota-form" onSubmit={submit}>
+    <h3>Cadastro de Motivo Derrota</h3>
+    <p>O envio do encerramento foi confirmado no Benner, e a consulta posterior identificou ausência do motivo. Regularize o cadastro e confirme abaixo.</p>
+    <fieldset className="motivo-derrota-choice">
+      <legend>O motivo da derrota foi cadastrado no Benner?</legend>
+      <label><input type="radio" name={'motivo-derrota-' + process.id} checked={cadastrado === true} onChange={() => setCadastrado(true)}/> Sim, cadastrado</label>
+      <label><input type="radio" name={'motivo-derrota-' + process.id} checked={cadastrado === false} onChange={() => setCadastrado(false)}/> Não, ainda pendente</label>
+    </fieldset>
+    <label>Observação (opcional)<textarea value={observacao} maxLength={2000} rows={2} onChange={event => setObservacao(event.target.value)} placeholder="Registro ou justificativa no Benner" /></label>
+    {error && <p className="task-renderer-error" role="alert">{error}</p>}
+    {notice && <p role="status">{notice}</p>}
+    <button type="submit" className="primary-button" disabled={busy || cadastrado === null}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button>
+  </form>;
+}

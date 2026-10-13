@@ -4,6 +4,7 @@ import './closingAnalysisFlow.css';
 import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 
 type YesNo = 'sim' | 'nao' | null;
+type CostsAnswer = 'sim' | 'nao' | 'sem_pendencia' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
 type AppealResult = 'sentenca_desconstituida' | 'condenacao_mantida'
   | 'condenacao_afastada' | 'sem_condenacao_mantida' | 'condenacao_imposta' | 'outro';
@@ -22,7 +23,7 @@ export type ClosingAnalysisDraft = {
   appeal_deadline_date: string | null;
   transit_confirmed: boolean | null;
   transit_date: string | null;
-  final_costs_paid: boolean | null;
+  final_costs_paid: boolean | 'sem_pendencia' | null;
   execution_requested: boolean | null;
   full_payment: boolean | null;
   classifier_classification: string | null;
@@ -170,6 +171,9 @@ function hasStoredClosingDraft(key: string): boolean {
 function yesNo(value: boolean | null | undefined): YesNo {
   return value === true ? 'sim' : value === false ? 'nao' : null;
 }
+function costsAnswer(value: boolean | 'sem_pendencia' | null | undefined): CostsAnswer {
+  return value === 'sem_pendencia' ? 'sem_pendencia' : yesNo(value);
+}
 
 export function ClosingAnalysisFlow({
   cnj, classifierClassification, prefill, draftKey = '', busy = false, error = null,
@@ -185,7 +189,7 @@ export function ClosingAnalysisFlow({
   const [deadlineDate, setDeadlineDate] = useQaField(draftKey, 'closing.deadlineDate', '');
   const [transitConfirmed, setTransitConfirmed] = useQaField<YesNo>(draftKey, 'closing.transitConfirmed', null);
   const [transitDate, setTransitDate] = useQaField(draftKey, 'closing.transitDate', '');
-  const [costsPaid, setCostsPaid] = useQaField<YesNo>(draftKey, 'closing.costsPaid', null);
+  const [costsPaid, setCostsPaid] = useQaField<CostsAnswer>(draftKey, 'closing.costsPaid', null);
   const [executionRequested, setExecutionRequested] = useQaField<YesNo>(draftKey, 'closing.executionRequested', null);
   const [fullPayment, setFullPayment] = useQaField<YesNo>(draftKey, 'closing.fullPayment', null);
   const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.classificationAgreed', null);
@@ -213,7 +217,7 @@ export function ClosingAnalysisFlow({
     if (prefill.appeal_deadline_date) setDeadlineDate(current => current || prefill.appeal_deadline_date!);
     if (prefill.transit_confirmed != null) setTransitConfirmed(current => current ?? yesNo(prefill.transit_confirmed));
     if (prefill.transit_date) setTransitDate(current => current || prefill.transit_date!);
-    if (prefill.final_costs_paid != null) setCostsPaid(current => current ?? yesNo(prefill.final_costs_paid));
+    if (prefill.final_costs_paid != null) setCostsPaid(current => current ?? costsAnswer(prefill.final_costs_paid));
     if (prefill.execution_requested != null) setExecutionRequested(current => current ?? yesNo(prefill.execution_requested));
     if (prefill.full_payment != null) setFullPayment(current => current ?? yesNo(prefill.full_payment));
     // classificationAgreed deliberately stays null; the analyst must confirm.
@@ -280,14 +284,19 @@ export function ClosingAnalysisFlow({
     if (transitConfirmed === 'nao') outcome = 'inapto_sem_transito';
     else if (transitConfirmed === 'sim') {
       if (finalMerit === 'vitoria') outcome = 'apto_vitoria';
-      else if (costsPaid === 'nao') outcome = 'apto_pending_custas';
-      else if (costsPaid === 'sim') {
-        if (executionRequested === 'nao' && hasValidTransitDate) {
-          outcome = transitTooRecent
-            ? 'inapto_aguardando_transito_60d'
-            : 'apto_derrota_voluntaria';
-        } else if (executionRequested === 'sim' && fullPayment !== null) {
-          outcome = fullPayment === 'sim' ? 'apto_derrota' : 'inapto_execucao_pendente';
+      else if (costsPaid !== null && executionRequested !== null) {
+        // O pedido de execução deve ser verificado mesmo com custas não pagas.
+        // Pendência de execução prevalece; custas pendentes impedem conclusão definitiva.
+        if (executionRequested === 'nao') {
+          if (costsPaid === 'nao') outcome = 'apto_pending_custas';
+          else if (hasValidTransitDate) {
+            outcome = transitTooRecent
+              ? 'inapto_aguardando_transito_60d'
+              : 'apto_derrota_voluntaria';
+          }
+        } else if (fullPayment !== null) {
+          if (fullPayment === 'nao') outcome = 'inapto_execucao_pendente';
+          else outcome = costsPaid === 'nao' ? 'apto_pending_custas' : 'apto_derrota';
         }
       }
     }
@@ -340,7 +349,7 @@ export function ClosingAnalysisFlow({
     hadAppeal === 'sim' && appealDecided === 'sim' && appealResultValid && appealResult
       ? appealDescription[appealResult] + (appealResult === 'outro' ? ': ' + appealOtherDescription.trim() : '') : '',
     transitConfirmed === 'sim' ? 'TRÂNSITO EM JULGADO' + (transitDate ? ' EM ' + formatDate(transitDate) : ' CONFIRMADO') : '',
-    costsPaid === 'sim' ? 'CUSTAS FINAIS PAGAS' : costsPaid === 'nao' ? 'CUSTAS FINAIS NÃO PAGAS' : '',
+    costsPaid === 'sim' ? 'CUSTAS FINAIS PAGAS' : costsPaid === 'nao' ? 'CUSTAS FINAIS NÃO PAGAS' : costsPaid === 'sem_pendencia' ? 'NÃO HÁ CUSTAS FINAIS PENDENTES' : '',
     executionRequested === 'nao' ? 'SEM PEDIDO DE EXECUÇÃO' : executionRequested === 'sim' ? 'COM PEDIDO DE EXECUÇÃO' : '',
     outcome === 'apto_derrota_voluntaria' ? 'PROCESSO APTO AO ENCERRAMENTO POR DERROTA VOLUNTÁRIA' : '',
   ].filter(Boolean).join(', ') + '.';
@@ -370,13 +379,13 @@ export function ClosingAnalysisFlow({
       appeal_deadline_date: hadAppeal === 'nao' && deadlineOpen === 'sim' ? deadlineDate : null,
       transit_confirmed: canAnswerTransit ? transitConfirmed === 'sim' : null,
       transit_date: finalMerit === 'derrota' && transitConfirmed === 'sim'
-        && costsPaid === 'sim' && executionRequested === 'nao' ? transitDate || null : null,
+        && (costsPaid === 'sim' || costsPaid === 'sem_pendencia') && executionRequested === 'nao' ? transitDate || null : null,
       final_costs_paid: finalMerit === 'derrota' && transitConfirmed === 'sim'
-        ? costsPaid === 'sim' : null,
-      execution_requested: finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim'
+        ? costsPaid === 'sem_pendencia' ? 'sem_pendencia' : costsPaid === 'sim' : null,
+      execution_requested: finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null
         ? executionRequested === 'sim' : null,
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
-        && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
+        && costsPaid !== null && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
       classification_agreed: appealOther ? false : classificationAgreed === 'sim',
       classification_disagreement_reason: appealOther ? 'Acórdão — Outro: ' + appealOtherDescription.trim()
@@ -388,7 +397,7 @@ export function ClosingAnalysisFlow({
     'Cadastro de Sentença': sentence ? 'completed' : 'pending',
     'Cadastro de Acórdão': appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
-    'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid === 'sim' && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
+    'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && (costsPaid === 'sim' || costsPaid === 'sem_pendencia') && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
     'Cadastro de Encerramento': classificationAgreed === 'sim' || (!appealOther && classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
   }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}
     onChangeCapture={() => { interactedBeforePrefill.current = true; }}
@@ -459,14 +468,18 @@ export function ClosingAnalysisFlow({
     </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve o pagamento das custas finais?">
-        <BinaryChoice name="closing-costs" value={costsPaid} disabled={busy} onChange={value => {
-          setCostsPaid(value); setExecutionRequested(null); setFullPayment(null);
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Custas foram pagas?">
+        <OptionGroup name="closing-costs" value={costsPaid} disabled={busy} options={[
+          { value: 'sim', label: 'Sim' },
+          { value: 'nao', label: 'Não' },
+          { value: 'sem_pendencia', label: 'Não há custas pendentes' },
+        ]} onChange={value => {
+          setCostsPaid(value as Exclude<CostsAnswer, null>); setExecutionRequested(null); setFullPayment(null);
           setTransitDate(''); setLocalError(null);
         }} />
       </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null ?
       <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pedido de execução?">
         <BinaryChoice name="closing-execution" value={executionRequested} disabled={busy} onChange={value => {
           setExecutionRequested(value); setFullPayment(null); setTransitDate(''); setLocalError(null);
@@ -474,7 +487,7 @@ export function ClosingAnalysisFlow({
       </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' &&
-      costsPaid === 'sim' && executionRequested === 'nao' ?
+      (costsPaid === 'sim' || costsPaid === 'sem_pendencia') && executionRequested === 'nao' ?
       <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Trânsito em Julgado" question="Qual foi a data do trânsito em julgado?">
         <DateAnswer name="closing-transit-date" label="Data do trânsito em julgado"
           value={transitDate} disabled={busy} onChange={value => {
@@ -486,7 +499,7 @@ export function ClosingAnalysisFlow({
         </p> : null}
       </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' && executionRequested === 'sim' ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null && executionRequested === 'sim' ?
       <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pagamento do valor integral solicitado pela autora?">
         <BinaryChoice name="closing-payment" value={fullPayment} disabled={busy} onChange={value => {
           setFullPayment(value); setLocalError(null);

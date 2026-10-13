@@ -38,7 +38,10 @@ jobs:
       - name: Acórdão four-option regression
         run: node tests/closing-appeal-regression.test.mjs
 
-      - name: Encerramentos preselection regression
+      - name: Custas finais and execution regression
+        run: node tests/closing-costs-options.test.mjs
+
+      - name: Encerramentos evidence-based preselection
         run: node tests/closing-prefill-regression.test.mjs
 
       - name: Original favicon and institutional login video
