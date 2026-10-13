@@ -33,7 +33,6 @@ import {
   type ApiRequest,
 } from './renderers';
 import { ProtocolCollectionRenderer } from './ProtocolCollectionRenderer';
-import { TeamTasksView } from './TeamTasksView';
 import { TaskResults } from './TaskResults';
 import { AssignmentsBoard } from './AssignmentsBoard';
 import { ProcessHeading, TaskBrief } from './TaskExecution';
@@ -250,7 +249,6 @@ export function TasksApp() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<'management' | 'execution' | 'results'>(currentTaskTab);
-  const [teamMode, setTeamMode] = useState(false);
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedUf, setSelectedUf] = useState('all');
@@ -316,7 +314,6 @@ export function TasksApp() {
       setVisibleTasks([]);
       setActiveKey(null);
       setDeferredKeys([]);
-      setTeamMode(false);
       setLinkedPreview(null); setLinkedError(null);
       setProcessVersion(value => value + 1);
     };
@@ -379,7 +376,7 @@ export function TasksApp() {
     setLinkedPreview(null); setLinkedError(null);
     if (!match || !pageVisible || !user?.permissions?.['tasks.view']) return;
     let active = true;
-    setTeamMode(false); setTab('execution'); setSearch(''); setSelectedType('all'); setSelectedUf('all'); setSelectedPriority('all');
+    setTab('execution'); setSearch(''); setSelectedType('all'); setSelectedUf('all'); setSelectedPriority('all');
     Promise.all([apiRequest('/api/tasks/' + match[1]), apiRequest('/api/task-processes/' + match[2])]).then(([task, process]) => {
       if (!active) return;
       if (process.task_id !== task.id) throw new Error('Tarefa e processo não correspondem.');
@@ -699,8 +696,7 @@ export function TasksApp() {
 
   return <div ref={stationRef} className={`tasks-react-root ${tab === 'execution' ? 'task-station' : ''}`}>
     <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas">
-      <button type="button" className={tab === 'execution' && !teamMode ? 'active' : ''} onClick={() => { setTeamMode(false); setSelectedType('all'); navigateTaskTab('tarefas'); }}>Minhas tarefas</button>
-      {canViewOtherTasks ? <button type="button" className={tab === 'execution' && teamMode ? 'active' : ''} onClick={() => { setTeamMode(true); navigateTaskTab('tarefas'); }}>Equipe</button> : null}
+      <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setSelectedType('all'); navigateTaskTab('tarefas'); }}>Tarefas</button>
       <button type="button" disabled={!manager} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
       <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Resultados</button>
     </nav>
@@ -708,8 +704,7 @@ export function TasksApp() {
 
     {tab === 'management' && manager ? <AssignmentsBoard tasks={allVisibleTasks} api={apiRequest} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /> : null}
 
-    {tab === 'execution' && teamMode && canViewOtherTasks ? <TeamTasksView tasks={allVisibleTasks} api={apiRequest} visible={pageVisible} /> : null}
-    {tab === 'execution' && (!teamMode || !canViewOtherTasks) ? <>
+    {tab === 'execution' ? <>
 
       {loadError ? <div className="workbench-notice" role="alert"><span>Não foi possível atualizar a fila. {loadError}</span><button type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button></div> : null}
       {actionNotice ? <div className="execution-notification" role="status"><span>{actionNotice}</span><button type="button" aria-label="Fechar confirmação" onClick={() => setActionNotice(null)}>×</button></div> : null}
