@@ -61,13 +61,12 @@ function localISO(daysBack: number): string {
   return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
 }
 
-async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, analista: string, etapa: Etapa): Promise<Dados> {
+async function loadDashboard(carteira: string, tipo: Tipo, inicio: string, fim: string, analista: string, etapa: Etapa): Promise<Dados> {
   const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
   if (!api) throw new Error('Conexão com a API indisponível.');
   const query = new URLSearchParams({ carteira, tipo, etapa });
-  if (periodo === 'mes') { const d = new Date(); query.set('inicio', [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),'01'].join('-')); }
-  if (periodo === '30') query.set('inicio', localISO(29));
-  if (periodo === '90') query.set('inicio', localISO(89));
+  if (inicio) query.set('inicio', inicio);
+  if (fim) query.set('fim', fim);
   if (analista !== 'todos') query.set('analista', analista);
   const path = '/api/operacao/encerramentos/dashboard?' + query.toString();
   // The dashboard is a read-only request. A momentary 502/503 or transport
@@ -110,7 +109,7 @@ function Metrics({ dados, analista, selectedCount, acordo, etapa, resumo }: { da
     { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados · Indícios DataJud' : 'Sem dados' },
     { icon: UsersRound, name: 'Analisados', value: m ? num(m.analisados) : '—', sub: 'Respostas de análise registradas no período' },
     { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
-    { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
+    { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? (stage.ticket_amostra ? num(stage.ticket_amostra) + ' pagamentos liquidados' : 'Sem pagamentos liquidados vinculados') : 'Aguardando apuração' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
     { icon: Activity, name: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', sub: 'Análises pendentes de validação' },
     { icon: CheckCircle2, name: 'Enviados', value: resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
@@ -178,40 +177,43 @@ function MapPanel({ dados }: { dados: Dados | null }) {
   </section>;
 }
 
-function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null; etapa: Etapa; periodo: string; analista: string }) {
+function Composition({ dados, etapa }: { dados: Dados | null; etapa: Etapa }) {
   const bands = ageBands(dados?.carteira || 'Agibank Regular');
   const types = dados?.etapas?.tipos || [];
   const ages = dados?.etapas?.aging || [];
   const first = etapa === 'validados' ? 'Validados' : 'Enviados';
-  const currentMonth = periodo === 'mes';
+  const total = valueOrZero(dados?.etapas?.total);
+  const matrix = dados?.etapas?.matriz || [];
   const quantity = (kind: string) => valueOrZero(types.find(row=>row.tipo===kind)?.quantidade);
   const typeCount = Math.max(1,...CLASSES.map(t=>quantity(t.tipo)));
   const rows = (section: 'tipos'|'aging') => section==='tipos'
     ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo)}))
-    : bands.map((faixa,index)=>({
+    : bands.map(faixa=>({
         key:faixa,label:faixa,found:valueOrZero(ages.find(a=>a.faixa===faixa)?.quantidade),
       }));
   return <section className="closing-surface closing-composition">
     <div className="closing-card-head"><div>
       <h2>Composição dos encerramentos</h2>
-      <p>{etapa==='validados'?'Validados':'Enviados ao Benner'} · {currentMonth?'Mês atual':'Período selecionado'}</p>
+      <p>{etapa==='validados'?'Validados':'Enviados ao Benner'} · aging calculado na data da etapa · {num(total)} processos</p>
     </div></div>
     {(['tipos','aging'] as const).map(section => <div className="closing-composition-table" key={section}>
       <div className="closing-breakdown-head">
         <h3>{section==='tipos'?'Tipos':'Aging'}</h3>
-        <span>{first}</span>
+        <span>{first} · % da etapa</span>
       </div>
       {rows(section).map(row=><div className="closing-breakdown-row" key={row.key}>
         <div className="closing-breakdown-name">
           <span>{row.label}</span>
           <div className="closing-rail"><i style={{width:(row.found/(section==='tipos'?typeCount:Math.max(1,...rows('aging').map(x=>x.found))))*100+'%'}}/></div>
         </div>
-        <strong>{num(row.found)}</strong>
-        
-        
+        <strong>{num(row.found)} <small>{total ? percent(row.found / total * 100) : '0%'}</small></strong>
       </div>)}
     </div>)}
-    <div className="closing-card-foot">Análises efetivamente registradas; sem metas de ranking.</div>
+    {total > 0 && <div className="closing-matrix-scroll"><table className="closing-matrix" aria-label="Composição por tipo e aging">
+      <thead><tr><th>Tipo / Aging</th>{bands.map(faixa=><th key={faixa}>{faixa}</th>)}<th>Total</th></tr></thead>
+      <tbody>{CLASSES.map(classe=><tr key={classe.tipo}><th>{classe.label}</th>{bands.map(faixa=><td key={faixa}>{num(valueOrZero(matrix.find(item=>item.tipo===classe.tipo && item.faixa===faixa)?.quantidade))}</td>)}<td className="closing-matrix-total">{num(quantity(classe.tipo))}</td></tr>)}</tbody>
+    </table></div>}
+    <div className="closing-card-foot">A composição acompanha o intervalo de datas e a etapa. Sem pagamentos liquidados associados, o TKM permanece sem amostra.</div>
   </section>;
 }
 
@@ -267,7 +269,8 @@ export function EncerramentosPage() {
     return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
   });
   const [tipo,setTipo] = useState<Tipo>('TODOS');
-  const [periodo,setPeriodo] = useState('mes');
+  const [inicio,setInicio] = useState(() => { const now = new Date(); return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),'01'].join('-'); });
+  const [fim,setFim] = useState(() => localISO(0));
   const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
   const [dados,setDados] = useState<Dados | null>(null);
@@ -294,17 +297,18 @@ export function EncerramentosPage() {
     window.addEventListener('mba:portfolio-changed',syncPortfolio);
     return () => window.removeEventListener('mba:portfolio-changed',syncPortfolio);
   },[]);
-  const filterKey = [carteira,tipo,periodo,analista,etapa,portfolioRevision].join('|');
+  const invalidRange = Boolean(inicio && fim && inicio > fim);
+  const filterKey = [carteira,tipo,inicio,fim,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
   const refresh = useCallback(async () => {
     // Duplicate realtime events must not continually supersede pending data.
     // A change of filters or portfolio still starts a new request.
-    if (activeRequest.current?.key === filterKey) return;
+    if (invalidRange || activeRequest.current?.key === filterKey) return;
     const sequence = ++refreshSequence.current;
     activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
-      const painel = await loadDashboard(carteira,tipo,periodo,analista,etapa);
+      const painel = await loadDashboard(carteira,tipo,inicio,fim,analista,etapa);
       if (sequence !== refreshSequence.current) return;
       setDados(painel);
       setLoadedKey(filterKey);
@@ -317,7 +321,7 @@ export function EncerramentosPage() {
       if (activeRequest.current?.sequence === sequence) activeRequest.current = null;
       if (sequence === refreshSequence.current) setPending(false);
     }
-  },[carteira,tipo,periodo,analista,etapa,filterKey]);
+  },[carteira,tipo,inicio,fim,analista,etapa,invalidRange,filterKey]);
 
   useEffect(() => {void refresh();},[refresh]);
   useEffect(() => () => {
@@ -376,20 +380,25 @@ export function EncerramentosPage() {
     <div className="closing-filter-row">
       <label>Carteira<select value={carteira} disabled aria-label="Carteira atual autorizada"><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-      <label>Período<select value={periodo} onChange={e=>setPeriodo(e.target.value)}><option value="mes">Mês atual</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option></select></label>
+      <fieldset className="closing-date-range"><legend>Período</legend>
+        <label>De<input type="date" aria-label="Data inicial dos encerramentos" value={inicio} max={fim || undefined} onChange={e=>setInicio(e.target.value)}/></label>
+        <label>Até<input type="date" aria-label="Data final dos encerramentos" value={fim} min={inicio || undefined} onChange={e=>setFim(e.target.value)}/></label>
+        <button type="button" className="closing-date-clear" onClick={()=>{setInicio('');setFim('');}} disabled={!inicio && !fim}>Todo o histórico</button>
+      </fieldset>
       <label>Etapa<select value={etapa} onChange={e=>setEtapa(e.target.value as Etapa)}>
         <option value="validados">Validados</option>
         <option value="enviados_benner">Enviados ao Benner</option>
       </select></label>
       <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
+    {invalidRange && <p className="closing-error" role="alert">A data inicial não pode ser posterior à data final.</p>}
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
       <MapPanel dados={shown}/>
-      <Composition dados={shown} etapa={etapa} periodo={periodo} analista={analista}/>
+      <Composition dados={shown} etapa={etapa}/>
     </div>
     <div className="closing-lower-grid">
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
