@@ -303,7 +303,7 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
 
   return <TaskForm className="motivo-derrota-form" progressive
     stages={['Motivo da derrota', 'Natureza da derrota']} onSubmit={submit}>
-    <TaskQuestion number="01" question="Qual o motivo da derrota?">
+    <TaskQuestion number="01" stage="Motivo da derrota" question="Qual o motivo da derrota?">
       <div className="motivo-derrota-field" data-qa-answered={motivoValido ? 'true' : 'false'}>
         <SelectMenu label="Motivo da derrota" searchable value={codigo}
           searchPlaceholder="Buscar entre os motivos disponíveis no Benner..."
@@ -315,7 +315,7 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
         {checking ? <p role="status" className="motivo-derrota-helper">Consultando catálogo do Benner…</p> : null}
       </div>
     </TaskQuestion>
-    <TaskQuestion number="02" question="Qual a natureza da derrota?">
+    <TaskQuestion number="02" stage="Natureza da derrota" question="Qual a natureza da derrota?">
       <QaOptionGroup name={'natureza-' + process.id} value={natureza}
         disabled={busy || checking}
         options={(catalog?.naturezas || []).map(item => ({ value: item.codigo, label: item.rotulo }))}
