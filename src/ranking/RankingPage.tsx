@@ -21,6 +21,8 @@ type Projection = {
   signals?: { total_identificados: number; desfechos_comparaveis: number; vitórias: number;
     acordos: number; derrotas: number; derrota_voluntaria_sem_equivalencia: number;
     percentual_vitorias_amostra: number | null; percentual_acordos_amostra: number | null;
+    preliminar_pontos_dois_criterios: number | null; preliminar_maximo: number;
+    gap_vitorias_pontos_percentuais: number | null; gap_acordos_pontos_percentuais: number | null;
     nota: string };
 };
 type RankingWindow = Window & typeof globalThis & {
@@ -120,6 +122,7 @@ function OperationalSignals({ data }: {data: Projection}) {
       <p>Na amostra de {pt(sample.desfechos_comparaveis)} encerramentos com desfechos comparáveis, os indicadores são:</p></div>
     <div><strong>{sample.percentual_vitorias_amostra == null ? '—' : percentage(sample.percentual_vitorias_amostra)}</strong><span>Vitórias · meta 76%</span></div>
     <div><strong>{sample.percentual_acordos_amostra == null ? '—' : percentage(sample.percentual_acordos_amostra)}</strong><span>Acordos · meta 14%</span></div>
+    <div><strong>{sample.preliminar_pontos_dois_criterios == null ? '—' : point(sample.preliminar_pontos_dois_criterios)} <small>/ 3,4</small></strong><span>Prévia da amostra · NÃO oficial</span></div>
     <p className="ranking-signals-warning">{pt(sample.derrota_voluntaria_sem_equivalencia)} derrotas voluntárias segregadas. Amostra NÃO homologada: não gera pontuação e não substitui o universo do edital.</p>
   </section>;
 }
