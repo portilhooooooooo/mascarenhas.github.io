@@ -280,14 +280,19 @@ export function ClosingAnalysisFlow({
     if (transitConfirmed === 'nao') outcome = 'inapto_sem_transito';
     else if (transitConfirmed === 'sim') {
       if (finalMerit === 'vitoria') outcome = 'apto_vitoria';
-      else if (costsPaid === 'nao') outcome = 'apto_pending_custas';
-      else if (costsPaid === 'sim') {
-        if (executionRequested === 'nao' && hasValidTransitDate) {
-          outcome = transitTooRecent
-            ? 'inapto_aguardando_transito_60d'
-            : 'apto_derrota_voluntaria';
-        } else if (executionRequested === 'sim' && fullPayment !== null) {
-          outcome = fullPayment === 'sim' ? 'apto_derrota' : 'inapto_execucao_pendente';
+      else if (costsPaid !== null && executionRequested !== null) {
+        // O pedido de execução deve ser verificado mesmo com custas não pagas.
+        // Pendência de execução prevalece; custas pendentes impedem conclusão definitiva.
+        if (executionRequested === 'nao') {
+          if (costsPaid === 'nao') outcome = 'apto_pending_custas';
+          else if (hasValidTransitDate) {
+            outcome = transitTooRecent
+              ? 'inapto_aguardando_transito_60d'
+              : 'apto_derrota_voluntaria';
+          }
+        } else if (fullPayment !== null) {
+          if (fullPayment === 'nao') outcome = 'inapto_execucao_pendente';
+          else outcome = costsPaid === 'sim' ? 'apto_derrota' : 'apto_pending_custas';
         }
       }
     }
@@ -373,10 +378,10 @@ export function ClosingAnalysisFlow({
         && costsPaid === 'sim' && executionRequested === 'nao' ? transitDate || null : null,
       final_costs_paid: finalMerit === 'derrota' && transitConfirmed === 'sim'
         ? costsPaid === 'sim' : null,
-      execution_requested: finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim'
+      execution_requested: finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null
         ? executionRequested === 'sim' : null,
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
-        && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
+        && costsPaid !== null && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
       classification_agreed: appealOther ? false : classificationAgreed === 'sim',
       classification_disagreement_reason: appealOther ? 'Acórdão — Outro: ' + appealOtherDescription.trim()
@@ -466,7 +471,7 @@ export function ClosingAnalysisFlow({
         }} />
       </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null ?
       <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pedido de execução?">
         <BinaryChoice name="closing-execution" value={executionRequested} disabled={busy} onChange={value => {
           setExecutionRequested(value); setFullPayment(null); setTransitDate(''); setLocalError(null);
@@ -486,7 +491,7 @@ export function ClosingAnalysisFlow({
         </p> : null}
       </TaskQuestion> : null}
 
-    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' && executionRequested === 'sim' ?
+    {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null && executionRequested === 'sim' ?
       <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pagamento do valor integral solicitado pela autora?">
         <BinaryChoice name="closing-payment" value={fullPayment} disabled={busy} onChange={value => {
           setFullPayment(value); setLocalError(null);
