@@ -3,6 +3,7 @@ name: React Tasks Migration Check
 on:
   push:
     branches:
+      - main
       - dev/tasks-workspace
       - feat/client-navbar-isolation-20261008
       - release/backoffice-weekend-20261013
@@ -36,6 +37,9 @@ jobs:
 
       - name: Acórdão four-option regression
         run: node tests/closing-appeal-regression.test.mjs
+
+      - name: Encerramentos preselection regression
+        run: node tests/closing-prefill-regression.test.mjs
 
       - name: Master task execution scope
         run: node --test tests/master-task-scope.test.mjs
