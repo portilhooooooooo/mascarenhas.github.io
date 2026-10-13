@@ -54,6 +54,7 @@ const OUTCOME_LABELS: Record<string, string> = {
   inapto_aguardando_transito_60d: 'Inapto temporariamente — aguardando 60 dias do trânsito',
   inapto_execucao_pendente: 'Inapto — execução sem pagamento integral',
   inapto_resultado_indeterminado: 'Inapto — resultado do recurso exige validação',
+  inapto_acordao_outro: 'Revisão — resultado do acórdão ainda não mapeado',
   inapto_sentenca_desconstituida: 'Inapto — sentença desconstituída; aguardando nova decisão',
 };
 
@@ -225,6 +226,8 @@ export function ClosingAnalysisFlow({
     outcome = 'inapto_sentenca_desconstituida';
   } else if (hadAppeal === 'nao' && deadlineOpen === 'sim') {
     if (deadlineAge !== null && deadlineAge <= 0) outcome = 'inapto_prazo_recursal';
+  } else if (appealOther) {
+    outcome = 'inapto_acordao_outro';
   } else if (finalMerit === 'indeterminado') {
     outcome = 'inapto_resultado_indeterminado';
   } else if (finalMerit) {
