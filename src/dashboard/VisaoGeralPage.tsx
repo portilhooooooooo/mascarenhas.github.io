@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, ArrowUpRight, CheckCircle2, Clock3, FileCheck2, FolderOpen, Layers3, RefreshCw, Scale, SearchCheck, ShieldAlert, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, Clock3, FileCheck2, FolderOpen, Layers3, RefreshCw, Scale, SearchCheck, ShieldAlert } from 'lucide-react';
 import './visaoGeral.css';
 
 type Summary = {
@@ -22,7 +22,6 @@ type Period = 'all' | 'month' | '90' | '365';
 const integer = (value: number | null | undefined) => new Intl.NumberFormat('pt-BR').format(Number(value || 0));
 const safeNumber = (n: unknown) => typeof n === 'number' && Number.isFinite(n) ? n : 0;
 const shortDate = (value: string) => new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' }).format(new Date(value.slice(0,10) + 'T12:00:00Z'));
-const fullDate = (value: string) => new Intl.DateTimeFormat('pt-BR', { day:'2-digit', month:'short', year:'numeric' }).format(new Date(value));
 const isoDaysBack = (days: number) => {
   const d = new Date(); d.setDate(d.getDate() - days);
   return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
@@ -167,12 +166,11 @@ export function VisaoGeralPage() {
   const shown = dataKey===filterKey ? data : null;
   const summary = shown?.summary;
   const source = shown?.updated_at ? new Date(shown.updated_at) : null;
-  const outdated = source ? Date.now()-source.getTime()>30*86400000 : false;
+  const outdated = !source || Date.now()-source.getTime()>30*86400000;
   const hasData = Boolean(summary?.total);
   const allFilters = data?.filters;
   const entries = shown?.movement?.entries ?? 0;
   const closures = shown?.movement?.closures ?? 0;
-  const periodLabel = period==='all'?'Todo o histórico':period==='month'?'Entradas do mês':period==='90'?'Entradas dos últimos 90 dias':'Entradas dos últimos 12 meses';
 
   return <section className="overview-page" aria-label="Entradas da carteira processual">
     <div className="overview-heading">
@@ -190,10 +188,6 @@ export function VisaoGeralPage() {
       <Filter title="Atenção" value={attention} onChange={setAttention} choices={[{value:'',text:'Todos'},{value:'aging',text:'Aging crítico (+180 dias)'},{value:'divergent',text:'Divergência CPJ × Benner'},{value:'archive',text:'Aptos a arquivamento'}]}/>
       <Filter title="Encerramento" value={resolution} onChange={setResolution} choices={choices(allFilters?.resolutions || [])}/>
     </div>
-    {source && <div className={'overview-source'+(outdated?' stale':'')} role="status">
-      <Clock3 size={14}/><span>Fonte: processos_carteira · Atualizada em {fullDate(source.toISOString())}{outdated?' · Base desatualizada, não representa a carteira em tempo real':''}</span>
-      <span className="overview-context">{periodLabel}</span>
-    </div>}
     {error && <div className="overview-error" role="alert">{shown?'Falha ao atualizar. Mantidos os últimos dados carregados. ':''}{error}<button type="button" onClick={()=>void refresh()}>Tentar novamente</button></div>}
     {pending&&!shown && <p className="overview-loading" role="status">Carregando os indicadores da carteira...</p>}
     {!pending&&!shown&&!error && <p className="overview-empty">Aguardando indicadores da carteira.</p>}
@@ -202,11 +196,11 @@ export function VisaoGeralPage() {
       <Metric label="Processos" value={summary?integer(summary.total):'—'} sub="Total no recorte" icon={Layers3}/>
       <Metric label="Ativos" value={summary?integer(summary.active):'—'} sub="Em andamento no Benner" icon={FolderOpen}/>
       <Metric label="Encerrados" value={summary?integer(summary.closed):'—'} sub="Situação Benner encerrado" icon={CheckCircle2}/>
-      <Metric label="Aging médio" value={summary?.aging_mean!=null?summary.aging_mean.toFixed(1).replace('.',',')+' dias':'—'} sub="Apenas processos ativos" icon={Clock3}/>
+      <Metric label="Aging médio" value={!outdated && summary?.aging_mean!=null?summary.aging_mean.toFixed(1).replace('.',',')+' dias':'—'} sub={outdated?'Aguardando consolidação da base':'Apenas processos ativos'} icon={Clock3}/>
       <Metric label="Aptos ao encerramento" value={summary?integer(summary.eligible):'—'} sub="Com resolução preenchida" icon={FileCheck2}/>
       <Metric label="Divergências" value={summary?integer(summary.divergent):'—'} sub="Situações CPJ × Benner" icon={Scale}/>
       <Metric label="Aptos a arquivamento" value={summary?integer(summary.archive):'—'} sub="Encerrado no Benner, ativo no CPJ" icon={SearchCheck}/>
-      <Metric label="Aging crítico" value={summary?integer(summary.critical):'—'} sub="Ativos há mais de 180 dias" icon={ShieldAlert}/>
+      <Metric label="Aging crítico" value={!outdated && summary?integer(summary.critical):'—'} sub={outdated?'Aguardando consolidação da base':'Ativos há mais de 180 dias'} icon={ShieldAlert}/>
     </div>
     <div className="overview-main">
       <section className="overview-panel overview-evolution">
@@ -238,8 +232,7 @@ export function VisaoGeralPage() {
     <div className="overview-distributions">
       <Breakdown title="Por produto" subtitle="Distribuição dos processos" rows={shown?.charts.por_produto || []}/>
       <Breakdown title="Por UF" subtitle="Unidades federativas" rows={shown?.charts.por_uf || []}/>
-      <Breakdown title="Aging dos ativos" subtitle="Faixas em dias" rows={shown?.charts.aging || []}/>
+      {outdated ? <section className="overview-panel overview-breakdown"><header><div><h2>Aging dos ativos</h2><p>Faixas em dias</p></div></header><p className="overview-empty">Aguardando consolidação da base.</p></section> : <Breakdown title="Aging dos ativos" subtitle="Faixas em dias" rows={shown?.charts.aging || []}/>}
     </div>
-    <p className="overview-footnote"><Activity size={13}/> Dados da base processual consolidada, segregados pela carteira selecionada. Período filtra o coorte por data de entrada; encerramentos no gráfico utilizam a data de resolução. Os critérios de aptidão são os registros existentes na fonte, não uma decisão automática do DataJud.</p>
   </section>;
 }
