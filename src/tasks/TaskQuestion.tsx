@@ -108,13 +108,19 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
   const content = nodes.filter(child => !isValidElement(child) || child.type !== TaskActionBar);
   const [activeIndex, setActiveIndex] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const lastReportedPhase = useRef<string | null>(null);
   const total = questions.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
   const questionStages = questions.map(child => isValidElement(child) ? ((child.props as { stage?: string }).stage || '') : '');
   const activeStage = questionStages[current] || '';
   useEffect(() => {
-    if (onPhaseEntered && activeStage) onPhaseEntered(current, activeStage);
-  }, [onPhaseEntered, current, activeStage]);
+    // Re-renders and callback identity changes must not produce duplicate API calls.
+    // Navigation to a different step (including Backspace) is still recorded.
+    const key = `${draftKey}:${current}:${activeStage}`;
+    if (!onPhaseEntered || !activeStage || lastReportedPhase.current === key) return;
+    lastReportedPhase.current = key;
+    onPhaseEntered(current, activeStage);
+  }, [onPhaseEntered, draftKey, current, activeStage]);
   const displayStages = dynamicStages ? stages?.filter(stage => questionStages.includes(stage)) : stages;
   const completedStages = new Set(displayStages?.filter(stage =>
     questionStages.includes(stage) &&
