@@ -41,6 +41,9 @@ jobs:
       - name: Encerramentos preselection regression
         run: node tests/closing-prefill-regression.test.mjs
 
+      - name: Original favicon and institutional login video
+        run: node tests/login-brand-media.test.mjs
+
       - name: Master task execution scope
         run: node --test tests/master-task-scope.test.mjs
 
