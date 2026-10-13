@@ -201,8 +201,8 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         {stat('Pendentes', formatInt(shown.summary.pending), 'Fila atribuída ainda em aberto', Clock3)}
         {stat('Crescimento', shown.summary.growth_percent === null ? '—' : `${shown.summary.growth_percent > 0 ? '+' : ''}${shown.summary.growth_percent.toLocaleString('pt-BR')}%`, shown.summary.growth_percent === null ? 'Sem período comparável' : 'Ante o período anterior equivalente', Activity)}
         {stat('Análises no período', formatInt(shown.summary.completed), 'Concluídas por pessoas no recorte', CheckCircle2)}
-        {stat('Análises com tempo', formatInt(shown.summary.measured_analyses), 'Cronometradas pelo novo fluxo', Clock3)}
-        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Entre fases consecutivas', Users)}
+        {stat('Análises com tempo', formatInt(shown.summary.measured_analyses), 'Medições após ativação da telemetria', Clock3)}
+        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Transições registradas pelo novo fluxo', Users)}
       </div>
       <div className="task-results-grid">
         <article className="task-results-card task-results-ranking">
@@ -210,7 +210,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           {winner ? <div className="task-results-leader">
             <div><small>Maior tempo médio mensurado</small><strong>{winner.name}</strong><span>{winner.step_samples} avanços registrados</span></div>
             <strong>{clock(winner.mean_step_seconds)}</strong>
-          </div> : <p className="task-results-empty">Ainda não há amostra suficiente para apontar um colaborador. O ranking exige pelo menos cinco avanços válidos por pessoa.</p>}
+          </div> : <p className="task-results-empty">As conclusões históricas já estão contabilizadas. Para comparar a velocidade entre fases, precisamos de cinco transições cronometradas por colaborador após a ativação da telemetria.</p>}
           <div className="task-results-bars">
             {shown.people.filter(row => row.step_samples >= 5).sort((a,b)=>(b.mean_step_seconds || 0)-(a.mean_step_seconds || 0)).slice(0,8).map(row => (
               <div className="task-results-bar-row" key={row.id}>
@@ -230,7 +230,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         </article>
       </div>
       <article className="task-results-card">
-        <header className="task-results-table-heading"><div><h2>Desempenho por colaborador</h2><p>Tempo médio para concluir uma análise e tempo médio para passar à próxima fase.</p></div>
+        <header className="task-results-table-heading"><div><h2>Desempenho por colaborador</h2><p>Concluídos históricos separados dos tempos efetivamente cronometrados.</p></div>
           <div className="task-results-sort">
             <ArrowDownUp size={14}/>
             <select aria-label="Ordenar colaboradores" value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
