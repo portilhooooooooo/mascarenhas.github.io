@@ -22,4 +22,5 @@ assert.match(read('app.js'), /'banco-dados': 'banco-dados'/);
 assert.match(read('index.html'), /data-page="banco-dados"/);
 assert.match(read('src/dashboard/main.tsx'), /configureBancoDadosLifecycle\(\)/);
 assert.match(read('src/dashboard/BancoDadosPage.tsx'), /\/api\/banco-dados\/metabase\/embed/);
+assert.doesNotMatch(read('src/dashboard/BancoDadosPage.tsx'), /banco-dados-refresh|<p>Agibank|>Atualizar</, 'embedded panel must not duplicate refresh or explanation');
 console.log('PASS: Banco de Dados is restricted to Agibank MBA and has a dedicated route');

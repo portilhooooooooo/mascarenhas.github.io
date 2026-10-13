@@ -5,9 +5,6 @@
 .banco-dados-title{display:flex;align-items:center;gap:12px;color:var(--mba-text,#0f1f3d)}
 .banco-dados-title>svg{color:var(--mba-blue,#142b67)}
 .banco-dados-title h1{margin:0;font-size:20px;font-weight:650;letter-spacing:-.4px}
-.banco-dados-title p{margin:5px 0 0;font-size:12px;color:var(--mba-text-2,#52647d)}
-.banco-dados-refresh{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:34px;padding:0 12px;border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d);font:600 12px/1 Inter,system-ui,sans-serif;cursor:pointer}
-.banco-dados-refresh:disabled{opacity:.6;cursor:wait}
 .banco-dados-frame{position:relative;min-height:730px;border:1px solid var(--mba-border,#dbe4ef);border-radius:10px;overflow:hidden;background:var(--mba-surface,#fff)}
 .banco-dados-mount,.banco-dados-mount metabase-dashboard{display:block;width:100%;min-height:730px}
 .banco-dados-state{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--mba-surface,#fff);color:var(--mba-text-2,#52647d);font-size:13px;text-align:center;padding:24px}

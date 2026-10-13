@@ -1,4 +1,4 @@
-import { Database, LoaderCircle, RefreshCw } from 'lucide-react';
+import { Database, LoaderCircle } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ensureMetabaseEmbedScript, normalizeMetabaseInstanceUrl } from './metabaseEmbedRuntime';
 
@@ -60,11 +60,8 @@ export function BancoDadosPage() {
   return <div className="banco-dados-workspace">
     <header className="banco-dados-heading">
       <div className="banco-dados-title"><Database size={20} aria-hidden="true" />
-        <div><h1>Banco de Dados</h1><p>Agibank &lt;&gt; MBA · Encerramentos validados, tarefas e andamentos do Benner</p></div>
+        <h1>Banco de Dados</h1>
       </div>
-      <button type="button" className="banco-dados-refresh" onClick={() => void load()} disabled={loading}>
-        <RefreshCw size={15} aria-hidden="true"/>Atualizar
-      </button>
     </header>
     <div className="banco-dados-frame">
       <div ref={mountRef} className="banco-dados-mount" aria-label="Banco de Dados - Agibank MBA"/>
