@@ -2,8 +2,9 @@ import type { ResultPayload } from './TaskResults';
 
 // Fixture exclusivamente visual: não representa usuários, tarefas ou telemetria do banco.
 const PEOPLE = [
-  { id: 'demo-gabriel-portilho', name: 'Gabriel Portilho', factor: 2 },
-  { id: 'demo-gessica-avalos', name: 'Géssica Avalos', factor: 1 },
+  { id: 'demo-analista-1', name: 'Analista 1', factor: 2 },
+  { id: 'demo-analista-2', name: 'Analista 2', factor: 1 },
+  { id: 'demo-analista-3', name: 'Analista 3', factor: 0 },
 ] as const;
 const TYPES = ['encerramento', 'liminar', 'defesa', 'comprovante_pagamento', 'protocolo', 'acordos'] as const;
 const DEADLINES = ['overdue', 'today', 'future', 'none'] as const;
