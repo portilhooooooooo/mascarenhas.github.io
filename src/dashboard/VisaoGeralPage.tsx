@@ -14,6 +14,7 @@ type Dashboard = {
   charts: { timeline: Month[]; por_uf: Datum[]; por_produto: Datum[]; aging: Datum[] };
   filters: { states: string[]; products: string[]; resolutions: string[] };
   updated_at: string | null;
+  aging_calculation?: { basis?: string; as_of?: string; sample?: number; source?: string };
 };
 type Api = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T>; getPortfolioId?: () => string };
 type Environment = Window & { MBA_AUTOMATION_API?: Api; MBA_API?: Api; MBA_NAVIGATE?: (route: string) => boolean };
@@ -167,6 +168,8 @@ export function VisaoGeralPage() {
   const summary = shown?.summary;
   const source = shown?.updated_at ? new Date(shown.updated_at) : null;
   const outdated = !source || Date.now()-source.getTime()>30*86400000;
+  const ageComputed = shown?.aging_calculation?.basis === 'entry_date';
+  const ageCaption = ageComputed ? (outdated ? 'Dias desde a entrada · base histórica' : 'Dias desde a entrada') : 'Aguardando cálculo pela data de entrada';
   const hasData = Boolean(summary?.total);
   const allFilters = data?.filters;
   const entries = shown?.movement?.entries ?? 0;
@@ -196,11 +199,11 @@ export function VisaoGeralPage() {
       <Metric label="Processos" value={summary?integer(summary.total):'—'} sub="Total no recorte" icon={Layers3}/>
       <Metric label="Ativos" value={summary?integer(summary.active):'—'} sub="Em andamento no Benner" icon={FolderOpen}/>
       <Metric label="Encerrados" value={summary?integer(summary.closed):'—'} sub="Situação Benner encerrado" icon={CheckCircle2}/>
-      <Metric label="Aging médio" value={!outdated && summary?.aging_mean!=null?summary.aging_mean.toFixed(1).replace('.',',')+' dias':'—'} sub={outdated?'Aguardando consolidação da base':'Apenas processos ativos'} icon={Clock3}/>
+      <Metric label="Aging médio" value={ageComputed && summary?.aging_mean!=null?summary.aging_mean.toFixed(1).replace('.',',')+' dias':'—'} sub={ageCaption} icon={Clock3}/>
       <Metric label="Aptos ao encerramento" value={summary?integer(summary.eligible):'—'} sub="Com resolução preenchida" icon={FileCheck2}/>
       <Metric label="Divergências" value={summary?integer(summary.divergent):'—'} sub="Situações CPJ × Benner" icon={Scale}/>
       <Metric label="Aptos a arquivamento" value={summary?integer(summary.archive):'—'} sub="Encerrado no Benner, ativo no CPJ" icon={SearchCheck}/>
-      <Metric label="Aging crítico" value={!outdated && summary?integer(summary.critical):'—'} sub={outdated?'Aguardando consolidação da base':'Ativos há mais de 180 dias'} icon={ShieldAlert}/>
+      <Metric label="Aging crítico" value={ageComputed && summary?integer(summary.critical):'—'} sub={ageComputed?'Ativos com mais de 180 dias desde a entrada':'Aguardando cálculo pela data de entrada'} icon={ShieldAlert}/>
     </div>
     <div className="overview-main">
       <section className="overview-panel overview-evolution">
@@ -232,7 +235,7 @@ export function VisaoGeralPage() {
     <div className="overview-distributions">
       <Breakdown title="Por produto" subtitle="Distribuição dos processos" rows={shown?.charts.por_produto || []}/>
       <Breakdown title="Por UF" subtitle="Unidades federativas" rows={shown?.charts.por_uf || []}/>
-      {outdated ? <section className="overview-panel overview-breakdown"><header><div><h2>Aging dos ativos</h2><p>Faixas em dias</p></div></header><p className="overview-empty">Aguardando consolidação da base.</p></section> : <Breakdown title="Aging dos ativos" subtitle="Faixas em dias" rows={shown?.charts.aging || []}/>}
+      {ageComputed ? <Breakdown title="Aging dos ativos" subtitle={ageCaption} rows={shown?.charts.aging || []}/> : <section className="overview-panel overview-breakdown"><header><div><h2>Aging dos ativos</h2><p>Faixas em dias</p></div></header><p className="overview-empty">Aguardando cálculo pela data de entrada.</p></section>}
     </div>
   </section>;
 }
