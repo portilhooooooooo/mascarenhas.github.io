@@ -24,31 +24,7 @@
   <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
     <div class="login-panel">
       <div class="login-box">
-        <p class="login-brand"><strong>MBA</strong><span>Backoffice</span></p>
-        <div class="login-divider" aria-hidden="true"></div>
-        <div class="auth-view" id="login-view">
-        <h1>Entrar</h1>
-        <form class="login-form" id="task-only-login">
-          <div class="login-field">
-            <label for="task-only-email">E-mail</label>
-            <input id="task-only-email" name="email" type="email" autocomplete="email" required>
-          </div>
-          <div class="login-field"><label for="operational-totp">Código do autenticador</label><input id="operational-totp" name="totp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" required></div>
-          <button class="credentials-login" type="submit">Entrar</button>
-        </form>
-        <div class="login-or">ou</div>
-        <button class="google-login" id="google-login" type="button" data-auth-provider="google" aria-label="Entrar com Google">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.24-.2-1.8H12v3.47h5.52c-.11.86-.71 2.16-2.05 3.03l-.02.12 2.98 2.31.2.02c1.85-1.71 2.97-4.23 2.97-7.15Z"/>
-            <path fill="#34A853" d="M12 22c2.69 0 4.95-.89 6.6-2.42l-3.15-2.45c-.84.57-1.97.97-3.45.97-2.59 0-4.78-1.72-5.57-4.1l-.12.01-3.1 2.4-.04.11C4.8 19.76 8.14 22 12 22Z"/>
-            <path fill="#FBBC05" d="M6.43 14a6.1 6.1 0 0 1-.33-2c0-.7.12-1.38.32-2l-.01-.13-3.14-2.44-.1.05A10 10 0 0 0 2 12c0 1.62.39 3.15 1.17 4.52L6.43 14Z"/>
-            <path fill="#EA4335" d="M12 5.9c1.87 0 3.13.81 3.85 1.47l2.82-2.75C16.94 3.02 14.69 2 12 2 8.14 2 4.8 4.24 3.17 7.48L6.42 10C7.22 7.62 9.41 5.9 12 5.9Z"/>
-          </svg>
-          <span>Continuar com Google</span>
-        </button>
-        </div>
-
-        <div class="login-error" id="login-error" role="alert"></div>
+        <div class="auth-view" id="login-view"></div>
       </div>
     </div>
   </section>
@@ -666,6 +642,6 @@
   <script src="auth.js?v=20260903-task-only"></script>
 
   <script src="page-init-2.js"></script>
-<script src="assets/vendor/qrcode.js"></script><script src="security-ui.js"></script>
+<script src="assets/vendor/qrcode.js"></script>
 </body>
 </html>
