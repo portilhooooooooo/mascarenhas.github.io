@@ -8,8 +8,6 @@ type AuthWindow = Window & typeof globalThis & {
     startMicrosoftLogin?: () => Promise<void> | void;
     getLoginState?: () => LoginState;
   };
-  // Mídia institucional é configurável: sem URL não é carregado recurso inexistente.
-  MBA_BRAND_MEDIA?: { videoUrl?: string; posterUrl?: string };
 };
 
 function greetingFor(date: Date): string {
@@ -20,7 +18,6 @@ function greetingFor(date: Date): string {
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [authState, setAuthState] = useState<LoginState>({ busy: false, error: null });
-  const media = (window as AuthWindow).MBA_BRAND_MEDIA;
   const [greeting, setGreeting] = useState(() => greetingFor(new Date()));
 
   useLayoutEffect(() => {
@@ -57,7 +54,7 @@ function LoginPage() {
   return <div className="react-login-view">
     <header className="react-login-header" aria-label="Mascarenhas Barbosa Backoffice">
       <div className="react-login-brand">
-        <img src="/favicon.svg?v=20260917-exact-symbol" alt="" aria-hidden="true"/>
+        <img src="/favicon-white.svg?v=20261013-original-mark" alt="" aria-hidden="true"/>
         <span>Mascarenhas Barbosa<small>BACKOFFICE</small></span>
       </div>
     </header>
@@ -81,12 +78,11 @@ function LoginPage() {
         <p className="react-login-security">Acesso exclusivo para usuários autorizados.</p>
       </section>
       <aside className="react-login-visual" aria-label="Identidade visual Mascarenhas Barbosa">
-        {media?.videoUrl ? <video autoPlay muted playsInline loop preload="metadata"
-          poster={media.posterUrl || undefined} aria-label="Fachada do escritório Mascarenhas Barbosa">
-          <source src={media.videoUrl} type="video/mp4"/>
-        </video> : <div className="react-login-visual-fallback" aria-hidden="true">
-          <img src="/favicon.svg?v=20260917-exact-symbol" alt=""/>
-        </div>}
+        <video autoPlay muted playsInline loop preload="auto"
+          poster="/assets/mascarenhas-login-poster.jpg"
+          aria-label="Vídeo institucional do escritório Mascarenhas Barbosa">
+          <source src="/assets/mascarenhas-login.mp4" type="video/mp4"/>
+        </video>
         <div className="react-login-visual-caption"><span>MASCARENHAS BARBOSA</span><strong>Operação que transforma informação em decisão.</strong></div>
       </aside>
     </main>
