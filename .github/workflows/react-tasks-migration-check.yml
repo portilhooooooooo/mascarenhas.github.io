@@ -5,6 +5,7 @@ on:
     branches:
       - dev/tasks-workspace
       - feat/client-navbar-isolation-20261008
+      - release/backoffice-weekend-20261013
   workflow_dispatch:
 
 permissions:
