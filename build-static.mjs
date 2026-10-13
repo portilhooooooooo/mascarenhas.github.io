@@ -86,7 +86,7 @@ if (reactOwnedIndexHtml === indexHtml) {
 const builtIndexHtml = reactOwnedIndexHtml
   .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Barbosa</title>')
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
-  .replace(/<link[^>]*rel="icon"[^>]*>/g, '<link rel="icon" type="image/svg+xml" href="/favicon-white.svg?v=20261011">')
+  .replace(/<link[^>]*rel="icon"[^>]*>/g, `<link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-white.svg?v=${buildVersion}">`)
   .replace(/(<script src="\/?app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
   .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
