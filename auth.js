@@ -12,6 +12,7 @@
 
   const pagePermissionScopes = Object.freeze({
     dashboard: ['dashboard.view'],
+    processos: ['processos.view'],
     automacoes: ['automations.view'],
     protocolo: [],
     tutelas: ['tutelas.view'],
@@ -67,7 +68,7 @@
   };
 
   function applyBranding() {
-    document.title = 'Mascarenhas Backoffice';
+    document.title = 'Mascarenhas Barbosa';
 
     const description = document.querySelector('meta[name="description"]');
     if (description) description.setAttribute('content', 'Mascarenhas Backoffice');
@@ -75,7 +76,7 @@
     const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
     favicon.rel = 'icon';
     favicon.type = 'image/svg+xml';
-    favicon.href = '/favicon.svg?v=20260917-exact-symbol';
+    favicon.href = '/favicon-white.svg?v=20261011';
     if (!favicon.parentNode) document.head.appendChild(favicon);
 
     const appBrand = document.querySelector('.brand');
@@ -106,6 +107,34 @@
   applyBranding();
   enforceMicrosoftOnlyUserUI();
 
+  // O seletor de carteira altera capacidades sem executar applyUser novamente.
+  // Sincronizar a visibilidade do container real, não apenas os botões da nav.
+  function syncAuthorizedPages() {
+    const user = window.MBA_CURRENT_USER;
+    if (!user?.permissions) return;
+    const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
+    document.querySelectorAll('[data-permission]').forEach(element => {
+      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
+      element.hidden = pageId
+        ? (!canAccess(pageId) || (element.closest('.main-nav') && !['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard'].includes(pageId)))
+        : user.permissions[element.dataset.permission] !== true;
+    });
+    // The static HTML contains legacy pages required by old deep links. They are
+    // not navigation items; never unhide those buttons while the React shell boots.
+    const primaryNav = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
+    document.querySelectorAll('.main-nav .nav-item').forEach(button => {
+      const page = button.dataset.page || '';
+      if (!primaryNav.has(page) || !canAccess(page)) {
+        button.hidden = true;
+        button.dataset.mbaHidden = 'true';
+      }
+    });
+    document.querySelectorAll('main .page[id]').forEach(page => {
+      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
+    });
+    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
+  }
+
   function applyUser(user) {
     if (!user?.id || !user?.email || typeof user.permissions !== 'object') {
       throw new Error('O perfil autenticado retornado pela API é inválido.');
@@ -123,16 +152,8 @@
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
+    syncAuthorizedPages();
     const canAccess = pageId => window.MBA_PORTFOLIO_POLICY?.canAccess(pageId, user) === true;
-    document.querySelectorAll('[data-permission]').forEach(element => {
-      const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
-      element.hidden = pageId
-        ? !canAccess(pageId)
-        : user.permissions[element.dataset.permission] !== true;
-    });
-    document.querySelectorAll('main .page[id]').forEach(page => {
-      if (page.id !== 'sem-acesso') page.hidden = !canAccess(page.id);
-    });
     document.querySelectorAll('.master-admin-only').forEach(element => {
       element.hidden = !user.is_master_admin;
     });
@@ -140,6 +161,7 @@
     // Prefer actual shell modules as the post-login landing page.
     const pages = [
       ['dashboard', 'dashboard.view'],
+      ['processos', 'processos.view'],
       ['acordos', 'pagamentos.view'],
       ['tarefas', 'tasks.view'],
       ['protocolo', 'automations.view'],
@@ -158,8 +180,9 @@
     } else if (!routeRestored) {
       window.showPage?.(pages[0][0]);
     }
-    window.dispatchEvent(new CustomEvent('mba:module-visibility-updated'));
   }
+
+  window.addEventListener('mba:portfolio-changed', syncAuthorizedPages);
 
   function activePageId() {
     return document.querySelector('main .page.active')?.id || 'dashboard';

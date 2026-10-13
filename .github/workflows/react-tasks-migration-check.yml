@@ -33,6 +33,9 @@ jobs:
       - name: Hardening checks
         run: npm run test:hardening
 
+      - name: Acórdão four-option regression
+        run: node tests/closing-appeal-regression.test.mjs
+
       - name: Master task execution scope
         run: node --test tests/master-task-scope.test.mjs
 

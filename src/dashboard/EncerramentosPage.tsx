@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, BarChart3, CheckCircle2, Clock3, MapPinned, RefreshCcw, SearchCheck, UsersRound, Wallet } from 'lucide-react';
 import { BRAZIL_STATES } from './brazilStates';
 import './encerramentos.css';
@@ -18,7 +18,9 @@ type ResumoBennerAnterior = { periodo_inicio: string; periodo_fim_exclusivo: str
 type Dados = {
   carteira: string;
   tipo: string | null;
+  _dashboard_stale?: boolean;
   indicadores: Indicadores;
+  analises_humanas?: { total: number; aptos: number; inaptos: number; revisao: number; outros: number; fonte: string };
   aging: AgingRow[];
   estados: Array<{ uf: string; perdas: number; amostra: number; ticket_medio: Numero; faixa: string }>;
   analistas: Analista[];
@@ -28,8 +30,7 @@ type Dados = {
   comarcas?: Comarca[];
   matriz?: Matriz[];
   meta_configurada?: boolean;
-  ranking?: { faixas: Array<{ id: string; rotulo: string; estoque: number | null; meta_percentual: number; meta_quantidade: number | null }> };
-  etapas?: { etapa: Etapa; total: number; analisados?: number; aptos?: number; inaptos?: number; tipos: TipoRow[]; aging: AgingRow[]; matriz: Matriz[]; fonte: string; mensagem: string;
+  etapas?: { etapa: Etapa; total: number; tipos: TipoRow[]; aging: AgingRow[]; matriz: Matriz[]; fonte: string; mensagem: string;
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
@@ -46,8 +47,6 @@ const CLASSES = [
   { tipo: 'DERROTA', label: 'Derrota' },
   { tipo: 'VITORIA', label: 'Vitória' },
   { tipo: 'ACORDO', label: 'Acordo' },
-  { tipo: 'EXTINCAO', label: 'Extinção' },
-  { tipo: 'SEM_CLASSIFICACAO', label: 'Apto sem tipo final' },
 ];
 const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   ? ['0–12 meses', '12–24 meses', '>24 meses', 'Sem tag / não reconhecida']
@@ -70,7 +69,28 @@ async function loadDashboard(carteira: string, tipo: Tipo, periodo: string, anal
   if (periodo === '30') query.set('inicio', localISO(29));
   if (periodo === '90') query.set('inicio', localISO(89));
   if (analista !== 'todos') query.set('analista', analista);
-  return api.request<Dados>('/api/operacao/encerramentos/dashboard?' + query.toString());
+  const path = '/api/operacao/encerramentos/dashboard?' + query.toString();
+  // The dashboard is a read-only request. A momentary 502/503 or transport
+  // reset should not blank all KPIs; retry briefly without repeating mutations.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 15000);
+      try {
+        return await api.request<Dados>(path, { signal: controller.signal });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    } catch (error) {
+      const status = (error as Error & { status?: number })?.status;
+      const transient = status === 429 || status === 500 || status === 502
+        || status === 503 || status === 504
+        || (status == null && (error instanceof TypeError || (error as Error)?.name === 'AbortError'));
+      if (!transient || attempt === 2) throw error;
+      await new Promise<void>(resolve => window.setTimeout(resolve, (attempt + 1) * 450));
+    }
+  }
+  throw new Error('Não foi possível carregar os indicadores.');
 }
 
 async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
@@ -88,10 +108,11 @@ function Metrics({ dados, analista, selectedCount, acordo, etapa, resumo }: { da
     : 'mês anterior';
   const cards = [
     { icon: SearchCheck, name: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(accord) : m.encontrados) : '—', sub: m ? num(m.consultados) + ' consultados · Indícios DataJud' : 'Sem dados' },
-    { icon: UsersRound, name: 'Analisados', value: stage?.analisados == null ? '—' : num(stage.analisados), sub: stage ? num(valueOrZero(stage.aptos)) + ' aptos · ' + num(valueOrZero(stage.inaptos)) + ' inaptos' : 'Sem análises' },
-    { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Classificações humanas' },
+    { icon: UsersRound, name: 'Analisados', value: m ? num(m.analisados) : '—', sub: 'Respostas de análise registradas no período' },
+    { icon: CheckCircle2, name: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount === undefined ? '—' : num(selectedCount), sub: analista !== 'todos' ? 'Analista selecionado' : 'Análises registradas' },
     { icon: Wallet, name: 'Ticket médio', value: money(stage?.ticket_medio), sub: stage ? num(valueOrZero(stage.ticket_amostra)) + ' pagamentos' : 'Sem pagamentos' },
     { icon: Clock3, name: 'Aging médio', value: stage?.aging_medio == null ? '—' : (stage.aging_medio / 30.44).toFixed(1).replace('.', ',') + ' meses', sub: 'Desde a entrada da pasta' },
+    { icon: Activity, name: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', sub: 'Análises pendentes de validação' },
     { icon: CheckCircle2, name: 'Enviados', value: resumo ? num(resumo.enviados) : '—', sub: 'Ao Benner · ' + mesAnterior },
     { icon: Activity, name: 'Encerrados', value: resumo ? num(resumo.encerrados) : '—', sub: 'Baixa efetiva · ' + mesAnterior },
   ];
@@ -161,16 +182,14 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
   const bands = ageBands(dados?.carteira || 'Agibank Regular');
   const types = dados?.etapas?.tipos || [];
   const ages = dados?.etapas?.aging || [];
-  const rules = dados?.ranking?.faixas || [];
   const first = etapa === 'validados' ? 'Validados' : 'Enviados';
   const currentMonth = periodo === 'mes';
   const quantity = (kind: string) => valueOrZero(types.find(row=>row.tipo===kind)?.quantidade);
   const typeCount = Math.max(1,...CLASSES.map(t=>quantity(t.tipo)));
   const rows = (section: 'tipos'|'aging') => section==='tipos'
-    ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo),goal:null as number|null}))
+    ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo)}))
     : bands.map((faixa,index)=>({
         key:faixa,label:faixa,found:valueOrZero(ages.find(a=>a.faixa===faixa)?.quantidade),
-        goal:index===3||analista!=='todos'?null:(currentMonth?rules.find(r=>r.rotulo===faixa)?.meta_quantidade??null:null),
       }));
   return <section className="closing-surface closing-composition">
     <div className="closing-card-head"><div>
@@ -180,7 +199,7 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
     {(['tipos','aging'] as const).map(section => <div className="closing-composition-table" key={section}>
       <div className="closing-breakdown-head">
         <h3>{section==='tipos'?'Tipos':'Aging'}</h3>
-        <span>{first}</span><span>Meta</span><span>Restantes</span>
+        <span>{first}</span>
       </div>
       {rows(section).map(row=><div className="closing-breakdown-row" key={row.key}>
         <div className="closing-breakdown-name">
@@ -188,11 +207,11 @@ function Composition({ dados, etapa, periodo, analista }: { dados: Dados | null;
           <div className="closing-rail"><i style={{width:(row.found/(section==='tipos'?typeCount:Math.max(1,...rows('aging').map(x=>x.found))))*100+'%'}}/></div>
         </div>
         <strong>{num(row.found)}</strong>
-        <span title={section==='tipos'?'Edital sem meta por tipo':currentMonth?'Meta mensal por faixa':'Meta mensal disponível somente no mês atual'}>{row.goal==null?'—':num(row.goal)}</span>
-        <strong>{row.goal==null?'—':num(Math.max(0,row.goal-row.found))}</strong>
+        
+        
       </div>)}
     </div>)}
-    <div className="closing-card-foot">Meta mensal apenas para aging. Tipo não tem meta individual no edital.</div>
+    <div className="closing-card-foot">Análises efetivamente registradas; sem metas de ranking.</div>
   </section>;
 }
 
@@ -229,7 +248,7 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
   const total = analysts.reduce((sum,a) => sum+a.analisados,0);
   const max = Math.max(1,...analysts.map(a=>a.analisados));
   return <section className="closing-surface closing-bottom">
-    <div className="closing-card-head"><div><h2>Produtividade dos analistas</h2><p>Análises no período selecionado</p></div></div>
+    <div className="closing-card-head"><div><h2>Produtividade dos analistas</h2><p>Análises registradas no período selecionado</p></div></div>
     {analysts.length ? <div className="closing-staff">
       {analysts.map(a => <div className="closing-staff-row" key={a.id}>
         <span className="closing-avatar">{a.nome.slice(0,2).toUpperCase()}</span>
@@ -237,67 +256,145 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
         <div className="closing-rail"><i style={{width:a.analisados/max*100+'%'}}/></div>
         <b>{num(a.analisados)}</b>
       </div>)}
-    </div> : <p className="closing-nodata">Sem análises registradas no período.</p>}
+    </div> : <p className="closing-nodata">Sem análises registradas hoje.</p>}
   </section>;
 }
 
 export function EncerramentosPage() {
-  const carteira = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.() === 'agibank_enter'
-    ? 'Agibank Enter' : 'Agibank Regular';
+  const [portfolioRevision,setPortfolioRevision] = useState(0);
+  const [carteira,setCarteira] = useState(() => {
+    const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
+    return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
+  });
   const [tipo,setTipo] = useState<Tipo>('TODOS');
   const [periodo,setPeriodo] = useState('mes');
-  const analista = 'todos';
+  const [analista,setAnalista] = useState('todos');
   const [etapa,setEtapa] = useState<Etapa>('validados');
   const [dados,setDados] = useState<Dados | null>(null);
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
+  const refreshSequence = useRef(0);
+  const activeRequest = useRef<{ key: string; sequence: number } | null>(null);
+  // The page can remain mounted while the authenticated portfolio changes.
+  // A stale disabled portfolio selector previously caused INVALID_FILTERS 400s.
+  useEffect(() => {
+    const syncPortfolio = () => {
+      const id=(window as Window & {MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.();
+      const next=id==='agibank_enter'?'Agibank Enter':'Agibank Regular';
+      refreshSequence.current += 1;
+      // A portfolio event can re-select the same portfolio. Re-fetch anyway
+      // instead of clearing the KPIs with no state dependency to reload them.
+      setPortfolioRevision(revision => revision + 1);
+      setCarteira(next);
+      setDados(null);
+      setResumoBenner(null);
+      setError('');
+    };
+    window.addEventListener('mba:portfolio-changed',syncPortfolio);
+    return () => window.removeEventListener('mba:portfolio-changed',syncPortfolio);
+  },[]);
+  const filterKey = [carteira,tipo,periodo,analista,etapa,portfolioRevision].join('|');
+  const [loadedKey,setLoadedKey] = useState('');
   const refresh = useCallback(async () => {
+    // Duplicate realtime events must not continually supersede pending data.
+    // A change of filters or portfolio still starts a new request.
+    if (activeRequest.current?.key === filterKey) return;
+    const sequence = ++refreshSequence.current;
+    activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
-      const [painel, historico] = await Promise.allSettled([
-        loadDashboard(carteira,tipo,periodo,analista,etapa),
-        loadResumoBennerAnterior(),
-      ]);
-      if (painel.status === 'fulfilled') { setDados(painel.value); setError(''); }
-      else {
-        setDados(null);
-        setError(painel.reason instanceof Error ? painel.reason.message : 'Erro ao carregar encerramentos.');
+      const painel = await loadDashboard(carteira,tipo,periodo,analista,etapa);
+      if (sequence !== refreshSequence.current) return;
+      setDados(painel);
+      setLoadedKey(filterKey);
+      setError('');
+    } catch (cause) {
+      if (sequence === refreshSequence.current) {
+        setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.');
       }
-      setResumoBenner(historico.status === 'fulfilled' ? historico.value : null);
-    } finally { setPending(false); }
-  },[carteira,tipo,periodo,etapa]);
+    } finally {
+      if (activeRequest.current?.sequence === sequence) activeRequest.current = null;
+      if (sequence === refreshSequence.current) setPending(false);
+    }
+  },[carteira,tipo,periodo,analista,etapa,filterKey]);
+
   useEffect(() => {void refresh();},[refresh]);
-  useEffect(() => { const id = window.setInterval(() => {if(!document.hidden)void refresh();},60000); return () => clearInterval(id);},[refresh]);
-  const analysts = dados?.etapas?.analistas || dados?.analistas || [];
-  const analysed = dados?.etapas?.total;
+  useEffect(() => () => {
+    // React StrictMode runs effect cleanup/setup twice. Clearing the request
+    // lease allows the second setup to load rather than showing blank KPIs.
+    refreshSequence.current += 1;
+    activeRequest.current = null;
+  },[]);
+
+  // Historical Benner data is a previous-month snapshot, not a live KPI.
+  useEffect(() => {
+    let active = true;
+    void loadResumoBennerAnterior().then(value => {
+      if (active) setResumoBenner(value);
+    }).catch(() => {/* Keep the previous snapshot on network errors. */});
+    return () => {active=false;};
+  },[carteira,portfolioRevision]);
+
+  // Events drive normal updates. The 5-minute check recovers missed events.
+  useEffect(() => {
+    const id = window.setInterval(() => {if(!document.hidden)void refresh();},300000);
+    const visible = () => {if(!document.hidden)void refresh();};
+    document.addEventListener('visibilitychange', visible);
+    return () => {window.clearInterval(id);document.removeEventListener('visibilitychange',visible);};
+  },[refresh]);
+  useEffect(() => {
+    let timeout: number | undefined;
+    const schedule = () => {
+      if (document.hidden) return;
+      window.clearTimeout(timeout);
+      timeout = window.setTimeout(() => {void refresh();},350);
+    };
+    const onRealtime = (event: Event) => {
+      const module = (event as CustomEvent<{module?: string}>).detail?.module;
+      if (module === 'encerramentos') schedule();
+    };
+    window.addEventListener('mba:realtime-invalidate', onRealtime);
+    window.addEventListener('mba:closing-analysis-saved', schedule);
+    return () => {
+      window.clearTimeout(timeout);
+      window.removeEventListener('mba:realtime-invalidate', onRealtime);
+      window.removeEventListener('mba:closing-analysis-saved', schedule);
+    };
+  },[refresh]);
+  const shown = loadedKey === filterKey ? dados : null;
+  const analysts = shown?.analistas?.length ? shown.analistas : shown?.etapas?.analistas || [];
+  const analysed = shown?.etapas?.total;
 
   return <div className="closing-page-v2">
     <div className="closing-heading">
-      <div><h1>Encerramentos</h1><span>Dados reais da carteira</span></div>
+      <div><h1>Encerramentos</h1><span>Visão da carteira · dados operacionais</span></div>
       <div className="closing-heading-actions">
         <button type="button" className="closing-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
       </div>
     </div>
     <div className="closing-filter-row">
-      <label>Carteira<select value={carteira} disabled><option value={carteira}>{carteira === 'Agibank Enter' ? 'Agibank · Enter' : 'Agibank · MBA'}</option></select></label>
+      <label>Carteira<select value={carteira} disabled aria-label="Carteira atual autorizada"><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
       <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
       <label>Período<select value={periodo} onChange={e=>setPeriodo(e.target.value)}><option value="mes">Mês atual</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="all">Todo o histórico</option></select></label>
       <label>Etapa<select value={etapa} onChange={e=>setEtapa(e.target.value as Etapa)}>
         <option value="validados">Validados</option>
         <option value="enviados_benner">Enviados ao Benner</option>
       </select></label>
+      <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
     </div>
-    {error ? <p className="closing-error" role="alert">{error}</p> : null}
-    <Metrics dados={dados} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
+    {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
+    {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
+    {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
+    <Metrics dados={shown} acordo={tipo==='ACORDO'} analista={analista} selectedCount={analysed} etapa={etapa} resumo={resumoBenner}/>
     <div className="closing-main-grid">
-      <MapPanel dados={dados}/>
-      <Composition dados={dados} etapa={etapa} periodo={periodo} analista={analista}/>
+      <MapPanel dados={shown}/>
+      <Composition dados={shown} etapa={etapa} periodo={periodo} analista={analista}/>
     </div>
     <div className="closing-lower-grid">
-      <ComarcasPanel dados={dados} etapa={etapa} analista={analista}/>
+      <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
       <AnalystsPanel analysts={analysts}/>
     </div>
-    <p className="closing-disclaimer">Indicadores calculados a partir das respostas dos analistas. Aptos sem tipo final exigem revisão; não são enviados ao Benner automaticamente.</p>
+    <p className="closing-disclaimer">Acordos não integram oportunidades aptas ao encerramento. Os números exibidos dependem da fonte operacional.</p>
   </div>;
 }

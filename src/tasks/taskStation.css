@@ -56,3 +56,15 @@
 .queue-station-filters .mba-react-select { width: 100%; min-width: 0; }
 .queue-station-filters .mba-react-select-trigger { height: 32px; padding: 0 9px; border: 1px solid var(--mba-border-strong); border-radius: 6px; background: #fff; font-size: 11px; }
 .queue-station-filters .mba-react-select-options { top: calc(100% + 3px); min-width: 100%; }
+
+/* Busca de UF acessível em lista com rolagem interna. */
+#tarefas[data-react-tasks='true'] .queue-station-filters .mba-react-select:has(.mba-react-select-options) { z-index: 150; }
+#tarefas[data-react-tasks='true'] .queue-station-filters .mba-react-select-options {
+  max-height: min(245px, 38vh); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+}
+#tarefas[data-react-tasks='true'] .queue-station-filters .mba-react-select-search {
+  box-sizing: border-box; width: 100%; min-height: 34px; padding: 7px 9px; border: 1px solid var(--mba-border);
+  border-radius: 6px; background: var(--mba-surface); color: var(--mba-text); outline-offset: 2px;
+  position: sticky; top: 0; z-index: 2;
+}
+#tarefas[data-react-tasks='true'] .mba-react-select-empty { font-size: 11px; color: var(--mba-muted); padding: 7px; }

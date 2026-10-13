@@ -50,11 +50,14 @@ assert.equal(explicit.canAccess('tarefas'), true, 'task alias must be recognized
 assert.doesNotMatch(html, /nav-badge">23<\/em>/, 'task badge must not be hardcoded');
 assert.match(html, /id="tasks-nav-count"[^>]*hidden/, 'task badge must start empty');
 assert.match(html, /portfolio-policy\.js/, 'portfolio policy must be loaded for classic navigation');
-assert.match(shell, /dashboard: 'Analytics'/, 'Analytics must be the module name');
+assert.match(shell, /dashboard: 'Resultados'/, 'Resultados must be the primary module label');
+assert.match(shell, /new Set\(\['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard'\]\)/, 'primary navbar must expose five operational destinations');
+assert.doesNotMatch(html, /id="mba-active-module"|class="mba-context-label"/, 'redundant breadcrumb removed; functional titles preserved');
+assert.match(html, /href="reimagined-workspace.css"/, 'reimagined styles must load after existing themes');
 assert.match(shell, /mayOpen\('protocolo'\)/, 'Controladoria lifecycle must enforce the portfolio');
 assert.match(shell, /<PortfolioSwitcher\s*\/>/, 'portfolio selector must be React');
 assert.match(html, /id="portfolio-switcher"/, 'sidebar must mount a portfolio selector');
 assert.match(html, /<div class="sidebar-bottom">\s*<div id="portfolio-switcher"[^>]*><\/div>\s*<button class="sidebar-logout"/, 'compact selector must sit immediately above Sair');
-assert.match(taskPage, /<SelectMenu label="Prazo"/, 'task filters must be React listboxes');
+assert.match(taskPage, /<SelectMenu label="Tipo de tarefa" value=\{selectedType\} options=\{typeOptions\}/, 'task type filter must use the React listbox');
 assert.match(users, /Visibilidade dos módulos/, 'user permissions must have module view');
 console.log('PASS: portfolio access, module visibility, selectors, and task badge regression checks');

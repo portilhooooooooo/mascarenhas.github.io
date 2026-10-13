@@ -1,5 +1,6 @@
-import { StrictMode, useEffect } from 'react';
+import { Component, StrictMode, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import { ProcessosPage } from './ProcessosPage';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
@@ -25,6 +26,7 @@ const TASK_PAGES = new Set(['tarefas', 'tarefa-analise', 'comprovante-execucao',
 const mayOpen = (pageId: string) => (window as DashboardWindow).MBA_PORTFOLIO_POLICY?.canAccess(pageId) === true;
 
 function labelNavItem(button: Element, label: string) {
+  button.setAttribute('aria-label', label);
   const span = button.querySelector('span');
   if (span) span.textContent = label;
 }
@@ -141,21 +143,25 @@ function configureProfileControl() {
 function setTopModuleActive(page: string) {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) return;
-  nav.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  nav.querySelectorAll('.nav-item').forEach(item => { item.classList.remove('active'); item.removeAttribute('aria-current'); });
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
-  if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') candidate.classList.add('active');
+  if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
+  const label = document.getElementById('mba-active-module');
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
+  if (label) label.textContent = titles[page] || 'Workspace';
 }
 
 function syncTopModuleFromActivePage() {
   const activePage = document.querySelector<HTMLElement>('main .page.active');
   if (!activePage?.id) return;
 
+  if (activePage.id === 'processos') { setTopModuleActive('processos'); return; }
   if (activePage.id === 'acordos') {
     setTopModuleActive('acordos');
     return;
   }
-  if (activePage.id === 'protocolo') {
-    setTopModuleActive('protocolo');
+  if (['protocolo', 'pagamentos', 'tutelas', 'encerramentos'].includes(activePage.id)) {
+    setTopModuleActive('acordos');
     return;
   }
   if (activePage.id === 'automacoes') {
@@ -167,6 +173,11 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
+  if (activePage.id === 'usuarios') {
+    document.querySelectorAll('.main-nav .nav-item').forEach(item => item.classList.remove('active'));
+    const label = document.getElementById('mba-active-module');
+    if (label) label.textContent = 'Usuários';
+  }
 }
 
 function configureApplicationShell() {
@@ -183,13 +194,15 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  const visiblePages = new Set(['dashboard', 'acordos', 'protocolo', 'automacoes', 'tarefas']);
+  // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
+  // A página /controladoria permanece montável para preservar links legados.
+  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
   const labels: Record<string, string> = {
-    dashboard: 'Analytics',
-    acordos: 'Operação',
-    protocolo: 'Controladoria',
-    automacoes: 'Automações',
+    processos: 'Processos',
     tarefas: 'Tarefas',
+    acordos: 'Operação',
+    automacoes: 'Automações',
+    dashboard: 'Resultados',
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
@@ -207,7 +220,9 @@ function configureApplicationShell() {
     const current = document.querySelector<HTMLElement>('main .page.active');
     if ((window as DashboardWindow).MBA_CURRENT_USER && current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
       const fallback = [...visiblePages].find(page => mayOpen(page));
-      (window as DashboardWindow).showPage?.(fallback || 'sem-acesso');
+      // Keep the current URL during permission/profile refresh; navigation
+      // remains gated by canAccess and can recover after reauthentication.
+      (window as DashboardWindow).showPage?.(fallback || 'sem-acesso', false);
     }
     syncTopModuleFromActivePage();
   };
@@ -219,12 +234,11 @@ function configureApplicationShell() {
   });
 
   const orderedItems: Array<HTMLElement | null> = [
-    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
-    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
-    nav.querySelector<HTMLElement>('[data-page="protocolo"]'),
-    baseDados,
-    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
+    nav.querySelector<HTMLElement>('[data-page="processos"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
+    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
+    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
+    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
@@ -232,6 +246,8 @@ function configureApplicationShell() {
   document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
     observer.observe(page, { attributes: true, attributeFilter: ['class'] });
   });
+  window.addEventListener('mba:authenticated', syncVisibility);
+  window.addEventListener('mba:profile-ready', syncVisibility);
   window.addEventListener('mba:module-visibility-updated', syncVisibility);
   window.addEventListener('mba:portfolio-changed', syncVisibility);
   window.addEventListener('mba:session-expired', syncVisibility);
@@ -391,6 +407,22 @@ function mountPortfolioSwitcher() {
   portfolioRoot.render(<PortfolioSwitcher />);
 }
 
+class ResultsErrorBoundary extends Component<{children: ReactNode}, {failed: boolean}> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('results_react_render_failed', error, info.componentStack);
+  }
+  render() {
+    if (this.state.failed) return <div role="alert" className="mba-results-load-error">
+      <strong>Não foi possível carregar Resultados.</strong>
+      <p>A navegação permanece disponível. Recarregue a página para tentar novamente.</p>
+      <button type="button" onClick={() => window.location.reload()}>Recarregar</button>
+    </div>;
+    return this.props.children;
+  }
+}
+
 function RootApp() {
   useEffect(() => {
     configureApplicationShell();
@@ -401,7 +433,7 @@ function RootApp() {
     return () => cleanupBaseTaskImport();
   }, []);
 
-  return <GestaoProcessualPage/>;
+  return <ResultsErrorBoundary><GestaoProcessualPage/></ResultsErrorBoundary>;
 }
 
 const root = document.getElementById('dashboard-root');
@@ -411,3 +443,22 @@ mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
 configureUsersLifecycle();
+
+// Drop the previous root on every portfolio transition; no stale client data persists.
+let processosRoot: Root | null = null;
+function unmountProcessos() {
+  processosRoot?.unmount(); processosRoot = null;
+  document.getElementById('processos')?.replaceChildren();
+}
+function syncProcessos() {
+  const section = document.getElementById('processos');
+  if (!section?.classList.contains('active') || !mayOpen('processos')) { unmountProcessos(); return; }
+  if (!processosRoot) { processosRoot = createRoot(section); processosRoot.render(<StrictMode><ProcessosPage/></StrictMode>); }
+}
+const processosHost = document.getElementById('processos');
+if (processosHost) {
+  new MutationObserver(syncProcessos).observe(processosHost, {attributes:true,attributeFilter:['class']});
+  for (const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated']) window.addEventListener(event,syncProcessos);
+  for (const event of ['mba:portfolio-changed','mba:session-expired','mba:logged-out']) window.addEventListener(event,unmountProcessos);
+  syncProcessos();
+}

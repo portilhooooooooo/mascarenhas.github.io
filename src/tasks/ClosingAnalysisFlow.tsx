@@ -1,19 +1,22 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { useQaField } from './qaDraft';
 import './closingAnalysisFlow.css';
 import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 
 type YesNo = 'sim' | 'nao' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
-type AppealResult = 'provido' | 'improvido' | 'sentenca_desconstituida';
+type AppealResult = 'sentenca_desconstituida' | 'condenacao_mantida'
+  | 'condenacao_afastada' | 'sem_condenacao_mantida' | 'condenacao_imposta' | 'outro';
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
 export type ClosingAnalysisDraft = {
-  workflow_version: 2;
+  workflow_version: 5;
   first_instance_merit: TrialResult;
   had_appeal: boolean;
   appeal_decided: boolean | null;
   appeal_result: AppealResult | null;
+  appeal_other_description: string | null;
   appellant: Appellant | null;
   appeal_deadline_open: boolean | null;
   appeal_deadline_date: string | null;
@@ -23,15 +26,20 @@ export type ClosingAnalysisDraft = {
   execution_requested: boolean | null;
   full_payment: boolean | null;
   classifier_classification: string | null;
+  classification_agreed: boolean;
+  classification_disagreement_reason: string | null;
 };
 
 type Props = {
   cnj: string;
   classifierClassification?: string | null;
+  contextHint?: string;
+  draftKey?: string;
   busy?: boolean;
   error?: string | null;
   onSubmit: (draft: ClosingAnalysisDraft) => Promise<void> | void;
   onSkip: () => Promise<void> | void;
+  onPhaseEntered?: (index: number, stage: string) => void;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -46,8 +54,14 @@ const OUTCOME_LABELS: Record<string, string> = {
   inapto_aguardando_transito_60d: 'Inapto temporariamente — aguardando 60 dias do trânsito',
   inapto_execucao_pendente: 'Inapto — execução sem pagamento integral',
   inapto_resultado_indeterminado: 'Inapto — resultado do recurso exige validação',
+  inapto_acordao_outro: 'Revisão — resultado do acórdão ainda não mapeado',
   inapto_sentenca_desconstituida: 'Inapto — sentença desconstituída; aguardando nova decisão',
 };
+
+const CLOSING_STAGES = [
+  'Cadastro de Sentença', 'Cadastro de Acórdão', 'Cadastro de Execução',
+  'Cadastro de Trânsito em Julgado', 'Cadastro de Encerramento',
+] as const;
 
 const SENTENCES = [
   { value: 'procedente', label: 'Procedente' },
@@ -55,6 +69,33 @@ const SENTENCES = [
   { value: 'improcedente', label: 'Improcedente' },
   { value: 'extincao', label: 'Extinção' },
 ];
+
+const APPEAL_OPTIONS: Record<TrialResult, { value: AppealResult; label: string }[]> = {
+  procedente: [
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'condenacao_mantida', label: 'Manutenção da condenação' },
+    { value: 'condenacao_afastada', label: 'Convertida para improcedência' },
+    { value: 'outro', label: 'Outro' },
+  ],
+  parcialmente_procedente: [
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'condenacao_mantida', label: 'Manutenção da condenação' },
+    { value: 'condenacao_afastada', label: 'Convertida para improcedência' },
+    { value: 'outro', label: 'Outro' },
+  ],
+  improcedente: [
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'sem_condenacao_mantida', label: 'Manutenção da improcedência' },
+    { value: 'condenacao_imposta', label: 'Convertida para procedência' },
+    { value: 'outro', label: 'Outro' },
+  ],
+  extincao: [
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'sem_condenacao_mantida', label: 'Manutenção da extinção' },
+    { value: 'condenacao_imposta', label: 'Convertida para procedência' },
+    { value: 'outro', label: 'Outro' },
+  ],
+};
 
 function BinaryChoice({ name, value, disabled, onChange }: {
   name: string; value: YesNo; disabled: boolean;
@@ -110,25 +151,28 @@ function DateAnswer({ name, label, value, onChange, disabled }: {
   return <label className="closing-date-answer" htmlFor={name}>
     <span>{label}</span>
     <input id={name} name={name} type="date" value={value} disabled={disabled}
-      onChange={event => onChange(event.target.value)} />
+      required onChange={event => onChange(event.target.value)} />
   </label>;
 }
 
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, busy = false, error = null, onSubmit, onSkip,
+  cnj, classifierClassification, draftKey = '', busy = false, error = null, onSubmit, onSkip, onPhaseEntered,
 }: Props) {
-  const [sentence, setSentence] = useState<TrialResult | null>(null);
-  const [hadAppeal, setHadAppeal] = useState<YesNo>(null);
-  const [appealDecided, setAppealDecided] = useState<YesNo>(null);
-  const [appealResult, setAppealResult] = useState<AppealResult | null>(null);
-  const [appellant, setAppellant] = useState<Appellant | null>(null);
-  const [deadlineOpen, setDeadlineOpen] = useState<YesNo>(null);
-  const [deadlineDate, setDeadlineDate] = useState('');
-  const [transitConfirmed, setTransitConfirmed] = useState<YesNo>(null);
-  const [transitDate, setTransitDate] = useState('');
-  const [costsPaid, setCostsPaid] = useState<YesNo>(null);
-  const [executionRequested, setExecutionRequested] = useState<YesNo>(null);
-  const [fullPayment, setFullPayment] = useState<YesNo>(null);
+  const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
+  const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
+  const [appealDecided, setAppealDecided] = useQaField<YesNo>(draftKey, 'closing.appealDecided', null);
+  const [appealResult, setAppealResult] = useQaField<AppealResult | null>(draftKey, 'closing.appealResult', null);
+  const [appealOtherDescription, setAppealOtherDescription] = useQaField(draftKey, 'closing.appealOtherDescription', '');
+  const [appellant, setAppellant] = useQaField<Appellant | null>(draftKey, 'closing.appellant', null);
+  const [deadlineOpen, setDeadlineOpen] = useQaField<YesNo>(draftKey, 'closing.deadlineOpen', null);
+  const [deadlineDate, setDeadlineDate] = useQaField(draftKey, 'closing.deadlineDate', '');
+  const [transitConfirmed, setTransitConfirmed] = useQaField<YesNo>(draftKey, 'closing.transitConfirmed', null);
+  const [transitDate, setTransitDate] = useQaField(draftKey, 'closing.transitDate', '');
+  const [costsPaid, setCostsPaid] = useQaField<YesNo>(draftKey, 'closing.costsPaid', null);
+  const [executionRequested, setExecutionRequested] = useQaField<YesNo>(draftKey, 'closing.executionRequested', null);
+  const [fullPayment, setFullPayment] = useQaField<YesNo>(draftKey, 'closing.fullPayment', null);
+  const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.classificationAgreed', null);
+  const [disagreementReason, setDisagreementReason] = useQaField(draftKey, 'closing.disagreementReason', '');
   const [localError, setLocalError] = useState<string | null>(null);
 
   const clearAfterTransit = () => {
@@ -139,16 +183,21 @@ export function ClosingAnalysisFlow({
     setTransitConfirmed(null); setTransitDate(''); clearAfterTransit();
   };
   const clearAppeal = () => {
-    setAppealDecided(null); setAppealResult(null); setAppellant(null);
+    setAppealDecided(null); setAppealResult(null); setAppealOtherDescription(''); setAppellant(null);
     setDeadlineOpen(null); setDeadlineDate(''); clearTransit();
   };
-  useEffect(() => {
-    setSentence(null); setHadAppeal(null); clearAppeal();
-  }, [cnj]);
+  // O workspace remonta o fluxo por processo; o rascunho é restaurado em useQaField.
 
   const appealPending = hadAppeal === 'sim' && appealDecided === 'nao';
+  // Rascunhos com opções antigas devem exigir nova escolha.
+  const appealResultValid = Boolean(sentence && appealResult
+    && APPEAL_OPTIONS[sentence].some(option => option.value === appealResult));
+  const otherDescriptionValid = appealOtherDescription.trim().length >= 6
+    && appealOtherDescription.trim().length <= 500;
   const appealJudged = hadAppeal === 'sim'
-    && appellant !== null && appealDecided === 'sim' && appealResult !== null;
+    && appellant !== null && appealDecided === 'sim' && appealResultValid
+    && (appealResult !== 'outro' || otherDescriptionValid);
+  const appealOther = appealJudged && appealResult === 'outro';
   const noAppealReady = hadAppeal === 'nao' && deadlineOpen === 'nao';
   const deadlineAge = deadlineDate ? daysElapsed(deadlineDate) : null;
   const transitAge = transitDate ? daysElapsed(transitDate) : null;
@@ -161,12 +210,12 @@ export function ClosingAnalysisFlow({
   } else if (sentence && appealJudged) {
     if (appealResult === 'sentenca_desconstituida') {
       finalMerit = null;
-    } else if (appealResult === 'improvido') {
-      finalMerit = asFinalResult(sentence);
-    } else if (sentence === 'extincao' || (sentence === 'parcialmente_procedente' && appellant === 'banco')) {
-      finalMerit = 'indeterminado';
+    } else if (appealResult === 'outro') {
+      finalMerit = 'indeterminado'; // Resultado ainda não mapeado: revisão humana.
+    } else if (appealResult === 'condenacao_afastada' || appealResult === 'sem_condenacao_mantida') {
+      finalMerit = 'vitoria';
     } else {
-      finalMerit = appellant === 'banco' ? 'vitoria' : 'derrota';
+      finalMerit = 'derrota';
     }
   }
 
@@ -177,6 +226,8 @@ export function ClosingAnalysisFlow({
     outcome = 'inapto_sentenca_desconstituida';
   } else if (hadAppeal === 'nao' && deadlineOpen === 'sim') {
     if (deadlineAge !== null && deadlineAge <= 0) outcome = 'inapto_prazo_recursal';
+  } else if (appealOther) {
+    outcome = 'inapto_acordao_outro';
   } else if (finalMerit === 'indeterminado') {
     outcome = 'inapto_resultado_indeterminado';
   } else if (finalMerit) {
@@ -201,20 +252,73 @@ export function ClosingAnalysisFlow({
     : outcome === 'inapto_prazo_recursal' ? afterDays(deadlineDate, 1) : null;
 
   const canAnswerTransit = finalMerit !== null && finalMerit !== 'indeterminado';
+  const confirmationText = appealOther
+    ? 'O resultado informado em Outro será encaminhado para revisão e mapeamento, sem encerramento automático. Confirma o registro?'
+    : outcome === 'apto_derrota_voluntaria'
+    ? 'Identificamos que esse processo pode ser encerrado como Derrota Voluntária. Você concorda com essa informação?'
+    : outcome === 'apto_derrota'
+      ? 'Identificamos que esse processo pode ser encerrado como Derrota. Você concorda com essa informação?'
+      : outcome === 'apto_vitoria'
+        ? 'Identificamos que esse processo pode ser encerrado como Vitória. Você concorda com essa informação?'
+        : outcome === 'apto_pending_custas'
+          ? 'Identificamos que esse processo está apto, mas ainda há custas finais pendentes. Você concorda com essa informação?'
+          : outcome ? 'Identificamos que esse processo ainda não está apto para encerramento: ' +
+            OUTCOME_LABELS[outcome].replace(/^Inapto(?: temporariamente)?\s*[—–]\s*/i, '') +
+            '. Você concorda com essa informação?' : null;
+  // Qualquer alteração nas respostas anteriores exige uma nova concordância.
+  const reviewSignature = JSON.stringify([sentence, hadAppeal, appellant, appealDecided, appealResult, appealOtherDescription,
+    deadlineOpen, deadlineDate, transitConfirmed, transitDate, costsPaid, executionRequested, fullPayment]);
+  const lastReviewSignature = useRef(reviewSignature);
+  useEffect(() => {
+    if (lastReviewSignature.current !== reviewSignature) {
+      lastReviewSignature.current = reviewSignature;
+      setClassificationAgreed(null);
+      setDisagreementReason('');
+    }
+  }, [reviewSignature, setClassificationAgreed, setDisagreementReason]);
+  const sentenceDescription: Record<TrialResult, string> = {
+    procedente: 'SENTENÇA PROCEDENTE', parcialmente_procedente: 'SENTENÇA PARCIALMENTE PROCEDENTE',
+    improcedente: 'SENTENÇA IMPROCEDENTE', extincao: 'SENTENÇA DE EXTINÇÃO',
+  };
+  const appealDescription: Record<AppealResult, string> = {
+    sentenca_desconstituida: 'SENTENÇA ANULADA',
+    condenacao_mantida: 'ACÓRDÃO MANTEVE A CONDENAÇÃO',
+    condenacao_afastada: 'ACÓRDÃO CONVERTEU A SENTENÇA EM IMPROCEDÊNCIA',
+    sem_condenacao_mantida: 'ACÓRDÃO MANTEVE A AUSÊNCIA DE CONDENAÇÃO',
+    condenacao_imposta: 'ACÓRDÃO CONVERTEU A SENTENÇA EM PROCEDÊNCIA',
+    outro: 'ACÓRDÃO COM RESULTADO AINDA NÃO MAPEADO',
+  };
+  // A descrição utiliza somente respostas humanas. Indícios não entram no texto.
+  const proposedDescription = [
+    sentence ? sentenceDescription[sentence] : '',
+    hadAppeal === 'sim' && appealDecided === 'sim' && appealResultValid && appealResult
+      ? appealDescription[appealResult] + (appealResult === 'outro' ? ': ' + appealOtherDescription.trim() : '') : '',
+    transitConfirmed === 'sim' ? 'TRÂNSITO EM JULGADO' + (transitDate ? ' EM ' + formatDate(transitDate) : ' CONFIRMADO') : '',
+    costsPaid === 'sim' ? 'CUSTAS FINAIS PAGAS' : costsPaid === 'nao' ? 'CUSTAS FINAIS NÃO PAGAS' : '',
+    executionRequested === 'nao' ? 'SEM PEDIDO DE EXECUÇÃO' : executionRequested === 'sim' ? 'COM PEDIDO DE EXECUÇÃO' : '',
+    outcome === 'apto_derrota_voluntaria' ? 'PROCESSO APTO AO ENCERRAMENTO POR DERROTA VOLUNTÁRIA' : '',
+  ].filter(Boolean).join(', ') + '.';
+  const validReason = disagreementReason.trim().length >= 6 && disagreementReason.trim().length <= 2000;
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || hadAppeal === null) {
+    if (!outcome || !sentence || hadAppeal === null || classificationAgreed === null
+      || (appealOther && (classificationAgreed !== 'sim' || !otherDescriptionValid))) {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
+      return;
+    }
+    if (!appealOther && classificationAgreed === 'nao' && !validReason) {
+      setLocalError('Explique a divergência (entre 6 e 2.000 caracteres) antes de enviar para revisão.');
       return;
     }
     setLocalError(null);
     await onSubmit({
-      workflow_version: 2,
+      workflow_version: 5,
       first_instance_merit: sentence,
       had_appeal: hadAppeal === 'sim',
       appeal_decided: hadAppeal === 'sim' ? appealDecided === 'sim' : null,
       appeal_result: hadAppeal === 'sim' && appealDecided === 'sim' ? appealResult : null,
+      appeal_other_description: appealOther ? appealOtherDescription.trim() : null,
       appellant: hadAppeal === 'sim' ? appellant : null,
       appeal_deadline_open: hadAppeal === 'nao' ? deadlineOpen === 'sim' : null,
       appeal_deadline_date: hadAppeal === 'nao' && deadlineOpen === 'sim' ? deadlineDate : null,
@@ -228,60 +332,72 @@ export function ClosingAnalysisFlow({
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
         && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
+      classification_agreed: appealOther ? false : classificationAgreed === 'sim',
+      classification_disagreement_reason: appealOther ? 'Acórdão — Outro: ' + appealOtherDescription.trim()
+        : classificationAgreed === 'nao' ? disagreementReason.trim() : null,
     });
   };
 
-  return <TaskForm className="closing-flow" onSubmit={submit}>
-    <section className={'closing-outcome closing-summary ' +
-      (outcome?.startsWith('apto_') ? 'positive' : outcome ? 'negative' : 'neutral')} aria-live="polite">
-      <span>Classificação final prevista</span>
-      <strong>{outcome ? OUTCOME_LABELS[outcome] : 'Aguardando validação das respostas'}</strong>
-      {reopenAt ? <small>Reanálise em {formatDate(reopenAt)}.</small> : null}
-      {!outcome && classifierClassification ? <small>Indício do classificador: {classifierClassification}</small> : null}
-    </section>
+  return <TaskForm className="closing-flow" progressive stages={CLOSING_STAGES} stageStates={{
+    'Cadastro de Sentença': sentence ? 'completed' : 'pending',
+    'Cadastro de Acórdão': appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
+    'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
+    'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid === 'sim' && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
+    'Cadastro de Encerramento': classificationAgreed === 'sim' || (!appealOther && classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
+  }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
 
-    <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da sentença?">
+    <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
         options={SENTENCES} onChange={value => {
           setSentence(value as TrialResult); setHadAppeal(null); clearAppeal();
         }} />
     </TaskQuestion>
 
-    {sentence ? <TaskQuestion number={String(++questionNumber)} question="Houve interposição de apelação?">
+    {sentence ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Houve interposição de apelação?">
       <BinaryChoice name="closing-appeal" value={hadAppeal} disabled={busy} onChange={value => {
         setHadAppeal(value); clearAppeal();
       }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Quem interpôs a apelação?">
+    {hadAppeal === 'sim' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Quem interpôs a apelação?">
       <OptionGroup name="closing-appellant" value={appellant} disabled={busy}
         options={[{ value: 'banco', label: 'Banco' }, { value: 'autora', label: 'Parte autora' }]}
         onChange={value => {
-          setAppellant(value as Appellant); setAppealDecided(null); setAppealResult(null); clearTransit();
+          setAppellant(value as Appellant); setAppealDecided(null); setAppealResult(null);
+          setAppealOtherDescription(''); clearTransit();
         }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' && appellant !== null ? <TaskQuestion number={String(++questionNumber)} question="O colegiado já julgou a apelação?">
+    {hadAppeal === 'sim' && appellant !== null ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="O colegiado já julgou a apelação?">
       <BinaryChoice name="closing-appeal-decided" value={appealDecided} disabled={busy} onChange={value => {
         setAppealDecided(value); setAppealResult(null); clearTransit();
       }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual foi o resultado da apelação?">
-      <OptionGroup name="closing-appeal-result" value={appealResult} disabled={busy}
-        options={[{ value: 'provido', label: 'Provido' }, { value: 'improvido', label: 'Improvido' },
-          { value: 'sentenca_desconstituida', label: 'Sentença desconstituída' }]}
-        onChange={value => { setAppealResult(value as AppealResult); clearTransit(); }} />
-    </TaskQuestion> : null}
+    {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' && sentence
+      ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão"
+          question="Qual foi o resultado do acórdão?">
+        <OptionGroup name="closing-appeal-result" value={appealResultValid ? appealResult : null} disabled={busy}
+          options={APPEAL_OPTIONS[sentence]}
+          onChange={value => { setAppealResult(value as AppealResult);
+            if (value !== appealResult) setAppealOtherDescription('');
+            clearTransit(); }} />
+        {appealResult === 'outro' ? <label className="closing-disagreement-field">
+          <span>Descreva o resultado do acórdão</span>
+          <textarea value={appealOtherDescription} required minLength={6} maxLength={500}
+            disabled={busy} placeholder="Ex.: recurso parcialmente provido, com redução dos danos morais."
+            onChange={event => { setAppealOtherDescription(event.target.value); setLocalError(null); }} />
+        </label> : null}
+      </TaskQuestion> : null}
 
-    {hadAppeal === 'nao' ? <TaskQuestion number={String(++questionNumber)} question="Há prazo para recorrer?">
+    {hadAppeal === 'nao' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Há prazo para recorrer?">
       <BinaryChoice name="closing-deadline-open" value={deadlineOpen} disabled={busy}
         onChange={value => {
           setDeadlineOpen(value); setDeadlineDate(''); clearTransit();
         }} />
     </TaskQuestion> : null}
 
-    {hadAppeal === 'nao' && deadlineOpen === 'sim' ? <TaskQuestion number={String(++questionNumber)} question="Qual é a data final do prazo recursal?">
+    {hadAppeal === 'nao' && deadlineOpen === 'sim' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Qual é a data final do prazo recursal?">
       <DateAnswer name="closing-deadline-date" label="Data final do prazo" value={deadlineDate}
         disabled={busy} onChange={value => { setDeadlineDate(value); setLocalError(null); }} />
       {deadlineAge !== null && deadlineAge > 0 ? <p className="closing-inline-note">
@@ -289,13 +405,13 @@ export function ClosingAnalysisFlow({
       </p> : null}
     </TaskQuestion> : null}
 
-    {canAnswerTransit ? <TaskQuestion number={String(++questionNumber)} question="Esse processo já transitou em julgado?">
+    {canAnswerTransit ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Trânsito em Julgado" question="Esse processo já transitou em julgado?">
       <BinaryChoice name="closing-transit-confirmed" value={transitConfirmed} disabled={busy}
         onChange={value => { setTransitConfirmed(value); setTransitDate(''); clearAfterTransit(); }} />
     </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} question="Houve o pagamento das custas finais?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve o pagamento das custas finais?">
         <BinaryChoice name="closing-costs" value={costsPaid} disabled={busy} onChange={value => {
           setCostsPaid(value); setExecutionRequested(null); setFullPayment(null);
           setTransitDate(''); setLocalError(null);
@@ -303,7 +419,7 @@ export function ClosingAnalysisFlow({
       </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} question="Houve pedido de execução?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pedido de execução?">
         <BinaryChoice name="closing-execution" value={executionRequested} disabled={busy} onChange={value => {
           setExecutionRequested(value); setFullPayment(null); setTransitDate(''); setLocalError(null);
         }} />
@@ -311,7 +427,7 @@ export function ClosingAnalysisFlow({
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' &&
       costsPaid === 'sim' && executionRequested === 'nao' ?
-      <TaskQuestion number={String(++questionNumber)} question="Qual foi a data do trânsito em julgado?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Trânsito em Julgado" question="Qual foi a data do trânsito em julgado?">
         <DateAnswer name="closing-transit-date" label="Data do trânsito em julgado"
           value={transitDate} disabled={busy} onChange={value => {
             setTransitDate(value); setLocalError(null);
@@ -323,14 +439,32 @@ export function ClosingAnalysisFlow({
       </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid === 'sim' && executionRequested === 'sim' ?
-      <TaskQuestion number={String(++questionNumber)} question="Houve pagamento do valor integral solicitado pela autora?">
+      <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Execução" question="Houve pagamento do valor integral solicitado pela autora?">
         <BinaryChoice name="closing-payment" value={fullPayment} disabled={busy} onChange={value => {
           setFullPayment(value); setLocalError(null);
         }} />
       </TaskQuestion> : null}
 
+    {outcome && confirmationText ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Encerramento" question={confirmationText}>
+      <div className="closing-review-observation">
+        <strong>Descrição proposta do andamento</strong>
+        <p>{proposedDescription}</p>
+      </div>
+      <BinaryChoice name="closing-classification-agreement" value={classificationAgreed} disabled={busy}
+        onChange={value => { setClassificationAgreed(value); setLocalError(null); if (value === 'sim') setDisagreementReason(''); }} />
+      {classificationAgreed === 'nao' && !appealOther ? <label className="closing-disagreement-field">
+        <span>Por que você discorda da classificação ou da descrição?</span>
+        <textarea value={disagreementReason} required disabled={busy} maxLength={2000}
+          placeholder="Descreva a divergência encontrada no processo."
+          onChange={event => { setDisagreementReason(event.target.value); setLocalError(null); }}/>
+      </label> : null}
+      {classificationAgreed === 'sim' && reopenAt ? <p className="closing-inline-note">
+        Reanálise prevista em {formatDate(reopenAt)}.
+      </p> : null}
+    </TaskQuestion> : null}
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome)} onSkip={() => void onSkip()}
+    <TaskActionBar busy={busy} ready={Boolean(outcome && (classificationAgreed === 'sim'
+      || (!appealOther && classificationAgreed === 'nao' && validReason)))} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
 }

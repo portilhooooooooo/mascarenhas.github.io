@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mascarenhas Barbosa">
+  <title>Mascarenhas Barbosa Backoffice</title>
+  <!-- Ícone monocromático da marca; vetor independente de imagens embutidas e filtros externos. -->
+  <rect width="64" height="64" rx="13" fill="#202425"/>
+  <g fill="none" stroke="#fff" stroke-width="4.25" stroke-linejoin="miter" stroke-linecap="square">
+    <path d="M10 44V20l12 15L32 22l10 13 12-15v24"/>
+    <path d="M16 20l16 20 16-20" stroke-width="2.5" opacity=".92"/>
+  </g>
+</svg>

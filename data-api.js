@@ -244,4 +244,126 @@
   };
   window.MBA_AUTOMATION_API = window.MBA_API;
   window.MBA_TASK_IMPORT = { createTaskWithImportedProcesses };
+
+  // One authenticated SSE stream per browser, shared by all modules.
+  // There are no process details in these notifications: they invalidate
+  // authorized views, which then fetch their own scoped data.
+  let eventController = null;
+  let eventRetryTimer = null;
+  let eventRetryDelay = 1000;
+  let eventSequence = 0;
+  const lastRevisions = new Map();
+  const realtimeModules = new Set(['tarefas','encerramentos','defesas','liminar','pagamentos','protocolos','processos','acordos']);
+
+  function signalRealtime(module, portfolioId) {
+    if (!realtimeModules.has(module) || portfolioId !== getPortfolioId()) return;
+    window.dispatchEvent(new CustomEvent('mba:realtime-invalidate', {
+      detail: { module, portfolio_id: portfolioId },
+    }));
+  }
+
+  function stopRealtime() {
+    eventSequence += 1;
+    if (eventRetryTimer) clearTimeout(eventRetryTimer);
+    eventRetryTimer = null;
+    if (eventController) eventController.abort();
+    eventController = null;
+  }
+
+  async function consumeRealtime(sequence, controller, portfolioId) {
+    const response = await backendFetch('/api/events/stream', {
+      method: 'GET', headers: { Accept: 'text/event-stream' },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const problem = new Error('Realtime indisponível (' + response.status + ')');
+      problem.status = response.status;
+      throw problem;
+    }
+    if (!response.body) throw new Error('Streaming não suportado neste navegador.');
+    eventRetryDelay = 1000;
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffered = '';
+    const handleEvent = (block) => {
+      let event = '';
+      const data = [];
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event:')) event = line.slice(6).trim();
+        if (line.startsWith('data:')) data.push(line.slice(5).trimStart());
+      }
+      if (!data.length) return;
+      let payload;
+      try { payload = JSON.parse(data.join('\n')); } catch (_) { return; }
+      if (event === 'ready' && payload.revisions) {
+        const next = payload.revisions;
+        for (const [module, revision] of Object.entries(next)) {
+          if (!realtimeModules.has(module) || !Number.isFinite(Number(revision))) continue;
+          const key = portfolioId + ':' + module;
+          const previous = lastRevisions.get(key);
+          lastRevisions.set(key, Number(revision));
+          if (previous != null && Number(revision) > previous) signalRealtime(module, portfolioId);
+        }
+      }
+      if (event === 'invalidate' && realtimeModules.has(payload.module)) {
+        const key = portfolioId + ':' + payload.module;
+        const previous = lastRevisions.get(key);
+        const revision = Number(payload.revision);
+        if (!Number.isFinite(revision) || (previous != null && revision <= previous)) return;
+        lastRevisions.set(key, revision);
+        signalRealtime(payload.module, portfolioId);
+      }
+    };
+    try {
+      while (sequence === eventSequence && !controller.signal.aborted) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffered += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+        if (buffered.length > 65536) throw new Error('Evento de atualização inválido.');
+        let boundary;
+        while ((boundary = buffered.indexOf('\n\n')) !== -1) {
+          handleEvent(buffered.slice(0, boundary));
+          buffered = buffered.slice(boundary + 2);
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+
+  function startRealtime() {
+    stopRealtime();
+    if (!getStoredToken() || !window.MBA_CURRENT_USER || document.hidden) return;
+    const current = eventSequence;
+    const controller = new AbortController();
+    eventController = controller;
+    const portfolioId = getPortfolioId();
+    let reconnectAllowed = true;
+    void consumeRealtime(current, controller, portfolioId).catch(error => {
+      if (controller.signal.aborted) return;
+      // 401/403: wait for refreshed profile rather than repeatedly requesting.
+      if (error?.status === 401 || error?.status === 403) {
+        reconnectAllowed = false;
+        console.warn('Canal de eventos sem autorização; aguardando nova autenticação.');
+        return;
+      }
+    }).finally(() => {
+      if (!reconnectAllowed || current !== eventSequence || controller.signal.aborted || document.hidden || !getStoredToken()) return;
+      eventController = null;
+      eventRetryTimer = setTimeout(() => {
+        eventRetryTimer = null;
+        startRealtime();
+      }, eventRetryDelay);
+      eventRetryDelay = Math.min(eventRetryDelay * 2, 30000);
+    });
+  }
+
+  window.addEventListener('mba:profile-ready', startRealtime);
+  window.addEventListener('mba:portfolio-changed', startRealtime);
+  window.addEventListener('mba:session-expired', stopRealtime);
+  window.addEventListener('mba:logged-out', stopRealtime);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stopRealtime();
+    else startRealtime();
+  });
 })();

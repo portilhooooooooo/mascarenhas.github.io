@@ -17,3 +17,11 @@
 .closing-date-answer input:disabled{opacity:.6}
 .closing-inline-note{margin:8px 0 0;padding:9px 11px;border-left:3px solid #94a3b8;background:#f8fafc;color:#52647d;font-size:11px;line-height:1.5}
 @media(max-width:760px){.closing-date-answer{max-width:100%}}
+
+/* Revisão final dentro do Q&A, sem card externo nem viés de indício. */
+#tarefas[data-react-tasks='true'] .closing-review-observation { margin: 14px 0; max-width: 720px; padding: 12px 14px; border: 1px solid var(--mba-border); border-radius: 8px; background: var(--mba-subtle); }
+#tarefas[data-react-tasks='true'] .closing-review-observation strong { display:block; font:600 11px/1.3 Inter,system-ui,sans-serif; color:var(--mba-text-2); margin-bottom:7px; }
+#tarefas[data-react-tasks='true'] .closing-review-observation p { font:500 12px/1.55 Inter,system-ui,sans-serif; color:var(--mba-text); margin:0; }
+#tarefas[data-react-tasks='true'] .closing-disagreement-field { display:grid; gap:7px; margin-top:14px; max-width:720px; font-size:12px; color:var(--mba-text); }
+#tarefas[data-react-tasks='true'] .closing-disagreement-field textarea { min-height:76px; resize:vertical; box-sizing:border-box; padding:11px; border-radius:7px; background:var(--mba-surface); color:var(--mba-text); border:1px solid var(--mba-border-strong); }
+#tarefas[data-react-tasks='true'] .closing-disagreement-field small { color:var(--mba-text-2); }

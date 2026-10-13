@@ -17,3 +17,18 @@
 
 /page-init-2.js
   Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache, max-age=0, must-revalidate
+
+/
+  Cache-Control: no-cache, max-age=0, must-revalidate
+
+/portfolio-policy.js
+  Cache-Control: no-cache
+
+/app.js
+  Cache-Control: no-cache
+
+/assets/react-dashboard/dashboard-react.js
+  Cache-Control: no-cache

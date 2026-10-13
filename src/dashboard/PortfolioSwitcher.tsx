@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Building2, Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 
 type Portfolio = { id: string };
 type Profile = { portfolios?: Portfolio[]; default_portfolio_id?: string };
@@ -121,7 +121,13 @@ export function PortfolioSwitcher() {
         disabled={options.length < 2}
         onClick={toggle}
       >
-        <Building2 className="sidebar-portfolio-trigger-icon" aria-hidden="true" />
+        <svg className="sidebar-portfolio-trigger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M7 4.5h10a2 2 0 0 1 2 2V8" />
+          <path d="M4.5 7.5h11a2 2 0 0 1 2 2v1" />
+          <rect x="3" y="10.5" width="16" height="10" rx="2" />
+          <path d="M7 14h5" />
+          <path d="M7 17h3" />
+        </svg>
         <span className="sidebar-portfolio-active-name">{active.label}</span>
         {options.length > 1 && <ChevronDown className="sidebar-portfolio-chevron" aria-hidden="true" />}
       </button>

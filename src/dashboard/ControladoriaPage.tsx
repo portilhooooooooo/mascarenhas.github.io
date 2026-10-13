@@ -21,7 +21,7 @@ export function ControladoriaPage() {
     return () => window.removeEventListener('mba:route-changed', sync);
   }, []);
   return <div className="controladoria-page-react">
-    <nav className="controladoria-subnav controladoria-primary-subnav" aria-label="Módulos de Controladoria">
+    <nav className="controladoria-subnav controladoria-primary-subnav" aria-label="Fluxos operacionais (atalho legado)">
       <button type="button" className={view === 'protocolos' ? 'active' : ''} onClick={() => navigateControladoria('protocolos')}>Protocolos</button>
       <button type="button" className={view === 'defesas' ? 'active' : ''} onClick={() => navigateControladoria('defesas')}>Defesas</button>
       <button type="button" className={view === 'indicadores' ? 'active' : ''} onClick={() => navigateControladoria('indicadores')}>Indicadores</button>

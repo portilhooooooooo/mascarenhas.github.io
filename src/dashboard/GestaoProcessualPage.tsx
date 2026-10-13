@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
-import { MetabaseGestaoEmbed } from './MetabaseGestaoEmbed';
+import { VisaoGeralPage } from './VisaoGeralPage';
 import './gestaoMetabase.css';
 
 function currentAnalyticsTab(): 'geral' | 'encerramentos' {
@@ -18,20 +18,27 @@ function getPermissions() {
 
 export function GestaoProcessualPage() {
   const [permissions, setPermissions] = useState(getPermissions);
+  const [, forcePortfolioPolicySync] = useState(0);
   const [activeTab, setActiveTab] = useState<'geral' | 'encerramentos'>(currentAnalyticsTab);
   const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
 
   useEffect(() => {
-    const sync = () => setPermissions(getPermissions());
+    const sync = () => {
+      setPermissions(getPermissions());
+      // canAccess depende da carteira ativa; grants podem manter a mesma referência.
+      forcePortfolioPolicySync(value => value + 1);
+    };
     window.addEventListener('mba:authenticated', sync);
     window.addEventListener('mba:profile-ready', sync);
+    window.addEventListener('mba:portfolio-changed', sync);
     window.addEventListener('mba:logged-out', sync);
     window.addEventListener('mba:session-expired', sync);
     return () => {
       window.removeEventListener('mba:authenticated', sync);
       window.removeEventListener('mba:profile-ready', sync);
+      window.removeEventListener('mba:portfolio-changed', sync);
       window.removeEventListener('mba:logged-out', sync);
       window.removeEventListener('mba:session-expired', sync);
     };
@@ -41,17 +48,17 @@ export function GestaoProcessualPage() {
     window.addEventListener('mba:route-changed', sync);
     return () => window.removeEventListener('mba:route-changed', sync);
   }, []);
-  useEffect(() => {
-    if (!canViewClosing && activeTab === 'encerramentos') setActiveTab('geral');
-  }, [activeTab, canViewClosing]);
+  // Mantém a intenção de navegação entre trocas de carteira.
+  // Enquanto a permissão não existir, exibe apenas a visão autorizada.
+  const displayedTab = (activeTab === 'encerramentos' || !canViewAnalytics) && canViewClosing ? 'encerramentos' : 'geral';
 
-  if (!canViewAnalytics) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
+  if (!canViewAnalytics && !canViewClosing) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
   return <div className="gestao-metabase-page gestao-processual-react">
     <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
-      <button type="button" className={activeTab === 'geral' ? 'active' : ''} aria-current={activeTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Visão geral</button>
-      {canViewClosing && <button type="button" className={activeTab === 'encerramentos' ? 'active' : ''} aria-current={activeTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
+      {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Entradas</button>}
+      {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
     </nav>
-    {activeTab === 'encerramentos' && canViewClosing ? <EncerramentosPage/> : <MetabaseGestaoEmbed/>}
+    {displayedTab === 'encerramentos' ? <EncerramentosPage/> : <VisaoGeralPage/>}
   </div>;
 }

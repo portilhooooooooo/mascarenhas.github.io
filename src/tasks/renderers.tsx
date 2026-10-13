@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
+import { clearQaDraft } from './qaDraft';
 
 export { AgreementRenderer, LiminarRenderer, OptionGroup, PaymentRenderer, UnsupportedRenderer } from './renderersLegacy';
 export type { ApiRequest } from './renderersLegacy';
@@ -11,6 +12,7 @@ type BaseRendererProps = {
   api: ApiRequest;
   task: Task;
   process: TaskProcess;
+  draftKey?: string;
   onCompleted: (process: TaskProcess) => void;
   onSkipped: (process: TaskProcess) => void;
 };
@@ -20,10 +22,16 @@ function defenseControlDeadline(task: Task, process: TaskProcess) {
   return String(metadata.fatal_deadline || task.deadline_at || '').slice(0, 10) || null;
 }
 
-export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: BaseRendererProps) {
+export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted, onSkipped }: BaseRendererProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controlDeadline = defenseControlDeadline(task, process);
+  const onPhaseEntered = useCallback((index: number, stage: string) => {
+    if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
+    void api(`/api/task-processes/${process.id}/analysis-activity`, {
+      method: 'POST', body: JSON.stringify({ index, stage }),
+    }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
+  }, [api, process.id]);
 
   const submit = async (draft: DefenseAnalysisDraft) => {
     setBusy(true);
@@ -42,6 +50,7 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
           analysis_origin: 'TASK',
         }),
       });
+      clearQaDraft(draftKey);
       onCompleted(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível salvar a análise de defesa.');
@@ -55,6 +64,7 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
     setError(null);
     try {
       await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      clearQaDraft(draftKey);
       onSkipped(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível pular o processo.');
@@ -65,15 +75,17 @@ export function DefenseRenderer({ api, task, process, onCompleted, onSkipped }: 
 
   return <DefenseAnalysisFlow
     cnj={process.case_number || 'Processo sem número'}
+    draftKey={draftKey}
     controlDeadline={controlDeadline}
     busy={busy}
     error={error}
     onSubmit={submit}
     onSkip={skip}
+    onPhaseEntered={onPhaseEntered}
   />;
 }
 
-function closingClassifierClassification(task: Task, process: TaskProcess) {
+function closingClassifierClassification(process: TaskProcess) {
   const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
   const raw = process.indicio
     || process.indication
@@ -81,8 +93,7 @@ function closingClassifierClassification(task: Task, process: TaskProcess) {
     || metadata.classifier_classification
     || metadata.classification
     || metadata.classificacao
-    || metadata.resultado
-    || task.title;
+    || metadata.resultado;
   const normalized = String(raw || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (normalized.includes('derrota voluntaria')) return 'Derrota voluntária';
   if (normalized.includes('vitoria')) return 'Vitória';
@@ -90,10 +101,30 @@ function closingClassifierClassification(task: Task, process: TaskProcess) {
   return null;
 }
 
-export function ClosingRenderer({ api, task, process, onCompleted, onSkipped, onDeferred }: BaseRendererProps & { onDeferred: (process: TaskProcess, reopenAt: string) => void }) {
+
+function closingSentenceHint(process: TaskProcess): string | undefined {
+  const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
+  const raw = String(metadata.first_instance_merit || metadata.resultado_sentenca || metadata.sentenca_resultado || '').trim().toLowerCase();
+  const recognized: Record<string, string> = {
+    procedente: 'procedente',
+    parcialmente_procedente: 'parcialmente procedente',
+    improcedente: 'improcedente',
+    extincao: 'extinta',
+  };
+  const label = recognized[raw];
+  return label ? 'Identificamos que esse processo tem sentença ' + label + '.' : undefined;
+}
+
+export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted, onSkipped, onDeferred }: BaseRendererProps & { onDeferred: (process: TaskProcess, reopenAt: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const classifierClassification = closingClassifierClassification(task, process);
+  const classifierClassification = closingClassifierClassification(process);
+  const onPhaseEntered = useCallback((index: number, stage: string) => {
+    if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
+    void api(`/api/task-processes/${process.id}/analysis-activity`, {
+      method: 'POST', body: JSON.stringify({ index, stage }),
+    }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
+  }, [api, process.id]);
 
   const submit = async (draft: ClosingAnalysisDraft) => {
     setBusy(true);
@@ -103,6 +134,8 @@ export function ClosingRenderer({ api, task, process, onCompleted, onSkipped, on
         method: 'POST',
         body: JSON.stringify(draft),
       });
+      clearQaDraft(draftKey);
+      window.dispatchEvent(new CustomEvent('mba:closing-analysis-saved'));
       if (saved?.reopen_at) onDeferred(process, String(saved.reopen_at));
       else onCompleted(process);
     } catch (cause: any) {
@@ -117,6 +150,7 @@ export function ClosingRenderer({ api, task, process, onCompleted, onSkipped, on
     setError(null);
     try {
       await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      clearQaDraft(draftKey);
       onSkipped(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível pular o processo.');
@@ -127,10 +161,14 @@ export function ClosingRenderer({ api, task, process, onCompleted, onSkipped, on
 
   return <ClosingAnalysisFlow
     cnj={process.case_number || 'Processo sem número'}
+    draftKey={draftKey}
     classifierClassification={classifierClassification}
+    contextHint={closingSentenceHint(process)}
     busy={busy}
     error={error}
     onSubmit={submit}
     onSkip={skip}
+    onPhaseEntered={onPhaseEntered}
   />;
 }
+

@@ -18,6 +18,7 @@ const defaultTasks = [
   {id:'demo-defesa',type:'defesa',title:'Análise de defesas',source:'automation',priority:'medium',status:'pending',total_processes:6,completed_processes:0,deadline_at:'2026-10-15T16:00:00-04:00'},
 ];
 const shellFixture = new URLSearchParams(location.search).get('fixture') === 'shell';
+const assignmentsFixture = new URLSearchParams(location.search).get('fixture') === 'assignments';
 const stateFixture = new URLSearchParams(location.search).get('fixture') === 'states';
 const scenario = new URLSearchParams(location.search).get('scenario') || '';
 const scenarioTasks = [
@@ -37,19 +38,35 @@ const items = [
   ['DONE','RECONCILED','',false],
   ['HUMAN_NECESSARY','TASK_OPEN_FAILED','Não foi possível abrir a tarefa',true],
 ].map(([status,stage,human_reason,retry_allowed],i)=>({id:`demo-protocol-${i}`,cnj:`DEMO ${String(i+1).padStart(4,'0')} · Protocolo`,task_id:'demo-task',task_url:'',status,stage,human_reason,retry_allowed,updated_at:'2026-10-03T20:30:00Z'}));
+const protocolWriteLog: Array<{path: string; method: string}> = [];
+Object.assign(window,{__protocolWriteLog: protocolWriteLog});
 const request = async (path:string,options?:RequestInit) => {
+  if (scenario === 'protocolo' && options?.method === 'POST' &&
+      (path.endsWith('/protocol-collection/stage') ||
+       path.endsWith('/protocol-collection/commit') ||
+       path.endsWith('/protocol-collection-error'))) {
+    protocolWriteLog.push({ path, method: options.method });
+    if (path.endsWith('/protocol-collection/stage')) return {status:'ready'};
+    return {status:'completed'};
+  }
   if(path.endsWith('/next-agreement')) return {agreement:processes('demo-agreement')[0]};
+  if (assignmentsFixture && path.startsWith('/api/task-assignees?module=')) return [{id:'fixture-analyst',name:'Analista de teste'}];
+  if (assignmentsFixture && options?.method === 'PATCH' && path.startsWith('/api/task-processes/')) {
+    if (path.endsWith('-1')) throw new Error('Falha simulada de atribuição');
+    return {id:path.split('/').at(-1),assignee_id:'fixture-analyst'};
+  }
+
   if(options?.method && options.method !== 'GET') throw new Error('Prévia visual: alterações de dados estão desativadas.');
-  if(path === '/api/tasks') return tasks;
+  if(path === '/api/tasks' || path.startsWith('/api/tasks?')) return tasks;
   const task = path.match(/^\/api\/tasks\/([^/]+)\/processes$/);
   if(task) return processes(task[1]);
   if(path === '/api/protocolo/summary') return {session:{state:'idle'},automatic_active:false,controladoria:null,documents:null,statuses:{HUMAN_NECESSARY:2,SEM_DOCUMENTOS:1,RUNNING:1,DOCUMENTOS_ENVIADOS:1,PENDING:1,DONE:1}};
   if(path.startsWith('/api/protocolo/items')) return {rows:items};
   return [];
 };
-Object.assign(window,{MBA_CURRENT_USER:{id:'demo-user',is_master_admin:true,permissions:{'tasks.view':true,'tasks.manage':true,'automations.view':true,'automations.run':false}},MBA_API:{request},MBA_AUTOMATION_API:{request,fetch:async()=>{throw new Error('Exportação desativada nesta prévia.');}}});
+Object.assign(window,{MBA_CURRENT_USER:{id:'demo-user',is_master_admin:true,permissions:{'tasks.view':true,'tasks.manage':true,'tasks.assign':true,'tasks.view_others':true,'automations.view':true,'automations.run':false}},MBA_API:{request},MBA_AUTOMATION_API:{request,fetch:async()=>{throw new Error('Exportação desativada nesta prévia.');}}});
 function Preview(){
   const [page,setPage]=useState<'tasks'|'control'>('tasks');
-  return <>{shellFixture?<aside className="sidebar"><div className="sidebar-head"><strong>MBA Backoffice</strong></div><nav aria-label="Menu lateral"><span className="nav-item">Início</span><span className="nav-item">Operação</span><span className="nav-item active">Tarefas</span></nav></aside>:null}<div className={shellFixture?"main-area":""}><div className="demo-notice">PROPOSTA EM TESTE · Dados fictícios · Nenhuma conexão com produção <label className="demo-scenario">Fluxo da prévia<select value={scenario} onChange={event => { location.search = event.target.value ? `?scenario=${event.target.value}` : ''; }}><option value="">Fila geral</option><option value="liminar">Liminar</option><option value="defesa">Defesa</option><option value="comprovante_pagamento">Comprovante de pagamento</option><option value="protocolo">Coleta de documentos</option><option value="acordos">Acordos</option></select></label></div><header className={`demo-navbar ${shellFixture?"topbar":""}`}><div className="demo-brand"><b>MBA</b> Backoffice</div><nav aria-label="Navegação principal"><span>Gestão Processual</span><span>Operação</span><button aria-current={page==='control'?'page':undefined} onClick={()=>setPage('control')}>Controladoria</button><span>Automações</span><button aria-current={page==='tasks'?'page':undefined} onClick={()=>setPage('tasks')}>Tarefas</button></nav><span className="demo-profile">GP</span></header><div id="tarefas" data-react-tasks="true" className={page==='tasks'?'active':''} hidden={page!=='tasks'}><TasksApp/></div>{page==='control'?<div className="demo-control"><ControladoriaPage/></div>:null}</div></>;
+  return <>{shellFixture?<aside className="sidebar"><div className="sidebar-head"><strong>MBA Backoffice</strong></div><nav aria-label="Menu lateral"><span className="nav-item">Início</span><span className="nav-item">Operação</span><span className="nav-item active">Tarefas</span></nav></aside>:null}<div className={shellFixture?"main-area":""}><div className="demo-notice">PROPOSTA EM TESTE · Dados fictícios · Nenhuma conexão com produção <label className="demo-scenario">Fluxo da prévia<select value={scenario} onChange={event => { location.search = event.target.value ? `?scenario=${event.target.value}` : ''; }}><option value="">Fila geral</option><option value="liminar">Liminar</option><option value="defesa">Defesa</option><option value="comprovante_pagamento">Validação de Pagamento</option><option value="protocolo">Coleta de documentos</option><option value="acordos">Acordos</option></select></label></div><header className={`demo-navbar ${shellFixture?"topbar":""}`}><div className="demo-brand"><b>MBA</b> Backoffice</div><nav aria-label="Navegação principal"><span>Gestão Processual</span><span>Operação</span><button aria-current={page==='control'?'page':undefined} onClick={()=>setPage('control')}>Controladoria</button><span>Automações</span><button aria-current={page==='tasks'?'page':undefined} onClick={()=>setPage('tasks')}>Tarefas</button></nav><span className="demo-profile">GP</span></header><div id="tarefas" data-react-tasks="true" className={page==='tasks'?'page active':'page'} hidden={page!=='tasks'}><TasksApp/></div>{page==='control'?<div className="demo-control"><ControladoriaPage/></div>:null}</div></>;
 }
 createRoot(document.getElementById('root')!).render(<Preview/>);

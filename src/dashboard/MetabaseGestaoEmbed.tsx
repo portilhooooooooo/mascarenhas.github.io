@@ -10,6 +10,7 @@ export function MetabaseGestaoEmbed() {
   const mountRef = useRef<HTMLDivElement>(null);
   const refreshTimer = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasContent, setHasContent] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -29,11 +30,16 @@ export function MetabaseGestaoEmbed() {
       dashboard.setAttribute('with-title', 'false');
       dashboard.setAttribute('with-downloads', 'true');
       mountRef.current.appendChild(dashboard);
+      setHasContent(true);
       if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
       const refreshAfter = Math.max(300, Number(config.expires_in || 600) - 60);
       refreshTimer.current = window.setTimeout(() => void load(), refreshAfter * 1000);
     } catch (cause) {
+      // Keep the last successful embed mounted when a JWT refresh fails.
+      // A transient API/Metabase error should not make Analytics disappear.
       setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a Analytics.');
+      if (refreshTimer.current) window.clearTimeout(refreshTimer.current);
+      refreshTimer.current = window.setTimeout(() => void load(), 30000);
     } finally {
       setLoading(false);
     }
@@ -52,7 +58,7 @@ export function MetabaseGestaoEmbed() {
       <span>{error}</span>
       <button type="button" onClick={() => void load()}><RefreshCw size={14}/>Tentar novamente</button>
     </div> : null}
-    {!error ? <div ref={mountRef} className="gestao-metabase-mount" /> : null}
-    {loading && !error ? <div className="gestao-metabase-loading"><LoaderCircle className="spin" size={20}/></div> : null}
+    <div ref={mountRef} className="gestao-metabase-mount" />
+    {loading && !hasContent && !error ? <div className="gestao-metabase-loading"><LoaderCircle className="spin" size={20}/></div> : null}
   </section>;
 }

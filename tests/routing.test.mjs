@@ -37,7 +37,7 @@ function environment(initialPath = '/tarefas', options = {}) {
     constructor(type, config) { this.type = type; this.detail = config.detail; }
   }
   vm.runInNewContext(source, { window, location, history, document, CustomEvent });
-  return { window, location, active, events, listeners, setUrl };
+  return { window, location, active, events, listeners, allowed, setUrl };
 }
 
 test('navbar muda a URL ao navegar para automações e analytics', () => {
@@ -65,13 +65,23 @@ test('abas React atualizam a rota e restauram a página pai', () => {
   assert.equal(e.active.get('tarefas'), true);
   assert.equal(e.events.at(-1).detail.route, 'tarefas/resultados');
 });
-test('links sem permissão mostram sem-acesso, incluindo subrota', () => {
+test('links sem permissão não apagam deep links e se recuperam após autorização', () => {
   const e = environment('/automacoes', { allowed: ['dashboard', 'tarefas'] });
   assert.equal(e.window.restorePageRoute(), true);
-  assert.equal(e.location.pathname, '/sem-acesso');
+  assert.equal(e.location.pathname, '/automacoes');
+  assert.equal(e.active.get('sem-acesso'), true);
+  e.allowed.add('automacoes');
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('automacoes'), true);
   e.setUrl('/analytics/encerramentos');
+  e.allowed.delete('encerramentos');
   e.window.restorePageRoute();
   assert.equal(e.active.get('sem-acesso'), true);
+  assert.equal(e.location.pathname, '/analytics/encerramentos');
+  e.allowed.add('encerramentos');
+  e.window.restorePageRoute();
+  assert.equal(e.active.get('dashboard'), true);
+  assert.equal(e.location.pathname, '/analytics/encerramentos');
 });
 test('atribuições exigem permissão gerencial', () => {
   const e = environment('/tarefas', { permissions: { 'tasks.manage': false } });
