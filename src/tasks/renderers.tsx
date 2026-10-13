@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
-import { ClosingAnalysisFlow, type ClosingAnalysisDraft } from './ClosingAnalysisFlow';
+import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
 import { clearQaDraft } from './qaDraft';
 
@@ -119,6 +119,18 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const classifierClassification = closingClassifierClassification(process);
+  const [closingPrefill, setClosingPrefill] = useState<{ processId: string; values: ClosingPrefill } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void api('/api/task-processes/' + process.id + '/encerramento-prefill')
+      .then((values: ClosingPrefill) => {
+        if (active && values && typeof values === 'object') {
+          setClosingPrefill({ processId: process.id, values });
+        }
+      })
+      .catch(() => { /* Sem evidência, o formulário permanece normal. */ });
+    return () => { active = false; };
+  }, [api, process.id]);
   const onPhaseEntered = useCallback((index: number, stage: string) => {
     if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
     void api(`/api/task-processes/${process.id}/analysis-activity`, {
@@ -163,6 +175,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     cnj={process.case_number || 'Processo sem número'}
     draftKey={draftKey}
     classifierClassification={classifierClassification}
+    prefill={closingPrefill?.processId === process.id ? closingPrefill.values : undefined}
     contextHint={closingSentenceHint(process)}
     busy={busy}
     error={error}
