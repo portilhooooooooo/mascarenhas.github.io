@@ -5,18 +5,18 @@ import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuesti
 
 type YesNo = 'sim' | 'nao' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao';
-type AppealResult = 'condenacao_afastada' | 'condenacao_reduzida' | 'condenacao_mantida'
-  | 'condenacao_ampliada' | 'sem_condenacao_mantida' | 'condenacao_imposta'
-  | 'sentenca_desconstituida' | 'retorno_origem' | 'resultado_indeterminado';
+type AppealResult = 'sentenca_desconstituida' | 'condenacao_mantida'
+  | 'condenacao_afastada' | 'sem_condenacao_mantida' | 'condenacao_imposta' | 'outro';
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
 export type ClosingAnalysisDraft = {
-  workflow_version: 4;
+  workflow_version: 5;
   first_instance_merit: TrialResult;
   had_appeal: boolean;
   appeal_decided: boolean | null;
   appeal_result: AppealResult | null;
+  appeal_other_description: string | null;
   appellant: Appellant | null;
   appeal_deadline_open: boolean | null;
   appeal_deadline_date: string | null;
@@ -71,34 +71,28 @@ const SENTENCES = [
 
 const APPEAL_OPTIONS: Record<TrialResult, { value: AppealResult; label: string }[]> = {
   procedente: [
-    { value: 'condenacao_afastada', label: 'Condenação integralmente afastada (sem obrigação remanescente)' },
-    { value: 'condenacao_reduzida', label: 'Condenação reduzida (ex.: redução do dano moral)' },
-    { value: 'condenacao_mantida', label: 'Condenação mantida / recurso improvido' },
-    { value: 'condenacao_ampliada', label: 'Condenação ampliada' },
-    { value: 'sentenca_desconstituida', label: 'Sentença anulada ou desconstituída' },
-    { value: 'resultado_indeterminado', label: 'Não foi possível identificar o efeito do acórdão' },
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'condenacao_mantida', label: 'Manutenção da condenação' },
+    { value: 'condenacao_afastada', label: 'Convertida para improcedência' },
+    { value: 'outro', label: 'Outro' },
   ],
   parcialmente_procedente: [
-    { value: 'condenacao_afastada', label: 'Condenação integralmente afastada (sem obrigação remanescente)' },
-    { value: 'condenacao_reduzida', label: 'Condenação reduzida / apenas parte dos pedidos afastada' },
-    { value: 'condenacao_mantida', label: 'Condenação mantida / recurso improvido' },
-    { value: 'condenacao_ampliada', label: 'Condenação ampliada' },
-    { value: 'sentenca_desconstituida', label: 'Sentença anulada ou desconstituída' },
-    { value: 'resultado_indeterminado', label: 'Não foi possível identificar o efeito do acórdão' },
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'condenacao_mantida', label: 'Manutenção da condenação' },
+    { value: 'condenacao_afastada', label: 'Convertida para improcedência' },
+    { value: 'outro', label: 'Outro' },
   ],
   improcedente: [
-    { value: 'sem_condenacao_mantida', label: 'Mantida a improcedência (sem condenação do banco)' },
-    { value: 'condenacao_imposta', label: 'Reformada, com condenação do banco' },
-    { value: 'retorno_origem', label: 'Determinado retorno/prosseguimento, sem julgamento definitivo' },
-    { value: 'sentenca_desconstituida', label: 'Sentença anulada ou desconstituída' },
-    { value: 'resultado_indeterminado', label: 'Não foi possível identificar o efeito do acórdão' },
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'sem_condenacao_mantida', label: 'Manutenção da improcedência' },
+    { value: 'condenacao_imposta', label: 'Convertida para procedência' },
+    { value: 'outro', label: 'Outro' },
   ],
   extincao: [
-    { value: 'sem_condenacao_mantida', label: 'Extinção mantida (sem condenação do banco)' },
-    { value: 'condenacao_imposta', label: 'Reformada, com condenação do banco' },
-    { value: 'retorno_origem', label: 'Determinado prosseguimento da ação, sem julgamento do mérito' },
-    { value: 'sentenca_desconstituida', label: 'Sentença anulada ou desconstituída' },
-    { value: 'resultado_indeterminado', label: 'Não foi possível identificar o efeito do acórdão' },
+    { value: 'sentenca_desconstituida', label: 'Sentença anulada' },
+    { value: 'sem_condenacao_mantida', label: 'Manutenção da extinção' },
+    { value: 'condenacao_imposta', label: 'Convertida para procedência' },
+    { value: 'outro', label: 'Outro' },
   ],
 };
 
@@ -167,6 +161,7 @@ export function ClosingAnalysisFlow({
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
   const [appealDecided, setAppealDecided] = useQaField<YesNo>(draftKey, 'closing.appealDecided', null);
   const [appealResult, setAppealResult] = useQaField<AppealResult | null>(draftKey, 'closing.appealResult', null);
+  const [appealOtherDescription, setAppealOtherDescription] = useQaField(draftKey, 'closing.appealOtherDescription', '');
   const [appellant, setAppellant] = useQaField<Appellant | null>(draftKey, 'closing.appellant', null);
   const [deadlineOpen, setDeadlineOpen] = useQaField<YesNo>(draftKey, 'closing.deadlineOpen', null);
   const [deadlineDate, setDeadlineDate] = useQaField(draftKey, 'closing.deadlineDate', '');
@@ -187,17 +182,21 @@ export function ClosingAnalysisFlow({
     setTransitConfirmed(null); setTransitDate(''); clearAfterTransit();
   };
   const clearAppeal = () => {
-    setAppealDecided(null); setAppealResult(null); setAppellant(null);
+    setAppealDecided(null); setAppealResult(null); setAppealOtherDescription(''); setAppellant(null);
     setDeadlineOpen(null); setDeadlineDate(''); clearTransit();
   };
   // O workspace remonta o fluxo por processo; o rascunho é restaurado em useQaField.
 
   const appealPending = hadAppeal === 'sim' && appealDecided === 'nao';
-  // Rascunhos de versões anteriores podem conter "provido": exigimos nova seleção.
+  // Rascunhos com opções antigas devem exigir nova escolha.
   const appealResultValid = Boolean(sentence && appealResult
     && APPEAL_OPTIONS[sentence].some(option => option.value === appealResult));
+  const otherDescriptionValid = appealOtherDescription.trim().length >= 6
+    && appealOtherDescription.trim().length <= 500;
   const appealJudged = hadAppeal === 'sim'
-    && appellant !== null && appealDecided === 'sim' && appealResultValid;
+    && appellant !== null && appealDecided === 'sim' && appealResultValid
+    && (appealResult !== 'outro' || otherDescriptionValid);
+  const appealOther = appealJudged && appealResult === 'outro';
   const noAppealReady = hadAppeal === 'nao' && deadlineOpen === 'nao';
   const deadlineAge = deadlineDate ? daysElapsed(deadlineDate) : null;
   const transitAge = transitDate ? daysElapsed(transitDate) : null;
@@ -210,13 +209,11 @@ export function ClosingAnalysisFlow({
   } else if (sentence && appealJudged) {
     if (appealResult === 'sentenca_desconstituida') {
       finalMerit = null;
-    } else if (appealResult === 'resultado_indeterminado' || appealResult === 'retorno_origem') {
-      finalMerit = 'indeterminado';
+    } else if (appealResult === 'outro') {
+      finalMerit = 'indeterminado'; // Resultado ainda não mapeado: revisão humana.
     } else if (appealResult === 'condenacao_afastada' || appealResult === 'sem_condenacao_mantida') {
       finalMerit = 'vitoria';
     } else {
-      // Redução de dano moral, retirada de um único pedido ou condenação
-      // mantida/ampliada ainda representam derrota no mérito para o banco.
       finalMerit = 'derrota';
     }
   }
@@ -252,7 +249,9 @@ export function ClosingAnalysisFlow({
     : outcome === 'inapto_prazo_recursal' ? afterDays(deadlineDate, 1) : null;
 
   const canAnswerTransit = finalMerit !== null && finalMerit !== 'indeterminado';
-  const confirmationText = outcome === 'apto_derrota_voluntaria'
+  const confirmationText = appealOther
+    ? 'O resultado informado em Outro será encaminhado para revisão e mapeamento, sem encerramento automático. Confirma o registro?'
+    : outcome === 'apto_derrota_voluntaria'
     ? 'Identificamos que esse processo pode ser encerrado como Derrota Voluntária. Você concorda com essa informação?'
     : outcome === 'apto_derrota'
       ? 'Identificamos que esse processo pode ser encerrado como Derrota. Você concorda com essa informação?'
@@ -264,7 +263,7 @@ export function ClosingAnalysisFlow({
             OUTCOME_LABELS[outcome].replace(/^Inapto(?: temporariamente)?\s*[—–]\s*/i, '') +
             '. Você concorda com essa informação?' : null;
   // Qualquer alteração nas respostas anteriores exige uma nova concordância.
-  const reviewSignature = JSON.stringify([sentence, hadAppeal, appellant, appealDecided, appealResult,
+  const reviewSignature = JSON.stringify([sentence, hadAppeal, appellant, appealDecided, appealResult, appealOtherDescription,
     deadlineOpen, deadlineDate, transitConfirmed, transitDate, costsPaid, executionRequested, fullPayment]);
   const lastReviewSignature = useRef(reviewSignature);
   useEffect(() => {
@@ -279,20 +278,18 @@ export function ClosingAnalysisFlow({
     improcedente: 'SENTENÇA IMPROCEDENTE', extincao: 'SENTENÇA DE EXTINÇÃO',
   };
   const appealDescription: Record<AppealResult, string> = {
-    condenacao_afastada: 'ACÓRDÃO AFASTOU INTEGRALMENTE A CONDENAÇÃO',
-    condenacao_reduzida: 'ACÓRDÃO REDUZIU A CONDENAÇÃO, MANTENDO OBRIGAÇÃO DO BANCO',
+    sentenca_desconstituida: 'SENTENÇA ANULADA',
     condenacao_mantida: 'ACÓRDÃO MANTEVE A CONDENAÇÃO',
-    condenacao_ampliada: 'ACÓRDÃO AMPLIOU A CONDENAÇÃO',
+    condenacao_afastada: 'ACÓRDÃO CONVERTEU A SENTENÇA EM IMPROCEDÊNCIA',
     sem_condenacao_mantida: 'ACÓRDÃO MANTEVE A AUSÊNCIA DE CONDENAÇÃO',
-    condenacao_imposta: 'ACÓRDÃO IMPÔS CONDENAÇÃO AO BANCO',
-    sentenca_desconstituida: 'SENTENÇA DESCONSTITUÍDA',
-    retorno_origem: 'ACÓRDÃO DETERMINOU PROSSEGUIMENTO SEM DECISÃO FINAL',
-    resultado_indeterminado: 'RESULTADO DO ACÓRDÃO NÃO IDENTIFICADO',
+    condenacao_imposta: 'ACÓRDÃO CONVERTEU A SENTENÇA EM PROCEDÊNCIA',
+    outro: 'ACÓRDÃO COM RESULTADO AINDA NÃO MAPEADO',
   };
   // A descrição utiliza somente respostas humanas. Indícios não entram no texto.
   const proposedDescription = [
     sentence ? sentenceDescription[sentence] : '',
-    hadAppeal === 'sim' && appealDecided === 'sim' && appealResult ? appealDescription[appealResult] : '',
+    hadAppeal === 'sim' && appealDecided === 'sim' && appealResultValid && appealResult
+      ? appealDescription[appealResult] + (appealResult === 'outro' ? ': ' + appealOtherDescription.trim() : '') : '',
     transitConfirmed === 'sim' ? 'TRÂNSITO EM JULGADO' + (transitDate ? ' EM ' + formatDate(transitDate) : ' CONFIRMADO') : '',
     costsPaid === 'sim' ? 'CUSTAS FINAIS PAGAS' : costsPaid === 'nao' ? 'CUSTAS FINAIS NÃO PAGAS' : '',
     executionRequested === 'nao' ? 'SEM PEDIDO DE EXECUÇÃO' : executionRequested === 'sim' ? 'COM PEDIDO DE EXECUÇÃO' : '',
@@ -302,21 +299,23 @@ export function ClosingAnalysisFlow({
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || hadAppeal === null || classificationAgreed === null) {
+    if (!outcome || !sentence || hadAppeal === null || classificationAgreed === null
+      || (appealOther && (classificationAgreed !== 'sim' || !otherDescriptionValid))) {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
       return;
     }
-    if (classificationAgreed === 'nao' && !validReason) {
+    if (!appealOther && classificationAgreed === 'nao' && !validReason) {
       setLocalError('Explique a divergência (entre 6 e 2.000 caracteres) antes de enviar para revisão.');
       return;
     }
     setLocalError(null);
     await onSubmit({
-      workflow_version: 4,
+      workflow_version: 5,
       first_instance_merit: sentence,
       had_appeal: hadAppeal === 'sim',
       appeal_decided: hadAppeal === 'sim' ? appealDecided === 'sim' : null,
       appeal_result: hadAppeal === 'sim' && appealDecided === 'sim' ? appealResult : null,
+      appeal_other_description: appealOther ? appealOtherDescription.trim() : null,
       appellant: hadAppeal === 'sim' ? appellant : null,
       appeal_deadline_open: hadAppeal === 'nao' ? deadlineOpen === 'sim' : null,
       appeal_deadline_date: hadAppeal === 'nao' && deadlineOpen === 'sim' ? deadlineDate : null,
@@ -330,8 +329,9 @@ export function ClosingAnalysisFlow({
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
         && costsPaid === 'sim' && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
-      classification_agreed: classificationAgreed === 'sim',
-      classification_disagreement_reason: classificationAgreed === 'nao' ? disagreementReason.trim() : null,
+      classification_agreed: appealOther ? false : classificationAgreed === 'sim',
+      classification_disagreement_reason: appealOther ? 'Acórdão — Outro: ' + appealOtherDescription.trim()
+        : classificationAgreed === 'nao' ? disagreementReason.trim() : null,
     });
   };
 
@@ -340,7 +340,7 @@ export function ClosingAnalysisFlow({
     'Cadastro de Acórdão': appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
     'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid === 'sim' && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
-    'Cadastro de Encerramento': classificationAgreed === 'sim' || (classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
+    'Cadastro de Encerramento': classificationAgreed === 'sim' || (!appealOther && classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
   }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
@@ -360,7 +360,8 @@ export function ClosingAnalysisFlow({
       <OptionGroup name="closing-appellant" value={appellant} disabled={busy}
         options={[{ value: 'banco', label: 'Banco' }, { value: 'autora', label: 'Parte autora' }]}
         onChange={value => {
-          setAppellant(value as Appellant); setAppealDecided(null); setAppealResult(null); clearTransit();
+          setAppellant(value as Appellant); setAppealDecided(null); setAppealResult(null);
+          setAppealOtherDescription(''); clearTransit();
         }} />
     </TaskQuestion> : null}
 
@@ -372,10 +373,18 @@ export function ClosingAnalysisFlow({
 
     {hadAppeal === 'sim' && appellant !== null && appealDecided === 'sim' && sentence
       ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão"
-          question="Qual foi o efeito do acórdão sobre a condenação do banco?">
+          question="Qual foi o resultado do acórdão?">
         <OptionGroup name="closing-appeal-result" value={appealResultValid ? appealResult : null} disabled={busy}
           options={APPEAL_OPTIONS[sentence]}
-          onChange={value => { setAppealResult(value as AppealResult); clearTransit(); }} />
+          onChange={value => { setAppealResult(value as AppealResult);
+            if (value !== appealResult) setAppealOtherDescription('');
+            clearTransit(); }} />
+        {appealResult === 'outro' ? <label className="closing-disagreement-field">
+          <span>Descreva o resultado do acórdão</span>
+          <textarea value={appealOtherDescription} required minLength={6} maxLength={500}
+            disabled={busy} placeholder="Ex.: recurso parcialmente provido, com redução dos danos morais."
+            onChange={event => { setAppealOtherDescription(event.target.value); setLocalError(null); }} />
+        </label> : null}
       </TaskQuestion> : null}
 
     {hadAppeal === 'nao' ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Acórdão" question="Há prazo para recorrer?">
@@ -440,7 +449,7 @@ export function ClosingAnalysisFlow({
       </div>
       <BinaryChoice name="closing-classification-agreement" value={classificationAgreed} disabled={busy}
         onChange={value => { setClassificationAgreed(value); setLocalError(null); if (value === 'sim') setDisagreementReason(''); }} />
-      {classificationAgreed === 'nao' ? <label className="closing-disagreement-field">
+      {classificationAgreed === 'nao' && !appealOther ? <label className="closing-disagreement-field">
         <span>Por que você discorda da classificação ou da descrição?</span>
         <textarea value={disagreementReason} required disabled={busy} maxLength={2000}
           placeholder="Descreva a divergência encontrada no processo."
@@ -451,7 +460,8 @@ export function ClosingAnalysisFlow({
       </p> : null}
     </TaskQuestion> : null}
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome && (classificationAgreed === 'sim' || (classificationAgreed === 'nao' && validReason)))} onSkip={() => void onSkip()}
+    <TaskActionBar busy={busy} ready={Boolean(outcome && (classificationAgreed === 'sim'
+      || (!appealOther && classificationAgreed === 'nao' && validReason)))} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
 }
