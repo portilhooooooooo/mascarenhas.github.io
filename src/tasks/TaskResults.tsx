@@ -178,7 +178,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
       </div>
     </div>
-    {demoMode && <div className="task-results-notice" role="status"><strong>Dados de demonstração.</strong> Números fictícios de Gabriel Portilho e Géssica Avalos, exibidos apenas no desenvolvimento. Não alteram a base real nem os indicadores oficiais.</div>}
+    {demoMode && <div className="task-results-notice" role="status"><strong>Dados de demonstração.</strong> Números fictícios de Analista 1, Analista 2 e Analista 3, exibidos apenas no desenvolvimento. Não alteram a base real nem os indicadores oficiais.</div>}
     <div className="task-results-filters">
       <SelectFilter title="Período de conclusão" value={filters.period} onChange={value => updateFilter('period', value)} options={[
         { value: 'today', label: 'Hoje' }, { value: '7', label: 'Últimos 7 dias' }, { value: '30', label: 'Últimos 30 dias' },
