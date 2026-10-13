@@ -1,3 +1,4 @@
+.gestao-metabase-page .ranking-page{max-width:none;padding:10px 0 24px}
 .ranking-page{width:100%;max-width:1500px;margin:0 auto;padding:28px 30px 38px;color:var(--text-primary,#182234);font-family:Inter,system-ui,sans-serif}
 .ranking-heading{display:flex;gap:20px;justify-content:space-between;align-items:center;margin-bottom:22px}
 .ranking-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.14em;color:#747f8d;margin-bottom:7px}
