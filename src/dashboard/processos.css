@@ -114,3 +114,30 @@
 .processos-last-movement time{font:inherit}
 .processos-last-movement-title{font-weight:560;color:var(--mba-text)}
 .processos-sources-differ{margin:-6px 0 18px;font-size:11.5px;line-height:1.55;color:var(--mba-text-2)}
+
+/* Acabamento de bordas: preservar estrutura, filtros, colunas e densidade de Processos. */
+.processos-page .processos-table-wrap {
+  border: 1px solid var(--mba-border-strong);
+  border-radius: 10px;
+  box-shadow: none;
+}
+.processos-page .processos-table-wrap thead th { border-bottom-color: var(--mba-border-strong); }
+.processos-page .processos-search input,
+.processos-page .processos-filter-trigger {
+  border: 1px solid var(--mba-border-strong);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.processos-page .processos-search input:hover,
+.processos-page .processos-filter-trigger:hover { border-color: var(--mba-text-2); }
+.processos-page .processos-filter-trigger.is-open,
+.processos-page .processos-filter-trigger:focus-visible {
+  border-color: var(--mba-accent, #b85d37);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--mba-accent, #b85d37) 15%, transparent);
+}
+.processos-detail .processos-history,
+.processos-detail .processos-tasks {
+  border: 1px solid var(--mba-border-strong);
+  border-radius: 10px;
+  box-shadow: none;
+}
