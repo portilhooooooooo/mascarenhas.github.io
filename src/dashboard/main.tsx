@@ -6,7 +6,6 @@ import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
-import { RankingPage } from '../ranking/RankingPage';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
 import './shell.css';
@@ -148,7 +147,7 @@ function setTopModuleActive(page: string) {
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
   if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
   const label = document.getElementById('mba-active-module');
-  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados', ranking: 'Ranking' };
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
   if (label) label.textContent = titles[page] || 'Workspace';
 }
 
@@ -174,7 +173,6 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
-  if (activePage.id === 'ranking') setTopModuleActive('ranking');
   if (activePage.id === 'usuarios') {
     document.querySelectorAll('.main-nav .nav-item').forEach(item => item.classList.remove('active'));
     const label = document.getElementById('mba-active-module');
@@ -198,14 +196,13 @@ function configureApplicationShell() {
 
   // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
   // A página /controladoria permanece montável para preservar links legados.
-  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard', 'ranking']);
+  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
   const labels: Record<string, string> = {
     processos: 'Processos',
     tarefas: 'Tarefas',
     acordos: 'Operação',
     automacoes: 'Automações',
     dashboard: 'Resultados',
-    ranking: 'Ranking',
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
@@ -242,7 +239,6 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
-    nav.querySelector<HTMLElement>('[data-page="ranking"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
@@ -447,38 +443,6 @@ mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
 configureUsersLifecycle();
-
-// Ranking é independente de Encerramentos; não consome dados inferidos de DataJud.
-let rankingRoot: Root | null = null;
-function unmountRankingPage() {
-  rankingRoot?.unmount();
-  rankingRoot = null;
-  document.getElementById('ranking')?.replaceChildren();
-}
-function syncRankingPage() {
-  const section = document.getElementById('ranking');
-  if (!section?.classList.contains('active') || !mayOpen('ranking')) {
-    unmountRankingPage();
-    return;
-  }
-  if (!rankingRoot) {
-    rankingRoot = createRoot(section);
-    rankingRoot.render(<StrictMode><RankingPage /></StrictMode>);
-  }
-}
-const rankingHost = document.getElementById('ranking');
-if (rankingHost) {
-  new MutationObserver(syncRankingPage).observe(rankingHost, { attributes: true, attributeFilter: ['class'] });
-  for (const event of ['mba:authenticated', 'mba:profile-ready', 'mba:module-visibility-updated'])
-    window.addEventListener(event, syncRankingPage);
-  window.addEventListener('mba:portfolio-changed', () => {
-    unmountRankingPage();
-    syncRankingPage();
-  });
-  for (const event of ['mba:session-expired', 'mba:logged-out'])
-    window.addEventListener(event, unmountRankingPage);
-  syncRankingPage();
-}
 
 // Drop the previous root on every portfolio transition; no stale client data persists.
 let processosRoot: Root | null = null;
