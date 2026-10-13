@@ -174,7 +174,7 @@ export function VisaoGeralPage() {
 
   return <section className="overview-page" aria-label="Entradas da carteira processual">
     <div className="overview-heading">
-      <div><h1>Entradas</h1><p>Indicadores e evolução da carteira processual</p></div>
+      <div><h1>Entradas</h1><p>{outdated?'Indicadores históricos da carteira processual':'Indicadores e evolução da carteira processual'}</p></div>
       <div className="overview-heading-actions">
         <span className="overview-portfolio">{portfolioLabel(portfolio)}</span>
         <button type="button" className="overview-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCw size={15} className={pending?'overview-spin':''}/> Atualizar</button>
@@ -185,7 +185,7 @@ export function VisaoGeralPage() {
       <Filter title="Situação" value={situation} onChange={setSituation} choices={[{value:'',text:'Todas'},{value:'active',text:'Em andamento'},{value:'closed',text:'Encerrados'},{value:'unknown',text:'Não informada'}]}/>
       <Filter title="UF" value={uf} onChange={setUf} choices={choices(allFilters?.states || [])}/>
       <Filter title="Produto" value={product} onChange={setProduct} choices={choices(allFilters?.products || [])}/>
-      <Filter title="Atenção" value={attention} onChange={setAttention} choices={[{value:'',text:'Todos'},{value:'aging',text:'Aging crítico (+180 dias)'},{value:'divergent',text:'Divergência CPJ × Benner'},{value:'archive',text:'Aptos a arquivamento'}]}/>
+      <Filter title="Atenção" value={attention} onChange={setAttention} choices={[{value:'',text:'Todos'},...(!outdated ? [{value:'aging',text:'Aging crítico (+180 dias)'}] : []),{value:'divergent',text:'Divergência CPJ × Benner'},{value:'archive',text:'Aptos a arquivamento'}]}/>
       <Filter title="Encerramento" value={resolution} onChange={setResolution} choices={choices(allFilters?.resolutions || [])}/>
     </div>
     {error && <div className="overview-error" role="alert">{shown?'Falha ao atualizar. Mantidos os últimos dados carregados. ':''}{error}<button type="button" onClick={()=>void refresh()}>Tentar novamente</button></div>}
