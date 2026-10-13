@@ -471,7 +471,11 @@ if (rankingHost) {
   new MutationObserver(syncRankingPage).observe(rankingHost, { attributes: true, attributeFilter: ['class'] });
   for (const event of ['mba:authenticated', 'mba:profile-ready', 'mba:module-visibility-updated'])
     window.addEventListener(event, syncRankingPage);
-  for (const event of ['mba:portfolio-changed', 'mba:session-expired', 'mba:logged-out'])
+  window.addEventListener('mba:portfolio-changed', () => {
+    unmountRankingPage();
+    syncRankingPage();
+  });
+  for (const event of ['mba:session-expired', 'mba:logged-out'])
     window.addEventListener(event, unmountRankingPage);
   syncRankingPage();
 }
