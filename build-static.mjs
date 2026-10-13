@@ -50,19 +50,10 @@ for (const file of files) {
   await cp(file, `${dist}/${file}`);
 }
 
-/* Mídia institucional opcional: sem o vídeo o login usa fallback local. */
-let hasBrandVideo = false;
-try {
-  await cp('assets/mascarenhas-login.mp4', `${dist}/assets/mascarenhas-login.mp4`);
-  hasBrandVideo = true;
-} catch (error) {
-  if (error?.code !== 'ENOENT') throw error;
-}
-try {
-  await cp('assets/mascarenhas-login-poster.jpg', `${dist}/assets/mascarenhas-login-poster.jpg`);
-} catch (error) {
-  if (error?.code !== 'ENOENT') throw error;
-}
+// O vídeo institucional da branch de testes é obrigatório na tela de login.
+// Falhe no build se algum dos arquivos desaparecer, em vez de mostrar um símbolo genérico.
+await cp('assets/mascarenhas-login.mp4', `${dist}/assets/mascarenhas-login.mp4`);
+await cp('assets/mascarenhas-login-poster.jpg', `${dist}/assets/mascarenhas-login-poster.jpg`);
 
 await cp(
   '.build/react-dashboard',
@@ -89,7 +80,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
   .replace(/<link[^>]*rel="icon"[^>]*>/g, `<link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-white.svg?v=${buildVersion}">`)
   .replace(/(<script src="\/?app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
-  .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace('</body>', `  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
   .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
   .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
