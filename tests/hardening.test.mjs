@@ -66,7 +66,7 @@ assert.match(login, /useLayoutEffect/, 'React login must claim the surface befor
 assert.match(login, /id="login-display-email"/, 'corporate login must preserve the decorative e-mail field');
 assert.match(login, /'Entrar'/, 'corporate login must preserve the primary Microsoft access action');
 assert.doesNotMatch(login, /Entrar com Microsoft|Entrar com Google|Continuar via Microsoft/, 'login has a single Entrar action using the existing SSO');
-assert.match(login, /favicon\.svg\?v=20260917-exact-symbol/, 'login must use the same Mascarenhas symbol as the app shell');
+assert.match(login, /favicon-white\.svg\?v=20261013-original-mark/, 'login must use the original Mascarenhas symbol in white');
 assert.doesNotMatch(login, /id="microsoft-login"/, 'React buttons must not expose a legacy DOM control point');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');
 
