@@ -18,6 +18,7 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   processos: 'processos',
   dashboard: 'analytics',
+  ranking: 'ranking',
   acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
   automacoes: 'automacoes',
