@@ -1,5 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { SelectMenu } from '../dashboard/SelectMenu';
+import { OptionGroup as QaOptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
@@ -204,7 +205,7 @@ type MotivoCatalog = {
 
 export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendererProps) {
   const [codigo, setCodigo] = useState('');
-  const [natureza, setNatureza] = useState<'P' | 'V'>('P');
+  const [natureza, setNatureza] = useState<'P' | 'V' | null>(null);
   const [catalog, setCatalog] = useState<MotivoCatalog | null>(null);
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -213,12 +214,11 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
   const completedRef = useRef('');
   const requestPath = '/api/task-processes/' + process.id;
   const waiting = job?.status === 'NA_FILA' || job?.status === 'PROCESSANDO';
-  const initialNatureza = process.source_metadata?.closing_type === 'DERROTA_VOLUNTARIA' ? 'V' : 'P';
 
   useEffect(() => {
     let active = true;
     completedRef.current = '';
-    setCodigo(''); setNatureza(initialNatureza);
+    setCodigo(''); setNatureza(null);
     setJob(null); setCatalog(null); setError(''); setChecking(true);
     const catalogRequest = api('/api/motivo-derrota/catalog').then((result: MotivoCatalog) => {
       if (!active) return;
@@ -248,12 +248,12 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
       .finally(() => { if (active) setChecking(false); });
     const interval = window.setInterval(() => { void refresh(); }, 7000);
     return () => { active = false; window.clearInterval(interval); };
-  }, [api, process.id, initialNatureza]);
+  }, [api, process.id]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const id = Number(codigo);
-    if (busy || checking || job || !catalog?.motivos.some(item => item.codigo === id)) return;
+    if (busy || checking || job || !catalog?.motivos.some(item => item.codigo === id) || (natureza !== 'P' && natureza !== 'V')) return;
     setBusy(true); setError('');
     try {
       const saved = await api(requestPath + '/motivo-derrota-submit', {
@@ -275,50 +275,59 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
     : job?.status === 'ENVIADO' ? (job.ja_existente ? 'Andamento já existente no Benner' : 'Cadastro confirmado no Benner')
     : '';
   const motivoSelecionado = catalog?.motivos.find(item => item.codigo === Number(codigo))?.rotulo;
-  return <form className="task-form-content motivo-derrota-form" onSubmit={submit}>
-    <div className="motivo-derrota-heading">
-      <span className="motivo-derrota-eyebrow">Cadastro no Benner</span>
-      <h3>Motivo da derrota</h3>
-      <p>Preencha os campos oficiais. A tarefa só será concluída após confirmação do andamento pelo worker.</p>
-    </div>
-    <section className="motivo-derrota-card" aria-label="Dados do andamento">
-      <div className="motivo-derrota-card-heading">
-        <span className="motivo-derrota-step" aria-hidden="true">01</span>
-        <div><strong>Dados do andamento</strong><p>Selecione o motivo e a natureza conforme o catálogo do Benner.</p></div>
+  const motivoValido = Boolean(codigo && catalog?.motivos.some(item => item.codigo === Number(codigo)));
+  const naturezaValida = natureza === 'P' || natureza === 'V';
+
+  if (job) {
+    return <div className="motivo-derrota-feedback" role="status" aria-live="polite">
+      <div className="qa-progress-header">
+        <strong>Motivo da derrota · Envio ao Benner</strong>
+        <span className="qa-unsaved-state">{job.status === 'ENVIADO' ? 'Confirmado' : job.status === 'ERRO' ? 'Revisão necessária' : 'Em andamento'}</span>
       </div>
-      <div className="motivo-derrota-field">
+      <div className="task-form-content qa-form-content">
+        <section className="motivo-derrota-feedback-body" aria-label="Situação do envio">
+          <h3>{currentStatus}</h3>
+          <p>{waiting ? 'A solicitação foi registrada. Aguarde a confirmação da automação no Benner.'
+            : job.status === 'ERRO' ? 'O andamento não foi confirmado. Verifique o histórico do Benner antes de qualquer reenvio.'
+            : job.ja_existente ? 'Já existia um andamento Motivo derrota no Benner. Nenhum registro foi duplicado.'
+            : 'O andamento foi confirmado no Benner. A tarefa será retirada da fila.'}</p>
+          <dl>
+            <div><dt>Motivo selecionado</dt><dd>{motivoSelecionado || (job.motivo_codigo ? 'Código ' + job.motivo_codigo : '—')}</dd></div>
+            <div><dt>Natureza</dt><dd>{natureza === 'V' ? 'Voluntário' : natureza === 'P' ? 'Processual' : '—'}</dd></div>
+          </dl>
+          {job.status === 'ERRO' && job.erro ? <p className="task-renderer-error" role="alert">{job.erro}</p> : null}
+        </section>
+      </div>
+    </div>;
+  }
+
+  return <TaskForm className="motivo-derrota-form" progressive
+    stages={['Motivo da derrota', 'Natureza da derrota']} onSubmit={submit}>
+    <TaskQuestion number="01" question="Qual o motivo da derrota?">
+      <div className="motivo-derrota-field" data-qa-answered={motivoValido ? 'true' : 'false'}>
         <SelectMenu label="Motivo da derrota" searchable value={codigo}
-          searchPlaceholder="Buscar motivo da derrota..."
-          disabled={busy || checking || Boolean(job)}
-          options={[{ value: '', label: 'Selecione um motivo' },
+          searchPlaceholder="Buscar entre os motivos disponíveis no Benner..."
+          disabled={busy || checking}
+          options={[{ value: '', label: 'Selecione uma opção do Benner' },
             ...(catalog?.motivos || []).map(item => ({ value: String(item.codigo), label: item.rotulo }))]}
           onChange={setCodigo}/>
+        <p className="motivo-derrota-helper">Selecione a classificação aplicável ao processo. O Benner utiliza o código oficial dessa opção.</p>
+        {checking ? <p role="status" className="motivo-derrota-helper">Consultando catálogo do Benner…</p> : null}
       </div>
-      <fieldset className="motivo-derrota-choice" disabled={busy || checking || Boolean(job)}>
-        <legend>Natureza da derrota</legend>
-        <label><input type="radio" name={'natureza-' + process.id}
-          checked={natureza === 'P'} onChange={() => setNatureza('P')}/> Processual</label>
-        <label><input type="radio" name={'natureza-' + process.id}
-          checked={natureza === 'V'} onChange={() => setNatureza('V')}/> Voluntário</label>
-      </fieldset>
-      {motivoSelecionado && !job ? <p className="motivo-derrota-helper">Motivo Benner #{codigo}: {motivoSelecionado}</p> : null}
-    </section>
-    {job ? <div className="motivo-derrota-queue" role="status">
-      <strong>{currentStatus}</strong>
-      <span>{waiting ? 'O envio está na fila. Não reenvie enquanto a automação processa.'
-        : job.status === 'ERRO' ? 'Nenhum novo envio será feito automaticamente; o histórico exige conferência antes de qualquer tentativa.'
-        : job.ja_existente ? 'O worker identificou um andamento anterior e não criou outro.'
-        : 'O andamento foi confirmado. A tarefa será retirada da fila.'}</span>
-      {job.status === 'ERRO' && job.erro ? <span>{job.erro}</span> : null}
-    </div> : null}
-    {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
-    <footer className="motivo-derrota-actions">
-      <span className="motivo-derrota-action-note">O cadastro é confirmado no Benner antes de concluir a tarefa.</span>
-      {!job && !checking ? <button type="submit" className="primary-button"
-        disabled={busy || !catalog?.motivos.some(item => item.codigo === Number(codigo))}>
-        {busy ? 'Enviando à fila…' : 'Cadastrar no Benner'}
-      </button> : null}
-      {checking ? <p role="status">Consultando catálogo e solicitações existentes…</p> : null}
-    </footer>
-  </form>;
+    </TaskQuestion>
+    <TaskQuestion number="02" question="Qual a natureza da derrota?">
+      <QaOptionGroup name={'natureza-' + process.id} value={natureza}
+        disabled={busy || checking}
+        options={(catalog?.naturezas || []).map(item => ({ value: item.codigo, label: item.rotulo }))}
+        onChange={value => setNatureza(value as 'P' | 'V')}/>
+      <div className="motivo-derrota-review">
+        <strong>Motivo selecionado</strong>
+        <span>{motivoSelecionado || 'Selecione o motivo na etapa anterior'}</span>
+        <small>O registro será enviado ao Benner. A conclusão da tarefa depende da confirmação do worker.</small>
+      </div>
+    </TaskQuestion>
+    {error ? <p className="task-renderer-error motivo-derrota-error" role="alert">{error}</p> : null}
+    <TaskActionBar busy={busy || checking} ready={motivoValido && naturezaValida}
+      submitLabel="Cadastrar no Benner" busyLabel="Enviando à fila…"/>
+  </TaskForm>;
 }
