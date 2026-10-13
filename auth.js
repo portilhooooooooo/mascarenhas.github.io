@@ -116,12 +116,12 @@
     document.querySelectorAll('[data-permission]').forEach(element => {
       const pageId = element.dataset.page || (element.classList.contains('page') ? element.id : '');
       element.hidden = pageId
-        ? (!canAccess(pageId) || (element.closest('.main-nav') && !['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard'].includes(pageId)))
+        ? (!canAccess(pageId) || (element.closest('.main-nav') && !['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard', 'banco-dados'].includes(pageId)))
         : user.permissions[element.dataset.permission] !== true;
     });
     // The static HTML contains legacy pages required by old deep links. They are
     // not navigation items; never unhide those buttons while the React shell boots.
-    const primaryNav = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
+    const primaryNav = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard', 'banco-dados']);
     document.querySelectorAll('.main-nav .nav-item').forEach(button => {
       const page = button.dataset.page || '';
       if (!primaryNav.has(page) || !canAccess(page)) {
