@@ -59,6 +59,7 @@ export const TASK_TYPE_LABELS: Record<string, string> = {
   acordos: 'Saneamento de Acordos',
   // Fluxos agrupam várias etapas operacionais em uma única análise.
   encerramento: 'Fluxo de Encerramento',
+  motivo_derrota: 'Cadastro de Motivo Derrota',
   bloqueio: 'Validação de Bloqueio',
   citacao: 'Validação de Citação',
   protocolo: 'Protocolo',
@@ -129,7 +130,7 @@ export function canManageTasks(user: MbaUser | null) {
 export function taskAssignedToUser(task: Task, user: MbaUser | null, manager: boolean) {
   if (!user?.id) return false;
   if (user.is_master_admin || user.permissions?.['tasks.manage']) return true;
-  if (Array.isArray(user.allowed_modules) && user.allowed_modules.length && !user.allowed_modules.includes(task.type)) return false;
+  if (Array.isArray(user.allowed_modules) && user.allowed_modules.length && !user.allowed_modules.includes(task.type === 'motivo_derrota' ? 'encerramento' : task.type)) return false;
 
   // /api/tasks already authorizes the parent. A task can be returned solely
   // because one of its processes is assigned to this user; filtering by the
