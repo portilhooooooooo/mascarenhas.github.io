@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
@@ -199,7 +199,7 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
   useEffect(() => {
     setCadastrado(null); setObservacao(''); setError(''); setNotice('');
   }, [process.id]);
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (cadastrado === null || busy) return;
     setBusy(true);
