@@ -1,125 +1,211 @@
-import { useEffect, useState } from 'react';
-import {
-  AGING_BANDS, AGREEMENT_BANDS, BASE_CRITERIA, BONUSES, COST_BANDS,
-  PENALTIES, QUALITY_DIMENSIONS, WIN_BANDS, type RankingPortfolio,
-  type ScoringBand,
-} from './rules';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, Clock3, RefreshCw, Target, TrendingUp } from 'lucide-react';
+import { AGING_BANDS, BASE_CRITERIA, BONUSES, PENALTIES } from './rules';
 import './ranking.css';
 
-type Tab = 'criteria' | 'extras' | 'method';
+type Portfolio = 'agibank_mba' | 'agibank_enter';
+type Indicator = {
+  key: string; label: string; max: number; points: number | null;
+  actual: number | null; target: number | string; gap: number | null;
+  action: string; reason: string;
+};
+type Stock = { faixa: string; estoque_referencia: number; meta_indicativa: number; taxa_meta: number;
+  encerrados: number | null; faltam: number | null; nota: string };
+type Projection = {
+  edition: string; portfolio_id: Portfolio;
+  snapshot: {source: string; imported_at: string | null; filename?: string | null; stale: boolean;
+    eligible_closings: number; benner_history_closings: number; historical_count_is_partial: boolean};
+  projection: { final: number | null; partial: number | null; partial_max: number; missing_max: number;
+    reasons: string[]; note: string };
+  indicators: Indicator[]; stock: Stock[]; confidence: string; updated_at: string;
+};
 type RankingWindow = Window & typeof globalThis & {
-  MBA_API?: { getPortfolioId?: () => string | null | undefined };
+  MBA_API?: { getPortfolioId?: () => string | null; request?: <T>(path: string, options?: RequestInit) => Promise<T> };
+  MBA_AUTOMATION_API?: {request: <T>(path: string, options?: RequestInit) => Promise<T>};
 };
 
-function activePortfolio(): RankingPortfolio | null {
-  const id = String((window as RankingWindow).MBA_API?.getPortfolioId?.() || '').toLowerCase();
-  if (id === 'agibank_enter') return 'enter';
-  if (id === 'agibank_mba') return 'mba';
-  return null;
+const currentPortfolio = (): Portfolio | null => {
+  const id = (window as RankingWindow).MBA_API?.getPortfolioId?.();
+  return id === 'agibank_enter' || id === 'agibank_mba' ? id : null;
+};
+const pt = (number: number, fraction = 0) => number.toLocaleString('pt-BR', {minimumFractionDigits: fraction,maximumFractionDigits: fraction});
+const point = (number: number | null | undefined) => number == null ? '—' : pt(number, 1);
+const percentage = (number: number) => pt(number, 1) + '%';
+const money = (number: number) => 'R$ ' + pt(number, 2);
+const snapshotDate = (s?: string | null) => {
+  if (!s) return 'não identificada';
+  const d = new Date(s);
+  return Number.isNaN(d.valueOf()) ? 'não identificada' : d.toLocaleDateString('pt-BR');
+};
+const showActual = (indicator: Indicator) => {
+  if (indicator.actual == null) return '—';
+  return indicator.key === 'custo' ? money(indicator.actual) : percentage(indicator.actual);
+};
+const showTarget = (indicator: Indicator) => {
+  if (typeof indicator.target === 'string') return indicator.target;
+  return indicator.key === 'custo' ? '≤ ' + money(indicator.target) : '≥ ' + percentage(indicator.target);
+};
+const showGap = (indicator: Indicator) => {
+  if (indicator.gap == null) return 'Não calculável';
+  if (indicator.key === 'custo') return indicator.gap > 0 ? money(indicator.gap) + ' acima do alvo' : 'Meta máxima atingida';
+  if (indicator.key === 'vitorias' || indicator.key === 'acordos') {
+    return indicator.gap > 0 ? pt(indicator.gap) + ' novos encerramentos favoráveis' : 'Meta máxima atingida';
+  }
+  return '—';
+};
+
+function Metric({ title, value, caption, emphasize = false }: { title: string; value: string; caption: string; emphasize?: boolean }) {
+  return <article className={'ranking-kpi' + (emphasize ? ' ranking-kpi-main' : '')}>
+    <span>{title}</span><strong>{value}</strong><p>{caption}</p>
+  </article>;
 }
 
-function PointsTable({ rows, ariaLabel }: { rows: ScoringBand[]; ariaLabel: string }) {
-  return <table className="ranking-table" aria-label={ariaLabel}>
-    <thead><tr><th>Resultado / faixa</th><th>Pontos</th></tr></thead>
-    <tbody>{rows.map(row => <tr key={row.band}><td>{row.band}</td><td className="ranking-points">{row.points}</td></tr>)}</tbody>
-  </table>;
+function Status({ indicator }: {indicator: Indicator}) {
+  return indicator.points == null
+    ? <span className="ranking-state pending"><Clock3 size={13}/> Dados pendentes</span>
+    : indicator.points >= indicator.max
+      ? <span className="ranking-state success"><CheckCircle2 size={13}/> Meta máxima</span>
+      : <span className="ranking-state warning"><AlertCircle size={13}/> Abaixo da meta</span>;
 }
 
-function Criteria({ portfolio }: { portfolio: RankingPortfolio }) {
-  return <div className="ranking-criteria-layout">
-    <section className="ranking-panel">
-      <header><div><h2>Duração e encerramentos</h2><p>Máximo 2,4 pontos · três faixas avaliadas a cada mês</p></div><strong>24%</strong></header>
-      <table className="ranking-table">
-        <thead><tr><th>Faixa de duração</th><th>Meta sobre estoque</th><th>Por mês</th></tr></thead>
-        <tbody>{AGING_BANDS[portfolio].map(row =>
-          <tr key={row.duration}><td>{row.duration}</td><td>{row.monthlyTarget}</td><td className="ranking-points">{row.monthlyPoints}</td></tr>
+function Indicators({ data }: {data: Projection}) {
+  return <section className="ranking-section" aria-label="Pontuação e gaps por indicador">
+    <header><div><h2>Onde estamos perdendo pontos</h2><p>Resultado observado, referência do edital e ação necessária para recuperar a pontuação.</p></div></header>
+    <div className="ranking-table-scroll">
+      <table className="ranking-score-table">
+        <thead><tr><th>Indicador</th><th>Atual</th><th>Meta</th><th>Gap para a meta</th><th>Pontos</th><th>Situação</th></tr></thead>
+        <tbody>{data.indicators.map(indicator =>
+          <tr key={indicator.key}>
+            <td><strong>{indicator.label}</strong><span className="ranking-action">{indicator.points === null ? indicator.reason : indicator.action}</span></td>
+            <td>{showActual(indicator)}</td>
+            <td>{showTarget(indicator)}</td>
+            <td className="ranking-gap">{showGap(indicator)}</td>
+            <td className="ranking-num">{point(indicator.points)} <small>/ {pt(indicator.max, 1)}</small></td>
+            <td><Status indicator={indicator}/></td>
+          </tr>
         )}</tbody>
       </table>
-      <p className="ranking-panel-foot">A meta considera o estoque por faixa no último dia de cada mês. Não há compensação de metas entre meses.</p>
-    </section>
-    <section className="ranking-panel">
-      <header><div><h2>Custo médio</h2><p>Máximo 3,2 pontos · condenação global nos processos encerrados</p></div><strong>32%</strong></header>
-      <PointsTable rows={COST_BANDS[portfolio]} ariaLabel="Pontuação por custo médio" />
-    </section>
-    <section className="ranking-panel">
-      <header><div><h2>Vitórias</h2><p>Máximo 2,0 pontos · encerramentos sem ônus financeiro</p></div><strong>20%</strong></header>
-      <PointsTable rows={WIN_BANDS} ariaLabel="Pontuação por vitórias" />
-    </section>
-    <section className="ranking-panel">
-      <header><div><h2>Acordos</h2><p>Máximo 1,4 ponto · desfecho acordo entre todos os encerramentos</p></div><strong>14%</strong></header>
-      <PointsTable rows={AGREEMENT_BANDS} ariaLabel="Pontuação por acordos" />
-    </section>
-  </div>;
+    </div>
+  </section>;
 }
 
-function Extras() {
-  return <div className="ranking-criteria-layout">
-    <section className="ranking-panel">
-      <header><div><h2>Bônus</h2><p>Até +3,0 pontos sobre a nota-base</p></div><strong>+3,0</strong></header>
-      <div className="ranking-rule-list">{BONUSES.map(row =>
-        <article key={row.label}><div><strong>{row.label}</strong><p>{row.rule}</p></div><span className="ranking-positive">{row.points}</span></article>
-      )}</div>
-    </section>
-    <section className="ranking-panel">
-      <header><div><h2>Detratores</h2><p>Até −3,0 pontos sobre a nota-base</p></div><strong>−3,0</strong></header>
-      <div className="ranking-rule-list">{PENALTIES.map(row =>
-        <article key={row.label}><div><strong>{row.label}</strong><p>{row.rule}</p></div><span className="ranking-negative">{row.points}</span></article>
-      )}</div>
-    </section>
-  </div>;
+function StockSection({ data, portfolio }: {data: Projection; portfolio: Portfolio}) {
+  return <section className="ranking-section">
+    <header><div><h2>Encerramentos por faixa</h2>
+      <p>Referência para a meta mensal. Os números abaixo são indicativos, não pontos atribuídos pelo Agibank.</p>
+    </div><span className="ranking-pill">2,4 pontos possíveis</span></header>
+    <div className="ranking-table-scroll">
+      <table className="ranking-score-table">
+        <thead><tr><th>Faixa</th><th>Estoque conhecido</th><th>Meta mensal</th><th>Encerrados elegíveis</th><th>Faltam</th></tr></thead>
+        <tbody>{data.stock.map(row =>
+          <tr key={row.faixa}><td><strong>{row.faixa}</strong></td>
+          <td>{pt(row.estoque_referencia)}</td><td>{pt(row.meta_indicativa)} <small>({pt(row.taxa_meta)}%)</small></td>
+          <td>—</td><td>Sem conciliação</td></tr>
+        )}</tbody>
+      </table>
+    </div>
+    <p className="ranking-footnote">O edital pontua 0,2 por faixa em cada mês de agosto a novembro, sem compensação. Para atribuir os pontos, é preciso conciliar os encerramentos com a fotografia do estoque no último dia de cada mês. {AGING_BANDS[portfolio === 'agibank_enter' ? 'enter' : 'mba'].length} faixas por mês.</p>
+  </section>;
 }
 
-function Methodology({ portfolio }: { portfolio: RankingPortfolio }) {
-  return <div className="ranking-criteria-layout">
-    <section className="ranking-panel"><header><div><h2>Base elegível</h2><p>Fonte de verdade: Benner, conforme item 4.1 do edital</p></div></header>
-      <p>Processos cíveis, judiciais, polo passivo e situação Encerrado, com motivo Vitória, Derrota ou Acordo. Excluem-se equipes Bancoob e Estratégico e encerramentos por Erro de Cadastro.</p>
-      <p>Os indicadores de encerramentos utilizam a data de encerramento, não a de pagamento. Detratores seguem as próprias regras de apuração.</p>
-    </section>
-    <section className="ranking-panel"><header><div><h2>Qualitativos · 1,0 ponto</h2><p>NPS interno do Jurídico Agibank · avaliação de julho a novembro</p></div></header>
-      <ul className="ranking-quality">{QUALITY_DIMENSIONS.map(label => <li key={label}>{label}</li>)}</ul>
-      <p className="ranking-panel-foot">A nota depende de avaliação do cliente. Não é inferida a partir do volume de tarefas da plataforma.</p>
-    </section>
-    <section className="ranking-panel"><header><div><h2>Composição da edição</h2><p>Julho + agosto a novembro de 2026</p></div></header>
-      <p>Nota de julho: 1/5 (20%). Nota de agosto a novembro: 4/5 (80%). Bônus e detratores dependem da apuração comparativa oficial.</p>
-      {portfolio === 'enter' && <p>A nota oficial da Enter consolida as parcerias MBA, E&amp;S e RM; o recorte de uma única parceria não deve ser apresentado como ranking oficial da Enter.</p>}
-      <p className="ranking-panel-foot">Observações do edital: a faixa de 12 meses se sobrepõe na régua MBA; há lacunas na tabela de revelias para exatamente 5 e 10 casos. Validar antes de automatizar essas fronteiras.</p>
-    </section>
-  </div>;
+function ActionPlan({ data }: { data: Projection }) {
+  const pending = data.indicators.filter(i => i.points === null);
+  const atRisk = data.indicators.filter(i => i.points !== null && i.points < i.max);
+  const actions = [...atRisk, ...pending];
+  return <section className="ranking-section ranking-plan">
+    <header><div><h2>Plano para recuperar pontos</h2><p>Prioridades objetivas, separando desempenho insuficiente de ausência de evidência.</p></div></header>
+    <div className="ranking-plan-rows">
+      {actions.map((item, index) =>
+        <div key={item.key} className="ranking-plan-item">
+          <span className="ranking-plan-position">{String(index + 1).padStart(2,'0')}</span>
+          <div><strong>{item.label}</strong>
+            <p>{item.points === null ? item.reason + ' ' : ''}{item.action}</p>
+          </div><span className="ranking-plan-impact">{item.points === null ? 'Até ' + pt(item.max, 1) + ' pt a confirmar' : pt(item.max - (item.points || 0), 1) + ' pt em disputa'}</span>
+        </div>)}
+      {actions.length === 0 && <p className="ranking-empty">Todos os critérios apuráveis estão na faixa máxima. Confirmar pontos externos e encerramentos mensais.</p>}
+    </div>
+  </section>;
+}
+
+function Methodology({ portfolio }: {portfolio: Portfolio}) {
+  return <details className="ranking-method">
+    <summary><span>Consultar réguas e regras oficiais</span><ChevronDown size={15}/></summary>
+    <div className="ranking-method-body">
+      <p>Régua do Ranking Agibank 2026: duração 2,4 · custo médio 3,2 · vitórias 2,0 · acordos 1,4 · qualitativos 1,0. A nota final pondera julho (20%) e agosto–novembro (80%).</p>
+      <p>O custo máximo para receber os 3,2 pontos é {money(portfolio === 'agibank_enter' ? 700 : 1000)}. Para receber 2,0 pontos em vitórias, a taxa deve alcançar 76%; para 1,4 ponto em acordos, 14%.</p>
+      <p>Há até +3,0 pontos em bônus e até −3,0 em detratores. Sem a apuração do cliente e dados dos demais escritórios, esses valores permanecem indeterminados.</p>
+      <ul>{BONUSES.map(b => <li key={b.label}>Bônus {b.points}: {b.label}</li>)}
+        {PENALTIES.map(p => <li key={p.label}>Detrator {p.points}: {p.label}</li>)}</ul>
+      <p>{BASE_CRITERIA.length} critérios na nota-base. Não se confundem indícios de encerramento com encerramentos registrados e elegíveis no Benner.</p>
+    </div>
+  </details>;
 }
 
 export function RankingPage() {
-  const [portfolio, setPortfolio] = useState<RankingPortfolio | null>(activePortfolio);
-  const [tab, setTab] = useState<Tab>('criteria');
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(currentPortfolio);
+  const [data, setData] = useState<Projection | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const sequence = useRef(0);
+
+  const refresh = useCallback(async () => {
+    if (!portfolio) return;
+    const serial = ++sequence.current;
+    setLoading(true);
+    try {
+      const api = (window as RankingWindow).MBA_AUTOMATION_API || (window as RankingWindow).MBA_API;
+      if (!api?.request) throw new Error('API indisponível.');
+      const result = await api.request<Projection>('/api/ranking/projecao?portfolio_id=' + encodeURIComponent(portfolio));
+      if (serial !== sequence.current) return;
+      if (!result || result.portfolio_id !== portfolio || !Array.isArray(result.indicators) || !result.projection) throw new Error('Resposta inválida da projeção.');
+      setData(result); setError('');
+    } catch (cause) {
+      if (serial === sequence.current) {
+        setData(null);
+        setError(cause instanceof Error ? cause.message : 'Falha na consulta ao Benner.');
+      }
+    } finally {
+      if (serial === sequence.current) setLoading(false);
+    }
+  }, [portfolio]);
+
+  useEffect(() => { void refresh(); return () => { sequence.current++; }; }, [refresh]);
   useEffect(() => {
-    const sync = () => { setPortfolio(activePortfolio()); setTab('criteria'); };
-    window.addEventListener('mba:portfolio-changed', sync);
-    window.addEventListener('mba:profile-ready', sync);
-    return () => {
-      window.removeEventListener('mba:portfolio-changed', sync);
-      window.removeEventListener('mba:profile-ready', sync);
-    };
+    const sync = () => { sequence.current++; setPortfolio(currentPortfolio()); setData(null); setError(''); };
+    for (const name of ['mba:portfolio-changed', 'mba:profile-ready']) window.addEventListener(name, sync);
+    return () => { for (const name of ['mba:portfolio-changed', 'mba:profile-ready']) window.removeEventListener(name, sync); };
   }, []);
-  if (!portfolio) return <div className="ranking-page"><p role="status">O Ranking Agibank está disponível apenas na respectiva carteira.</p></div>;
-  return <div className="ranking-page">
-    <header className="ranking-heading">
-      <div><span className="ranking-eyebrow">AGIBANK · LEGAL DAY 2026</span><h1>Ranking</h1>
-        <p>{portfolio === 'enter' ? 'Agibank <> Enter' : 'Agibank <> Mascarenhas'} · edição agosto–novembro</p>
+  const gaps = useMemo(() => data?.indicators.filter(row => row.points != null && row.points < row.max).length || 0, [data]);
+  if (!portfolio) return <section className="ranking-screen" role="status">O Ranking é restrito às carteiras Agibank.</section>;
+  return <section className="ranking-screen" aria-label="Projeção gerencial do Ranking Agibank">
+    <div className="ranking-topline">
+      <div><h1>Ranking</h1><p>Nota projetada, desvios de meta e pontos recuperáveis · Agibank {portfolio === 'agibank_enter' ? 'Enter' : 'MBA'}</p></div>
+      <button className="ranking-refresh" type="button" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} className={loading ? 'ranking-spin' : ''}/> Atualizar</button>
+    </div>
+    {error && <div className="ranking-error" role="alert"><AlertCircle size={16}/><span>Não foi possível carregar a projeção: {error}. O backend de testes precisa disponibilizar a API do Ranking.</span><button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
+    {loading && !data && <p className="ranking-pending" role="status">Conciliando indicadores do Benner…</p>}
+    <div className="ranking-kpis">
+      <Metric emphasize title="Nota final projetada" value={data?.projection.final == null ? '— / 10' : point(data.projection.final) + ' / 10'} caption={data?.projection.final == null ? 'Não apurável com as fontes disponíveis' : 'Projeção sujeita à homologação do Agibank'}/>
+      <Metric title="Pontos apuráveis" value={data?.projection.partial == null ? '—' : point(data.projection.partial)} caption={data ? 'Em critérios com dados completos (teto ' + point(data.projection.partial_max) + ')' : 'Aguardando Benner'}/>
+      <Metric title="Pontos sem evidência" value={data ? point(data.projection.missing_max) : '—'} caption="Da nota-base (10 pontos), ainda sem apuração segura"/>
+      <Metric title="Gaps confirmados" value={data ? String(gaps) : '—'} caption="Indicadores comprovadamente abaixo da faixa máxima"/>
+      <Metric title="Histórico Benner" value={data ? pt(data.snapshot.benner_history_closings) : '—'} caption="Encerramentos identificados · não equivalem ao universo do ranking"/>
+    </div>
+    {data && <>
+      <div className="ranking-notice" role="status">
+        <AlertCircle size={17}/>
+        <div><strong>{data.projection.final == null ? 'A nota final ainda não é confiável.' : 'Projeção sujeita a validação.'}</strong>
+          <p>{data.projection.reasons.join(' ')} A ausência de registros não foi tratada como pontuação zero.</p>
+        </div>
       </div>
-      <span className="ranking-source">Critérios oficiais · sem apuração de nota</span>
-    </header>
-    <div className="ranking-overview">
-      <div className="ranking-total"><span>Pontuação-base máxima</span><strong>10,0 <small>pontos</small></strong><p>9,0 quantitativos + 1,0 qualitativo</p></div>
-      {BASE_CRITERIA.map(item => <article key={item.id} className="ranking-metric">
-        <div><span>{item.label}</span><strong>{item.points} <small>pts</small></strong></div>
-        <p>{item.detail}</p><span className="ranking-weight">{item.weight} da nota</span>
-      </article>)}
-    </div>
-    <p className="ranking-data-notice">Pontuações efetivas ainda não apuradas neste módulo. Esta tela apresenta somente metas e réguas do edital, sem simular dados de processos ou tratar indícios DataJud como encerramentos homologados.</p>
-    <div className="ranking-tabs" role="tablist" aria-label="Informações do ranking">
-      {([['criteria','Critérios e metas'],['extras','Bônus e detratores'],['method','Metodologia']] as const).map(([id,label]) =>
-        <button type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'active' : ''} key={id} onClick={() => setTab(id)}>{label}</button>)}
-    </div>
-    {tab === 'criteria' ? <Criteria portfolio={portfolio}/> : tab === 'extras' ? <Extras/> : <Methodology portfolio={portfolio}/>}
-    <footer className="ranking-footer">Fonte: Edital Ranking de Escritórios Cíveis, Edição Especial Legal Day AGO–NOV/2026. Resultado oficial depende do Benner, NPS e comparação com os demais participantes.</footer>
-  </div>;
+      <Indicators data={data}/>
+      <div className="ranking-bottom-grid">
+        <StockSection data={data} portfolio={portfolio}/>
+        <ActionPlan data={data}/>
+      </div>
+      <div className="ranking-source-line"><Target size={14}/><span>Fonte: {data.snapshot.source} · importação {snapshotDate(data.snapshot.imported_at)}{data.snapshot.stale ? ' · DESATUALIZADA' : ''} · {pt(data.snapshot.eligible_closings)} encerramentos com data elegível no snapshot · nota de julho e NPS pendentes</span><ArrowRight size={14}/></div>
+      <Methodology portfolio={portfolio}/>
+    </>}
+    {!loading&&!data&&!error && <p className="ranking-pending">Aguardando apuração da carteira selecionada.</p>}
+  </section>;
 }
