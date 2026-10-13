@@ -78,7 +78,6 @@ function LoginPage() {
           </button>
         </form>
         {authState.error ? <div className="react-login-error" role="alert">{authState.error}</div> : null}
-        <p className="react-login-security">Acesso exclusivo para usuários autorizados.</p>
       </section>
       <aside className="react-login-visual" aria-label="Identidade visual Mascarenhas Barbosa">
         {media?.videoUrl ? <video autoPlay muted playsInline loop preload="metadata"
