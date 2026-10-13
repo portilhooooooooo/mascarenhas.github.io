@@ -9,6 +9,7 @@ const [
   packageText,
   vite,
   buildStatic,
+  indexHtml,
   gitignore,
   pageInit,
   reactCompat,
@@ -27,6 +28,7 @@ const [
   readFile(new URL('../package.json', import.meta.url), 'utf8'),
   readFile(new URL('../vite.config.ts', import.meta.url), 'utf8'),
   readFile(new URL('../build-static.mjs', import.meta.url), 'utf8'),
+  readFile(new URL('../index.html', import.meta.url), 'utf8'),
   readFile(new URL('../.gitignore', import.meta.url), 'utf8'),
   readFile(new URL('../page-init-1.js', import.meta.url), 'utf8'),
   readFile(new URL('../react-compat.js', import.meta.url), 'utf8'),
@@ -102,7 +104,12 @@ assert.doesNotMatch(buildStatic, /'tasks\.css'/, 'dist must not load the legacy 
 assert.doesNotMatch(buildStatic, /\n\s*'security-ui\.js',/, 'dist must not copy the legacy login renderer');
 assert.match(buildStatic, /security-ui\\\.js\|login-ui\\\.css/, 'build must reject any surviving legacy login UI reference');
 assert.match(buildStatic, /react-compat\.js/, 'dist must install the legacy compatibility guard before authentication');
-assert.match(buildStatic, /reactOwnedIndexHtml/, 'build must strip the legacy login markup before serving');
+assert.match(indexHtml, /<div class="auth-view" id="login-view"><\/div>/, 'source HTML must declare an empty React login mount');
+assert.equal((indexHtml.match(/id="login-view"/g) || []).length, 1, 'source HTML must have exactly one login mount');
+assert.doesNotMatch(indexHtml, /id="task-only-login"|id="google-login"|data-auth-provider="google"|id="login-error"/, 'source HTML must not embed legacy login controls');
+assert.doesNotMatch(indexHtml, /security-ui\.js/, 'source HTML must not reference the removed legacy login script');
+assert.match(buildStatic, /reactLoginMounts\.length !== 1/, 'build must validate the number of React login mounts');
+assert.doesNotMatch(buildStatic, /reactOwnedIndexHtml|login-security/, 'build must not depend on legacy HTML anchors');
 assert.match(buildStatic, /id=\"task-only-login\"\|id=\"google-login\"/, 'build must fail if legacy login controls survive');
 assert.match(buildStatic, /somente o mount React do login/, 'build must assert a single login mount point');
 assert.match(gitignore, /\.build\//, 'disposable React build output must stay untracked');
