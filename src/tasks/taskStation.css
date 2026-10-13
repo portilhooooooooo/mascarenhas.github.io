@@ -69,7 +69,7 @@
 }
 #tarefas[data-react-tasks='true'] .mba-react-select-empty { font-size: 11px; color: var(--mba-muted); padding: 7px; }
 
-/* Cadastro de Motivo Derrota: uma resposta, sem navegação adicional. */
+/* Cadastro de Motivo Derrota: preenchimento e confirmação assíncrona do worker. */
 .motivo-derrota-form{display:grid;gap:14px;align-content:start}
 .motivo-derrota-form h3{margin:0;font-size:15px}
 .motivo-derrota-form>p{margin:0;font-size:12px;line-height:1.6;color:var(--mba-text-2,#52647d)}
@@ -80,3 +80,11 @@
 .motivo-derrota-form>label{display:grid;gap:7px;font-size:12px}
 .motivo-derrota-form textarea{width:100%;border:1px solid var(--mba-border,#dfe5ef);border-radius:7px;padding:9px;font:inherit;resize:vertical}
 .motivo-derrota-form>button{justify-self:start}
+
+
+.motivo-derrota-form textarea{min-height:104px;max-height:210px;line-height:1.5}
+.motivo-derrota-form textarea:disabled{opacity:.8;background:var(--mba-surface-2,#f4f6f8)}
+.motivo-derrota-form .motivo-derrota-helper{font-size:11px;color:var(--mba-text-2,#52647d);margin-top:-7px}
+.motivo-derrota-queue{display:grid;gap:5px;padding:12px 14px;border:1px solid var(--mba-border,#dfe5ef);border-radius:9px;font-size:12px}
+.motivo-derrota-queue strong{font-size:13px}
+.motivo-derrota-form>button{width:100%;justify-self:stretch}
