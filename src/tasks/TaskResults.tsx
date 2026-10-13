@@ -16,6 +16,11 @@ type Person = {
   mean_step_seconds: number | null;
   by_type: Record<string, number>;
 };
+type MotivoClosingRow = {
+  cnj: string; tipo_validado: string; tem_motivo_derrota: boolean | null;
+  motivo_derrota_verificado_em: string | null; enviado_benner_em: string | null;
+};
+type MotivoClosingResult = { status: string; total: number; rows: MotivoClosingRow[]; limit: number };
 export type ResultPayload = {
   period: string;
   people: Person[];
@@ -91,6 +96,10 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  const [motivoFilter, setMotivoFilter] = useState<'todos' | 'sim' | 'nao'>('todos');
+  const [motivoData, setMotivoData] = useState<MotivoClosingResult | null>(null);
+  const [motivoPending, setMotivoPending] = useState(false);
+  const [motivoError, setMotivoError] = useState('');
   const requestId = useRef(0);
   const key = [filters.period, filters.deadline, filters.person, filters.duration, revision, userId].join('|');
   const [loadedKey, setLoadedKey] = useState('');
@@ -126,7 +135,25 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   }, [visible, key, api, userId, demoMode]);
 
   useEffect(() => {
-    const reset = () => { setFilters(DEFAULT_FILTERS); setData(null); setOptions([]); setLoadedKey(''); setRevision(value => value + 1); };
+    if (!visible || !userId || motivoFilter === 'todos') {
+      setMotivoData(null); setMotivoError(''); setMotivoPending(false);
+      return;
+    }
+    let active = true;
+    setMotivoPending(true); setMotivoError('');
+    void api('/api/tasks/results/motivo-derrota?status=' + motivoFilter)
+      .then((result: MotivoClosingResult) => {
+        if (!active) return;
+        if (!result || !Array.isArray(result.rows)) throw new Error('Resultado Motivo derrota inválido.');
+        setMotivoData(result);
+      })
+      .catch((cause: Error) => { if (active) { setMotivoError(cause.message || 'Falha na consulta ao Benner.'); setMotivoData(null); } })
+      .finally(() => { if (active) setMotivoPending(false); });
+    return () => { active = false; };
+  }, [visible, userId, motivoFilter, revision, api]);
+
+  useEffect(() => {
+    const reset = () => { setMotivoFilter('todos'); setMotivoData(null); setFilters(DEFAULT_FILTERS); setData(null); setOptions([]); setLoadedKey(''); setRevision(value => value + 1); };
     window.addEventListener('mba:portfolio-changed', reset);
     window.addEventListener('mba:logged-out', reset);
     window.addEventListener('mba:session-expired', reset);
@@ -192,12 +219,37 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         { value: 'all', label: canViewOthers ? 'Toda a equipe' : 'Minhas análises' },
         ...(canViewOthers ? options.map(person => ({ value: person.id, label: person.name })) : []),
       ]}/>
+      <SelectFilter title="Motivo derrota" value={motivoFilter} onChange={value => setMotivoFilter(value as typeof motivoFilter)} options={[
+        { value: 'todos', label: 'Todos' }, { value: 'sim', label: 'Sim — cadastrado' },
+        { value: 'nao', label: 'Não — ausente confirmado' },
+      ]}/>
       <SelectFilter title="Tempo médio de análise" value={filters.duration} onChange={value => updateFilter('duration', value)} options={[
         { value: 'all', label: 'Todos os tempos' }, { value: 'under2', label: 'Menos de 2 minutos' },
         { value: '2to5', label: '2 a 5 minutos' }, { value: '5to10', label: '5 a 10 minutos' },
         { value: 'over10', label: '10 minutos ou mais' },
       ]}/>
     </div>
+    {motivoFilter !== 'todos' && <article className="task-results-card motivo-resultados-card">
+      <header><h2>Motivo derrota — {motivoFilter === 'sim' ? 'Sim' : 'Não'}</h2>
+        <p>Encerramentos classificados como Derrota ou Derrota Voluntária. “Não” representa ausência confirmada no Benner; registros não verificados ficam fora deste filtro. Os indicadores de produtividade abaixo permanecem inalterados.</p></header>
+      {motivoPending ? <p role="status">Carregando situação dos motivos…</p> : null}
+      {motivoError ? <p role="alert" className="task-results-error">{motivoError}</p> : null}
+      {motivoData && !motivoPending ? <>
+        <p><strong>{formatInt(motivoData.total)}</strong> processo(s) com o filtro selecionado.</p>
+        <div className="task-results-table-scroll"><table className="task-results-table">
+          <thead><tr><th>Processo</th><th>Classificação</th><th>Motivo derrota</th><th>Última verificação</th></tr></thead>
+          <tbody>
+            {motivoData.rows.map(row => <tr key={row.cnj}>
+              <td><strong>{row.cnj.replace(/^(\d{7})(\d{2})(\d{4})(\d)(\d{2})(\d{4})$/, '$1-$2.$3.$4.$5.$6')}</strong></td>
+              <td>{row.tipo_validado === 'DERROTA_VOLUNTARIA' ? 'Derrota Voluntária' : 'Derrota'}</td>
+              <td>{row.tem_motivo_derrota === true ? 'Sim' : 'Não'}</td>
+              <td>{row.motivo_derrota_verificado_em ? new Date(row.motivo_derrota_verificado_em).toLocaleString('pt-BR') : 'Não verificado'}</td>
+            </tr>)}
+            {!motivoData.rows.length ? <tr><td colSpan={4}>Nenhum processo nesse filtro.</td></tr> : null}
+          </tbody></table></div>
+        {motivoData.total > motivoData.rows.length ? <small>Exibindo os {motivoData.rows.length} registros mais recentes.</small> : null}
+      </> : null}
+    </article>}
     {error && <div role="alert" className="task-results-notice task-results-error">{error}<button type="button" onClick={() => setRevision(n => n + 1)}>Tentar novamente</button></div>}
     {pending && !shown && <div role="status" className="task-results-notice">Carregando dados auditados da carteira…</div>}
     {shown && <>

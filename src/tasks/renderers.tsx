@@ -1,4 +1,5 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { SelectMenu } from '../dashboard/SelectMenu';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
@@ -187,50 +188,123 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
 
 
 /**
- * Dependência pós-encerramento: somente Derrota confirmada no Benner, nunca DV.
- * Responder "não" mantém o prazo aberto. Não presume ausência com base em dado nulo.
+ * O analista redige o motivo e solicita o lançamento no Benner.
+ * A tarefa só é concluída quando o worker confirmar o andamento gravado.
  */
+type MotivoQueueStatus = 'NA_FILA' | 'PROCESSANDO' | 'ERRO' | 'ENVIADO';
+type MotivoQueueJob = {
+  id: string; status: MotivoQueueStatus; motivo_codigo?: number | null;
+  natureza?: string | null; ja_existente?: boolean; erro?: string | null;
+  benner_referencia?: string | null;
+};
+type MotivoCatalog = {
+  motivos: { codigo: number; rotulo: string }[];
+  naturezas: { codigo: 'P' | 'V'; rotulo: string }[];
+};
+
 export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendererProps) {
-  const [cadastrado, setCadastrado] = useState<boolean | null>(null);
-  const [observacao, setObservacao] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [natureza, setNatureza] = useState<'P' | 'V'>('P');
+  const [catalog, setCatalog] = useState<MotivoCatalog | null>(null);
   const [busy, setBusy] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [job, setJob] = useState<MotivoQueueJob | null>(null);
   const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
+  const completedRef = useRef('');
+  const requestPath = '/api/task-processes/' + process.id;
+  const waiting = job?.status === 'NA_FILA' || job?.status === 'PROCESSANDO';
+  const initialNatureza = process.source_metadata?.closing_type === 'DERROTA_VOLUNTARIA' ? 'V' : 'P';
+
   useEffect(() => {
-    setCadastrado(null); setObservacao(''); setError(''); setNotice('');
-  }, [process.id]);
+    let active = true;
+    completedRef.current = '';
+    setCodigo(''); setNatureza(initialNatureza);
+    setJob(null); setCatalog(null); setError(''); setChecking(true);
+    const catalogRequest = api('/api/motivo-derrota/catalog').then((result: MotivoCatalog) => {
+      if (!active) return;
+      if (!result || !Array.isArray(result.motivos) || !Array.isArray(result.naturezas))
+        throw new Error('Catálogo do Benner indisponível.');
+      setCatalog(result);
+    });
+    const refresh = async () => {
+      try {
+        const result = await api(requestPath + '/motivo-derrota-status');
+        if (!active) return;
+        const nextJob: MotivoQueueJob | null = result?.job || null;
+        setJob(nextJob);
+        if (nextJob?.motivo_codigo) setCodigo(String(nextJob.motivo_codigo));
+        if (nextJob?.natureza === 'P' || nextJob?.natureza === 'V') setNatureza(nextJob.natureza);
+        if (nextJob?.status === 'ENVIADO' && completedRef.current !== process.id) {
+          completedRef.current = process.id;
+          window.dispatchEvent(new CustomEvent('mba:realtime-invalidate', { detail: { module: 'encerramentos' } }));
+          onCompleted(process);
+        }
+      } catch (cause: any) {
+        if (active) setError(cause?.message || 'Não foi possível consultar a fila do Benner.');
+      }
+    };
+    void Promise.all([catalogRequest, refresh()])
+      .catch((cause: Error) => { if (active) setError(cause.message || 'Erro ao consultar catálogo Benner.'); })
+      .finally(() => { if (active) setChecking(false); });
+    const interval = window.setInterval(() => { void refresh(); }, 7000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [api, process.id, initialNatureza]);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (cadastrado === null || busy) return;
-    setBusy(true);
-    setError(''); setNotice('');
+    const id = Number(codigo);
+    if (busy || checking || job || !catalog?.motivos.some(item => item.codigo === id)) return;
+    setBusy(true); setError('');
     try {
-      const saved = await api('/api/task-processes/' + process.id + '/motivo-derrota-answer', {
-        method: 'POST', body: JSON.stringify({ cadastrado, observacao }),
+      const saved = await api(requestPath + '/motivo-derrota-submit', {
+        method: 'POST', body: JSON.stringify({ motivo_codigo: id, natureza }),
       });
-      if (saved?.completed) {
-        window.dispatchEvent(new CustomEvent('mba:realtime-invalidate', { detail: { module: 'encerramentos' } }));
-        onCompleted(process);
-      } else {
-        setNotice('Motivo ainda não cadastrado. A tarefa permanece pendente.');
-      }
+      if (!saved?.job_id) throw new Error('A fila Benner não retornou o identificador do envio.');
+      setJob({ id: String(saved.job_id), status: (saved.status || 'NA_FILA') as MotivoQueueStatus,
+        motivo_codigo: id, natureza });
     } catch (cause: any) {
-      setError(cause?.message || 'Não foi possível salvar a verificação.');
+      setError(cause?.message || 'Falha ao registrar o motivo para envio ao Benner.');
     } finally {
       setBusy(false);
     }
   }
+
+  const currentStatus = job?.status === 'NA_FILA' ? 'Aguardando worker Benner'
+    : job?.status === 'PROCESSANDO' ? 'Cadastrando no Benner'
+    : job?.status === 'ERRO' ? 'Envio requer revisão'
+    : job?.status === 'ENVIADO' ? (job.ja_existente ? 'Andamento já existente no Benner' : 'Cadastro confirmado no Benner')
+    : '';
+  const motivoSelecionado = catalog?.motivos.find(item => item.codigo === Number(codigo))?.rotulo;
   return <form className="task-form-content motivo-derrota-form" onSubmit={submit}>
     <h3>Cadastro de Motivo Derrota</h3>
-    <p>O envio do encerramento foi confirmado no Benner, e a consulta posterior identificou ausência do motivo. Regularize o cadastro e confirme abaixo.</p>
-    <fieldset className="motivo-derrota-choice">
-      <legend>O motivo da derrota foi cadastrado no Benner?</legend>
-      <label><input type="radio" name={'motivo-derrota-' + process.id} checked={cadastrado === true} onChange={() => setCadastrado(true)}/> Sim, cadastrado</label>
-      <label><input type="radio" name={'motivo-derrota-' + process.id} checked={cadastrado === false} onChange={() => setCadastrado(false)}/> Não, ainda pendente</label>
+    <p>Selecione o motivo e a natureza conforme os campos oficiais do Benner. O worker registrará o andamento <strong>Motivo derrota</strong> e confirmará o resultado antes de concluir a tarefa.</p>
+    <SelectMenu label="Motivo da derrota" searchable value={codigo}
+      searchPlaceholder="Buscar motivo da derrota..."
+      disabled={busy || checking || Boolean(job)}
+      options={[{ value: '', label: 'Selecione um motivo' },
+        ...(catalog?.motivos || []).map(item => ({ value: String(item.codigo), label: item.rotulo }))]}
+      onChange={setCodigo}/>
+    <fieldset className="motivo-derrota-choice" disabled={busy || checking || Boolean(job)}>
+      <legend>Natureza da derrota</legend>
+      <label><input type="radio" name={'natureza-' + process.id}
+        checked={natureza === 'P'} onChange={() => setNatureza('P')}/> Processual</label>
+      <label><input type="radio" name={'natureza-' + process.id}
+        checked={natureza === 'V'} onChange={() => setNatureza('V')}/> Voluntário</label>
     </fieldset>
-    <label>Observação (opcional)<textarea value={observacao} maxLength={2000} rows={2} onChange={event => setObservacao(event.target.value)} placeholder="Registro ou justificativa no Benner" /></label>
-    {error && <p className="task-renderer-error" role="alert">{error}</p>}
-    {notice && <p role="status">{notice}</p>}
-    <button type="submit" className="primary-button" disabled={busy || cadastrado === null}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button>
+    {motivoSelecionado && !job ? <p className="motivo-derrota-helper">Motivo Benner #{codigo}: {motivoSelecionado}</p> : null}
+    {job ? <div className="motivo-derrota-queue" role="status">
+      <strong>{currentStatus}</strong>
+      <span>{waiting ? 'O envio está na fila. Não reenvie enquanto a automação processa.'
+        : job.status === 'ERRO' ? 'Nenhum novo envio será feito automaticamente; o histórico exige conferência antes de qualquer tentativa.'
+        : job.ja_existente ? 'O worker identificou um andamento anterior e não criou outro.'
+        : 'O andamento foi confirmado. A tarefa será retirada da fila.'}</span>
+      {job.status === 'ERRO' && job.erro ? <span>{job.erro}</span> : null}
+    </div> : null}
+    {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
+    {!job && !checking ? <button type="submit" className="primary-button"
+      disabled={busy || !catalog?.motivos.some(item => item.codigo === Number(codigo))}>
+      {busy ? 'Enviando à fila…' : 'Cadastrar no Benner'}
+    </button> : null}
+    {checking ? <p role="status">Consultando catálogo e solicitações existentes…</p> : null}
   </form>;
 }
