@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, Clock3, RefreshCw, Target, TrendingUp } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, Clock3, RefreshCw, Target } from 'lucide-react';
 import { AGING_BANDS, BASE_CRITERIA, BONUSES, PENALTIES } from './rules';
 import './ranking.css';
 
@@ -18,6 +18,10 @@ type Projection = {
   projection: { final: number | null; partial: number | null; partial_max: number; missing_max: number;
     reasons: string[]; note: string };
   indicators: Indicator[]; stock: Stock[]; confidence: string; updated_at: string;
+  signals?: { total_identificados: number; desfechos_comparaveis: number; vitórias: number;
+    acordos: number; derrotas: number; derrota_voluntaria_sem_equivalencia: number;
+    percentual_vitorias_amostra: number | null; percentual_acordos_amostra: number | null;
+    nota: string };
 };
 type RankingWindow = Window & typeof globalThis & {
   MBA_API?: { getPortfolioId?: () => string | null; request?: <T>(path: string, options?: RequestInit) => Promise<T> };
@@ -105,6 +109,18 @@ function StockSection({ data, portfolio }: {data: Projection; portfolio: Portfol
       </table>
     </div>
     <p className="ranking-footnote">O edital pontua 0,2 por faixa em cada mês de agosto a novembro, sem compensação. Para atribuir os pontos, é preciso conciliar os encerramentos com a fotografia do estoque no último dia de cada mês. {AGING_BANDS[portfolio === 'agibank_enter' ? 'enter' : 'mba'].length} faixas por mês.</p>
+  </section>;
+}
+
+function OperationalSignals({ data }: {data: Projection}) {
+  const sample = data.signals;
+  if (!sample || !sample.desfechos_comparaveis) return null;
+  return <section className="ranking-signals" aria-label="Sinais operacionais parciais">
+    <div className="ranking-signals-copy"><strong>Leitura operacional preliminar</strong>
+      <p>Na amostra de {pt(sample.desfechos_comparaveis)} encerramentos com desfechos comparáveis, os indicadores são:</p></div>
+    <div><strong>{sample.percentual_vitorias_amostra == null ? '—' : percentage(sample.percentual_vitorias_amostra)}</strong><span>Vitórias · meta 76%</span></div>
+    <div><strong>{sample.percentual_acordos_amostra == null ? '—' : percentage(sample.percentual_acordos_amostra)}</strong><span>Acordos · meta 14%</span></div>
+    <p className="ranking-signals-warning">{pt(sample.derrota_voluntaria_sem_equivalencia)} derrotas voluntárias segregadas. Amostra NÃO homologada: não gera pontuação e não substitui o universo do edital.</p>
   </section>;
 }
 
@@ -198,6 +214,7 @@ export function RankingPage() {
           <p>{data.projection.reasons.join(' ')} A ausência de registros não foi tratada como pontuação zero.</p>
         </div>
       </div>
+      <OperationalSignals data={data}/>
       <Indicators data={data}/>
       <div className="ranking-bottom-grid">
         <StockSection data={data} portfolio={portfolio}/>
