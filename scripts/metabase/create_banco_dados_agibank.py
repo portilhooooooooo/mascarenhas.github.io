@@ -6,7 +6,7 @@ As consultas usam tabelas atuais, com colunas explicitamente selecionadas e
 portfolio_id fixado em agibank_mba. Nunca cria, copia ou migra bancos/tabelas.
 
 Modo padrão: plano sem mutações.
-Modo aplicação: MB_URL, MB_SESSION, MB_DATABASE_ID e --apply.
+Modo aplicação: MB_URL, MB_SESSION ou MB_API_KEY, MB_DATABASE_ID e --apply.
 """
 from __future__ import annotations
 
@@ -170,13 +170,15 @@ CARDS = (
 
 
 def request(method, base_url, session, path, payload=None):
+    # Metabase permite autenticação por sessão curta ou chave de API com escopo próprio.
+    auth_header = {"X-API-Key": session[4:]} if session.startswith("key:") else {"X-Metabase-Session": session}
     req = Request(
         base_url.rstrip("/") + path,
         data=json.dumps(payload).encode("utf-8") if payload is not None else None,
         method=method,
         headers={
             "Content-Type": "application/json",
-            "X-Metabase-Session": session,
+            **auth_header,
         },
     )
     try:
@@ -278,16 +280,18 @@ def main():
         print(f"{tab}: {sum(c['tab'] == tab for c in CARDS)} tabela(s)")
     print("Operações em banco de dados: NENHUMA. Escopo SQL: portfolio_id = 'agibank_mba'.")
     if not args.apply:
-        print("Plano somente. Para aplicar: MB_URL, MB_SESSION e MB_DATABASE_ID + --apply.")
+        print("Plano somente. Para aplicar: MB_URL, MB_DATABASE_ID e MB_SESSION ou MB_API_KEY + --apply.")
         return
-    url, session, database_id = (
-        os.environ.get("MB_URL", "").strip(),
-        os.environ.get("MB_SESSION", "").strip(),
-        os.environ.get("MB_DATABASE_ID", "").strip(),
-    )
-    if not url or not session or not database_id.isdigit() or int(database_id) <= 0:
-        raise SystemExit("MB_URL, MB_SESSION e MB_DATABASE_ID válidos são obrigatórios.")
-    dashboard_id = apply(url, session, int(database_id))
+    url = os.environ.get("MB_URL", "").strip()
+    database_id = os.environ.get("MB_DATABASE_ID", "").strip()
+    session = os.environ.get("MB_SESSION", "").strip()
+    api_key = os.environ.get("MB_API_KEY", "").strip()
+    if session and api_key:
+        raise SystemExit("Informe MB_SESSION ou MB_API_KEY, não os dois.")
+    auth = "key:" + api_key if api_key else session
+    if not url or not auth or not database_id.isdigit() or int(database_id) <= 0:
+        raise SystemExit("MB_URL, MB_DATABASE_ID e MB_SESSION ou MB_API_KEY válidos são obrigatórios.")
+    dashboard_id = apply(url, auth, int(database_id))
     print(f"Dashboard criado: {dashboard_id}")
     print(f"Configurar no backend de testes: METABASE_BANCO_DADOS_DASHBOARD_ID={dashboard_id}")
 

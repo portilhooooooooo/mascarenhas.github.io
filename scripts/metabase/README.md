@@ -34,8 +34,9 @@ Todas as perguntas são tabelas com `SELECT` explícito e
 `portfolio_id = 'agibank_mba'`. Não são criados bancos, schemas, tabelas ou views.
 
 A execução sem flags mostra o plano. Para criação controlada no Metabase existente,
-é necessária sessão administrativa válida: `MB_URL`, `MB_SESSION`,
-`MB_DATABASE_ID` e `--apply`. O script recusa duplicidade de nome e exige
+é necessária uma sessão autenticada ou uma API key com permissão para criar dashboards:
+`MB_URL`, `MB_DATABASE_ID`, `MB_SESSION` ou `MB_API_KEY`, e `--apply`.
+Nunca adicione a credencial ao repositório. Revogue a chave temporária após configurar. O script recusa duplicidade de nome e exige
 conexão PostgreSQL capaz de ler `encerramentos_processos`.
 Após criar, habilitar embedding assinado do dashboard no Metabase e definir
 `METABASE_BANCO_DADOS_DASHBOARD_ID` no backend de **testes**.
