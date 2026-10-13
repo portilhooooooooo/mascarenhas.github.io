@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ArrowDownUp, Clock3, Download, RefreshCw, Users, CheckCircle2 } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
+import { createDemoTaskResults, isDemoTaskResultsHost } from './demoTaskResults';
 import './taskResults.css';
 
 type Person = {
@@ -15,7 +16,7 @@ type Person = {
   mean_step_seconds: number | null;
   by_type: Record<string, number>;
 };
-type ResultPayload = {
+export type ResultPayload = {
   period: string;
   people: Person[];
   summary: { completed: number; today_completed: number; pending: number; growth_percent: number | null; previous_completed: number; people: number; measured_analyses: number; measured_transitions: number; slowest: Person | null };
@@ -80,6 +81,8 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   canViewOthers: boolean;
   userId?: string;
 }) {
+  // Apenas a interface gerencial no host de desenvolvimento recebe dados demonstrativos.
+  const demoMode = canViewOthers && isDemoTaskResultsHost();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [data, setData] = useState<ResultPayload | null>(null);
   const [options, setOptions] = useState<{id: string; name: string}[]>([]);
@@ -99,8 +102,10 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     setPending(true);
     setError('');
     const params = new URLSearchParams({ period: filters.period, deadline: filters.deadline, person: filters.person, duration: filters.duration });
-    api('/api/tasks/results?' + params)
-      .then((answer: ResultPayload) => {
+    const request = demoMode
+      ? Promise.resolve(createDemoTaskResults(filters))
+      : api('/api/tasks/results?' + params);
+    request.then((answer: ResultPayload) => {
         if (cancelled || serial !== requestId.current) return;
         if (!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de Resultados.');
         setData(answer);
@@ -118,7 +123,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       })
       .finally(() => { if (!cancelled && serial === requestId.current) setPending(false); });
     return () => { cancelled = true; };
-  }, [visible, key, api, userId]);
+  }, [visible, key, api, userId, demoMode]);
 
   useEffect(() => {
     const reset = () => { setFilters(DEFAULT_FILTERS); setData(null); setOptions([]); setLoadedKey(''); setRevision(value => value + 1); };
@@ -136,7 +141,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     setFilters(current => ({ ...current, [field]: value }));
   };
   const exportResults = async () => {
-    if (exporting || !data || loadedKey !== key) return;
+    if (demoMode || exporting || !data || loadedKey !== key) return;
     setExporting(true);
     setError('');
     try {
@@ -169,10 +174,11 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     <div className="task-results-heading">
       <div><h1>Resultados</h1><p>Produtividade, tempos de análise e progressão no fluxo por colaborador.</p></div>
       <div className="task-results-actions">
-        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={exporting || pending || !shown?.people?.length}><Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}</button>
+        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada para dados fictícios' : undefined}><Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}</button>
         <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
       </div>
     </div>
+    {demoMode && <div className="task-results-notice" role="status"><strong>Dados de demonstração.</strong> Números fictícios de Gabriel Portilho e Géssica Avalos, exibidos apenas no desenvolvimento. Não alteram a base real nem os indicadores oficiais.</div>}
     <div className="task-results-filters">
       <SelectFilter title="Período de conclusão" value={filters.period} onChange={value => updateFilter('period', value)} options={[
         { value: 'today', label: 'Hoje' }, { value: '7', label: 'Últimos 7 dias' }, { value: '30', label: 'Últimos 30 dias' },
@@ -249,7 +255,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           {!sorted.length && <tr><td colSpan={6}>Nenhum registro com os filtros selecionados.</td></tr>}</tbody>
         </table></div>
       </article>
-      <p className="task-results-method"><Clock3 size={14}/>{shown.methodology} Eventos históricos sem início registrado não são utilizados para comparar velocidade. Registros externos importados são excluídos da produtividade humana. Atualizado em {new Date(shown.generated_at).toLocaleString('pt-BR')}.</p>
+      <p className="task-results-method"><Clock3 size={14}/>{shown.methodology} {demoMode ? 'Sem leitura ou gravação no backend.' : 'Eventos históricos sem início registrado não são utilizados para comparar velocidade. Registros externos importados são excluídos da produtividade humana.'} Atualizado em {new Date(shown.generated_at).toLocaleString('pt-BR')}.</p>
     </>}
   </section>;
 }
