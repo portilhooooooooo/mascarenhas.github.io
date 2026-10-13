@@ -252,15 +252,24 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
     : job?.status === 'ERRO' ? 'Envio requer revisão'
     : job?.status === 'ENVIADO' ? 'Confirmado no Benner' : '';
   return <form className="task-form-content motivo-derrota-form" onSubmit={submit}>
-    <h3>Cadastro de Motivo Derrota</h3>
-    <p>Informe o motivo a ser registrado no andamento <strong>Motivo derrota</strong> do Benner. A tarefa será concluída somente após a confirmação do lançamento pela automação.</p>
-    <label htmlFor={'motivo-derrota-texto-' + process.id}>Motivo da derrota
-      <textarea id={'motivo-derrota-texto-' + process.id} required minLength={10} maxLength={2000}
-        rows={4} value={motivo} disabled={busy || checking || Boolean(job)}
-        placeholder="Descreva objetivamente o motivo da derrota conforme a análise do processo."
-        onChange={event => setMotivo(event.target.value)} />
-    </label>
-    {!job ? <p className="motivo-derrota-helper">{motivo.trim().length}/2000 caracteres · Registro sujeito à conferência no Benner.</p> : null}
+    <div className="motivo-derrota-heading">
+      <span className="motivo-derrota-eyebrow">Cadastro no Benner</span>
+      <h3>Motivo da derrota</h3>
+      <p>Registre o motivo conforme a análise processual. A tarefa só será concluída após confirmação do andamento pelo worker.</p>
+    </div>
+    <section className="motivo-derrota-card" aria-label="Dados do andamento">
+      <div className="motivo-derrota-card-heading">
+        <span className="motivo-derrota-step" aria-hidden="true">01</span>
+        <div><strong>Dados do andamento</strong><p>O envio será feito ao Benner para conferência e registro.</p></div>
+      </div>
+      <label htmlFor={'motivo-derrota-texto-' + process.id}>Motivo da derrota
+        <textarea id={'motivo-derrota-texto-' + process.id} required minLength={10} maxLength={2000}
+          rows={4} value={motivo} disabled={busy || checking || Boolean(job)}
+          placeholder="Descreva objetivamente o motivo da derrota conforme a análise do processo."
+          onChange={event => setMotivo(event.target.value)} />
+      </label>
+      {!job ? <p className="motivo-derrota-helper">{motivo.trim().length}/2000 caracteres · Registro sujeito à conferência no Benner.</p> : null}
+    </section>
     {job ? <div className="motivo-derrota-queue" role="status">
       <strong>{currentStatus}</strong>
       <span>{waiting ? 'O envio está na fila. Você pode continuar acompanhando sem reenviar.'
@@ -269,10 +278,13 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
       {job.status === 'ERRO' && job.erro ? <span>{job.erro}</span> : null}
     </div> : null}
     {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
-    {!job && !checking ? <button type="submit" className="primary-button"
-      disabled={busy || motivo.trim().length < 10 || motivo.trim().length > 2000}>
-      {busy ? 'Enviando à fila…' : 'Cadastrar no Benner'}
-    </button> : null}
-    {checking ? <p role="status">Consultando solicitações existentes…</p> : null}
+    <footer className="motivo-derrota-actions">
+      <span className="motivo-derrota-action-note">O cadastro é confirmado no Benner antes de concluir a tarefa.</span>
+      {!job && !checking ? <button type="submit" className="primary-button"
+        disabled={busy || motivo.trim().length < 10 || motivo.trim().length > 2000}>
+        {busy ? 'Enviando à fila…' : 'Cadastrar no Benner'}
+      </button> : null}
+      {checking ? <p role="status">Consultando solicitações existentes…</p> : null}
+    </footer>
   </form>;
 }
