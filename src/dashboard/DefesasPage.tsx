@@ -119,8 +119,23 @@ export function DefesasPage() {
 
   useEffect(() => {
     void load();
-    const timer = window.setInterval(() => { if (!document.hidden) void load(); }, 60000);
-    return () => window.clearInterval(timer);
+    let debounce:number|undefined;
+    const update = () => { if (!document.hidden) void load(); };
+    const onEvent = (event:Event) => {
+      const module=(event as CustomEvent<{module?:string}>).detail?.module;
+      if(module !== 'defesas' && module !== 'tarefas') return;
+      window.clearTimeout(debounce);
+      debounce=window.setTimeout(update,500);
+    };
+    const timer = window.setInterval(update, 300000);
+    window.addEventListener('mba:realtime-invalidate',onEvent);
+    document.addEventListener('visibilitychange',update);
+    return () => {
+      window.clearTimeout(debounce);
+      window.clearInterval(timer);
+      window.removeEventListener('mba:realtime-invalidate',onEvent);
+      document.removeEventListener('visibilitychange',update);
+    };
   }, [load]);
 
   const counts = useMemo(() => ({

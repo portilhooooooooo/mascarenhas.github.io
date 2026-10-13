@@ -65,6 +65,7 @@ const mbaWindow = window as UsersWindow;
 const MASTER_EMAIL = 'gabriel.portilho@mascarenhasbarbosa.com.br';
 
 const SECTION_LABELS: Record<string, string> = {
+  processos: 'Processos',
   dashboard: 'Analytics',
   tasks: 'Tarefas',
   automations: 'Automações',
@@ -79,6 +80,7 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 const SECTION_ORDER = [
+  'processos',
   'dashboard',
   'tasks',
   'automations',

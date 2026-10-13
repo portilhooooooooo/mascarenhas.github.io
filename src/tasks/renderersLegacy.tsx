@@ -1,6 +1,7 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { TaskQuestion, TaskActionBar, TaskForm, OptionGroup } from './TaskQuestion';
+import { useQaField, clearQaDraft } from './qaDraft';
 
 export type ApiRequest = (path: string, options?: RequestInit) => Promise<any>;
 
@@ -15,24 +16,34 @@ type BaseRendererProps = {
   api: ApiRequest;
   task: Task;
   process: TaskProcess;
+  draftKey?: string;
   onCompleted: (process: TaskProcess) => void;
   onSkipped: (process: TaskProcess) => void;
 };
 
-export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: BaseRendererProps) {
-  const [requested, setRequested] = useState<string | null>(null);
-  const [decided, setDecided] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  const [judgment, setJudgment] = useState<string | null>(null);
+function usePhaseTelemetry(api: ApiRequest, processId: string) {
+  return useCallback((index: number, stage: string) => {
+    if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
+    void api(`/api/task-processes/${processId}/analysis-activity`, {
+      method: 'POST', body: JSON.stringify({ index, stage }),
+    }).catch(() => { /* Telemetria nunca bloqueia a análise. */ });
+  }, [api, processId]);
+}
+
+const LIMINAR_STAGES = ['Pedido de tutela', 'Decisão judicial', 'Resultado da análise'] as const;
+const PAYMENT_STAGES = ['Situação do pagamento', 'Comprovante', 'Pendências', 'Bloqueio'] as const;
+
+export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted, onSkipped }: BaseRendererProps) {
+  const [requested, setRequested] = useQaField<string | null>(draftKey, 'liminar.requested', null);
+  const [decided, setDecided] = useQaField<string | null>(draftKey, 'liminar.decided', null);
+  const [result, setResult] = useQaField<string | null>(draftKey, 'liminar.result', null);
+  const [judgment, setJudgment] = useQaField<string | null>(draftKey, 'liminar.judgment', null);
   const decision = requested === 'nao' ? 'nao_solicitada' : requested === 'sim' && decided === 'sim' ? result : requested === 'sim' && decided === 'nao' && judgment ? judgment === 'sim' ? 'com_sentenca' : 'sem_decisao' : null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const onPhaseEntered = usePhaseTelemetry(api, process.id);
 
-  useEffect(() => {
-    setRequested(null); setDecided(null); setResult(null); setJudgment(null);
-    setBusy(false);
-    setError(null);
-  }, [process.id]);
+  // O componente recebe key por processo e recupera seu rascunho local.
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -47,6 +58,7 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
         method: 'POST',
         body: JSON.stringify({ decision, notes: null }),
       });
+      clearQaDraft(draftKey);
       onCompleted(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível salvar a análise.');
@@ -60,6 +72,7 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
     setError(null);
     try {
       await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      clearQaDraft(draftKey);
       onSkipped(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível pular o processo.');
@@ -69,11 +82,11 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
   };
 
   return (
-    <TaskForm className="task-renderer-form" onSubmit={submit}>
-      <TaskQuestion number="01" question="Há pedido de tutela antecipada na inicial desse processo?"><OptionGroup name="liminar-requested" value={requested} onChange={value => { setRequested(value); setDecided(null); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion>
-      {requested === 'sim' ? <TaskQuestion number="02" question="A tutela de urgência já foi decidida pelo juiz?"><OptionGroup name="liminar-decided" value={decided} onChange={value => { setDecided(value); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
-      {requested === 'sim' && decided === 'sim' ? <TaskQuestion number="03" question="Qual foi a decisão do juiz sobre a tutela de urgência?"><OptionGroup name="liminar-result" value={result} onChange={setResult} disabled={busy} options={[{value:'deferida',label:'Deferida'},{value:'indeferida',label:'Indeferida'}]}/></TaskQuestion> : null}
-      {requested === 'sim' && decided === 'nao' ? <TaskQuestion number="03" question="Esse processo teve sentença?"><OptionGroup name="liminar-judgment" value={judgment} onChange={setJudgment} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
+    <TaskForm className="task-renderer-form" progressive stages={LIMINAR_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
+      <TaskQuestion number="01" stage="Pedido de tutela" question="Há pedido de tutela antecipada na inicial desse processo?"><OptionGroup name="liminar-requested" value={requested} onChange={value => { setRequested(value); setDecided(null); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion>
+      {requested === 'sim' ? <TaskQuestion number="02" stage="Decisão judicial" question="A tutela de urgência já foi decidida pelo juiz?"><OptionGroup name="liminar-decided" value={decided} onChange={value => { setDecided(value); setResult(null); setJudgment(null); }} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
+      {requested === 'sim' && decided === 'sim' ? <TaskQuestion number="03" stage="Resultado da análise" question="Qual foi a decisão do juiz sobre a tutela de urgência?"><OptionGroup name="liminar-result" value={result} onChange={setResult} disabled={busy} options={[{value:'deferida',label:'Deferida'},{value:'indeferida',label:'Indeferida'}]}/></TaskQuestion> : null}
+      {requested === 'sim' && decided === 'nao' ? <TaskQuestion number="03" stage="Resultado da análise" question="Esse processo teve sentença?"><OptionGroup name="liminar-judgment" value={judgment} onChange={setJudgment} disabled={busy} options={[{value:'sim',label:'Sim'},{value:'nao',label:'Não'}]}/></TaskQuestion> : null}
       <ErrorMessage message={error} />
       <TaskActionBar busy={busy} onSkip={skip} ready={Boolean(decision)} />
     </TaskForm>
@@ -81,28 +94,19 @@ export function LiminarRenderer({ api, task, process, onCompleted, onSkipped }: 
 }
 
 
-export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRendererProps) {
-  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
-  const [paidReceipt, setPaidReceipt] = useState<string | null>(null);
-  const [manifested, setManifested] = useState<string | null>(null);
-  const [manifestationReason, setManifestationReason] = useState('');
-  const [unpaidStatus, setUnpaidStatus] = useState<string | null>(null);
-  const [requestedAgain, setRequestedAgain] = useState<string | null>(null);
-  const [hadBlock, setHadBlock] = useState<string | null>(null);
+export function PaymentRenderer({ api, process, draftKey = '', onCompleted, onSkipped }: BaseRendererProps) {
+  const [paymentStatus, setPaymentStatus] = useQaField<string | null>(draftKey, 'payment.paymentStatus', null);
+  const [paidReceipt, setPaidReceipt] = useQaField<string | null>(draftKey, 'payment.paidReceipt', null);
+  const [manifested, setManifested] = useQaField<string | null>(draftKey, 'payment.manifested', null);
+  const [manifestationReason, setManifestationReason] = useQaField(draftKey, 'payment.manifestationReason', '');
+  const [unpaidStatus, setUnpaidStatus] = useQaField<string | null>(draftKey, 'payment.unpaidStatus', null);
+  const [requestedAgain, setRequestedAgain] = useQaField<string | null>(draftKey, 'payment.requestedAgain', null);
+  const [hadBlock, setHadBlock] = useQaField<string | null>(draftKey, 'payment.hadBlock', null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const onPhaseEntered = usePhaseTelemetry(api, process.id);
 
-  useEffect(() => {
-    setPaymentStatus(null);
-    setPaidReceipt(null);
-    setManifested(null);
-    setManifestationReason('');
-    setUnpaidStatus(null);
-    setRequestedAgain(null);
-    setHadBlock(null);
-    setBusy(false);
-    setError(null);
-  }, [process.id]);
+  // O componente recebe key por processo e recupera seu rascunho local.
 
   const choosePaymentStatus = (value: string) => {
     setPaymentStatus(value);
@@ -175,6 +179,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      clearQaDraft(draftKey);
       onCompleted(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível salvar a análise.');
@@ -188,6 +193,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
     setError(null);
     try {
       await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      clearQaDraft(draftKey);
       onSkipped(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível pular o processo.');
@@ -199,8 +205,8 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
   const analysisReady = (() => { try { buildPayload(); return true; } catch { return false; } })();
 
   return (
-    <TaskForm className="task-renderer-form" onSubmit={submit}>
-      <TaskQuestion number="1" question="O pagamento foi efetivado?">
+    <TaskForm className="task-renderer-form" progressive stages={PAYMENT_STAGES} dynamicStages draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}>
+      <TaskQuestion number="1" stage="Situação do pagamento" question="O pagamento foi efetivado?">
 
         <OptionGroup name="payment-status" value={paymentStatus} onChange={choosePaymentStatus} disabled={busy} options={[
           { value: 'pago', label: 'Sim', description: 'Pagamento efetivado' },
@@ -209,7 +215,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
       </TaskQuestion>
 
       {paymentStatus === 'pago' ? (
-        <TaskQuestion number="2" question="Você localizou o comprovante?">
+        <TaskQuestion number="2" stage="Comprovante" question="Você localizou o comprovante?">
           <OptionGroup name="paid-receipt" value={paidReceipt} onChange={value => { setPaidReceipt(value); setManifested(null); setManifestationReason(''); }} disabled={busy} options={[
             { value: 'com_comprovante', label: 'Sim', description: 'Comprovante localizado' },
             { value: 'sem_comprovante', label: 'Não', description: 'Comprovante não localizado' },
@@ -218,7 +224,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
       ) : null}
 
       {paymentStatus === 'pago' && paidReceipt === 'com_comprovante' ? (
-        <TaskQuestion number="3" question="O comprovante já foi apresentado nos autos?">
+        <TaskQuestion number="3" stage="Comprovante" question="O comprovante já foi apresentado nos autos?">
           <OptionGroup name="manifested" value={manifested} onChange={value => { setManifested(value); if (value === 'true') setManifestationReason(''); }} disabled={busy} options={[
             { value: 'true', label: 'Sim', description: 'Já foi manifestado nos autos' },
             { value: 'false', label: 'Não', description: 'Ainda não foi manifestado' },
@@ -227,15 +233,17 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
       ) : null}
 
       {paymentStatus === 'pago' && paidReceipt === 'com_comprovante' && manifested === 'false' ? (
-        <label className="task-text-field">
-          <span>Justificativa <b>(obrigatório)</b></span>
-          <textarea value={manifestationReason} maxLength={2000} rows={3} disabled={busy} onChange={event => setManifestationReason(event.target.value)} placeholder="Informe por que o comprovante ainda não foi manifestado nos autos..." />
-          <em>{manifestationReason.length}/2000</em>
-        </label>
+        <TaskQuestion number="4" stage="Comprovante" question="Por que o comprovante ainda não foi apresentado nos autos?">
+          <label className="task-text-field">
+            <span>Justificativa <b>(obrigatório)</b></span>
+            <textarea required value={manifestationReason} maxLength={2000} rows={3} disabled={busy} onChange={event => setManifestationReason(event.target.value)} placeholder="Informe por que o comprovante ainda não foi manifestado nos autos..." />
+            <em>{manifestationReason.length}/2000</em>
+          </label>
+        </TaskQuestion>
       ) : null}
 
       {paymentStatus === 'nao_pago' ? (
-        <TaskQuestion number="2" question="Em que situação está o pagamento?">
+        <TaskQuestion number="2" stage="Pendências" question="Em que situação está o pagamento?">
           <OptionGroup name="unpaid-status" value={unpaidStatus} onChange={value => { setUnpaidStatus(value); setRequestedAgain(null); }} disabled={busy} options={[
             { value: 'em_aprovacao', label: 'Em aprovação', description: 'Aguardando análise do banco' },
             { value: 'erro_emissao', label: 'Erro na emissão', description: 'Falha na geração do pagamento' },
@@ -245,7 +253,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
       ) : null}
 
       {paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? (
-        <TaskQuestion number="3" question="Já houve uma nova solicitação?">
+        <TaskQuestion number="3" stage="Pendências" question="Já houve uma nova solicitação?">
           <OptionGroup name="requested-again" value={requestedAgain} onChange={setRequestedAgain} disabled={busy} options={[
             { value: 'true', label: 'Sim', description: 'Pagamento solicitado novamente' },
             { value: 'false', label: 'Não', description: 'Não houve nova solicitação' },
@@ -253,7 +261,7 @@ export function PaymentRenderer({ api, process, onCompleted, onSkipped }: BaseRe
         </TaskQuestion>
       ) : null}
 
-      <TaskQuestion number={paymentStatus === 'pago' && paidReceipt === 'com_comprovante' || paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? '4' : paymentStatus ? '3' : '2'} question="Houve bloqueio relacionado ao pagamento?">
+      <TaskQuestion number={paymentStatus === 'pago' && manifested === 'false' && paidReceipt === 'com_comprovante' ? '5' : paymentStatus === 'pago' && paidReceipt === 'com_comprovante' || paymentStatus === 'nao_pago' && (unpaidStatus === 'erro_emissao' || unpaidStatus === 'negado_banco') ? '4' : paymentStatus ? '3' : '2'} stage="Bloqueio" question="Houve bloqueio relacionado ao pagamento?">
         <OptionGroup name="had-block" value={hadBlock} onChange={setHadBlock} disabled={busy} options={[
           { value: 'true', label: 'Sim', description: 'Foi identificado bloqueio relacionado' },
           { value: 'false', label: 'Não', description: 'Não foi identificado bloqueio' },

@@ -16,6 +16,7 @@ window.addEventListener('mba:logged-out', () => setTaskNavCount(null));
 window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 
 const pageRoutes = Object.freeze({
+  processos: 'processos',
   dashboard: 'analytics',
   acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
@@ -59,6 +60,8 @@ function routeUrl(route) {
 }
 function resolvePageRoute(route) {
   const canonical = routeAliases[route] || route;
+  if (/^processos\/[^/]+$/.test(canonical)) return {pageId: 'processos', canonical};
+  if (/^tarefas\/item\/[a-f0-9-]{36}\/[a-f0-9-]{36}$/.test(canonical)) return {pageId: 'tarefas', canonical};
   if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
     return { pageId: 'tarefas', canonical: 'tarefas' };
   }
@@ -111,8 +114,9 @@ function restorePageRoute() {
   const match = resolvePageRoute(routeFromLocation());
   if (!match) return false;
   if (!canAccessRoute(match.pageId, match.canonical)) {
+    // Preserve the original deep link when authorization temporarily changes.
+    // The forbidden page remains hidden; a later profile refresh can restore it.
     showPage('sem-acesso', false);
-    publishRoute('sem-acesso', 'sem-acesso', true);
     return true;
   }
   showPage(match.pageId, false);

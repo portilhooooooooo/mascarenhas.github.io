@@ -1,5 +1,5 @@
 .operacao-metabase-page{min-height:calc(100dvh - var(--mba-topbar-height,52px));padding:14px 24px 24px;background:var(--mba-bg,#f7f9fc)}
-.operacao-metabase-shell{position:relative;width:100%;min-height:760px;overflow:hidden;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:#fff}
+.operacao-metabase-shell{position:relative;width:100%;min-height:760px;overflow:hidden;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d)}
 .operacao-metabase-mount{width:100%;min-height:760px}
 .operacao-metabase-mount metabase-dashboard{display:block;width:100%;min-height:760px}
 .operacao-metabase-loading{position:absolute;inset:0;z-index:2;display:grid;place-items:center;background:#ffffffb8;color:var(--mba-blue,#142b67);pointer-events:none}

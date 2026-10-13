@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
   getClosingCases, getClosingSummary, sendClosingsToBenner,
-  type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType, type MotivoDerrotaFilter,
+  type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType, type MotivoDerrotaFilter, type ClosingIndicioFilter,
 } from './operacaoEncerramentosService';
 
 const STATUS: Array<{key: ClosingStatus; label: string; tone: string}> = [
@@ -54,6 +54,7 @@ export function OperacaoEncerramentosPage() {
   const [query,setQuery]=useState('');
   const [appliedQuery,setAppliedQuery]=useState('');
   const [motivoFiltro,setMotivoFiltro]=useState<MotivoDerrotaFilter>('todos');
+  const [indicioFiltro,setIndicioFiltro]=useState<ClosingIndicioFilter>('todos');
   const [pageSize,setPageSize]=useState(10);
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
@@ -71,13 +72,13 @@ export function OperacaoEncerramentosPage() {
     try {
       const [nextSummary,nextList]=await Promise.all([
         getClosingSummary(),
-        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro),
+        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro,indicioFiltro),
       ]);
       setSummary(nextSummary);setRows(nextList.rows||[]);setTotal(Number(nextList.total||0));setError('');
     } catch (cause) {
       setError(cause instanceof Error?cause.message:'Não foi possível consultar Encerramentos.');
     } finally {setLoading(false);}
-  },[canView,tab,page,pageSize,appliedQuery,motivoFiltro]);
+  },[canView,tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro]);
 
   useEffect(()=>{
     const sync=()=>{
@@ -92,10 +93,25 @@ export function OperacaoEncerramentosPage() {
   useEffect(()=>{setLoading(true);void refresh();},[refresh]);
   useEffect(()=>{
     if(!canView)return;
-    const timer=window.setInterval(()=>{if(!document.hidden&&!submitting)void refresh();},15000);
-    return ()=>window.clearInterval(timer);
+    let debounce:number|undefined;
+    const update=()=>{if(!document.hidden&&!submitting)void refresh();};
+    const onEvent=(event:Event)=>{
+      const module=(event as CustomEvent<{module?:string}>).detail?.module;
+      if(module!=='encerramentos')return;
+      window.clearTimeout(debounce);
+      debounce=window.setTimeout(update,450);
+    };
+    const timer=window.setInterval(update,300000);
+    window.addEventListener('mba:realtime-invalidate',onEvent);
+    document.addEventListener('visibilitychange',update);
+    return ()=>{
+      window.clearTimeout(debounce);
+      window.clearInterval(timer);
+      window.removeEventListener('mba:realtime-invalidate',onEvent);
+      document.removeEventListener('visibilitychange',update);
+    };
   },[canView,refresh,submitting]);
-  useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro]);
+  useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro]);
 
   const candidates=useMemo(()=>rows.filter(row=>selected[row.cnj]&&eligible(row)),[rows,selected]);
   const isActionTab=['APTOS','DERROTA','DERROTA_VOLUNTARIA','VITORIA'].includes(tab);
@@ -166,6 +182,15 @@ export function OperacaoEncerramentosPage() {
           <Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar processo ou pasta…" aria-label="Buscar encerramentos"/>
         </form>
         <div className="protocolos-toolbar-actions">
+          <label className="protocolos-page-size"><span>Indício</span><select aria-label="Filtrar por tipo de indício DataJud" value={indicioFiltro} onChange={event=>{setIndicioFiltro(event.target.value as ClosingIndicioFilter);setPage(1);}}>
+            <option value="todos">Todos</option>
+            <option value="INDETERMINADO">Indeterminado</option>
+            <option value="DERROTA">Derrota</option>
+            <option value="DERROTA_VOLUNTARIA">Derrota voluntária</option>
+            <option value="VITORIA">Vitória</option>
+            <option value="ACORDO">Acordo</option>
+            <option value="EXTINCAO">Extinção</option>
+          </select></label>
           <label className="protocolos-page-size"><span>Tem motivo derrota?</span><select aria-label="Filtrar por motivo derrota" value={motivoFiltro} onChange={event=>{setMotivoFiltro(event.target.value as MotivoDerrotaFilter);setPage(1);}}>
             <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option><option value="nao_verificado">Não verificado</option>
           </select></label>

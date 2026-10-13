@@ -1,0 +1,34 @@
+.assignments-board{display:grid;gap:16px;color:var(--mba-text,#e9e7e3);min-width:0}
+.assignments-header{display:flex;justify-content:space-between;align-items:start;gap:14px}
+.assignments-header h1{margin:0;font-size:24px;letter-spacing:-.03em}
+.assignments-header p{margin:5px 0 0;color:var(--mba-text-2,#87909c);font-size:12px;line-height:1.5}
+.assignments-views{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.assignments-views button{border:1px solid var(--mba-border,#d7d7d7);border-radius:7px;background:transparent;color:inherit;padding:8px 12px;font-size:12px;cursor:pointer}
+.assignments-views button.active{background:var(--mba-blue-soft,rgba(200,132,92,.12));border-color:var(--mba-blue,#a87051);font-weight:700}
+.assignments-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.assignments-filters label,.assignments-bulk label{display:grid;gap:6px;font-size:11px;color:var(--mba-text-2,#85878c)}
+.assignments-filters :is(select,input),.assignments-bulk select{min-width:0;width:100%;min-height:38px;border:1px solid var(--mba-border,#d7d7d7);border-radius:8px;padding:7px 10px;background:var(--mba-surface,#fff);color:var(--mba-text,#222);font:inherit}
+.assignments-warning{padding:10px 12px;border:1px solid #c57b42;border-radius:9px;font-size:12px}
+.assignments-notice{padding:10px 12px;border:1px solid var(--mba-border,#aaa);border-radius:9px;font-size:12px}
+.assignments-summary{font-size:12px;color:var(--mba-text-2,#555);font-variant-numeric:tabular-nums}
+.assignments-bulk{display:flex;align-items:end;gap:12px;flex-wrap:wrap;padding:12px;border:1px solid var(--mba-border,#ddd);border-radius:9px;background:var(--mba-surface,#fff)}
+.assignments-bulk label{flex:1;min-width:160px}
+.assignments-bulk small{flex:1 0 100%;font-size:11px;color:var(--mba-text-2,#666)}
+.assignments-table-wrap{min-width:0;overflow-x:auto;border:1px solid var(--mba-border,#ddd);border-radius:10px;background:var(--mba-surface,#fff)}
+.assignments-table{width:100%;min-width:790px;border-collapse:collapse;text-align:left}
+.assignments-table th,.assignments-table td{padding:11px 13px;border-bottom:1px solid var(--mba-border,#ddd);font-size:12px}
+.assignments-table th{font-size:10px;letter-spacing:.035em;color:var(--mba-text-2,#555);font-weight:700}
+.assignments-table th:first-child:has(input),.assignments-table td:first-child:has(input){width:42px;text-align:center}
+.assignments-table tbody tr:last-child td{border-bottom:0}
+.assignments-table td strong{font-weight:650}
+.assignments-table input[type="checkbox"]{width:16px;height:16px;accent-color:var(--mba-blue,#b47957)}
+.assignments-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px}
+.assignments-pagination>div{display:flex;gap:7px}
+.assignments-pagination button{border:1px solid var(--mba-border,#ddd);border-radius:7px;background:transparent;color:inherit;padding:7px 11px;cursor:pointer}
+.assignments-pagination button:disabled{opacity:.4;cursor:default}
+.assignments-board button:focus-visible,.assignments-board select:focus-visible,.assignments-board input:focus-visible{outline:2px solid var(--mba-blue,#b47957);outline-offset:2px}
+@media(max-width:760px){.assignments-filters{grid-template-columns:1fr}.assignments-header{flex-wrap:wrap}.assignments-bulk{align-items:stretch}.assignments-bulk>button{min-height:38px}}
+
+/* Group headers follow the selected perspective without changing row semantics. */
+.assignments-group-row th{padding:9px 13px;background:var(--mba-subtle,#f3f5f7);color:var(--mba-text,#222);font-size:11px;font-weight:650;text-transform:none;letter-spacing:0}
+.assignments-group-row small{margin-left:7px;color:var(--mba-text-2,#64748b);font-size:10px;font-weight:400}

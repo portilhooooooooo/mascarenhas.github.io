@@ -54,10 +54,11 @@ export interface WorkItem {
 }
 
 export const TASK_TYPE_LABELS: Record<string, string> = {
-  comprovante_pagamento: 'Validação de Comprovante',
+  comprovante_pagamento: 'Validação de Pagamento',
   liminar: 'Validação de Liminar',
   acordos: 'Saneamento de Acordos',
-  encerramento: 'Validação de Encerramento',
+  // Fluxos agrupam várias etapas operacionais em uma única análise.
+  encerramento: 'Fluxo de Encerramento',
   bloqueio: 'Validação de Bloqueio',
   citacao: 'Validação de Citação',
   protocolo: 'Protocolo',
@@ -185,22 +186,24 @@ function processPosition(process: TaskProcess) {
 }
 
 export function compareTasks(a: Task, b: Task) {
-  const state = taskStateRank(a) - taskStateRank(b);
-  if (state) return state;
-  const deadline = safeTime(a.deadline_at) - safeTime(b.deadline_at);
-  if (deadline) return deadline;
+  // Prioridade é filtro e sinalização, não ordem automática de execução.
   const created = safeTime(a.created_at || a.updated_at) - safeTime(b.created_at || b.updated_at);
   if (created) return created;
+  const deadline = safeTime(a.deadline_at) - safeTime(b.deadline_at);
+  if (deadline) return deadline;
   return String(a.id).localeCompare(String(b.id));
 }
 
 export function backendPriority(item: WorkItem) {
   return normalize(item.process.priority || item.task.priority) || 'unspecified';
 }
-export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Altíssima', 'altíssima': 'Altíssima', highest: 'Altíssima', urgent: 'Altíssima', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Normal', baixa: 'Baixa', low: 'Baixa', unspecified: 'Não informada' };
-function priorityRank(item: WorkItem) {
+export const PRIORITY_LABELS: Record<string, string> = { altissima: 'Alta', 'altíssima': 'Alta', highest: 'Alta', urgent: 'Alta', urgente: 'Alta', alta: 'Alta', high: 'Alta', media: 'Média', 'média': 'Média', medium: 'Média', normal: 'Média', baixa: 'Baixa', low: 'Baixa', unspecified: 'Média' };
+export function priorityLevel(item: WorkItem): 'high' | 'medium' | 'low' {
   const value = backendPriority(item);
-  return ['altissima','altíssima','highest','urgent'].includes(value) ? 0 : ['alta','high'].includes(value) ? 1 : ['media','média','medium','normal'].includes(value) ? 2 : ['baixa','low'].includes(value) ? 3 : 4;
+  if (['altissima', 'altíssima', 'highest', 'urgent', 'urgente', 'alta', 'high'].includes(value)) return 'high';
+  if (['baixa', 'low'].includes(value)) return 'low';
+  // Valores legados "normal" e sem prioridade explícita permanecem na faixa média.
+  return 'medium';
 }
 export function processStatus(item: WorkItem, skipped = false) {
   const status = normalize(item.process.status) || 'pending';
@@ -209,8 +212,7 @@ export function processStatus(item: WorkItem, skipped = false) {
 export const PROCESS_STATUS_LABELS: Record<string,string> = { pending:'Pendente', in_progress:'Em execução', waiting:'Aguardando', queued:'Na fila', created:'Pendente', completed:'Concluído', skipped:'Pulado', error:'Erro', erro:'Erro', failed:'Erro', cancelled:'Cancelado', inactive:'Inativo' };
 
 export function compareWorkItems(a: WorkItem, b: WorkItem) {
-  const priority = priorityRank(a) - priorityRank(b);
-  if (priority) return priority;
+  // Ordem previsível de criação/importação; não reordena pelo nível de prioridade.
   const taskOrder = compareTasks(a.task, b.task);
   if (taskOrder) return taskOrder;
   const position = processPosition(a.process) - processPosition(b.process);

@@ -9,7 +9,8 @@ const gestaoManifest = fs.readFileSync('scripts/metabase/rebuild_gestao_processu
 const operacaoManifest = fs.readFileSync('scripts/metabase/rebuild_operacao.py', 'utf8');
 const controladoriaPatch = fs.readFileSync('scripts/metabase/patch_controladoria_indicadores.py', 'utf8');
 
-assert.match(gestaoPage, /MetabaseGestaoEmbed/);
+assert.match(gestaoPage, /VisaoGeralPage/);
+assert.doesNotMatch(gestaoPage, /MetabaseGestaoEmbed/);
 assert.doesNotMatch(operacaoPage, /MetabaseOperacaoEmbed/);
 assert.match(operacaoPage, /operacaoPagamentosService/);
 assert.match(operacaoPage, /Pago com comprovante/);

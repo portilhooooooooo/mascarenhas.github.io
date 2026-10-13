@@ -3,6 +3,7 @@
   'use strict';
   const PAGE_PERMISSIONS = Object.freeze({
     dashboard: 'dashboard.view',
+    processos: 'processos.view',
     tarefas: 'tasks.view',
     'tarefa-analise': 'tasks.view',
     'comprovante-execucao': 'tasks.view',
@@ -18,7 +19,7 @@
   });
   const ENTER_ONLY = new Set(['protocolo']);
   const GLOBAL_PAGES = new Set(['usuarios', 'configuracoes']);
-  const SHARED_PAGES = new Set(['dashboard', 'tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'acordos', 'pagamentos', 'tutelas', 'encerramentos']);
+  const SHARED_PAGES = new Set(['processos', 'dashboard', 'tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'acordos', 'pagamentos', 'tutelas', 'encerramentos']);
   const canonical = value => String(value || '').trim().toLowerCase();
   const getPortfolio = user => {
     const rows = Array.isArray(user?.portfolios) ? user.portfolios : [];
@@ -44,12 +45,13 @@
     if (!portfolio) return false; // Never infer entitlements from a stale or missing portfolio.
     const modules = declaredModules(portfolio);
     const moduleAliases = {
+      processos: ['processos'],
       dashboard: ['dashboard', 'analytics', 'gestao_processual'],
       tarefas: ['tarefas', 'tasks'],
       'tarefa-analise': ['tarefas', 'tasks'],
       'comprovante-execucao': ['tarefas', 'tasks'],
       'acordo-execucao': ['tarefas', 'tasks'],
-      acordos: ['operacao', 'acordos', 'agreements', 'pagamentos', 'liminar', 'tutelas', 'encerramentos'],
+      acordos: ['operacao', 'acordos', 'agreements', 'pagamentos', 'liminar', 'tutelas', 'encerramentos', 'controladoria', 'protocolo', 'protocolos'],
       pagamentos: ['operacao', 'pagamentos'],
       automacoes: ['automacoes', 'automations'],
       protocolo: ['controladoria', 'protocolo', 'protocolos'],
@@ -65,7 +67,8 @@
   };
   const canAccess = (pageId, user = window.MBA_CURRENT_USER) => {
     const permission = PAGE_PERMISSIONS[pageId];
-    if (pageId === 'acordos') return Boolean((user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['tutelas.view'] === true || user?.permissions?.['encerramentos.view'] === true) && moduleAvailable(pageId, user));
+    if (pageId === 'processos' && user?.capabilities?.processos !== true) return false;
+    if (pageId === 'acordos') return Boolean((user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['tutelas.view'] === true || user?.permissions?.['encerramentos.view'] === true || canAccess('protocolo', user)) && moduleAvailable(pageId, user));
     return Boolean(permission && user?.permissions?.[permission] === true && moduleAvailable(pageId, user));
   };
   window.MBA_PORTFOLIO_POLICY = Object.freeze({ canAccess, moduleAvailable, getPortfolio, isEnter, PAGE_PERMISSIONS });

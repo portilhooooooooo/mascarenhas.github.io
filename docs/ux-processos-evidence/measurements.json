@@ -1,0 +1,36 @@
+{
+  "fixture": true,
+  "viewports": [
+    {
+      "width": 1366,
+      "height": 768,
+      "scroll": 511,
+      "client": 511,
+      "overflow": "auto"
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "scroll": 658,
+      "client": 658,
+      "overflow": "auto"
+    },
+    {
+      "width": 1920,
+      "height": 1080,
+      "scroll": 858,
+      "client": 858,
+      "overflow": "auto"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scroll": 366,
+      "client": 366,
+      "overflow": "auto"
+    }
+  ],
+  "requests": 50,
+  "writes": 2,
+  "jsErrors": []
+}

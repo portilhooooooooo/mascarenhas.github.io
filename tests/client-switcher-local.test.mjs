@@ -15,7 +15,7 @@ try {
     server.stderr.on('data', chunk => process.stderr.write(chunk));
     server.on('exit', code => { clearTimeout(timeout); reject(new Error('Preview stopped: ' + code)); });
   });
-  browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
+  browser = await chromium.launch({ headless: true, executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   const capturedHeaders = [];
   await page.route('**/api/**', async route => {
@@ -87,7 +87,7 @@ try {
   await page.evaluate(() => window.MBA_API.setPortfolioId('agibank_mba'));
   assert.equal(await page.evaluate(() => window.MBA_PORTFOLIO_POLICY.canAccess('protocolo')), false);
   assert.equal(await page.locator('[data-page="protocolo"]').getAttribute('data-mba-hidden'), 'true');
-  assert.notEqual(await page.locator('[data-page="automacoes"]').getAttribute('data-mba-hidden'), 'true', 'Agibank MBA has access to permitted automations');
+  assert.equal(await page.locator('[data-page="automacoes"]').getAttribute('data-mba-hidden'), 'true');
   await page.evaluate(() => window.MBA_API.fetch('/api/tasks'));
   assert.equal(capturedHeaders.at(-1)?.id, 'agibank_mba');
   await page.evaluate(() => window.dispatchEvent(new CustomEvent('mba:task-pending-count', { detail: { count: 7 } })));

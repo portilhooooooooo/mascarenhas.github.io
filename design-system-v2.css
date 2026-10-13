@@ -1,0 +1,154 @@
+/* MBA Backoffice — Reimaginado v2
+ * Neutral Sol / graphite Lua; use after brand-identity.css and brand-themes.css.
+ * Design only: keep Q&A, permissions, authorization and backend validation intact.
+ */
+html[data-mba-theme="sol"] {
+  color-scheme:light;
+  --mba-canvas:#F4F5F3;--mba-surface:#FFFFFF;--mba-surface-muted:#F9FAF8;
+  --mba-ink:#242826;--mba-muted:#76807A;--mba-border:#E7E9E6;
+  --mba-accent:#B95A32;--mba-accent-soft:#FBEFE8;
+  --mba-success:#31755D;--mba-success-soft:#E8F4ED;
+  --mba-bg:var(--mba-canvas);--mba-subtle:var(--mba-surface-muted);
+  --mba-text:var(--mba-ink);--mba-text-2:#525D57;
+  --mba-border-strong:#D8DED8;--mba-blue:var(--mba-accent);
+  --mba-blue-dark:#984621;--mba-blue-soft:var(--mba-accent-soft);
+  --mba-orange:var(--mba-accent);--mba-green:var(--mba-success);
+  --mba-red:#B8423F;--ink:var(--mba-ink);--muted:var(--mba-text-2);
+  --line:var(--mba-border);--surface:var(--mba-surface);
+  --bg:var(--mba-bg);--accent:var(--mba-accent);--accent-soft:var(--mba-accent-soft);
+}
+html[data-mba-theme="lua"] {
+  color-scheme:dark;
+  --mba-canvas:#171A1B;--mba-surface:#24292A;--mba-surface-muted:#202425;
+  --mba-ink:#F0F2F0;--mba-muted:#B2B9B4;--mba-border:#343B3A;
+  --mba-accent:#E58B58;--mba-accent-soft:#453227;
+  --mba-success:#7BBB9B;--mba-success-soft:#213B31;
+  --mba-bg:var(--mba-canvas);--mba-subtle:var(--mba-surface-muted);
+  --mba-text:var(--mba-ink);--mba-text-2:#CDD4CF;
+  --mba-border-strong:#4D5652;--mba-blue:var(--mba-accent);
+  --mba-blue-dark:#F2AE84;--mba-blue-soft:var(--mba-accent-soft);
+  --mba-orange:var(--mba-accent);--mba-green:var(--mba-success);
+  --mba-red:#F09D98;--ink:var(--mba-ink);--muted:var(--mba-text-2);
+  --line:var(--mba-border);--surface:var(--mba-surface);
+  --bg:var(--mba-bg);--accent:var(--mba-accent);--accent-soft:var(--mba-accent-soft);
+}
+:root {
+  --mba-font-ui:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mba-radius-control:8px;--mba-radius-panel:10px;
+  --mba-motion-fast:120ms;--mba-motion-normal:180ms;
+  --mba-context-width:420px;
+}
+/* Restraint: one navigation hierarchy, clear page typography, no dashboard wallpaper. */
+html[data-mba-theme] :is(body,.app-shell,.main-area,.content,.page) {
+  background:var(--mba-canvas)!important;color:var(--mba-ink);
+}
+html[data-mba-theme] :is(body,button,input,select,textarea) {font-family:var(--mba-font-ui)}
+html[data-mba-theme] .sidebar {background:#202425!important;border-right:1px solid #343B3A!important;box-shadow:none!important}
+html[data-mba-theme] .sidebar-head {border-bottom-color:transparent!important}
+html[data-mba-theme] .sidebar .nav-item {
+  border-radius:7px;transition:background var(--mba-motion-fast),color var(--mba-motion-fast);
+}
+html[data-mba-theme] .sidebar .nav-item:hover {background:#303637!important;color:#F0F2F0!important}
+html[data-mba-theme] .sidebar .nav-item.active {background:#37332E!important;color:#FFF5EC!important;box-shadow:none!important}
+html[data-mba-theme] .sidebar .nav-item.active svg {color:#E58B58!important}
+html[data-mba-theme] .sidebar .sidebar-bottom {border-top-color:#343B3A!important}
+html[data-mba-theme] .sidebar .sidebar-portfolio-trigger,
+html[data-mba-theme] .sidebar .sidebar-portfolio-active {background:#292F30!important;border-color:#424847!important}
+html[data-mba-theme="sol"] .topbar {background:var(--mba-surface)!important;border-bottom:1px solid var(--mba-border)!important;box-shadow:none!important}
+html[data-mba-theme="lua"] .topbar {background:var(--mba-surface-muted)!important;border-bottom:1px solid var(--mba-border)!important;box-shadow:none!important}
+html[data-mba-theme] .topbar .mba-theme-switch {border-radius:var(--mba-radius-control);font-size:12px;min-height:32px}
+html[data-mba-theme] .topbar .avatar {background:var(--mba-accent-soft)!important;color:var(--mba-accent)!important}
+html[data-mba-theme] .topbar .profile-menu {background:var(--mba-surface)!important;border-color:var(--mba-border)!important;box-shadow:0 12px 30px #00000012!important}
+html[data-mba-theme] .topbar .profile-menu-item {color:var(--mba-ink)}
+/* Operational typography uses Inter. Editorial serif belongs to the institutional login. */
+html[data-mba-theme] :is(.page-title,.analytics-page-header,.operation-header,.tasks-management-header,.lobby-heading,.tasks-results,.protocolos-header,.detail-heading) h1 {
+  font-family:var(--mba-font-ui)!important;color:var(--mba-ink)!important;
+  font-size:clamp(19px,1.6vw,25px)!important;font-weight:600!important;
+  line-height:1.2!important;letter-spacing:-.028em!important;
+}
+html[data-mba-theme] :is(.page-title,.analytics-page-header,.operation-header,.lobby-heading,.protocolos-header) p {color:var(--mba-text-2)!important}
+html[data-mba-theme] :is(.panel,.module-card,.card,.analytics-card,.operation-card,.mba-operational-panel,.metabase-card,.tasks-management-table-wrap,.tasks-team-table-wrap) {
+  background:var(--mba-surface);border-color:var(--mba-border)!important;
+  border-radius:var(--mba-radius-panel)!important;box-shadow:none!important;
+}
+html[data-mba-theme] :is(.primary-button,.analytics-button.primary,.operation-primary-button) {
+  background:var(--mba-accent)!important;border:1px solid var(--mba-accent)!important;
+  border-radius:var(--mba-radius-control)!important;box-shadow:none!important;
+}
+html[data-mba-theme="sol"] :is(.primary-button,.analytics-button.primary,.operation-primary-button) {color:#FFFFFF!important}
+html[data-mba-theme="lua"] :is(.primary-button,.analytics-button.primary,.operation-primary-button) {color:#171A1B!important}
+html[data-mba-theme] :is(.secondary-button,.icon-button) {
+  background:var(--mba-surface);color:var(--mba-text-2);
+  border-color:var(--mba-border-strong)!important;box-shadow:none!important;
+}
+html[data-mba-theme] :is(input,select,textarea):not([type="radio"]):not([type="checkbox"]) {
+  background:var(--mba-surface);color:var(--mba-ink);border-color:var(--mba-border-strong);
+}
+html[data-mba-theme] :is(button,input,select,textarea,a,[role="option"]):focus-visible {outline:2px solid var(--mba-accent)!important;outline-offset:2px!important}
+html[data-mba-theme] :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav) {
+  background:var(--mba-surface)!important;border-bottom-color:var(--mba-border)!important;box-shadow:none!important;
+}
+html[data-mba-theme] :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button {color:var(--mba-text-2)!important}
+html[data-mba-theme] :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button.active {color:var(--mba-accent)!important}
+html[data-mba-theme] :is(.analytics-subnav,.mba-operation-subnav,.controladoria-subnav,.tasks-react-subnav)>button.active::after {background:var(--mba-accent)!important}
+/* Scan-friendly tables, no card-per-row treatment. */
+html[data-mba-theme] :is(.task-table,.payments-table,.agreements-table,.tasks-management-table,.protocolos-table-react) th {
+  background:var(--mba-surface-muted)!important;color:var(--mba-text-2)!important;
+  border-bottom:1px solid var(--mba-border)!important;font-weight:600;
+}
+html[data-mba-theme] :is(.task-table,.payments-table,.agreements-table,.tasks-management-table,.protocolos-table-react) tr:hover td {background:var(--mba-surface-muted)!important}
+html[data-mba-theme] :is(.task-table,.payments-table,.agreements-table,.tasks-management-table,.protocolos-table-react) td {border-bottom-color:var(--mba-border)!important}
+/* Real tasks workflow: 280px queue, Q&A execution, scroll kept within the workspace. */
+html[data-mba-theme] #tarefas[data-react-tasks="true"] {background:var(--mba-canvas)!important}
+html[data-mba-theme] #tarefas[data-react-tasks="true"] .task-station .tasks-workspace {grid-template-columns:280px minmax(0,1fr);gap:12px}
+html[data-mba-theme] #tarefas .tasks-workspace-sidebar,
+html[data-mba-theme] #tarefas .tasks-renderer-card {
+  background:var(--mba-surface)!important;border:1px solid var(--mba-border)!important;
+  border-radius:var(--mba-radius-panel)!important;box-shadow:none!important;
+}
+html[data-mba-theme] #tarefas .tasks-process-title strong {color:var(--mba-ink)!important;font-size:12px;font-weight:600}
+html[data-mba-theme] #tarefas .tasks-process-title>span {color:var(--mba-text-2)!important;font-variant-numeric:tabular-nums}
+html[data-mba-theme] #tarefas .queue-station-filters {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-label {font-size:10px;color:var(--mba-text-2)}
+html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-trigger,
+html[data-mba-theme] #tarefas .tasks-process-search {
+  background:var(--mba-surface-muted)!important;border:1px solid var(--mba-border-strong)!important;
+  border-radius:var(--mba-radius-control)!important;color:var(--mba-text-2)!important;
+}
+html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-trigger {padding:0 6px;gap:2px;min-width:0}
+html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-trigger span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-options {z-index:120;min-width:135px;background:var(--mba-surface);border-color:var(--mba-border)}
+html[data-mba-theme] #tarefas .tasks-process-search input {background:transparent!important;color:var(--mba-ink)!important;border:0!important}
+html[data-mba-theme] #tarefas .tasks-process-item {min-height:60px;height:60px;border-radius:7px!important;padding:8px 10px;transition:background var(--mba-motion-fast)}
+html[data-mba-theme] #tarefas .tasks-process-item:hover {background:var(--mba-surface-muted)!important;border-color:var(--mba-border)!important}
+html[data-mba-theme] #tarefas .tasks-process-item.selected {background:var(--mba-accent-soft)!important;border-color:var(--mba-border-strong)!important;box-shadow:inset 2px 0 var(--mba-accent)!important}
+html[data-mba-theme] #tarefas .tasks-process-item strong {color:var(--mba-ink)!important}
+html[data-mba-theme] #tarefas .tasks-process-item small {color:var(--mba-text-2)!important}
+html[data-mba-theme="sol"] #tarefas .tasks-state-pill.high {background:#F9ECE9!important;color:#A23B2D!important}
+html[data-mba-theme="sol"] #tarefas .tasks-state-pill.medium {background:#FBF1E2!important;color:#7D582B!important}
+html[data-mba-theme="sol"] #tarefas .tasks-state-pill.low {background:#E9F3EC!important;color:#37684C!important}
+html[data-mba-theme="lua"] #tarefas .tasks-state-pill.high {background:#4A302E!important;color:#FFAAA3!important}
+html[data-mba-theme="lua"] #tarefas .tasks-state-pill.medium {background:#4D3D2C!important;color:#F3D19D!important}
+html[data-mba-theme="lua"] #tarefas .tasks-state-pill.low {background:#2E4538!important;color:#AEE2BD!important}
+html[data-mba-theme] #tarefas :is(.tasks-renderer-card>header,.execution-process-heading) {background:var(--mba-surface)!important;border-bottom:1px solid var(--mba-border)!important}
+html[data-mba-theme] #tarefas .execution-process-heading h2 {color:var(--mba-ink)!important;font-weight:600;letter-spacing:-.02em}
+html[data-mba-theme] #tarefas .execution-process-heading small {color:var(--mba-accent)!important}
+html[data-mba-theme] #tarefas .execution-copy {color:var(--mba-text-2)!important;background:var(--mba-surface)!important;border-color:var(--mba-border-strong)!important}
+html[data-mba-theme] #tarefas .task-question {border-color:var(--mba-border)!important}
+html[data-mba-theme] #tarefas .task-question h3 {color:var(--mba-ink)!important}
+html[data-mba-theme] #tarefas .task-question-number {background:var(--mba-accent-soft)!important;color:var(--mba-accent)!important}
+html[data-mba-theme] #tarefas .task-option-card>span {background:var(--mba-surface)!important;border:1px solid var(--mba-border-strong)!important;border-radius:var(--mba-radius-control)!important;box-shadow:none!important}
+html[data-mba-theme] #tarefas .task-option-card>span:hover {background:var(--mba-surface-muted)!important;border-color:var(--mba-accent)!important}
+html[data-mba-theme] #tarefas .task-option-card input:checked+span {background:var(--mba-accent-soft)!important;border-color:var(--mba-accent)!important;box-shadow:inset 2px 0 var(--mba-accent)!important}
+html[data-mba-theme] #tarefas .closing-summary {background:var(--mba-surface-muted)!important;border-color:var(--mba-border)!important}
+html[data-mba-theme] #tarefas .closing-summary.neutral>strong {color:var(--mba-ink)!important}
+html[data-mba-theme="sol"] #tarefas .closing-summary.positive>strong {color:#31755D!important}
+html[data-mba-theme="lua"] #tarefas .closing-summary.positive>strong {color:#A3DFC1!important}
+html[data-mba-theme="sol"] #tarefas .closing-summary.negative>strong {color:#9C572B!important}
+html[data-mba-theme="lua"] #tarefas .closing-summary.negative>strong {color:#F0BA84!important}
+html[data-mba-theme] #tarefas .closing-date-answer input {background:var(--mba-surface)!important;color:var(--mba-ink)!important;border-color:var(--mba-border-strong)!important}
+html[data-mba-theme] #tarefas .task-renderer-footer {background:var(--mba-surface)!important;border-top:1px solid var(--mba-border)!important}
+html[data-mba-theme] #tarefas .workbench-queue-pagination {border-top-color:var(--mba-border)!important}
+@media(max-width:1020px) and (min-width:701px) {html[data-mba-theme] #tarefas[data-react-tasks="true"] .task-station .tasks-workspace {grid-template-columns:250px minmax(0,1fr)}}
+@media(max-width:700px) {html[data-mba-theme] #tarefas[data-react-tasks="true"] .task-station .tasks-workspace {grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(180px,32%) minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce) {*,*::before,*::after {scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}

@@ -21,6 +21,11 @@ await mkdir(`${dist}/assets/react-dashboard`, { recursive: true });
 const files = [
   'index.html',
   'styles.css',
+  'brand-identity.css',
+  'brand-themes.css',
+  'design-system-v2.css',
+  'reimagined-workspace.css',
+  'brand-theme.js',
   'agreements.css',
   'payment-receipt.css',
   'protocolo.css',
@@ -37,11 +42,26 @@ const files = [
   'page-init-1.js',
   'page-init-2.js',
   'favicon.svg',
+  'favicon-white.svg',
   '_headers',
 ];
 
 for (const file of files) {
   await cp(file, `${dist}/${file}`);
+}
+
+/* Mídia institucional opcional: sem o vídeo o login usa fallback local. */
+let hasBrandVideo = false;
+try {
+  await cp('assets/mascarenhas-login.mp4', `${dist}/assets/mascarenhas-login.mp4`);
+  hasBrandVideo = true;
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
+}
+try {
+  await cp('assets/mascarenhas-login-poster.jpg', `${dist}/assets/mascarenhas-login-poster.jpg`);
+} catch (error) {
+  if (error?.code !== 'ENOENT') throw error;
 }
 
 await cp(
@@ -65,11 +85,16 @@ if (reactOwnedIndexHtml === indexHtml) {
 }
 
 const builtIndexHtml = reactOwnedIndexHtml
-  .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Backoffice</title>')
+  .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Barbosa</title>')
   .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
-  .replace('</head>', `  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260917-exact-symbol">\n</head>`)
+  .replace(/<link[^>]*rel="icon"[^>]*>/g, `<link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-white.svg?v=${buildVersion}">`)
   .replace(/(<script src="\/?app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
-  .replace('</body>', `  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace('</body>', `${hasBrandVideo ? '<script>window.MBA_BRAND_MEDIA={videoUrl:"/assets/mascarenhas-login.mp4",posterUrl:"/assets/mascarenhas-login-poster.jpg"};</script>\n' : ''}  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
+  .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)
+  .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
+  .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
+  .replace(/reimagined-workspace\.css(?:\?v=[^"\']+)?/g, `reimagined-workspace.css?v=${buildVersion}`)
+  .replace(/brand-theme\.js(?:\?v=[^"']+)?/g, `brand-theme.js?v=${buildVersion}`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)
   .replace(/payment-receipt\.css(?:\?v=[^"']+)?/g, `payment-receipt.css?v=${buildVersion}`)
@@ -78,6 +103,7 @@ const builtIndexHtml = reactOwnedIndexHtml
   .replace(/dashboard-react\.js\?v=[^"']+/g, `dashboard-react.js?v=${buildVersion}`)
   .replace(/config\.js(?:\?v=[^"']+)?/g, `config.js?v=${buildVersion}`)
   .replace(/data-api\.js(?:\?v=[^"']+)?/g, `data-api.js?v=${buildVersion}`)
+  .replace(/portfolio-policy\.js(?:\?v=[^"']+)?/g, `portfolio-policy.js?v=${buildVersion}`)
   .replace(/auth\.js(?:\?v=[^"']+)?/g, `auth.js?v=${buildVersion}`)
   .replace(/user-access-manager\.js(?:\?v=[^"']+)?/g, `user-access-manager.js?v=${buildVersion}`)
   .replace(/app\.js(?:\?v=[^"']+)?/g, `app.js?v=${buildVersion}`)
@@ -112,3 +138,7 @@ await writeFile(
 console.log(`dist preparado para deploy e preview local (${buildVersion}).`);
 
 await cp('assets/vendor', `${dist}/assets/vendor`, { recursive: true });
+
+// Pin and serve the existing icon library with the application, without a CDN dependency.
+await cp('node_modules/lucide/dist/umd/lucide.min.js', `${dist}/assets/vendor/lucide.min.js`);
+await cp('node_modules/lucide/LICENSE', `${dist}/assets/vendor/lucide-LICENSE`);
