@@ -6,8 +6,8 @@ import { test } from 'node:test';
 const source = readFileSync(new URL('../app.js', import.meta.url), 'utf8').split('const appShell =')[0];
 
 function environment(initialPath = '/tarefas', options = {}) {
-  const allowed = new Set(options.allowed || ['dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'usuarios']);
-  const ids = ['dashboard', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'tutelas', 'usuarios', 'configuracoes', 'pagamentos', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'sem-acesso'];
+  const allowed = new Set(options.allowed || ['dashboard', 'ranking', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'usuarios']);
+  const ids = ['dashboard', 'ranking', 'tarefas', 'automacoes', 'acordos', 'protocolo', 'encerramentos', 'tutelas', 'usuarios', 'configuracoes', 'pagamentos', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'sem-acesso'];
   const active = new Map(ids.map(id => [id, false]));
   const pages = ids.map(id => ({ id, classList: { toggle(_name, value) { active.set(id, value); } } }));
   const location = { pathname: '/', hash: '' };
@@ -48,6 +48,16 @@ test('navbar muda a URL ao navegar para automações e analytics', () => {
   e.window.showPage('dashboard');
   assert.equal(e.location.pathname, '/analytics');
 });
+test('ranking tem rota própria e exige autorização', () => {
+  const enabled = environment('/ranking');
+  assert.equal(enabled.window.restorePageRoute(), true);
+  assert.equal(enabled.active.get('ranking'), true);
+  const denied = environment('/ranking', { allowed: ['dashboard'] });
+  assert.equal(denied.window.restorePageRoute(), true);
+  assert.equal(denied.active.get('sem-acesso'), true);
+  assert.equal(denied.location.pathname, '/ranking');
+});
+
 test('links diretos e aliases antigos são restaurados sem recarregar', () => {
   const e = environment('/dashboard');
   assert.equal(e.window.restorePageRoute(), true);
