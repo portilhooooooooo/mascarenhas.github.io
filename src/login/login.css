@@ -130,9 +130,6 @@ body[data-react-login="true"] #login-error { display:none!important; }
   background:#382220;border:1px solid #713a35;border-radius:8px;
   color:#f5c8c1;font-size:12px;line-height:1.5;
 }
-#login-view .react-login-security {
-  width:min(465px,100%);text-align:center;color:#777175;font-size:11px;margin:18px auto 0;
-}
 #login-view .react-login-visual {
   position:relative;min-height:min(670px,75vh);
   overflow:hidden;border-radius:22px;
