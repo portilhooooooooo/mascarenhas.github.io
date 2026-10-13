@@ -120,8 +120,8 @@ function OperationalSignals({ data }: {data: Projection}) {
   return <section className="ranking-signals" aria-label="Sinais operacionais parciais">
     <div className="ranking-signals-copy"><strong>Leitura operacional preliminar</strong>
       <p>Na amostra de {pt(sample.desfechos_comparaveis)} encerramentos com desfechos comparáveis, os indicadores são:</p></div>
-    <div><strong>{sample.percentual_vitorias_amostra == null ? '—' : percentage(sample.percentual_vitorias_amostra)}</strong><span>Vitórias · meta 76%</span></div>
-    <div><strong>{sample.percentual_acordos_amostra == null ? '—' : percentage(sample.percentual_acordos_amostra)}</strong><span>Acordos · meta 14%</span></div>
+    <div><strong>{sample.percentual_vitorias_amostra == null ? '—' : percentage(sample.percentual_vitorias_amostra)}</strong><span>{sample.gap_vitorias_pontos_percentuais != null && sample.gap_vitorias_pontos_percentuais > 0 ? pt(sample.gap_vitorias_pontos_percentuais, 1) + ' p.p. abaixo da meta de 76%' : 'Vitórias · meta 76%'}</span></div>
+    <div><strong>{sample.percentual_acordos_amostra == null ? '—' : percentage(sample.percentual_acordos_amostra)}</strong><span>{sample.gap_acordos_pontos_percentuais != null && sample.gap_acordos_pontos_percentuais > 0 ? pt(sample.gap_acordos_pontos_percentuais, 1) + ' p.p. abaixo da meta de 14%' : 'Acordos · meta 14%'}</span></div>
     <div><strong>{sample.preliminar_pontos_dois_criterios == null ? '—' : point(sample.preliminar_pontos_dois_criterios)} <small>/ 3,4</small></strong><span>Prévia da amostra · NÃO oficial</span></div>
     <p className="ranking-signals-warning">{pt(sample.derrota_voluntaria_sem_equivalencia)} derrotas voluntárias segregadas. Amostra NÃO homologada: não gera pontuação e não substitui o universo do edital.</p>
   </section>;
