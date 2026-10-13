@@ -68,3 +68,15 @@
   position: sticky; top: 0; z-index: 2;
 }
 #tarefas[data-react-tasks='true'] .mba-react-select-empty { font-size: 11px; color: var(--mba-muted); padding: 7px; }
+
+/* Cadastro de Motivo Derrota: uma resposta, sem navegação adicional. */
+.motivo-derrota-form{display:grid;gap:14px;align-content:start}
+.motivo-derrota-form h3{margin:0;font-size:15px}
+.motivo-derrota-form>p{margin:0;font-size:12px;line-height:1.6;color:var(--mba-text-2,#52647d)}
+.motivo-derrota-choice{margin:0;padding:12px;border:1px solid var(--mba-border,#dfe5ef);border-radius:9px;display:flex;flex-wrap:wrap;gap:14px}
+.motivo-derrota-choice legend{padding:0 5px;font-size:12px;font-weight:600}
+.motivo-derrota-choice label{display:flex;gap:7px;align-items:center;font-size:12px;cursor:pointer}
+.motivo-derrota-choice input{accent-color:var(--mba-blue,#142b67)}
+.motivo-derrota-form>label{display:grid;gap:7px;font-size:12px}
+.motivo-derrota-form textarea{width:100%;border:1px solid var(--mba-border,#dfe5ef);border-radius:7px;padding:9px;font:inherit;resize:vertical}
+.motivo-derrota-form>button{justify-self:start}
