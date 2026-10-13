@@ -276,22 +276,33 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
     : '';
   const motivoSelecionado = catalog?.motivos.find(item => item.codigo === Number(codigo))?.rotulo;
   return <form className="task-form-content motivo-derrota-form" onSubmit={submit}>
-    <h3>Cadastro de Motivo Derrota</h3>
-    <p>Selecione o motivo e a natureza conforme os campos oficiais do Benner. O worker registrará o andamento <strong>Motivo derrota</strong> e confirmará o resultado antes de concluir a tarefa.</p>
-    <SelectMenu label="Motivo da derrota" searchable value={codigo}
-      searchPlaceholder="Buscar motivo da derrota..."
-      disabled={busy || checking || Boolean(job)}
-      options={[{ value: '', label: 'Selecione um motivo' },
-        ...(catalog?.motivos || []).map(item => ({ value: String(item.codigo), label: item.rotulo }))]}
-      onChange={setCodigo}/>
-    <fieldset className="motivo-derrota-choice" disabled={busy || checking || Boolean(job)}>
-      <legend>Natureza da derrota</legend>
-      <label><input type="radio" name={'natureza-' + process.id}
-        checked={natureza === 'P'} onChange={() => setNatureza('P')}/> Processual</label>
-      <label><input type="radio" name={'natureza-' + process.id}
-        checked={natureza === 'V'} onChange={() => setNatureza('V')}/> Voluntário</label>
-    </fieldset>
-    {motivoSelecionado && !job ? <p className="motivo-derrota-helper">Motivo Benner #{codigo}: {motivoSelecionado}</p> : null}
+    <div className="motivo-derrota-heading">
+      <span className="motivo-derrota-eyebrow">Cadastro no Benner</span>
+      <h3>Motivo da derrota</h3>
+      <p>Preencha os campos oficiais. A tarefa só será concluída após confirmação do andamento pelo worker.</p>
+    </div>
+    <section className="motivo-derrota-card" aria-label="Dados do andamento">
+      <div className="motivo-derrota-card-heading">
+        <span className="motivo-derrota-step" aria-hidden="true">01</span>
+        <div><strong>Dados do andamento</strong><p>Selecione o motivo e a natureza conforme o catálogo do Benner.</p></div>
+      </div>
+      <div className="motivo-derrota-field">
+        <SelectMenu label="Motivo da derrota" searchable value={codigo}
+          searchPlaceholder="Buscar motivo da derrota..."
+          disabled={busy || checking || Boolean(job)}
+          options={[{ value: '', label: 'Selecione um motivo' },
+            ...(catalog?.motivos || []).map(item => ({ value: String(item.codigo), label: item.rotulo }))]}
+          onChange={setCodigo}/>
+      </div>
+      <fieldset className="motivo-derrota-choice" disabled={busy || checking || Boolean(job)}>
+        <legend>Natureza da derrota</legend>
+        <label><input type="radio" name={'natureza-' + process.id}
+          checked={natureza === 'P'} onChange={() => setNatureza('P')}/> Processual</label>
+        <label><input type="radio" name={'natureza-' + process.id}
+          checked={natureza === 'V'} onChange={() => setNatureza('V')}/> Voluntário</label>
+      </fieldset>
+      {motivoSelecionado && !job ? <p className="motivo-derrota-helper">Motivo Benner #{codigo}: {motivoSelecionado}</p> : null}
+    </section>
     {job ? <div className="motivo-derrota-queue" role="status">
       <strong>{currentStatus}</strong>
       <span>{waiting ? 'O envio está na fila. Não reenvie enquanto a automação processa.'
@@ -301,10 +312,13 @@ export function MotivoDerrotaRenderer({ api, process, onCompleted }: BaseRendere
       {job.status === 'ERRO' && job.erro ? <span>{job.erro}</span> : null}
     </div> : null}
     {error ? <p className="task-renderer-error" role="alert">{error}</p> : null}
-    {!job && !checking ? <button type="submit" className="primary-button"
-      disabled={busy || !catalog?.motivos.some(item => item.codigo === Number(codigo))}>
-      {busy ? 'Enviando à fila…' : 'Cadastrar no Benner'}
-    </button> : null}
-    {checking ? <p role="status">Consultando catálogo e solicitações existentes…</p> : null}
+    <footer className="motivo-derrota-actions">
+      <span className="motivo-derrota-action-note">O cadastro é confirmado no Benner antes de concluir a tarefa.</span>
+      {!job && !checking ? <button type="submit" className="primary-button"
+        disabled={busy || !catalog?.motivos.some(item => item.codigo === Number(codigo))}>
+        {busy ? 'Enviando à fila…' : 'Cadastrar no Benner'}
+      </button> : null}
+      {checking ? <p role="status">Consultando catálogo e solicitações existentes…</p> : null}
+    </footer>
   </form>;
 }
