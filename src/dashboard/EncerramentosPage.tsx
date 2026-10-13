@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, BarChart3, CheckCircle2, Clock3, MapPinned, RefreshCcw, SearchCheck, UsersRound, Wallet } from 'lucide-react';
 import { BRAZIL_STATES } from './brazilStates';
+import { regularAgingGoals, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
 
 type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
@@ -178,42 +179,84 @@ function MapPanel({ dados }: { dados: Dados | null }) {
 }
 
 function Composition({ dados, etapa }: { dados: Dados | null; etapa: Etapa }) {
+  const regular = dados?.carteira === 'Agibank Regular';
   const bands = ageBands(dados?.carteira || 'Agibank Regular');
   const types = dados?.etapas?.tipos || [];
   const ages = dados?.etapas?.aging || [];
-  const first = etapa === 'validados' ? 'Validados' : 'Enviados';
   const total = valueOrZero(dados?.etapas?.total);
   const matrix = dados?.etapas?.matriz || [];
-  const quantity = (kind: string) => valueOrZero(types.find(row=>row.tipo===kind)?.quantidade);
-  const typeCount = Math.max(1,...CLASSES.map(t=>quantity(t.tipo)));
-  const rows = (section: 'tipos'|'aging') => section==='tipos'
-    ? CLASSES.map(t=>({key:t.tipo,label:t.label,found:quantity(t.tipo)}))
-    : bands.map(faixa=>({
-        key:faixa,label:faixa,found:valueOrZero(ages.find(a=>a.faixa===faixa)?.quantidade),
-      }));
+  const quantity = (kind: string) => valueOrZero(types.find(row => row.tipo === kind)?.quantidade);
+  const typeCount = Math.max(1, ...CLASSES.map(t => quantity(t.tipo)));
+  const agingGoals = regular ? regularAgingGoals(ages, total) : [];
+  const agingSummary = regularAgingSummary(agingGoals);
+  const hasAging = Boolean(dados?.etapas) && (ages.length > 0 || total === 0);
+  const goalFor = (faixa: string) => agingGoals.find(goal => goal.faixa === faixa);
+  const totalPercent = (value: number) => total ? percent(value / total * 100) : '0,0%';
+  const rows = (section: 'tipos' | 'aging') => section === 'tipos'
+    ? CLASSES.map(t => ({ key: t.tipo, label: t.label, found: quantity(t.tipo) }))
+    : bands.map(faixa => ({
+      key: faixa, label: goalFor(faixa)?.label || faixa,
+      found: valueOrZero(ages.find(a => a.faixa === faixa)?.quantidade),
+    }));
   return <section className="closing-surface closing-composition">
     <div className="closing-card-head"><div>
       <h2>Composição dos encerramentos</h2>
-      <p>{etapa==='validados'?'Validados':'Enviados ao Benner'} · aging calculado na data da etapa · {num(total)} processos</p>
+      <p>{etapa === 'validados' ? 'Validados' : 'Enviados ao Benner'} · aging na data da etapa · {num(total)} processos</p>
     </div></div>
-    {(['tipos','aging'] as const).map(section => <div className="closing-composition-table" key={section}>
-      <div className="closing-breakdown-head">
-        <h3>{section==='tipos'?'Tipos':'Aging'}</h3>
-        <span>{first} · % da etapa</span>
-      </div>
-      {rows(section).map(row=><div className="closing-breakdown-row" key={row.key}>
-        <div className="closing-breakdown-name">
-          <span>{row.label}</span>
-          <div className="closing-rail"><i style={{width:(row.found/(section==='tipos'?typeCount:Math.max(1,...rows('aging').map(x=>x.found))))*100+'%'}}/></div>
+    {(['tipos', 'aging'] as const).map(section => {
+      const goalSection = section === 'aging' && regular;
+      return <div className="closing-composition-table" key={section}>
+        <div className={'closing-breakdown-head' + (goalSection ? ' closing-aging-goal-head' : '')}>
+          <h3>{section === 'tipos' ? 'Tipos' : 'Aging'}</h3>
+          <span>Atual · composição</span>
+          {goalSection && <><span>Faltam (%)</span><span>GAP</span></>}
         </div>
-        <strong>{num(row.found)} <small>{total ? percent(row.found / total * 100) : '0%'}</small></strong>
-      </div>)}
-    </div>)}
+        {rows(section).map(row => {
+          const goal = goalSection ? goalFor(row.key) : undefined;
+          const maxBar = section === 'tipos' ? typeCount : Math.max(1, ...rows('aging').map(item => item.found));
+          return <div className={'closing-breakdown-row' + (goalSection ? ' closing-aging-goal-row' : '')} key={row.key}>
+            <div className="closing-breakdown-name">
+              <span title={goal ? 'Meta Regular: ' + num(goal.meta) + ' processos' : row.label}>
+                {row.label}
+                {goal && <small className="closing-aging-target">Meta: {num(goal.meta)}</small>}
+              </span>
+              <div className="closing-rail"><i style={{ width: Math.min(100, row.found / maxBar * 100) + '%' }}/></div>
+            </div>
+            <strong className="closing-breakdown-current">
+              {num(row.found)} <small>{totalPercent(row.found)}</small>
+            </strong>
+            {goalSection && <>
+              <span className="closing-aging-missing-percent">{goal && hasAging ? percent(goal.faltaPercent) : '—'}</span>
+              <strong className="closing-aging-gap">{goal && hasAging ? num(goal.gap) : '—'}</strong>
+            </>}
+          </div>;
+        })}
+        {goalSection && hasAging && <div className="closing-aging-total" role="status">
+          <span>GAP total do Regular</span>
+          <strong>{num(agingSummary.gap)} processos</strong>
+          <span>{percent(agingSummary.faltaPercent)} da meta de {num(agingSummary.meta)}</span>
+        </div>}
+      </div>;
+    })}
     {total > 0 && <div className="closing-matrix-scroll"><table className="closing-matrix" aria-label="Composição por tipo e aging">
-      <thead><tr><th>Tipo / Aging</th>{bands.map(faixa=><th key={faixa}>{faixa}</th>)}<th>Total</th></tr></thead>
-      <tbody>{CLASSES.map(classe=><tr key={classe.tipo}><th>{classe.label}</th>{bands.map(faixa=><td key={faixa}>{num(valueOrZero(matrix.find(item=>item.tipo===classe.tipo && item.faixa===faixa)?.quantidade))}</td>)}<td className="closing-matrix-total">{num(quantity(classe.tipo))}</td></tr>)}</tbody>
+      <thead><tr><th>Tipo / Aging</th>{bands.map(faixa => <th key={faixa}>{goalFor(faixa)?.label || faixa}</th>)}<th>Total</th></tr></thead>
+      <tbody>{CLASSES.map(classe => <tr key={classe.tipo}>
+        <th>{classe.label}</th>
+        {bands.map(faixa => <td key={faixa}>{num(valueOrZero(matrix.find(item => item.tipo === classe.tipo && item.faixa === faixa)?.quantidade))}</td>)}
+        <td className="closing-matrix-total">{num(quantity(classe.tipo))}</td>
+      </tr>)}</tbody>
+      {regular && hasAging && <tfoot>
+        <tr><th>Meta do Regular</th>{bands.map(faixa => <td key={faixa}>{goalFor(faixa) ? num(goalFor(faixa)!.meta) : '—'}</td>)}<td>{num(agingSummary.meta)}</td></tr>
+        <tr><th>Composição atual</th>{bands.map(faixa => <td key={faixa}>{totalPercent(valueOrZero(ages.find(row => row.faixa === faixa)?.quantidade))}</td>)}<td>{totalPercent(total)}</td></tr>
+        <tr><th>Faltam (%)</th>{bands.map(faixa => <td key={faixa}>{goalFor(faixa) ? percent(goalFor(faixa)!.faltaPercent) : '—'}</td>)}<td>{percent(agingSummary.faltaPercent)}</td></tr>
+        <tr className="closing-matrix-gap"><th>GAP (processos)</th>{bands.map(faixa => <td key={faixa}>{goalFor(faixa) ? num(goalFor(faixa)!.gap) : '—'}</td>)}<td>{num(agingSummary.gap)}</td></tr>
+      </tfoot>}
     </table></div>}
-    <div className="closing-card-foot">A composição acompanha o intervalo de datas e a etapa. Sem pagamentos liquidados associados, o TKM permanece sem amostra.</div>
+    <div className="closing-card-foot">
+      {regular
+        ? 'Metas mensais do Agibank Regular. Composição (%) = participação na etapa e no período exibidos; Faltam (%) e GAP = diferença entre a meta fixa e o recorte selecionado. Sem tag não abate metas. Para acompanhar a meta mensal da carteira, use o mês atual, Todos os tipos e Todos os analistas.'
+        : 'A composição acompanha a etapa e os filtros selecionados. Metas de aging do Regular não se aplicam à Enter.'}
+    </div>
   </section>;
 }
 

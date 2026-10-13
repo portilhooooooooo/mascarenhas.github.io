@@ -142,7 +142,7 @@
 @media(max-width:1020px){.closing-ranking-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.closing-ranking-kpis,.closing-ranking-band-grid{grid-template-columns:1fr}.closing-ranking-header{flex-wrap:wrap}}
 
-/* No Agibank ranking or fabricated progress-to-goal columns. */
+/* Composição operacional sem vínculo com o módulo Ranking; metas explícitas do Regular abaixo. */
 .closing-composition .closing-breakdown-head,
 .closing-composition .closing-breakdown-row{grid-template-columns:minmax(0,1fr) 110px}
 @media(max-width:650px){.closing-composition .closing-breakdown-head,.closing-composition .closing-breakdown-row{grid-template-columns:minmax(0,1fr) 78px}}
@@ -163,3 +163,48 @@
 .closing-composition .closing-matrix-scroll{margin-top:13px}
 @media(max-width:1100px){.closing-filter-row{grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}.closing-date-range{grid-column:1 / -1;grid-row:2}.closing-date-range legend{margin-bottom:6px}}
 @media(max-width:540px){.closing-filter-row{grid-template-columns:1fr}.closing-date-range{grid-column:auto;grid-row:auto;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.closing-date-clear{grid-column:1 / -1;justify-self:start}}
+
+
+/* Metas de aging da carteira Regular, mantendo a composição original. */
+.closing-composition .closing-breakdown-head.closing-aging-goal-head,
+.closing-composition .closing-breakdown-row.closing-aging-goal-row{
+  grid-template-columns:minmax(88px,1fr) minmax(81px,.74fr) minmax(63px,.62fr) minmax(44px,.48fr);
+  gap:7px;
+}
+.closing-composition .closing-aging-goal-row .closing-aging-target{
+  display:block;color:var(--closing-muted);font-size:9px;line-height:1.4;
+  margin-top:2px;font-weight:400;white-space:nowrap;
+}
+.closing-composition .closing-aging-goal-row .closing-breakdown-current{
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.closing-composition .closing-aging-goal-row .closing-aging-missing-percent{
+  color:var(--closing-muted);font-weight:600;
+}
+.closing-composition .closing-aging-goal-row .closing-aging-gap{
+  color:var(--closing-ink);font-weight:700;
+}
+.closing-aging-total{
+  display:grid;grid-template-columns:auto auto;justify-content:space-between;
+  gap:4px 8px;border-top:1px solid var(--closing-line);
+  padding:11px 0 2px;margin-top:4px;font-size:10px;
+}
+.closing-aging-total>span:first-child{font-weight:600}
+.closing-aging-total>strong{font-size:14px;letter-spacing:-.015em;text-align:right;font-variant-numeric:tabular-nums}
+.closing-aging-total>span:last-child{grid-column:1/-1;color:var(--closing-muted);font-size:10px;text-align:right}
+.closing-matrix tfoot th,.closing-matrix tfoot td{
+  background:var(--mba-subtle,#f6f8fb);font-weight:600;
+}
+.closing-matrix tfoot .closing-matrix-gap th,
+.closing-matrix tfoot .closing-matrix-gap td{
+  background:var(--mba-blue-soft,#f1f4fa);font-weight:700;
+}
+@media(max-width:650px){
+  .closing-composition .closing-breakdown-head.closing-aging-goal-head,
+  .closing-composition .closing-breakdown-row.closing-aging-goal-row{
+    grid-template-columns:minmax(76px,1fr) 70px 57px 42px;
+    gap:4px;
+  }
+  .closing-composition .closing-aging-goal-head>span{font-size:8px}
+  .closing-composition .closing-aging-goal-row .closing-breakdown-current small{display:block}
+}
