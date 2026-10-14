@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
 import { VisaoGeralPage } from './VisaoGeralPage';
+import { RankingPage } from '../ranking/RankingPage';
 import './gestaoMetabase.css';
 
-function currentAnalyticsTab(): 'geral' | 'encerramentos' {
+type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking';
+
+function currentAnalyticsTab(): AnalyticsTab {
   const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
+  if (path === 'analytics/ranking') return 'ranking';
   return path === 'analytics/encerramentos' ? 'encerramentos' : 'geral';
 }
 function navigateAnalytics(route: string) {
@@ -19,10 +23,11 @@ function getPermissions() {
 export function GestaoProcessualPage() {
   const [permissions, setPermissions] = useState(getPermissions);
   const [, forcePortfolioPolicySync] = useState(0);
-  const [activeTab, setActiveTab] = useState<'geral' | 'encerramentos'>(currentAnalyticsTab);
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>(currentAnalyticsTab);
   const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
+  const canViewRanking = canViewAnalytics && policy?.canAccess('ranking') === true;
 
   useEffect(() => {
     const sync = () => {
@@ -50,7 +55,11 @@ export function GestaoProcessualPage() {
   }, []);
   // Mantém a intenção de navegação entre trocas de carteira.
   // Enquanto a permissão não existir, exibe apenas a visão autorizada.
-  const displayedTab = (activeTab === 'encerramentos' || !canViewAnalytics) && canViewClosing ? 'encerramentos' : 'geral';
+  const displayedTab: AnalyticsTab = activeTab === 'ranking' && canViewRanking
+    ? 'ranking'
+    : (activeTab === 'encerramentos' || !canViewAnalytics) && canViewClosing
+      ? 'encerramentos'
+      : 'geral';
 
   if (!canViewAnalytics && !canViewClosing) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
@@ -58,7 +67,8 @@ export function GestaoProcessualPage() {
     <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Entradas</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
+      {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
     </nav>
-    {displayedTab === 'encerramentos' ? <EncerramentosPage/> : <VisaoGeralPage/>}
+    {displayedTab === 'ranking' ? <RankingPage/> : displayedTab === 'encerramentos' ? <EncerramentosPage/> : <VisaoGeralPage/>}
   </div>;
 }

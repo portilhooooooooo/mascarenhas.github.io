@@ -52,7 +52,9 @@ assert.match(questions, /save\) form\.requestSubmit\(save\)/, 'Sem botão válid
 assert.doesNotMatch(closing, /className=\{'closing-outcome closing-summary '/, 'Card de classificação removido');
 assert.doesNotMatch(style, /\.closing-summary/, 'Sem CSS de card de classificação');
 assert.match(closing, /closing-classification-agreement/, 'Confirmação final Sim/Não');
-assert.match(closing, /pode ser encerrado como Derrota Voluntária\. Você concorda/, 'Texto da Derrota Voluntária');
+assert.match(closing, /outcome === 'apto_derrota_voluntaria'/, 'Classificação considera Derrota Voluntária');
+assert.match(closing, /'Identificamos que esse processo está apto para encerramento como '/, 'Confirmação final informa classificação');
+assert.match(closing, /closingClassification\.toLocaleUpperCase\('pt-BR'\)/, 'Descrição final explicita classificação');
 assert.match(closing, /classificationAgreed === 'nao' && validReason/, 'Discordância justificada libera registro de revisão');
 assert.match(closing, /setClassificationAgreed\(null\)/, 'Alterar respostas invalida confirmação anterior');
 assert.doesNotMatch(closing, /A análise será registrada para revisão/, 'Texto redundante removido; justificativa e revisão continuam no contrato');

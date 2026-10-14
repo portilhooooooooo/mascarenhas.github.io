@@ -5,6 +5,7 @@ import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
+import { BancoDadosPage } from './BancoDadosPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
@@ -13,6 +14,7 @@ import './protocolos.css';
 import './controladoria.css';
 import './defesas.css';
 import './users.css';
+import './bancoDados.css';
 import './ui-architecture.css';
 
 type DashboardWindow = Window & typeof globalThis & {
@@ -147,7 +149,7 @@ function setTopModuleActive(page: string) {
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
   if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
   const label = document.getElementById('mba-active-module');
-  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados', 'banco-dados': 'Banco de Dados' };
   if (label) label.textContent = titles[page] || 'Workspace';
 }
 
@@ -173,6 +175,7 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
+  if (activePage.id === 'banco-dados') { setTopModuleActive('banco-dados'); return; }
   if (activePage.id === 'usuarios') {
     document.querySelectorAll('.main-nav .nav-item').forEach(item => item.classList.remove('active'));
     const label = document.getElementById('mba-active-module');
@@ -196,13 +199,14 @@ function configureApplicationShell() {
 
   // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
   // A página /controladoria permanece montável para preservar links legados.
-  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
+  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard', 'banco-dados']);
   const labels: Record<string, string> = {
     processos: 'Processos',
     tarefas: 'Tarefas',
     acordos: 'Operação',
     automacoes: 'Automações',
     dashboard: 'Resultados',
+    'banco-dados': 'Banco de Dados',
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
@@ -239,6 +243,7 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
+    nav.querySelector<HTMLElement>('[data-page="banco-dados"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
@@ -351,6 +356,33 @@ function configureProtocolosLifecycle() {
   syncProtocolosLifecycle();
 }
 
+let bancoDadosRoot: Root | null = null;
+function syncBancoDadosLifecycle() {
+  const section = document.getElementById('banco-dados');
+  const authorized = mayOpen('banco-dados');
+  const visible = section?.classList.contains('active') === true && !document.hidden;
+  if (!section || !authorized || !visible) {
+    bancoDadosRoot?.unmount();
+    bancoDadosRoot = null;
+    section?.replaceChildren();
+    return;
+  }
+  if (!bancoDadosRoot) {
+    bancoDadosRoot = createRoot(section);
+    bancoDadosRoot.render(<StrictMode><BancoDadosPage /></StrictMode>);
+  }
+}
+function configureBancoDadosLifecycle() {
+  const section = document.getElementById('banco-dados');
+  if (!section) return;
+  new MutationObserver(syncBancoDadosLifecycle).observe(section, { attributes: true, attributeFilter: ['class'] });
+  for (const event of ['mba:authenticated', 'mba:profile-ready', 'mba:module-visibility-updated', 'mba:portfolio-changed', 'mba:session-expired', 'mba:logged-out']) {
+    window.addEventListener(event, syncBancoDadosLifecycle);
+  }
+  document.addEventListener('visibilitychange', syncBancoDadosLifecycle);
+  syncBancoDadosLifecycle();
+}
+
 let usersRoot: Root | null = null;
 
 function mountUsersPage() {
@@ -443,6 +475,7 @@ mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
 configureUsersLifecycle();
+configureBancoDadosLifecycle();
 
 // Drop the previous root on every portfolio transition; no stale client data persists.
 let processosRoot: Root | null = null;

@@ -24,3 +24,21 @@ A regra de prioridade é operacional: **Urgente** quando o prazo operacional ven
 Por segurança, os scripts rodam em modo plano por padrão. Para aplicar em ambiente autorizado, defina `MB_URL`, `MB_SESSION` e, se necessário, `MB_DATABASE_ID`, e use `--apply`.
 
 Os scripts `rebuild_*` são create-only. O patch de Controladoria altera somente o dashboard explicitamente configurado por `MB_CONTROLADORIA_DASHBOARD_ID` (fallback para `METABASE_PROTOCOLO_DASHBOARD_ID`). A promoção para produção exige validação do dashboard e atualização dos IDs do backend.
+
+## Banco de Dados — Agibank <> MBA (branch de testes)
+
+`create_banco_dados_agibank.py` define um dashboard Metabase de três abas,
+**Encerramentos** (somente validados), **Tarefas** (processos e eventos registrados)
+e **Andamentos** (envios, motivo da derrota e histórico Benner).
+Todas as perguntas são tabelas com `SELECT` explícito e
+`portfolio_id = 'agibank_mba'`. Não são criados bancos, schemas, tabelas ou views.
+
+A execução sem flags mostra o plano. Para criação controlada no Metabase existente,
+é necessária uma sessão autenticada ou uma API key com permissão para criar dashboards:
+`MB_URL`, `MB_DATABASE_ID`, `MB_SESSION` ou `MB_API_KEY`, e `--apply`.
+Nunca adicione a credencial ao repositório. Revogue a chave temporária após configurar. O script recusa duplicidade de nome e exige
+conexão PostgreSQL capaz de ler `encerramentos_processos`.
+Após criar, habilitar embedding assinado do dashboard no Metabase e definir
+`METABASE_BANCO_DADOS_DASHBOARD_ID` no backend de **testes**.
+A rota `/api/banco-dados/metabase/embed` exige `dashboard.view` e carteira
+`agibank_mba`, sem fallback para outra carteira.

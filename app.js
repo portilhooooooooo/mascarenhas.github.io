@@ -18,6 +18,7 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   processos: 'processos',
   dashboard: 'analytics',
+  'banco-dados': 'banco-dados',
   acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
   automacoes: 'automacoes',
@@ -34,6 +35,7 @@ const pageRoutes = Object.freeze({
 });
 const nestedPageRoutes = Object.freeze({
   'analytics/encerramentos': 'dashboard',
+  'analytics/ranking': 'dashboard',
   'controladoria/defesas': 'protocolo',
   'controladoria/indicadores': 'protocolo',
   'tarefas/atribuicoes': 'tarefas',
@@ -41,6 +43,7 @@ const nestedPageRoutes = Object.freeze({
 });
 const routeAliases = Object.freeze({
   dashboard: 'analytics',
+  ranking: 'analytics/ranking',
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
@@ -72,6 +75,7 @@ function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
+  if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
     return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;

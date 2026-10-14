@@ -56,7 +56,6 @@ const OUTCOME_LABELS: Record<string, string> = {
   apto_vitoria: 'Apto ao encerramento — Vitória',
   apto_derrota_voluntaria: 'Apto ao encerramento — Derrota voluntária',
   apto_derrota: 'Apto ao encerramento — Derrota',
-  apto_pending_custas: 'Apto, pendente de custas finais',
   inapto_recurso_pendente: 'Inapto — apelação pendente',
   inapto_prazo_recursal: 'Inapto — prazo recursal em aberto',
   inapto_sem_transito: 'Inapto — ainda sem trânsito em julgado',
@@ -285,18 +284,14 @@ export function ClosingAnalysisFlow({
     else if (transitConfirmed === 'sim') {
       if (finalMerit === 'vitoria') outcome = 'apto_vitoria';
       else if (costsPaid !== null && executionRequested !== null) {
-        // O pedido de execução deve ser verificado mesmo com custas não pagas.
-        // Pendência de execução prevalece; custas pendentes impedem conclusão definitiva.
-        if (executionRequested === 'nao') {
-          if (costsPaid === 'nao') outcome = 'apto_pending_custas';
-          else if (hasValidTransitDate) {
-            outcome = transitTooRecent
-              ? 'inapto_aguardando_transito_60d'
-              : 'apto_derrota_voluntaria';
-          }
-        } else if (fullPayment !== null) {
-          if (fullPayment === 'nao') outcome = 'inapto_execucao_pendente';
-          else outcome = costsPaid === 'nao' ? 'apto_pending_custas' : 'apto_derrota';
+        // Custas finais pendentes não alteram aptidão nem classificação.
+        // Sem execução, manter o requisito de 60 dias para Derrota Voluntária.
+        if (executionRequested === 'nao' && hasValidTransitDate) {
+          outcome = transitTooRecent
+            ? 'inapto_aguardando_transito_60d'
+            : 'apto_derrota_voluntaria';
+        } else if (executionRequested === 'sim' && fullPayment !== null) {
+          outcome = fullPayment === 'sim' ? 'apto_derrota' : 'inapto_execucao_pendente';
         }
       }
     }
@@ -307,19 +302,28 @@ export function ClosingAnalysisFlow({
     : outcome === 'inapto_prazo_recursal' ? afterDays(deadlineDate, 1) : null;
 
   const canAnswerTransit = finalMerit !== null && finalMerit !== 'indeterminado';
+  const closingClassification = outcome === 'apto_derrota_voluntaria' || outcome === 'inapto_aguardando_transito_60d'
+    ? 'Derrota Voluntária'
+    : finalMerit === 'vitoria' ? 'Vitória'
+    : finalMerit === 'derrota' ? 'Derrota'
+    : null;
+  const costsNote = costsPaid === 'nao'
+    ? ' As custas finais ainda não foram pagas, mas isso não impede a aptidão.'
+    : '';
   const confirmationText = appealOther
-    ? 'O resultado informado em Outro será encaminhado para revisão e mapeamento, sem encerramento automático. Confirma o registro?'
-    : outcome === 'apto_derrota_voluntaria'
-    ? 'Identificamos que esse processo pode ser encerrado como Derrota Voluntária. Você concorda com essa informação?'
-    : outcome === 'apto_derrota'
-      ? 'Identificamos que esse processo pode ser encerrado como Derrota. Você concorda com essa informação?'
-      : outcome === 'apto_vitoria'
-        ? 'Identificamos que esse processo pode ser encerrado como Vitória. Você concorda com essa informação?'
-        : outcome === 'apto_pending_custas'
-          ? 'Identificamos que esse processo está apto, mas ainda há custas finais pendentes. Você concorda com essa informação?'
-          : outcome ? 'Identificamos que esse processo ainda não está apto para encerramento: ' +
-            OUTCOME_LABELS[outcome].replace(/^Inapto(?: temporariamente)?\s*[—–]\s*/i, '') +
-            '. Você concorda com essa informação?' : null;
+    ? 'Identificamos que o resultado do acórdão exige revisão. A classificação ainda não está definida. Confirma o registro?'
+    : outcome?.startsWith('apto_') && closingClassification
+      ? 'Identificamos que esse processo está apto para encerramento como ' +
+        closingClassification + '.' + costsNote + ' Você concorda com essa informação?'
+      : outcome
+        ? 'Identificamos que esse processo ' +
+          (closingClassification
+            ? 'tem classificação sugerida de ' + closingClassification + ', mas'
+            : 'ainda não tem classificação definida e') +
+          ' não está apto para encerramento: ' +
+          OUTCOME_LABELS[outcome].replace(/^(?:Inapto(?: temporariamente)?|Revisão)\s*[—–]\s*/i, '') +
+          '. Você concorda com essa informação?'
+        : null;
   // Qualquer alteração nas respostas anteriores exige uma nova concordância.
   const reviewSignature = JSON.stringify([sentence, hadAppeal, appellant, appealDecided, appealResult, appealOtherDescription,
     deadlineOpen, deadlineDate, transitConfirmed, transitDate, costsPaid, executionRequested, fullPayment]);
@@ -351,7 +355,10 @@ export function ClosingAnalysisFlow({
     transitConfirmed === 'sim' ? 'TRÂNSITO EM JULGADO' + (transitDate ? ' EM ' + formatDate(transitDate) : ' CONFIRMADO') : '',
     costsPaid === 'sim' ? 'CUSTAS FINAIS PAGAS' : costsPaid === 'nao' ? 'CUSTAS FINAIS NÃO PAGAS' : costsPaid === 'sem_pendencia' ? 'NÃO HÁ CUSTAS FINAIS PENDENTES' : '',
     executionRequested === 'nao' ? 'SEM PEDIDO DE EXECUÇÃO' : executionRequested === 'sim' ? 'COM PEDIDO DE EXECUÇÃO' : '',
-    outcome === 'apto_derrota_voluntaria' ? 'PROCESSO APTO AO ENCERRAMENTO POR DERROTA VOLUNTÁRIA' : '',
+    closingClassification
+      ? (outcome?.startsWith('apto_') ? 'PROCESSO APTO AO ENCERRAMENTO — ' : 'CLASSIFICAÇÃO SUGERIDA — ') +
+        closingClassification.toLocaleUpperCase('pt-BR')
+      : 'CLASSIFICAÇÃO AINDA NÃO DEFINIDA',
   ].filter(Boolean).join(', ') + '.';
   const validReason = disagreementReason.trim().length >= 6 && disagreementReason.trim().length <= 2000;
   let questionNumber = 0;
@@ -379,7 +386,7 @@ export function ClosingAnalysisFlow({
       appeal_deadline_date: hadAppeal === 'nao' && deadlineOpen === 'sim' ? deadlineDate : null,
       transit_confirmed: canAnswerTransit ? transitConfirmed === 'sim' : null,
       transit_date: finalMerit === 'derrota' && transitConfirmed === 'sim'
-        && (costsPaid === 'sim' || costsPaid === 'sem_pendencia') && executionRequested === 'nao' ? transitDate || null : null,
+        && costsPaid !== null && executionRequested === 'nao' ? transitDate || null : null,
       final_costs_paid: finalMerit === 'derrota' && transitConfirmed === 'sim'
         ? costsPaid === 'sem_pendencia' ? 'sem_pendencia' : costsPaid === 'sim' : null,
       execution_requested: finalMerit === 'derrota' && transitConfirmed === 'sim' && costsPaid !== null
@@ -397,7 +404,7 @@ export function ClosingAnalysisFlow({
     'Cadastro de Sentença': sentence ? 'completed' : 'pending',
     'Cadastro de Acórdão': appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
-    'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && (costsPaid === 'sim' || costsPaid === 'sem_pendencia') && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
+    'Cadastro de Trânsito em Julgado': outcome && !canAnswerTransit ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid !== null && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
     'Cadastro de Encerramento': classificationAgreed === 'sim' || (!appealOther && classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
   }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}
     onChangeCapture={() => { interactedBeforePrefill.current = true; }}
@@ -487,7 +494,7 @@ export function ClosingAnalysisFlow({
       </TaskQuestion> : null}
 
     {finalMerit === 'derrota' && transitConfirmed === 'sim' &&
-      (costsPaid === 'sim' || costsPaid === 'sem_pendencia') && executionRequested === 'nao' ?
+      costsPaid !== null && executionRequested === 'nao' ?
       <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Trânsito em Julgado" question="Qual foi a data do trânsito em julgado?">
         <DateAnswer name="closing-transit-date" label="Data do trânsito em julgado"
           value={transitDate} disabled={busy} onChange={value => {
