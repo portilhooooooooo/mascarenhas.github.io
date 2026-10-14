@@ -10,9 +10,15 @@ export function TaskQuestion({ number, question, children }: { number: string; q
   return <section className="task-question"><h3><span className="task-question-number">{/^[0-9]+$/.test(number) ? number.padStart(2, '0') : number}</span><span>{question}</span></h3><div className="task-question-body">{children}</div></section>;
 }
 
-export function TaskActionBar({ busy, ready = true, onSkip, onSaveIntent, skipLabel = 'Pular esse prazo' }: { busy: boolean; ready?: boolean; onSkip: () => void; onSaveIntent?: () => void; skipLabel?: string }) {
+export function TaskActionBar({ busy, ready = true, onSkip, onSaveIntent, skipLabel = 'Pular esse prazo', submitLabel = 'Salvar e próximo', busyLabel = 'Salvando…' }: {
+  busy: boolean; ready?: boolean; onSkip?: () => void; onSaveIntent?: () => void;
+  skipLabel?: string; submitLabel?: string; busyLabel?: string;
+}) {
   const qa = useContext(QaNavigation);
-  return <footer className="task-renderer-footer"><button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>{skipLabel}</button><button className="primary-button" type="submit" onClick={onSaveIntent} disabled={busy || !ready || (qa !== null && !qa.canSubmit)}>{busy ? 'Salvando…' : 'Salvar e próximo'}</button></footer>;
+  return <footer className="task-renderer-footer">
+    {onSkip ? <button className="secondary-button" type="button" disabled={busy} onClick={onSkip}>{skipLabel}</button> : null}
+    <button className="primary-button" type="submit" onClick={onSaveIntent} disabled={busy || !ready || (qa !== null && !qa.canSubmit)}>{busy ? busyLabel : submitLabel}</button>
+  </footer>;
 }
 
 type Option = { value: string; label: string; description?: string };
@@ -69,6 +75,9 @@ function flattenNodes(children: ReactNode): ReactNode[] {
 
 function hasCurrentAnswer(step: HTMLElement | null): boolean {
   if (!step) return false;
+  // SelectMenu é um listbox (não input); permite avanço apenas com ID real escolhido.
+  const selection = step.querySelector<HTMLElement>('[data-qa-answered]');
+  if (selection) return selection.dataset.qaAnswered === 'true';
   const radios = step.querySelectorAll<HTMLInputElement>('input[type="radio"]');
   if (radios.length) return [...radios].some(input => input.checked);
   const dateFields = [...step.querySelectorAll<HTMLInputElement>('input[type="date"]')];
@@ -108,19 +117,13 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
   const content = nodes.filter(child => !isValidElement(child) || child.type !== TaskActionBar);
   const [activeIndex, setActiveIndex] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
-  const lastReportedPhase = useRef<string | null>(null);
   const total = questions.length;
   const current = Math.min(activeIndex, Math.max(0, total - 1));
   const questionStages = questions.map(child => isValidElement(child) ? ((child.props as { stage?: string }).stage || '') : '');
   const activeStage = questionStages[current] || '';
   useEffect(() => {
-    // Re-renders and callback identity changes must not produce duplicate API calls.
-    // Navigation to a different step (including Backspace) is still recorded.
-    const key = `${draftKey}:${current}:${activeStage}`;
-    if (!onPhaseEntered || !activeStage || lastReportedPhase.current === key) return;
-    lastReportedPhase.current = key;
-    onPhaseEntered(current, activeStage);
-  }, [onPhaseEntered, draftKey, current, activeStage]);
+    if (onPhaseEntered && activeStage) onPhaseEntered(current, activeStage);
+  }, [onPhaseEntered, current, activeStage]);
   const displayStages = dynamicStages ? stages?.filter(stage => questionStages.includes(stage)) : stages;
   const completedStages = new Set(displayStages?.filter(stage =>
     questionStages.includes(stage) &&

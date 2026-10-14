@@ -69,56 +69,96 @@
 }
 #tarefas[data-react-tasks='true'] .mba-react-select-empty { font-size: 11px; color: var(--mba-muted); padding: 7px; }
 
-/* Motivo Derrota — mesma linguagem do workspace: cabeçalho, etapa e rodapé. */
-#tarefas[data-react-tasks='true'] .task-station .task-form-content.motivo-derrota-form{
-  box-sizing:border-box; display:flex; flex-direction:column; align-items:stretch;
-  gap:14px; padding:22px 24px 26px; overflow-y:auto; min-height:0;
-  color:var(--mba-text,#0f1f3d); background:var(--mba-surface,#fff); scrollbar-gutter:stable;
+/* Motivo derrota usa o mesmo TaskForm progressivo das outras análises.
+   Apenas o Select2/catálogo Benner precisa de estilos próprios. */
+#tarefas[data-react-tasks='true'] .task-station form.motivo-derrota-form[data-qa-progressive='true'] {
+  --qa-accent:var(--mba-blue,#142b67);
+  --qa-soft:var(--mba-blue-soft,#f2f5fb);
+  --qa-edge:var(--mba-border,#e3eaf2);
 }
-#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-form > *{
-  flex:none; box-sizing:border-box; width:100%; max-width:850px; min-width:0;
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-form .qa-step .task-question-body {
+  display:grid;gap:13px;align-content:start;min-width:0;
 }
-.motivo-derrota-heading{display:grid;gap:6px;padding-bottom:5px}
-.motivo-derrota-eyebrow{font:700 10px/1.4 Inter,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--mba-blue,#142b67)}
-.motivo-derrota-heading h3{margin:0;color:var(--mba-text,#0f1f3d);font-size:19px;font-weight:700;letter-spacing:-.025em;line-height:1.3}
-.motivo-derrota-heading p{max-width:680px;margin:0;color:var(--mba-text-2,#52647d);font-size:12px;line-height:1.55}
-.motivo-derrota-card{box-sizing:border-box;display:grid;gap:16px;padding:19px 20px 20px;min-width:0;border:1px solid var(--mba-border,#e3eaf2);border-radius:10px;background:var(--mba-surface,#fff)}
-.motivo-derrota-card-heading{display:flex;align-items:flex-start;gap:10px;padding-bottom:14px;border-bottom:1px solid var(--mba-border,#e3eaf2)}
-.motivo-derrota-step{display:inline-flex;flex:0 0 27px;align-items:center;justify-content:center;height:27px;border:1px solid var(--mba-border-strong,#dbe4ef);border-radius:7px;background:var(--mba-blue-soft,#f2f5fb);color:var(--mba-blue,#142b67);font:700 11px Inter,system-ui,sans-serif}
-.motivo-derrota-card-heading strong{display:block;margin:1px 0 4px;font-size:13px;font-weight:650;color:var(--mba-text,#0f1f3d)}
-.motivo-derrota-card-heading p{margin:0;color:var(--mba-text-2,#52647d);font-size:11px;line-height:1.55}
-.motivo-derrota-card > label{display:grid;gap:8px;min-width:0;font-size:12px;font-weight:600;color:var(--mba-text,#0f1f3d)}
-.motivo-derrota-card textarea{box-sizing:border-box;display:block;width:100%;min-height:134px;max-height:260px;resize:vertical;padding:12px 13px;border:1px solid var(--mba-border-strong,#cbd5e1);border-radius:8px;background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d);font:400 12px/1.6 Inter,system-ui,sans-serif}
-.motivo-derrota-card textarea::placeholder{color:var(--mba-muted,#8190a5)}
-.motivo-derrota-card textarea:disabled{background:var(--mba-subtle,#f7f9fc);cursor:not-allowed}
-.motivo-derrota-field{min-width:0}
-.motivo-derrota-field .mba-react-select{display:grid;gap:8px;width:100%;min-width:0}
-.motivo-derrota-field .mba-react-select-label{font-size:12px;line-height:1.4;font-weight:600;color:var(--mba-text,#0f1f3d)}
-.motivo-derrota-field .mba-react-select-trigger{box-sizing:border-box;min-height:42px;height:auto;padding:10px 12px;border:1px solid var(--mba-border-strong,#cbd5e1);border-radius:8px;background:var(--mba-surface,#fff);font-size:12px;font-weight:500}
-.motivo-derrota-field .mba-react-select-trigger > span{white-space:normal;overflow-wrap:anywhere;line-height:1.4;text-overflow:clip}
-.motivo-derrota-field .mba-react-select-options{box-sizing:border-box;top:calc(100% + 4px);left:0;min-width:100%;max-width:100%;max-height:min(280px,37vh);overflow-y:auto;overscroll-behavior:contain;z-index:200}
-.motivo-derrota-field .mba-react-select-options > button{white-space:normal;overflow-wrap:anywhere;font-size:12px;line-height:1.45}
-.motivo-derrota-field .mba-react-select-search{position:sticky;top:0;z-index:1;box-sizing:border-box;width:100%;min-height:37px;padding:8px 10px;border:1px solid var(--mba-border,#e3eaf2);border-radius:6px;background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d);font:400 12px Inter,system-ui,sans-serif}
-.motivo-derrota-choice{box-sizing:border-box;display:flex;flex-wrap:wrap;gap:10px;margin:0;min-width:0;padding:12px;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px}
-.motivo-derrota-choice legend{padding:0 5px;color:var(--mba-text,#0f1f3d);font-size:12px;font-weight:600}
-.motivo-derrota-choice label{display:inline-flex;align-items:center;gap:9px;min-height:35px;padding:0 13px;border:1px solid var(--mba-border,#e3eaf2);border-radius:7px;background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d);font-size:12px;font-weight:550;cursor:pointer}
-.motivo-derrota-choice label:has(input:checked){border-color:var(--mba-blue,#142b67);background:var(--mba-blue-soft,#f2f5fb);color:var(--mba-blue,#142b67)}
-.motivo-derrota-choice input{accent-color:var(--mba-blue,#142b67);margin:0;width:14px;height:14px}
-.motivo-derrota-helper{margin:0;color:var(--mba-text-2,#52647d);font-size:11px;line-height:1.5;overflow-wrap:anywhere}
-.motivo-derrota-queue{display:grid;gap:7px;padding:13px 16px;border:1px solid var(--mba-border,#e3eaf2);border-left:3px solid var(--mba-blue,#142b67);border-radius:8px;background:var(--mba-blue-soft,#f2f5fb);font-size:12px;line-height:1.5;color:var(--mba-text-2,#52647d)}
-.motivo-derrota-queue strong{color:var(--mba-text,#0f1f3d);font-size:13px}
-.motivo-derrota-queue span{overflow-wrap:anywhere}
-.motivo-derrota-form .task-renderer-error{margin:0;padding:10px 12px;border-radius:7px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;font-size:12px}
-.motivo-derrota-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-top:auto;padding-top:14px;border-top:1px solid var(--mba-border,#e3eaf2)}
-.motivo-derrota-action-note{max-width:460px;color:var(--mba-text-2,#52647d);font-size:11px;line-height:1.5}
-.motivo-derrota-actions .primary-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:177px;min-height:39px;padding:10px 16px;border-radius:7px;font-size:12px;font-weight:650;cursor:pointer}
-.motivo-derrota-actions .primary-button:disabled{opacity:.55;cursor:not-allowed}
-.motivo-derrota-form :is(textarea,.mba-react-select-trigger,.mba-react-select-search,input[type="radio"],.primary-button):focus-visible{outline:2px solid var(--mba-blue,#142b67);outline-offset:2px}
-@media(max-width:760px){
-  #tarefas[data-react-tasks='true'] .task-station .task-form-content.motivo-derrota-form{padding:15px;gap:12px}
-  .motivo-derrota-card{padding:14px;gap:14px}
-  .motivo-derrota-heading h3{font-size:17px}
-  .motivo-derrota-actions{align-items:stretch}
-  .motivo-derrota-actions .primary-button{width:100%}
-  .motivo-derrota-action-note{max-width:none}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-form .qa-step .motivo-derrota-field {
+  display:grid;gap:10px;min-width:0;max-width:680px;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select {
+  display:grid;gap:9px;width:100%;min-width:0;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-label {
+  font:600 11px/1.4 Inter,system-ui,sans-serif;
+  color:var(--mba-text-2,#52647d);
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-trigger {
+  box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+  min-height:46px;height:auto;min-width:0;padding:10px 14px;
+  border:1px solid var(--mba-border-strong,#cbd5e1);border-radius:8px;
+  background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d);
+  font:500 12px/1.45 Inter,system-ui,sans-serif;text-align:left;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-trigger>span {
+  white-space:normal;overflow-wrap:anywhere;text-overflow:clip;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-trigger:disabled {
+  opacity:.65;cursor:not-allowed;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-options {
+  box-sizing:border-box;z-index:220;top:calc(100% + 5px);left:0;
+  min-width:100%;max-width:100%;max-height:min(290px,40vh);overflow-y:auto;
+  overscroll-behavior:contain;padding:6px;background:var(--mba-surface,#fff);
+  color:var(--mba-text,#0f1f3d);
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-options>button {
+  min-height:38px;white-space:normal;overflow-wrap:anywhere;text-align:left;
+  font:500 11.5px/1.45 Inter,system-ui,sans-serif;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-field .mba-react-select-search {
+  box-sizing:border-box;position:sticky;top:0;z-index:1;
+  width:100%;min-height:38px;padding:8px 10px;
+  border:1px solid var(--mba-border,#e3eaf2);border-radius:6px;
+  background:var(--mba-surface,#fff);color:var(--mba-text,#0f1f3d);
+  font:400 12px/1.4 Inter,system-ui,sans-serif;
+}
+.motivo-derrota-helper {
+  margin:0;max-width:680px;color:var(--mba-text-2,#52647d);
+  font:450 11px/1.55 Inter,system-ui,sans-serif;
+}
+.motivo-derrota-review {
+  box-sizing:border-box;display:grid;gap:6px;margin-top:5px;
+  max-width:680px;padding:12px 14px;
+  border-left:2px solid var(--mba-blue,#142b67);
+  background:var(--mba-subtle,#f7f9fc);
+}
+.motivo-derrota-review strong{font:650 11px/1.3 Inter,system-ui,sans-serif;color:var(--mba-text-2,#52647d)}
+.motivo-derrota-review span{overflow-wrap:anywhere;font:600 12px/1.5 Inter,system-ui,sans-serif;color:var(--mba-text,#0f1f3d)}
+.motivo-derrota-review small{font:450 11px/1.5 Inter,system-ui,sans-serif;color:var(--mba-text-2,#52647d)}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-form .qa-footer .task-renderer-footer {
+  justify-content:flex-end;
+}
+.motivo-derrota-error{max-width:760px;margin:0;padding:8px 11px;border:1px solid #fecaca;border-radius:7px;background:#fff1f1;color:#991b1b;font-size:11px}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-feedback {
+  display:flex;flex:1;flex-direction:column;min-height:0;overflow:hidden;
+  background:var(--mba-surface,#fff);
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-feedback>.qa-progress-header {
+  display:flex;flex:none;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 24px;border-bottom:1px solid var(--mba-border,#e3eaf2);
+  color:var(--mba-text-2,#52647d);font-size:11px;
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-feedback>.task-form-content.qa-form-content {
+  flex:1;min-height:0;overflow-y:auto;align-items:center;justify-content:flex-start;
+  padding:24px clamp(16px,2vw,28px);
+}
+#tarefas[data-react-tasks='true'] .task-station .motivo-derrota-feedback-body {
+  display:grid;gap:12px;width:100%;max-width:760px;min-width:0;
+}
+.motivo-derrota-feedback-body h3 {margin:0;font:650 22px/1.35 Inter,system-ui,sans-serif;color:var(--mba-text,#0f1f3d)}
+.motivo-derrota-feedback-body>p {margin:0;font:450 12px/1.6 Inter,system-ui,sans-serif;color:var(--mba-text-2,#52647d)}
+.motivo-derrota-feedback-body dl {display:grid;gap:10px;margin:5px 0 0}
+.motivo-derrota-feedback-body dl>div {display:grid;grid-template-columns:160px minmax(0,1fr);gap:12px;padding:11px 13px;border:1px solid var(--mba-border,#e3eaf2);border-radius:7px}
+.motivo-derrota-feedback-body dt {font:600 11px/1.4 Inter,system-ui,sans-serif;color:var(--mba-text-2,#52647d)}
+.motivo-derrota-feedback-body dd {margin:0;overflow-wrap:anywhere;font:550 12px/1.5 Inter,system-ui,sans-serif;color:var(--mba-text,#0f1f3d)}
+@media(max-width:760px) {
+  #tarefas[data-react-tasks='true'] .task-station .motivo-derrota-feedback>.qa-progress-header {padding:12px 14px}
+  .motivo-derrota-feedback-body dl>div {grid-template-columns:1fr;gap:5px}
 }
