@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+const src = readFileSync(new URL('../src/tasks/TasksApp.tsx', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../src/tasks/tasks.css', import.meta.url), 'utf8');
+assert.match(src, /label="Responsável" searchable/);
+assert.match(src, /Meus prazos/);
+assert.match(src, /Toda a equipe/);
+assert.match(src, /person\.name} \(\$\{person\.count}/);
+assert.match(src, /\/api\/tasks\/queue-assignees/);
+assert.match(src, /active_only=1/);
+assert.match(src, /tasks\.execute_others/);
+assert.match(src, /Visualização da equipe/);
+assert.doesNotMatch(src, /queueScope|setQueueScope|selectedPriority|setSelectedPriority/);
+assert.doesNotMatch(css, /\.queue-scope-controls/);
+console.log('Queue responsible selector and readonly permissions checks passed.');
