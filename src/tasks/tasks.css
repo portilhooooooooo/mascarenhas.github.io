@@ -153,3 +153,7 @@
 .defesa-indicios-state.clear{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
 .defesa-indicios-state.error{border-color:#fed7aa;background:#fff7ed;color:#9a3412}
 @media(max-width:1040px){.defesa-renderer-layout{grid-template-columns:1fr}.defesa-indicios-panel{position:static;order:-1}}
+
+.queue-scope-controls{display:flex;gap:4px;padding:4px;border:1px solid var(--mba-border,#e3eaf2);border-radius:8px;background:var(--mba-bg-2,#f8fafc)}
+.queue-scope-controls button{flex:1;border:0;border-radius:6px;padding:7px 10px;font-size:12px;font-weight:600;background:transparent;color:var(--mba-text-2,#52647d);cursor:pointer}
+.queue-scope-controls button.active{background:var(--mba-surface,#fff);color:var(--mba-text,#132238);box-shadow:0 1px 4px #0f172a15}
