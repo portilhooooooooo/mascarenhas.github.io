@@ -252,6 +252,7 @@ export function TasksApp() {
   const [tab, setTab] = useState<'management' | 'execution' | 'results'>(currentTaskTab);
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [queueScope, setQueueScope] = useState<'mine' | 'team'>('mine');
   const [selectedUf, setSelectedUf] = useState('all');
   const [search, setSearch] = useState('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -295,6 +296,7 @@ export function TasksApp() {
   const canExecute = isMaster || user?.permissions?.['tasks.execute'] === true;
   const canManage = isMaster || user?.permissions?.['tasks.manage'] === true;
   const canViewOtherTasks = isMaster || user?.permissions?.['tasks.view_others'] === true;
+  const canExecuteTeam = canManage && canExecute && canViewOtherTasks;
   const ownTaskIds = useMemo(() => new Set(tasks.map(task => task.id)), [tasks]);
   const allVisibleTasks = useMemo(
     () => visibleTasks.filter(task => taskAssignedToUser(task, user, manager)).sort(compareTasks),
@@ -304,7 +306,8 @@ export function TasksApp() {
     () => tasks.filter(task => taskAssignedToUser(task, user, manager)).sort(compareTasks),
     [tasks, user, manager],
   );
-  const relevantTasks = useMemo(() => allAssignedTasks.filter(isTaskActive), [allAssignedTasks]);
+  const queueTasks = queueScope === 'team' && canExecuteTeam ? allVisibleTasks : allAssignedTasks;
+  const relevantTasks = useMemo(() => queueTasks.filter(isTaskActive), [queueTasks]);
 
   useEffect(() => {
     const resetSession = () => {
@@ -353,7 +356,7 @@ export function TasksApp() {
     const promise = apiRequest(`/api/tasks/${task.id}/processes`)
       .then(rows => {
         if (mbaWindow.MBA_CURRENT_USER?.id !== sessionUserId) return [];
-        const list = (Array.isArray(rows) ? rows : []).filter(process => processAssignedToUser(task, process, user, manager));
+        const list = (Array.isArray(rows) ? rows : []).filter(process => canExecuteTeam || processAssignedToUser(task, process, user, manager));
         processCache.current.set(task.id, list);
         setProcessVersion(value => value + 1);
         return list;
@@ -361,7 +364,7 @@ export function TasksApp() {
       .finally(() => { if (inFlight.current.get(task.id) === promise) inFlight.current.delete(task.id); });
     inFlight.current.set(task.id, promise);
     return promise;
-  }, [user, manager]);
+  }, [user, manager, canExecuteTeam]);
 
   const hydrateInBackground = useCallback(async (taskList: Task[], generation: number) => {
     const missing = taskList.filter(task => !processCache.current.has(task.id));
@@ -381,12 +384,13 @@ export function TasksApp() {
     Promise.all([apiRequest('/api/tasks/' + match[1]), apiRequest('/api/task-processes/' + match[2])]).then(([task, process]) => {
       if (!active) return;
       if (process.task_id !== task.id) throw new Error('Tarefa e processo não correspondem.');
-      if (!user.permissions?.['tasks.execute'] || !processAssignedToUser(task, process, user, manager) || ['completed','inactive','cancelled'].includes(normalize(task.status)) || ['completed','inactive','cancelled','waiting'].includes(normalize(process.status))) {
+      if (!user.permissions?.['tasks.execute'] || !(canExecuteTeam || processAssignedToUser(task, process, user, manager)) || ['completed','inactive','cancelled'].includes(normalize(task.status)) || ['completed','inactive','cancelled','waiting'].includes(normalize(process.status))) {
         setLinkedPreview({task, process});
         return;
       }
       const cached = processCache.current.get(task.id) || [];
       processCache.current.set(task.id, [...cached.filter(p => p.id !== process.id),process]);
+      if (canExecuteTeam && !processAssignedToUser(task, process, user, manager)) setQueueScope('team');
       setTasks(rows => [...rows.filter(t => t.id !== task.id),task]);
       setProcessVersion(v=>v+1); setActiveKey(task.id+':'+process.id);
     }).catch(error => {if(active) setLinkedError(error?.message || 'Não foi possível abrir a tarefa.');});
@@ -485,9 +489,10 @@ export function TasksApp() {
   const workItems = useMemo(() => {
     void processVersion;
     const result: WorkItem[] = [];
-    for (const task of allAssignedTasks) {
+    for (const task of queueTasks) {
       const rows = processCache.current.get(task.id) || [];
       for (const process of rows) {
+        if (queueScope === 'mine' && !processAssignedToUser(task, process, user, manager)) continue;
         result.push({ task, process });
       }
     }
@@ -496,7 +501,7 @@ export function TasksApp() {
       if (ai >= 0 || bi >= 0) return ai < 0 ? -1 : bi < 0 ? 1 : ai - bi;
       return compareWorkItems(a, b);
     });
-  }, [allAssignedTasks, processVersion, deferredKeys]);
+  }, [queueTasks, queueScope, user, manager, processVersion, deferredKeys]);
 
   const pendingForTask = useCallback((task: Task) => {
     void processVersion;
@@ -544,11 +549,11 @@ export function TasksApp() {
 
   useEffect(() => {
     if (!pageVisible) return;
-    const candidates = taskPendingRows(allAssignedTasks, 'all', selectedType).filter(task => !processCache.current.has(task.id));
+    const candidates = taskPendingRows(queueTasks, 'all', selectedType).filter(task => !processCache.current.has(task.id));
     if (!candidates.length) return;
     const generation = refreshGeneration.current;
     void hydrateInBackground(candidates, generation);
-  }, [pageVisible, selectedType, allAssignedTasks, hydrateInBackground]);
+  }, [pageVisible, selectedType, queueTasks, hydrateInBackground]);
 
   useEffect(() => {
     if (!filteredItems.length) {
@@ -722,7 +727,7 @@ export function TasksApp() {
 
       {loadError ? <div className="workbench-notice" role="alert"><span>Não foi possível atualizar a fila. {loadError}</span><button type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button></div> : null}
       {actionNotice ? <div className="execution-notification" role="status"><span>{actionNotice}</span><button type="button" aria-label="Fechar confirmação" onClick={() => setActionNotice(null)}>×</button></div> : null}
-      <section className="tasks-workspace"><aside className="tasks-workspace-sidebar"><section className="tasks-process-section"><div className="tasks-process-title"><strong>Processos da fila</strong><span>{filteredItems.length} carregados</span></div><div className="queue-station-filters">
+      <section className="tasks-workspace"><aside className="tasks-workspace-sidebar"><section className="tasks-process-section"><div className="tasks-process-title"><strong>Processos da fila</strong><span>{filteredItems.length} carregados</span></div>{canExecuteTeam ? <div className="queue-scope-controls" role="group" aria-label="Escopo das tarefas"><button type="button" className={queueScope === 'mine' ? 'active' : ''} aria-pressed={queueScope === 'mine'} onClick={() => { setQueueScope('mine'); setActiveKey(null); }}>Minhas</button><button type="button" className={queueScope === 'team' ? 'active' : ''} aria-pressed={queueScope === 'team'} onClick={() => { setQueueScope('team'); setActiveKey(null); }}>Equipe</button></div> : null}<div className="queue-station-filters">
         <SelectMenu label="Tipo de tarefa" value={selectedType} options={typeOptions} onChange={value => { setSelectedType(value); setActiveKey(null); }} />
         <SelectMenu label="Prioridade" value={selectedPriority} options={[{ value: 'all', label: 'Todas' }, { value: 'high', label: 'Alta' }, { value: 'medium', label: 'Média' }, { value: 'low', label: 'Baixa' }]} onChange={value => { setSelectedPriority(value); setActiveKey(null); }} />
         <SelectMenu label="UF" searchable value={selectedUf} options={ufOptions} onChange={value => { setSelectedUf(value); setActiveKey(null); }} />
