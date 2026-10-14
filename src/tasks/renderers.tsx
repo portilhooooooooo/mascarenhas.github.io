@@ -34,7 +34,7 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
     void api(`/api/task-processes/${process.id}/analysis-activity`, {
       method: 'POST', body: JSON.stringify({ index, stage }),
     }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
-  }, [api, process.id, suggestedNatureza]);
+  }, [api, process.id]);
 
   const submit = async (draft: DefenseAnalysisDraft) => {
     setBusy(true);
