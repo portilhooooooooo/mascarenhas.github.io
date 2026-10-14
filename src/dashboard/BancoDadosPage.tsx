@@ -11,6 +11,7 @@ type BackofficeWindow = Window & typeof globalThis & {
 export function BancoDadosPage() {
   const mountRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
+  const mountedContentRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const clearRefresh = useCallback(() => {
@@ -24,6 +25,8 @@ export function BancoDadosPage() {
       setError('Esta área está disponível somente para Agibank <> MBA.');
       setLoading(false);
       mountRef.current?.replaceChildren();
+      mountedContentRef.current = false;
+      clearRefresh();
       return;
     }
     setLoading(true);
@@ -36,17 +39,22 @@ export function BancoDadosPage() {
       const instanceUrl = normalizeMetabaseInstanceUrl(response.instance_url);
       await ensureMetabaseEmbedScript(instanceUrl);
       // Check again after async work: the user may have switched portfolios.
-      if (win.MBA_API.getPortfolioId?.() !== 'agibank_mba' || !mountRef.current) return;
+      if (win.MBA_API.getPortfolioId?.() !== 'agibank_mba' ||
+          win.MBA_PORTFOLIO_POLICY?.canAccess('banco-dados') !== true ||
+          !mountRef.current) return;
       const dashboard = document.createElement('metabase-dashboard');
       dashboard.setAttribute('token', response.jwt);
       dashboard.setAttribute('with-title', 'false');
       dashboard.setAttribute('with-downloads', 'true');
       mountRef.current.replaceChildren(dashboard);
+      mountedContentRef.current = true;
       const refreshSeconds = Math.max(30, Number(response.expires_in || 600) - 60);
       timerRef.current = window.setTimeout(() => void load(), refreshSeconds * 1000);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Não foi possível carregar o painel.');
-      mountRef.current?.replaceChildren();
+      if (!mountedContentRef.current) mountRef.current?.replaceChildren();
+      clearRefresh();
+      timerRef.current = window.setTimeout(() => void load(), 30000);
     } finally {
       setLoading(false);
     }
@@ -54,7 +62,23 @@ export function BancoDadosPage() {
 
   useEffect(() => {
     void load();
-    return () => { clearRefresh(); mountRef.current?.replaceChildren(); };
+    const reset = () => {
+      // Nunca mantém um dashboard antigo visível após a troca de carteira/sessão.
+      clearRefresh();
+      mountedContentRef.current = false;
+      mountRef.current?.replaceChildren();
+      void load();
+    };
+    for (const name of ['mba:portfolio-changed', 'mba:logged-out', 'mba:session-expired']) {
+      window.addEventListener(name, reset);
+    }
+    return () => {
+      clearRefresh();
+      for (const name of ['mba:portfolio-changed', 'mba:logged-out', 'mba:session-expired']) {
+        window.removeEventListener(name, reset);
+      }
+      mountRef.current?.replaceChildren();
+    };
   }, [load, clearRefresh]);
 
   return <div className="banco-dados-workspace">
@@ -65,7 +89,7 @@ export function BancoDadosPage() {
     </header>
     <div className="banco-dados-frame">
       <div ref={mountRef} className="banco-dados-mount" aria-label="Banco de Dados - Agibank MBA"/>
-      {loading && <div className="banco-dados-state" role="status"><LoaderCircle className="spin" size={20}/>Carregando registros…</div>}
+      {loading && !mountedContentRef.current && <div className="banco-dados-state" role="status"><LoaderCircle className="spin" size={20}/>Carregando registros…</div>}
       {error && <div className="banco-dados-state banco-dados-error" role="alert">
         <strong>Não foi possível carregar o Banco de Dados</strong>
         <span>{error}</span>
