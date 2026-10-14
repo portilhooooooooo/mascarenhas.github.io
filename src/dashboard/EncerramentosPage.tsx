@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Activity, CheckCircle2, RefreshCcw, SearchCheck, UsersRound } from 'lucide-react';
+import { Activity, CheckCircle2, ClipboardList, Clock3, RefreshCcw, SearchCheck, Send, UsersRound } from 'lucide-react';
 import { regularAgingGoals, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
 
@@ -95,6 +95,19 @@ async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
   const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
   if (!api) throw new Error('Conexão com a API indisponível.');
   return api.request<ResumoBennerAnterior>('/api/operacao/encerramentos/resumo-mes-anterior');
+}
+
+type MotivoDerrotaTask = { type: string; status: string; total_processes: number; completed_processes: number };
+async function loadMotivosDerrotaPendentes(): Promise<number> {
+  const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
+  if (!api) throw new Error('Conexão com a API indisponível.');
+  // Tasks expose the existing operational counter. Never infer pending reasons
+  // from DERROTA_VOLUNTARIA cases or the DataJud classification.
+  const tasks = await api.request<MotivoDerrotaTask[]>('/api/tasks?type=motivo_derrota&scope=all');
+  if (!Array.isArray(tasks)) throw new Error('Resposta inválida da fila de motivos de derrota.');
+  return tasks
+    .filter(task => task.type === 'motivo_derrota' && ['pending', 'in_progress'].includes(task.status))
+    .reduce((sum, task) => sum + Math.max(0, Number(task.total_processes || 0) - Number(task.completed_processes || 0)), 0);
 }
 
 
@@ -195,16 +208,19 @@ function CompositionPanel({ dados, etapa }: {dados: Dados | null; etapa: Etapa})
   </section>;
 }
 
-function BennerHistory({ resumo }: {resumo: ResumoBennerAnterior | null}) {
-  if (!resumo) return null;
-  const period = resumo.periodo_inicio
-    ? new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(resumo.periodo_inicio.slice(0,7)+'-02T12:00:00'))
-    : 'mês anterior';
-  return <section className="closing-history" aria-label="Histórico do Benner">
-    <div className="closing-history-label"><strong>Benner · {period}</strong><span>Histórico do mês anterior</span></div>
-    <div><span>Enviados</span><strong>{num(resumo.enviados)}</strong></div>
-    <div><span>Encerrados</span><strong>{num(resumo.encerrados)}</strong></div>
-    <div><span>Em andamento</span><strong>{num(resumo.em_andamento)}</strong></div>
+function BennerHistory({ resumo, motivosPendentes }: {resumo: ResumoBennerAnterior | null; motivosPendentes: number | null}) {
+  const cards = [
+    { icon: Send, label: 'Enviados', value: resumo ? num(resumo.enviados) : '—', detail: 'Histórico do mês anterior' },
+    { icon: CheckCircle2, label: 'Encerrados', value: resumo ? num(resumo.encerrados) : '—', detail: 'Baixas no Benner' },
+    // The historical source returns "Em Andamento", not an explicit rejection status.
+    { icon: Clock3, label: 'Negados pelo banco', value: resumo ? num(resumo.em_andamento) : '—', detail: 'Sem baixa no Benner · não confirma negativa' },
+    { icon: ClipboardList, label: 'Motivo derrota pendente', value: motivosPendentes == null ? '—' : num(motivosPendentes), detail: 'Tarefas aguardando cadastro' },
+  ];
+  return <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do Benner e pendências">
+    {cards.map(card => <article className="closing-kpi" key={card.label}>
+      <div className="closing-kpi-top"><span>{card.label}</span><card.icon size={16} strokeWidth={1.75}/></div>
+      <strong>{card.value}</strong><small>{card.detail}</small>
+    </article>)}
   </section>;
 }
 
@@ -266,6 +282,8 @@ export function EncerramentosPage() {
   const [etapa,setEtapa] = useState<Etapa>('validados');
   const [dados,setDados] = useState<Dados | null>(null);
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
+  const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
+  const [snapshotRevision,setSnapshotRevision] = useState(0);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const refreshSequence = useRef(0);
@@ -283,6 +301,7 @@ export function EncerramentosPage() {
       setCarteira(next);
       setDados(null);
       setResumoBenner(null);
+      setMotivosPendentes(null);
       setError('');
     };
     window.addEventListener('mba:portfolio-changed',syncPortfolio);
@@ -322,19 +341,24 @@ export function EncerramentosPage() {
     activeRequest.current = null;
   },[]);
 
-  // Historical Benner data is a previous-month snapshot, not a live KPI.
+  // Benner reflects the previous calendar month; pending reasons reflect
+  // the current task queue. Reload independently, without zeroing missing data.
   useEffect(() => {
     let active = true;
-    void loadResumoBennerAnterior().then(value => {
-      if (active) setResumoBenner(value);
-    }).catch(() => {/* Keep the previous snapshot on network errors. */});
-    return () => {active=false;};
-  },[carteira,portfolioRevision]);
+    void loadResumoBennerAnterior()
+      .then(value => { if (active) setResumoBenner(value); })
+      .catch(() => { if (active) setResumoBenner(null); });
+    void loadMotivosDerrotaPendentes()
+      .then(value => { if (active) setMotivosPendentes(value); })
+      .catch(() => { if (active) setMotivosPendentes(null); });
+    return () => { active = false; };
+  },[carteira,portfolioRevision,snapshotRevision]);
 
   // Events drive normal updates. The 5-minute check recovers missed events.
   useEffect(() => {
-    const id = window.setInterval(() => {if(!document.hidden)void refresh();},300000);
-    const visible = () => {if(!document.hidden)void refresh();};
+    const update = () => { if (!document.hidden) { void refresh(); setSnapshotRevision(value => value + 1); } };
+    const id = window.setInterval(update,300000);
+    const visible = update;
     document.addEventListener('visibilitychange', visible);
     return () => {window.clearInterval(id);document.removeEventListener('visibilitychange',visible);};
   },[refresh]);
@@ -343,11 +367,11 @@ export function EncerramentosPage() {
     const schedule = () => {
       if (document.hidden) return;
       window.clearTimeout(timeout);
-      timeout = window.setTimeout(() => {void refresh();},350);
+      timeout = window.setTimeout(() => { void refresh(); setSnapshotRevision(value => value + 1); },350);
     };
     const onRealtime = (event: Event) => {
       const module = (event as CustomEvent<{module?: string}>).detail?.module;
-      if (module === 'encerramentos') schedule();
+      if (module === 'encerramentos' || module === 'tarefas') schedule();
     };
     window.addEventListener('mba:realtime-invalidate', onRealtime);
     window.addEventListener('mba:closing-analysis-saved', schedule);
@@ -365,7 +389,7 @@ export function EncerramentosPage() {
     <div className="closing-heading">
       <div><h1>Encerramentos</h1><span>Visão da carteira · dados operacionais</span></div>
       <div className="closing-heading-actions">
-        <button type="button" className="closing-refresh" onClick={()=>void refresh()} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
+        <button type="button" className="closing-refresh" onClick={() => { void refresh(); setSnapshotRevision(value => value + 1); }} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
       </div>
     </div>
     <div className="closing-filter-row">
@@ -387,6 +411,7 @@ export function EncerramentosPage() {
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} selectedCount={analysed} etapa={etapa} acordo={tipo==='ACORDO'}/>
+    <BennerHistory resumo={resumoBenner} motivosPendentes={motivosPendentes}/>
     <AgingPanel dados={shown} etapa={etapa} tipo={tipo} analista={analista} inicio={inicio} fim={fim}/>
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} etapa={etapa}/>
@@ -396,7 +421,6 @@ export function EncerramentosPage() {
       <summary><span>Detalhamento territorial</span><small>Comarcas com mais derrotas</small></summary>
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
     </details>
-    <BennerHistory resumo={resumoBenner}/>
     <p className="closing-disclaimer">Acordos não integram oportunidades aptas ao encerramento.</p>
   </div>;
 }
