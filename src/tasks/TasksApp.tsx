@@ -296,7 +296,7 @@ export function TasksApp() {
   const canExecute = isMaster || user?.permissions?.['tasks.execute'] === true;
   const canManage = isMaster || user?.permissions?.['tasks.manage'] === true;
   const canViewOtherTasks = isMaster || user?.permissions?.['tasks.view_others'] === true;
-  const canExecuteTeam = canManage && canExecute && canViewOtherTasks;
+  const canExecuteTeam = canExecute && canViewOtherTasks && (isMaster || user?.permissions?.['tasks.execute_others'] === true);
   const ownTaskIds = useMemo(() => new Set(tasks.map(task => task.id)), [tasks]);
   const allVisibleTasks = useMemo(
     () => visibleTasks.filter(task => taskAssignedToUser(task, user, manager)).sort(compareTasks),
