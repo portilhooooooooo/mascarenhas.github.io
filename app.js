@@ -205,7 +205,13 @@ document.querySelector('#new-task-button')?.addEventListener('click', () => task
 document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => taskDialog.close()));
 
 function escapeHtml(value) {
-  const element = document.createElement('span'); element.textContent = value ?? ''; return element.innerHTML;
+  // Also encode quotes: HTML-text escaping alone is unsafe inside quoted attributes.
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 let usersCache = [];
@@ -294,7 +300,7 @@ function renderPermissionEditor(user) {
     // It is safe to configure without granting permission to execute or manage.
     const locked = exclusive || (operational && permission.key !== 'tasks.view_others') || protectedIdentity;
     const lockLabel = exclusive ? 'Exclusivo' : taskOnlyRestricted ? 'Escopo operacional' : '';
-    return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O acesso operacional permite somente tarefas atribuídas' : 'Origem atual: ' + (state?.source || 'sem regra')}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
+    return `<label class="permission-toggle ${locked ? 'permission-locked' : ''}" title="${escapeHtml(exclusive ? 'Acesso exclusivo de ' + exclusiveUsersEmail : taskOnlyRestricted ? 'O acesso operacional permite somente tarefas atribuídas' : 'Origem atual: ' + (state?.source || 'sem regra'))}"><span>${escapeHtml(permission.description || permission.key)}${locked ? `<small>${lockLabel}</small>` : ''}</span><input type="checkbox" data-permission-id="${permission.id}" data-permission-key="${escapeHtml(permission.key)}" ${state?.allowed ? 'checked' : ''} ${locked ? 'disabled' : ''}><span class="permission-switch"></span></label>`;
   }).join('')}</div>`).join('');
 }
 
@@ -900,7 +906,59 @@ function renderTutelaCases() {
     '#tutelas-tab-erros': counts.erro,
   };
   Object.entries(values).forEach(([selector, value]) => { const element = document.querySelector(selector); if (element) element.textContent = value; });
-  body.innerHTML = tutelaCases.length ? tutelaCases.map((item) => `<tr data-tutela-row data-processo="${escapeHtml(item.cnj)}" data-cliente="${escapeHtml(item.cliente || '')}" data-pedido="${item.pedido ? 'sim' : 'nao'}" data-result="${item.resultado}" data-consulta-date="${String(item.updated_at || '').slice(0, 10)}"><td><strong>${escapeHtml(item.cnj)}</strong></td><td>${escapeHtml(item.cliente || '—')}</td><td><span class="tutela-result ${item.resultado.replace('_', '-')}">${tutelaResultLabel(item.resultado)}</span></td><td><span class="tutela-pedido ${item.pedido ? 'sim' : 'nao'}">${item.pedido ? 'Sim' : 'Não'}</span></td><td>${formatDate(item.updated_at)}</td><td>${item.erro ? `<button class="tutela-action" title="${escapeHtml(item.erro)}"><i data-lucide="triangle-alert"></i></button>` : '—'}</td></tr>`).join('') : '<tr class="tutelas-empty-row"><td colspan="6"><div class="tutelas-empty"><i data-lucide="database"></i><strong>Nenhum caso cadastrado</strong><span>Adicione casos para preparar a busca de tutela.</span></div></td></tr>';
+  // All user-supplied values are written with DOM APIs, never interpolated into HTML.
+  body.replaceChildren();
+  if (tutelaCases.length) {
+    const fragment = document.createDocumentFragment();
+    const validResults = new Set(['com_indicio', 'sem_indicio', 'nao_consultado', 'erro']);
+    for (const item of tutelaCases) {
+      const row = document.createElement('tr');
+      row.dataset.tutelaRow = '';
+      row.dataset.processo = String(item.cnj ?? '');
+      row.dataset.cliente = String(item.cliente ?? '');
+      row.dataset.pedido = item.pedido ? 'sim' : 'nao';
+      row.dataset.result = String(item.resultado ?? '');
+      row.dataset.consultaDate = String(item.updated_at ?? '').slice(0, 10);
+
+      const cnjCell = row.insertCell();
+      const cnjText = document.createElement('strong');
+      cnjText.textContent = String(item.cnj ?? '');
+      cnjCell.append(cnjText);
+
+      row.insertCell().textContent = String(item.cliente || '—');
+      const resultCell = row.insertCell();
+      const resultTag = document.createElement('span');
+      resultTag.classList.add('tutela-result');
+      if (validResults.has(item.resultado)) resultTag.classList.add(item.resultado.replace('_', '-'));
+      resultTag.textContent = tutelaResultLabel(item.resultado);
+      resultCell.append(resultTag);
+
+      const pedidoCell = row.insertCell();
+      const pedidoTag = document.createElement('span');
+      pedidoTag.classList.add('tutela-pedido', item.pedido ? 'sim' : 'nao');
+      pedidoTag.textContent = item.pedido ? 'Sim' : 'Não';
+      pedidoCell.append(pedidoTag);
+
+      row.insertCell().textContent = formatDate(item.updated_at);
+      const errorCell = row.insertCell();
+      if (item.erro) {
+        const errorButton = document.createElement('button');
+        errorButton.className = 'tutela-action';
+        errorButton.type = 'button';
+        errorButton.title = String(item.erro);
+        const icon = document.createElement('i');
+        icon.dataset.lucide = 'triangle-alert';
+        errorButton.append(icon);
+        errorCell.append(errorButton);
+      } else {
+        errorCell.textContent = '—';
+      }
+      fragment.append(row);
+    }
+    body.append(fragment);
+  } else {
+    body.innerHTML = '<tr class="tutelas-empty-row"><td colspan="6"><div class="tutelas-empty"><i data-lucide="database"></i><strong>Nenhum caso cadastrado</strong><span>Adicione casos para preparar a busca de tutela.</span></div></td></tr>';
+  }
   document.querySelector('#tutelas-pagination-label').textContent = tutelaCases.length ? `${tutelaCases.length} registro(s) exibido(s)` : 'Nenhum registro exibido';
   lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
 }
