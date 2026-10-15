@@ -65,6 +65,16 @@ export function OperacaoEncerramentosPage() {
   const [selected,setSelected]=useState<Record<string,boolean>>({});
   const [movements,setMovements]=useState<Record<string,string>>({});
   const [permissions,setPermissions]=useState({view:false,run:false});
+  const [portfolioId,setPortfolioId]=useState(() =>
+    (window as Window & {MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.() || '');
+  const isNubank = portfolioId === 'nubank_mba' || portfolioId === 'nubank';
+  useEffect(() => {
+    const sync=()=>setPortfolioId(
+      (window as Window & {MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.() || ''
+    );
+    window.addEventListener('mba:portfolio-changed',sync);
+    return ()=>window.removeEventListener('mba:portfolio-changed',sync);
+  },[]);
   const canView=permissions.view;
   const canRun=permissions.run;
 
@@ -115,7 +125,12 @@ export function OperacaoEncerramentosPage() {
   useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro,enviadoBennerFiltro]);
 
   const candidates=useMemo(()=>rows.filter(row=>selected[row.cnj]&&eligible(row)),[rows,selected]);
-  const isActionTab=['APTOS','DERROTA','DERROTA_VOLUNTARIA','VITORIA'].includes(tab);
+  const visibleStatuses = isNubank ? STATUS.filter(item => item.key !== 'DERROTA_VOLUNTARIA') : STATUS;
+  useEffect(() => {
+    if (isNubank && tab === 'DERROTA_VOLUNTARIA') setTab('PENDENTES');
+    if (isNubank && indicioFiltro === 'DERROTA_VOLUNTARIA') setIndicioFiltro('todos');
+  }, [isNubank, tab, indicioFiltro]);
+  const isActionTab=['APTOS','DERROTA','VITORIA', ...(isNubank?[]:['DERROTA_VOLUNTARIA'])].includes(tab);
   const maxPage=Math.max(1,Math.ceil(total/pageSize));
   const statusLabel=(row:ClosingCase)=>row.enviado_benner_em?'Enviado ao Benner':
     row.status_envio==='NA_FILA'?'Na fila do Benner':
@@ -166,7 +181,9 @@ export function OperacaoEncerramentosPage() {
     </section>
     <section className="protocolos-card protocolos-workspace operacao-workspace">
       <header className="protocolos-workspace-head">
-        <div><h2>Base operacional</h2><p>Os indícios do DataJud não equivalem a classificações confirmadas. Em fase recursal identifica, apenas em Agibank MBA, a análise humana que confirma apelação ainda sem acórdão. Derrota, Derrota voluntária e Vitória também exigem validação dos analistas.</p></div>
+        <div><h2>Base operacional</h2><p>{isNubank
+          ? 'Indícios DataJud não equivalem a classificações confirmadas. Derrota, Vitória e Acordo exigem revisão humana antes de qualquer andamento.'
+          : 'Os indícios do DataJud não equivalem a classificações confirmadas. Em fase recursal identifica, apenas em Agibank MBA, a análise humana que confirma apelação ainda sem acórdão. Derrota, Derrota voluntária e Vitória também exigem validação dos analistas.'}</p></div>
         <div className="protocolos-toolbar-actions">
           <button type="button" className="protocolos-button primary" disabled={!canRun||!isActionTab||!candidates.length||submitting} onClick={()=>void send()}>
             {submitting?<LoaderCircle className="spin" size={15}/>:<Send size={15}/>}Enviar ao Benner ({count(candidates.length)})
@@ -174,7 +191,7 @@ export function OperacaoEncerramentosPage() {
         </div>
       </header>
       <div className="protocolos-status-strip-react operacao-encerramentos-status" role="tablist" aria-label="Status dos encerramentos">
-        {STATUS.map(status=><button type="button" role="tab" aria-selected={tab===status.key} key={status.key} className={(tab===status.key?'active ':'')+status.tone} onClick={()=>{setTab(status.key);setPage(1);}}>
+        {visibleStatuses.map(status=><button type="button" role="tab" aria-selected={tab===status.key} key={status.key} className={(tab===status.key?'active ':'')+status.tone} onClick={()=>{setTab(status.key);setPage(1);}}>
           <span>{status.label}</span><strong>{count(summary?.statuses?.[status.key])}</strong>
         </button>)}
       </div>
@@ -187,7 +204,7 @@ export function OperacaoEncerramentosPage() {
             <option value="todos">Todos</option>
             <option value="INDETERMINADO">Indeterminado</option>
             <option value="DERROTA">Derrota</option>
-            <option value="DERROTA_VOLUNTARIA">Derrota voluntária</option>
+            {!isNubank && <option value="DERROTA_VOLUNTARIA">Derrota voluntária</option>}
             <option value="VITORIA">Vitória</option>
             <option value="ACORDO">Acordo</option>
             <option value="EXTINCAO">Extinção</option>
