@@ -46,9 +46,11 @@ assert.match(shell, /<SelectMenu label="UF" searchable/, 'Filtro UF tem pesquisa
 assert.doesNotMatch(read('src/tasks/model.ts'), /const priority = priorityRank/, 'Prioridade não determina ordenação');
 assert.match(questions, /data-qa-last=\{navigation\.canSubmit/, 'Ações refletem a etapa atual');
 assert.match(questions, /!qa\.canSubmit/, 'Salvar fica bloqueado em perguntas intermediárias');
-assert.match(questions, /form\.requestSubmit\(save\)/, 'Enter salva explicitamente na última pergunta');
+assert.doesNotMatch(questions, /requestSubmit\(/, 'Enter e Próximo nunca enviam nem concluem a análise');
 assert.match(questions, /current < total - 1/, 'Enter avança apenas entre etapas anteriores');
-assert.match(questions, /save\) form\.requestSubmit\(save\)/, 'Sem botão válido não há envio');
+assert.match(questions, /button\?\.type === 'submit' && form\.contains\(button\)/, 'Enter focado em Salvar não conclui a análise');
+assert.match(questions, /current < total - 1 \? <button type="button" className="qa-next-button" onClick=\{next\}>Próximo/, 'Próximo visível e clicável antes da última pergunta');
+assert.match(questions, /if \(current >= total - 1\) return;/, 'Próximo não conclui análise na última pergunta');
 assert.doesNotMatch(closing, /className=\{'closing-outcome closing-summary '/, 'Card de classificação removido');
 assert.doesNotMatch(style, /\.closing-summary/, 'Sem CSS de card de classificação');
 assert.match(closing, /closing-classification-agreement/, 'Confirmação final Sim/Não');
