@@ -178,13 +178,13 @@ function AgingPanel({ dados, etapa, tipo, analista, inicio, fim }: {
   </section>;
 }
 
-function CompositionPanel({ dados, etapa }: {dados: Dados | null; etapa: Etapa}) {
+function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etapa: Etapa; isNubank: boolean}) {
   const types = dados?.etapas?.tipos || [];
   const bands = ageBands(dados?.carteira || 'Agibank Regular');
   const matrix = dados?.etapas?.matriz || [];
   const total = valueOrZero(dados?.etapas?.total);
   const count = (kind: string) => valueOrZero(types.find(item=>item.tipo===kind)?.quantidade);
-  const rows = CLASSES.map(item=>({...item, quantity: count(item.tipo)}));
+  const rows = CLASSES.filter(item => !isNubank || item.tipo !== 'DERROTA_VOLUNTARIA').map(item=>({...item, quantity: count(item.tipo)}));
   const max = Math.max(1,...rows.map(row=>row.quantity));
   const other = Math.max(0,total-rows.reduce((sum,row)=>sum+row.quantity,0));
   return <section className="closing-surface closing-composition" aria-label="Composição dos encerramentos">
@@ -195,7 +195,7 @@ function CompositionPanel({ dados, etapa }: {dados: Dados | null; etapa: Etapa})
         <div className="closing-rail"><i style={{width:(row.quantity/max*100)+'%'}}/></div>
       </div>)}</div>
       {other>0 && <p className="closing-composition-other">Outros ou não classificados: {num(other)}</p>}
-      {total>0 && <details className="closing-details">
+      {!isNubank && total>0 && <details className="closing-details">
         <summary>Cruzamento por tipo e aging <span>Ver tabela</span></summary>
         <div className="closing-matrix-scroll"><table className="closing-matrix">
           <thead><tr><th>Tipo / Aging</th>{bands.map(band=><th key={band}>{band}</th>)}<th>Total</th></tr></thead>
@@ -208,13 +208,15 @@ function CompositionPanel({ dados, etapa }: {dados: Dados | null; etapa: Etapa})
   </section>;
 }
 
-function BennerHistory({ resumo, motivosPendentes }: {resumo: ResumoBennerAnterior | null; motivosPendentes: number | null}) {
+function BennerHistory({ resumo, motivosPendentes, isNubank }: {resumo: ResumoBennerAnterior | null; motivosPendentes: number | null; isNubank: boolean}) {
   const cards = [
     { icon: Send, label: 'Enviados', value: resumo ? num(resumo.enviados) : '—', detail: 'Histórico do mês anterior' },
     { icon: CheckCircle2, label: 'Encerrados', value: resumo ? num(resumo.encerrados) : '—', detail: 'Baixas no Benner' },
     // The historical source returns "Em Andamento", not an explicit rejection status.
-    { icon: Clock3, label: 'Negados pelo banco', value: resumo ? num(resumo.em_andamento) : '—', detail: 'Sem baixa no Benner · não confirma negativa' },
-    { icon: ClipboardList, label: 'Motivo derrota pendente', value: motivosPendentes == null ? '—' : num(motivosPendentes), detail: 'Tarefas aguardando cadastro' },
+    ...(!isNubank ? [
+      { icon: Clock3, label: 'Negados pelo banco', value: resumo ? num(resumo.em_andamento) : '—', detail: 'Sem baixa no Benner · não confirma negativa' },
+      { icon: ClipboardList, label: 'Motivo derrota pendente', value: motivosPendentes == null ? '—' : num(motivosPendentes), detail: 'Tarefas aguardando cadastro' },
+    ] : []),
   ];
   return <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do Benner e pendências">
     {cards.map(card => <article className="closing-kpi" key={card.label}>
@@ -273,7 +275,7 @@ export function EncerramentosPage() {
   const [portfolioRevision,setPortfolioRevision] = useState(0);
   const [carteira,setCarteira] = useState(() => {
     const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
-    return id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
+    return id === 'nubank_mba' || id === 'nubank' ? 'Nubank' : id === 'agibank_enter' ? 'Agibank Enter' : 'Agibank Regular';
   });
   const [tipo,setTipo] = useState<Tipo>('TODOS');
   const [inicio,setInicio] = useState(() => { const now = new Date(); return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),'01'].join('-'); });
@@ -293,7 +295,7 @@ export function EncerramentosPage() {
   useEffect(() => {
     const syncPortfolio = () => {
       const id=(window as Window & {MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.();
-      const next=id==='agibank_enter'?'Agibank Enter':'Agibank Regular';
+      const next=id==='nubank_mba'||id==='nubank'?'Nubank':id==='agibank_enter'?'Agibank Enter':'Agibank Regular';
       refreshSequence.current += 1;
       // A portfolio event can re-select the same portfolio. Re-fetch anyway
       // instead of clearing the KPIs with no state dependency to reload them.
@@ -307,6 +309,9 @@ export function EncerramentosPage() {
     window.addEventListener('mba:portfolio-changed',syncPortfolio);
     return () => window.removeEventListener('mba:portfolio-changed',syncPortfolio);
   },[]);
+  const isNubank = carteira === 'Nubank';
+  const visibleTypes = isNubank ? TIPOS.filter(item => item.value !== 'DERROTA_VOLUNTARIA') : TIPOS;
+  useEffect(() => { if (isNubank && tipo === 'DERROTA_VOLUNTARIA') setTipo('TODOS'); }, [isNubank, tipo]);
   const invalidRange = Boolean(inicio && fim && inicio > fim);
   const filterKey = [carteira,tipo,inicio,fim,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
@@ -348,11 +353,11 @@ export function EncerramentosPage() {
     void loadResumoBennerAnterior()
       .then(value => { if (active) setResumoBenner(value); })
       .catch(() => { if (active) setResumoBenner(null); });
-    void loadMotivosDerrotaPendentes()
+    if (!isNubank) void loadMotivosDerrotaPendentes()
       .then(value => { if (active) setMotivosPendentes(value); })
       .catch(() => { if (active) setMotivosPendentes(null); });
     return () => { active = false; };
-  },[carteira,portfolioRevision,snapshotRevision]);
+  },[carteira,portfolioRevision,snapshotRevision,isNubank]);
 
   // Events drive normal updates. The 5-minute check recovers missed events.
   useEffect(() => {
@@ -393,8 +398,8 @@ export function EncerramentosPage() {
       </div>
     </div>
     <div className="closing-filter-row">
-      <label>Carteira<select value={carteira} disabled aria-label="Carteira atual autorizada"><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option></select></label>
-      <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{TIPOS.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
+      <label>Carteira<select value={carteira} disabled aria-label="Carteira atual autorizada"><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option></select></label>
+      <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
       <fieldset className="closing-date-range"><legend>Período</legend>
         <label>De<input type="date" aria-label="Data inicial dos encerramentos" value={inicio} max={fim || undefined} onChange={e=>setInicio(e.target.value)}/></label>
         <label>Até<input type="date" aria-label="Data final dos encerramentos" value={fim} min={inicio || undefined} onChange={e=>setFim(e.target.value)}/></label>
@@ -411,10 +416,10 @@ export function EncerramentosPage() {
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} selectedCount={analysed} etapa={etapa} acordo={tipo==='ACORDO'}/>
-    <BennerHistory resumo={resumoBenner} motivosPendentes={motivosPendentes}/>
-    <AgingPanel dados={shown} etapa={etapa} tipo={tipo} analista={analista} inicio={inicio} fim={fim}/>
+    <BennerHistory resumo={resumoBenner} motivosPendentes={motivosPendentes} isNubank={isNubank}/>
+    {!isNubank && <AgingPanel dados={shown} etapa={etapa} tipo={tipo} analista={analista} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
-      <CompositionPanel dados={shown} etapa={etapa}/>
+      <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
       <AnalystsPanel analysts={analysts}/>
     </div>
     <details className="closing-territory">
