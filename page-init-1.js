@@ -25,7 +25,7 @@ if (mbaReactLoginView) mbaReactLoginView.hidden = true;
           const current = client.value;
           const values = [...new Set(rows().map(row => row.dataset.cliente).filter(Boolean))]
             .sort((a, b) => a.localeCompare(b, 'pt-BR'));
-          client.innerHTML = '<option value="">Todos</option>' + values.map(value => `<option value="${value.replace(/"/g, '&quot;')}">${value}</option>`).join('');
+          client.replaceChildren(new Option('Todos', ''), ...values.map(value => new Option(value, value)));
           if (values.includes(current)) client.value = current;
         };
 
