@@ -176,6 +176,7 @@
 
       const sessionInvalid = response.status === 401
         && Boolean(tokenBeforeRequest)
+        && getStoredToken() === tokenBeforeRequest
         && sessionInvalidCodes.has(String(data?.code || ''));
       if (sessionInvalid && !document.body.classList.contains('auth-loading')) {
         clearStoredToken();
