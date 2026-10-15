@@ -28,11 +28,11 @@ import {
   ClosingRenderer,
   MotivoDerrotaRenderer,
   DefenseRenderer,
-  LiminarRenderer,
   PaymentRenderer,
   UnsupportedRenderer,
   type ApiRequest,
 } from './renderers';
+import { LiminarRenderer } from './LiminarRenderer';
 import { ProtocolCollectionRenderer } from './ProtocolCollectionRenderer';
 import { TaskResults } from './TaskResults';
 import { AssignmentsBoard } from './AssignmentsBoard';
