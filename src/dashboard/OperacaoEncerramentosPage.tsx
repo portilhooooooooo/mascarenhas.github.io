@@ -2,7 +2,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
   getClosingCases, getClosingSummary, sendClosingsToBenner,
-  type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType, type MotivoDerrotaFilter, type ClosingIndicioFilter,
+  type ClosingCase, type ClosingStatus, type ClosingSummary, type ClosingType, type MotivoDerrotaFilter, type ClosingIndicioFilter, type EnviadoBennerFilter,
 } from './operacaoEncerramentosService';
 
 const STATUS: Array<{key: ClosingStatus; label: string; tone: string}> = [
@@ -55,6 +55,7 @@ export function OperacaoEncerramentosPage() {
   const [appliedQuery,setAppliedQuery]=useState('');
   const [motivoFiltro,setMotivoFiltro]=useState<MotivoDerrotaFilter>('todos');
   const [indicioFiltro,setIndicioFiltro]=useState<ClosingIndicioFilter>('todos');
+  const [enviadoBennerFiltro,setEnviadoBennerFiltro]=useState<EnviadoBennerFilter>('todos');
   const [pageSize,setPageSize]=useState(10);
   const [page,setPage]=useState(1);
   const [loading,setLoading]=useState(true);
@@ -72,13 +73,13 @@ export function OperacaoEncerramentosPage() {
     try {
       const [nextSummary,nextList]=await Promise.all([
         getClosingSummary(),
-        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro,indicioFiltro),
+        getClosingCases(tab,pageSize,(page-1)*pageSize,appliedQuery,motivoFiltro,indicioFiltro,enviadoBennerFiltro),
       ]);
       setSummary(nextSummary);setRows(nextList.rows||[]);setTotal(Number(nextList.total||0));setError('');
     } catch (cause) {
       setError(cause instanceof Error?cause.message:'Não foi possível consultar Encerramentos.');
     } finally {setLoading(false);}
-  },[canView,tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro]);
+  },[canView,tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro,enviadoBennerFiltro]);
 
   useEffect(()=>{
     const sync=()=>{
@@ -111,7 +112,7 @@ export function OperacaoEncerramentosPage() {
       document.removeEventListener('visibilitychange',update);
     };
   },[canView,refresh,submitting]);
-  useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro]);
+  useEffect(()=>{setSelected({});},[tab,page,pageSize,appliedQuery,motivoFiltro,indicioFiltro,enviadoBennerFiltro]);
 
   const candidates=useMemo(()=>rows.filter(row=>selected[row.cnj]&&eligible(row)),[rows,selected]);
   const isActionTab=['APTOS','DERROTA','DERROTA_VOLUNTARIA','VITORIA'].includes(tab);
@@ -190,6 +191,9 @@ export function OperacaoEncerramentosPage() {
             <option value="VITORIA">Vitória</option>
             <option value="ACORDO">Acordo</option>
             <option value="EXTINCAO">Extinção</option>
+          </select></label>
+          <label className="protocolos-page-size"><span>Enviado ao Benner?</span><select aria-label="Filtrar por envio confirmado ao Benner" value={enviadoBennerFiltro} onChange={event=>{setEnviadoBennerFiltro(event.target.value as EnviadoBennerFilter);setPage(1);}}>
+            <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option>
           </select></label>
           <label className="protocolos-page-size"><span>Tem motivo derrota?</span><select aria-label="Filtrar por motivo derrota" value={motivoFiltro} onChange={event=>{setMotivoFiltro(event.target.value as MotivoDerrotaFilter);setPage(1);}}>
             <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option><option value="nao_verificado">Não verificado</option>
