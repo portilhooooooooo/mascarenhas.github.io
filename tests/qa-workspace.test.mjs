@@ -62,4 +62,13 @@ assert.match(closing, /setClassificationAgreed\(null\)/, 'Alterar respostas inva
 assert.doesNotMatch(closing, /A análise será registrada para revisão/, 'Texto redundante removido; justificativa e revisão continuam no contrato');
 assert.match(style, /form\[data-qa-index='0'\][^\n]*\.qa-context-note/, 'Indício contextual não ocupa todas as perguntas');
 assert.doesNotMatch(renderer, /\|\| task\.title/, 'Título da tarefa não pode ser indício daquele processo');
+// Liminar: a confirmação automática dispensa etapa redundante de conclusão.
+const liminar = read('src/tasks/LiminarRenderer.tsx');
+assert.match(liminar, /deferida: 'Identificamos que houve pedido de tutela de urgência deferido nos autos\\.'/);
+assert.doesNotMatch(liminar, /Classificação final/, 'A confirmação automática não cria segunda etapa');
+assert.match(liminar, /stage="Confirmação" question=\\{initialStatement \\|\\| ''\\}/);
+assert.match(liminar, /if \\(value === 'sim'\\) void save\\(true\\)/, 'Sim persiste e avança ao próximo processo');
+assert.match(liminar, /agreement === 'nao'/, 'Não abre as perguntas manuais');
+assert.match(liminar, /savingRef\\.current/, 'Persistência protegida contra envio duplicado');
+assert.match(liminar, /body: JSON\\.stringify\\(\\{ agree, answers \\}\\)/, 'Mantém contrato da API de validação');
 console.log('Q&A progressivo: atalhos, cache e gravação explícita verificados.');
