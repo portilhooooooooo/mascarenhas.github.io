@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import type { Task, TaskProcess } from './model';
 import { TaskActionBar, TaskForm, TaskQuestion, OptionGroup } from './TaskQuestion';
 import { clearQaDraft, useQaField } from './qaDraft';
@@ -6,14 +6,14 @@ import { clearQaDraft, useQaField } from './qaDraft';
 type ApiRequest = (path: string, options?: RequestInit) => Promise<any>;
 type Answers = { requested: string | null; decided: string | null; result: string | null; judgment: string | null };
 type Prefill = { decision: string | null; statement: string | null; answers: Answers | null };
-const explanations: Record<string, string> = {
-  nao_solicitada: 'não há pedido de tutela de urgência identificado. Não existe VDLIM referente ao pedido a acompanhar.',
-  deferida: 'houve pedido de tutela deferido. O VDLIM deve acompanhar o cumprimento da determinação judicial.',
-  indeferida: 'houve pedido de tutela indeferido. Não há obrigação liminar deferida a cumprir, ressalvadas decisões posteriores.',
-  com_sentenca: 'o pedido de tutela sem decisão liminar autônoma foi sucedido por sentença de mérito. A tutela provisória pode ter sido superada; a existência de obrigação definitiva depende do dispositivo da sentença. É necessária revisão do VDLIM no CPJ.',
-  sem_decisao: 'houve pedido de tutela de urgência, sem decisão liminar e sem sentença de mérito. O processo será guardado para acompanhamento e nova consulta automática.',
+const statements: Record<string, string> = {
+  nao_solicitada: 'Identificamos que não houve pedido de tutela de urgência nos autos.',
+  deferida: 'Identificamos que houve pedido de tutela de urgência deferido nos autos.',
+  indeferida: 'Identificamos que houve pedido de tutela de urgência indeferido nos autos.',
+  com_sentenca: 'Identificamos que houve pedido de tutela de urgência sem decisão liminar, mas com sentença de mérito nos autos.',
+  sem_decisao: 'Identificamos que houve pedido de tutela de urgência sem decisão liminar e sem sentença de mérito nos autos.',
 };
-const phases = ['Classificação inicial', 'Pedido de tutela', 'Decisão judicial', 'Resultado da análise', 'Classificação final'] as const;
+const phases = ['Confirmação', 'Pedido de tutela', 'Decisão judicial', 'Resultado da análise'] as const;
 
 export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted, onSkipped }: {
   api: ApiRequest; task: Task; process: TaskProcess; draftKey?: string;
@@ -28,6 +28,7 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const savingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
 
   const onPhaseEntered = useCallback((index: number, stage: string) => {
@@ -59,7 +60,8 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
     return () => { active = false; };
   }, [loadPrefill]);
 
-  const hasInitial = Boolean(prefill?.decision && prefill?.statement);
+  const initialStatement = prefill?.decision ? statements[prefill.decision] : null;
+  const hasInitial = Boolean(initialStatement);
   const confirmation = hasInitial && agreement === 'sim';
   const manual = !hasInitial || agreement === 'nao';
   const decision = confirmation ? prefill?.decision : manual
@@ -68,19 +70,24 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
       : requested === 'sim' && decided === 'nao' && judgment
         ? judgment === 'sim' ? 'com_sentenca' : 'sem_decisao' : null)
     : null;
-  const finalDecision = decision && Object.prototype.hasOwnProperty.call(explanations, decision) ? decision : null;
+  const finalDecision = decision && Object.prototype.hasOwnProperty.call(statements, decision) ? decision : null;
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!finalDecision || loading) { setError('Conclua as respostas antes de salvar.'); return; }
-    setBusy(true); setError(null);
+  const save = async (agree: boolean) => {
+    if (savingRef.current || loading) return;
+    if (!agree && !finalDecision) {
+      setError('Conclua as respostas antes de salvar.');
+      return;
+    }
+    savingRef.current = true;
+    setBusy(true);
+    setError(null);
     try {
-      const answers: Answers | undefined = confirmation ? undefined : {
+      const answers: Answers | undefined = agree ? undefined : {
         requested, decided, result, judgment,
       };
       const response = await api(`/api/task-processes/${process.id}/liminar-validation`, {
         method: 'POST',
-        body: JSON.stringify({ agree: confirmation, answers }),
+        body: JSON.stringify({ agree, answers }),
       });
       if (response?.monitoring === 'dispatch_failed') {
         throw new Error('A consulta automática não iniciou. Mantenha este prazo pendente.');
@@ -89,7 +96,14 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
       onCompleted(process);
     } catch (cause: any) {
       setError(cause?.message || 'Não foi possível salvar a análise.');
-    } finally { setBusy(false); }
+    } finally {
+      savingRef.current = false;
+      setBusy(false);
+    }
+  };
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void save(confirmation);
   };
   const skip = async () => {
     setBusy(true); setError(null);
@@ -106,10 +120,13 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
   }
   return <TaskForm className="task-renderer-form" progressive stages={phases} dynamicStages draftKey={draftKey}
     onPhaseEntered={onPhaseEntered} onSubmit={submit}>
-    {hasInitial ? <TaskQuestion number="01" stage="Classificação inicial" question="Você concorda com esta afirmação?">
-      <p>{prefill?.statement}</p>
+    {hasInitial ? <TaskQuestion number="01" stage="Confirmação" question={initialStatement || ''}>
+      <p>Você concorda com essa afirmação?</p>
       <OptionGroup name="liminar-confirmacao" value={agreement} disabled={busy}
-        onChange={value => setAgreement(value)}
+        onChange={value => {
+          setAgreement(value);
+          if (value === 'sim') void save(true);
+        }}
         options={[{ value: 'sim', label: 'Sim' }, { value: 'nao', label: 'Não' }]} />
     </TaskQuestion> : null}
     {manual ? <TaskQuestion number="01" stage="Pedido de tutela" question="Há pedido de tutela antecipada na inicial desse processo?">
@@ -129,12 +146,6 @@ export function LiminarRenderer({ api, task, process, draftKey = '', onCompleted
     {manual && requested === 'sim' && decided === 'nao' ? <TaskQuestion number="03" stage="Resultado da análise" question="Esse processo teve sentença?">
       <OptionGroup name="liminar-judgment" value={judgment} disabled={busy} onChange={setJudgment}
         options={[{ value: 'sim', label: 'Sim' }, { value: 'nao', label: 'Não' }]} />
-    </TaskQuestion> : null}
-    {finalDecision ? <TaskQuestion number="04" stage="Classificação final" question="Classificação final">
-      <div data-qa-answered="true">
-        <p><strong>Com base nas suas respostas, entendemos que</strong> {explanations[finalDecision]}</p>
-        {finalDecision === 'sem_decisao' ? <p>O prazo será mantido em acompanhamento, sem encerrar o VDLIM.</p> : null}
-      </div>
     </TaskQuestion> : null}
     {loadError ? <p className="task-renderer-error" role="alert">
       Não foi possível consultar a classificação automática. As respostas manuais continuam disponíveis.
