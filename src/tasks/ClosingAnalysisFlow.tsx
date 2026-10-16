@@ -400,7 +400,7 @@ export function ClosingAnalysisFlow({
     });
   };
 
-  return <TaskForm className="closing-flow" progressive stages={CLOSING_STAGES} stageStates={{
+  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={CLOSING_STAGES} stageStates={{
     'Cadastro de Sentença': sentence ? 'completed' : 'pending',
     'Cadastro de Acórdão': appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
