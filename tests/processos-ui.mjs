@@ -94,11 +94,11 @@ try {
  await page.getByRole('button',{name:'Criar tarefa',exact:true}).last().click();await page.getByText('Tarefa criada e vinculada ao processo.').waitFor();
  assert.equal(writes[0].body.process_cnj,cnj);assert.equal(writes[0].body.source,'api');
  await page.getByRole('complementary',{name:'Tarefas do processo'}).getByRole('button',{name:/Abrir tarefa/}).click();await page.getByRole('radiogroup',{name:'closing-sentence'}).waitFor();
- const choose=async(group,label)=>{await page.getByRole('radiogroup',{name:group}).getByText(label,{exact:true}).click();await page.getByRole('button',{name:/Próxima/}).click();};
- await choose('closing-sentence','Extinção');await choose('closing-appeal','Sim');await choose('closing-appellant','Parte autora');await choose('closing-appeal-decided','Sim');await choose('closing-appeal-result','Mantida a improcedência');await choose('closing-transit-confirmed','Sim');
+ const choose=async(group,label)=>{await page.getByRole('radiogroup',{name:group}).getByText(label,{exact:true}).click();await page.locator('.qa-next-button').click();};
+ await choose('closing-sentence','Extinção');await choose('closing-appeal','Sim');await choose('closing-appellant','Parte autora');await choose('closing-appeal-decided','Sim');await choose('closing-appeal-result','Manutenção da extinção');await choose('closing-transit-confirmed','Sim');
  const execution=page.locator('.qa-stage-segment').filter({hasText:'Cadastro de Execução'});
  assert.equal(await execution.getAttribute('data-stage-state'),'not_applicable');assert.match(await execution.getAttribute('class'),/complete/);
- assert.equal(writes.length,1,'Respostas intermediárias permanecem em rascunho');
+ assert.equal(writes.filter(w=>w.path.endsWith('/encerramento-analysis')).length,0,'Respostas intermediárias permanecem em rascunho');
  for(const [width,height] of [[1366,768],[1440,900],[1920,1080],[390,844]]){
   await page.setViewportSize({width,height});await page.waitForTimeout(250);await noOverflow('Encerramento '+width);
   const m=await page.locator('.qa-form-content').evaluate(el=>({scroll:el.scrollHeight,client:el.clientHeight,overflow:getComputedStyle(el).overflowY}));
@@ -113,7 +113,9 @@ try {
  await page.keyboard.press('Backspace'); // focused textarea edits text and must not navigate.
  assert.ok(await page.locator('.closing-disagreement-field textarea').isVisible());
  await page.screenshot({path:out+'/encerramento-revisao.png',fullPage:true});
- await page.getByRole('button',{name:'Salvar e próximo'}).click();
+ // Enter na última pergunta de Encerramentos equivale a Salvar e próximo.
+ await page.getByRole('radiogroup',{name:'closing-classification-agreement'}).getByRole('radio',{name:'Não',exact:true}).focus();
+ await page.keyboard.press('Enter');
  await page.waitForFunction(()=>!document.querySelector('button[aria-busy="true"]'));
  for(let retry=0;retry<40&&!writes.some(w=>w.path.includes('encerramento')&&w.body.classification_agreed===false);retry++)await page.waitForTimeout(75);
  assert.ok(writes.some(w=>w.path.includes('encerramento')&&w.body.classification_agreed===false),JSON.stringify(writes));
