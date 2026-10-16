@@ -222,6 +222,17 @@
   cursor: pointer;
 }
 .qa-keyboard-nav button:disabled { opacity: .38; cursor: default; }
+#tarefas[data-react-tasks='true'] .task-station .qa-keyboard-nav .qa-next-button {
+  padding: 7px 13px;
+  border: 1px solid var(--qa-edge);
+  border-radius: 8px;
+  background: var(--qa-soft);
+  color: var(--qa-ink);
+  font-weight: 650;
+}
+#tarefas[data-react-tasks='true'] .task-station .qa-keyboard-nav .qa-next-button:hover {
+  border-color: var(--qa-accent);
+}
 #tarefas[data-react-tasks='true'] .task-station form[data-qa-progressive='true'] .qa-footer .task-renderer-footer {
   flex: none;
   width: auto;

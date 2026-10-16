@@ -144,14 +144,12 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
   }, [draftKey]);
 
   const previous = () => setActiveIndex(index => Math.max(0, index - 1));
+  // Navegação nunca grava ou conclui uma análise: apenas o botão de salvar faz submit.
   const next = () => {
+    if (current >= total - 1) return;
     const step = formRef.current?.querySelector<HTMLElement>('.qa-step:not([hidden])') || null;
     if (!hasCurrentAnswer(step)) return;
-    if (current < total - 1) setActiveIndex(current + 1);
-    else {
-      const save = formRef.current?.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
-      if (save) formRef.current?.requestSubmit(save);
-    }
+    setActiveIndex(current + 1);
   };
 
   useEffect(() => {
@@ -165,11 +163,8 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
         // Enter avança; em textarea, Enter mantém sua função de nova linha.
         if (event.key === 'Enter' && target instanceof HTMLInputElement) {
           event.preventDefault();
-          if (event.ctrlKey || !hasCurrentAnswer(form.querySelector<HTMLElement>('.qa-step:not([hidden])'))) return;
-          if (current < total - 1) setActiveIndex(current + 1);
-          else {
-            const save = form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
-            if (save) form.requestSubmit(save);
+          if (!event.ctrlKey && current < total - 1 && hasCurrentAnswer(form.querySelector<HTMLElement>('.qa-step:not([hidden])'))) {
+            setActiveIndex(current + 1);
           }
         }
         return;
@@ -180,8 +175,17 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
       // atalhos numéricos devem funcionar ali sem exigir novo clique no formulário.
       const workspace = form.closest('.task-station');
       if (target instanceof HTMLElement && target !== document.body && target !== document.documentElement && !workspace?.contains(target)) return;
-      // Preserve a ativação por Enter de botões focados (salvar, pular, fila, navegação).
-      if (event.key === 'Enter' && target instanceof HTMLElement && target.closest('button')) return;
+      // Enter no botão de salvar não conclui a análise acidentalmente.
+      // A conclusão exige clique no botão (ou Espaço para acessibilidade).
+      if (event.key === 'Enter' && target instanceof HTMLElement) {
+        const button = target.closest('button');
+        if (button?.type === 'submit' && form.contains(button)) {
+          event.preventDefault();
+          return;
+        }
+        // Outros botões focados mantêm seu comportamento nativo.
+        if (button) return;
+      }
       if (event.key === 'Backspace') {
         event.preventDefault();
         setActiveIndex(index => Math.max(0, index - 1));
@@ -192,10 +196,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
         const step = form.querySelector<HTMLElement>('.qa-step:not([hidden])');
         if (!hasCurrentAnswer(step)) return;
         if (current < total - 1) setActiveIndex(current + 1);
-        else {
-          const save = form.querySelector<HTMLButtonElement>('button[type="submit"]:not(:disabled)');
-          if (save) form.requestSubmit(save);
-        }
+        // Na última pergunta, Enter não salva nem conclui o processo.
         return;
       }
       if (/^[1-9]$/.test(event.key)) {
@@ -252,8 +253,8 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
     <div className="qa-footer">
       <nav className="qa-keyboard-nav" aria-label="Navegação da análise">
         <button type="button" onClick={previous} disabled={current === 0}>← Anterior <kbd>Backspace</kbd></button>
-        <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> {navigation.canSubmit ? 'Salvar análise' : 'Avançar'}</span>
-        <button type="button" onClick={next} disabled={total < 2 || current === total - 1}>Próxima <kbd>Enter</kbd> →</button>
+        <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> {navigation.canSubmit ? 'Não conclui a análise' : 'Avançar'}</span>
+        {current < total - 1 ? <button type="button" className="qa-next-button" onClick={next}>Próximo →</button> : null}
       </nav>
       <QaNavigation.Provider value={navigation}>{actions}</QaNavigation.Provider>
     </div>
