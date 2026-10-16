@@ -108,9 +108,10 @@ type TaskFormProps = FormHTMLAttributes<HTMLFormElement> & {
   dynamicStages?: boolean;
   stageStates?: Record<string, StageState>;
   onPhaseEntered?: (index: number, stage: string) => void;
+  submitOnFinalEnter?: boolean;
 };
 
-function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dynamicStages = false, onPhaseEntered, ...props }: TaskFormProps) {
+function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dynamicStages = false, onPhaseEntered, submitOnFinalEnter = false, ...props }: TaskFormProps) {
   const nodes = flattenNodes(children);
   const questions = nodes.filter(child => isValidElement(child) && child.type === TaskQuestion);
   const actions = nodes.filter(child => isValidElement(child) && child.type === TaskActionBar);
@@ -158,13 +159,20 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
       if (!form || !form.getClientRects().length || !form.closest('.page.active')) return;
       if (event.altKey || event.metaKey || event.isComposing) return;
       const target = event.target;
+      const saveAtFinalStep = () => {
+        if (!submitOnFinalEnter || event.repeat || current !== total - 1) return;
+        // Um clique real respeita validação, disabled/busy e o onSaveIntent do fluxo.
+        const submitButton = form.querySelector<HTMLButtonElement>('.task-renderer-footer button[type="submit"]');
+        if (submitButton && !submitButton.disabled) submitButton.click();
+      };
       if (isEditing(target)) {
         // Impede o submit implícito do navegador em campos de data/texto.
         // Enter avança; em textarea, Enter mantém sua função de nova linha.
         if (event.key === 'Enter' && target instanceof HTMLInputElement) {
           event.preventDefault();
-          if (!event.ctrlKey && current < total - 1 && hasCurrentAnswer(form.querySelector<HTMLElement>('.qa-step:not([hidden])'))) {
-            setActiveIndex(current + 1);
+          if (!event.ctrlKey && hasCurrentAnswer(form.querySelector<HTMLElement>('.qa-step:not([hidden])'))) {
+            if (current < total - 1) setActiveIndex(current + 1);
+            else saveAtFinalStep();
           }
         }
         return;
@@ -175,11 +183,11 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
       // atalhos numéricos devem funcionar ali sem exigir novo clique no formulário.
       const workspace = form.closest('.task-station');
       if (target instanceof HTMLElement && target !== document.body && target !== document.documentElement && !workspace?.contains(target)) return;
-      // Enter no botão de salvar não conclui a análise acidentalmente.
-      // A conclusão exige clique no botão (ou Espaço para acessibilidade).
+      // No fluxo de Encerramentos, Enter no botão Salvar equivale ao clique.
+      // Nos demais fluxos continua proibido concluir com Enter.
       if (event.key === 'Enter' && target instanceof HTMLElement) {
         const button = target.closest('button');
-        if (button?.type === 'submit' && form.contains(button)) {
+        if (button?.type === 'submit' && form.contains(button) && !submitOnFinalEnter) {
           event.preventDefault();
           return;
         }
@@ -196,7 +204,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
         const step = form.querySelector<HTMLElement>('.qa-step:not([hidden])');
         if (!hasCurrentAnswer(step)) return;
         if (current < total - 1) setActiveIndex(current + 1);
-        // Na última pergunta, Enter não salva nem conclui o processo.
+        else saveAtFinalStep();
         return;
       }
       if (/^[1-9]$/.test(event.key)) {
@@ -210,7 +218,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
     };
     window.addEventListener('keydown', handle);
     return () => window.removeEventListener('keydown', handle);
-  }, [current, total]);
+  }, [current, total, submitOnFinalEnter]);
 
   let questionIndex = -1;
   const navigation: QaNavigationValue = {
@@ -253,7 +261,7 @@ function ProgressiveTaskForm({ children, draftKey = '', stages, stageStates, dyn
     <div className="qa-footer">
       <nav className="qa-keyboard-nav" aria-label="Navegação da análise">
         <button type="button" onClick={previous} disabled={current === 0}>← Anterior <kbd>Backspace</kbd></button>
-        <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> {navigation.canSubmit ? 'Não conclui a análise' : 'Avançar'}</span>
+        <span><kbd>1–9</kbd> Responder · <kbd>Enter</kbd> {navigation.canSubmit ? (submitOnFinalEnter ? 'Salvar análise' : 'Não conclui a análise') : 'Avançar'}</span>
         {current < total - 1 ? <button type="button" className="qa-next-button" onClick={next}>Próximo →</button> : null}
       </nav>
       <QaNavigation.Provider value={navigation}>{actions}</QaNavigation.Provider>
