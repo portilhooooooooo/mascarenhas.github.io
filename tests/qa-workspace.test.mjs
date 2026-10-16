@@ -48,7 +48,10 @@ assert.match(questions, /data-qa-last=\{navigation\.canSubmit/, 'Ações reflete
 assert.match(questions, /!qa\.canSubmit/, 'Salvar fica bloqueado em perguntas intermediárias');
 assert.doesNotMatch(questions, /requestSubmit\(/, 'Enter e Próximo nunca enviam nem concluem a análise');
 assert.match(questions, /current < total - 1/, 'Enter avança apenas entre etapas anteriores');
-assert.match(questions, /button\?\.type === 'submit' && form\.contains\(button\)/, 'Enter focado em Salvar não conclui a análise');
+assert.match(questions, /button\?\.type === 'submit' && form\.contains\(button\) && !submitOnFinalEnter/, 'Enter focado em Salvar só conclui no fluxo explicitamente autorizado');
+assert.match(questions, /if \(!submitOnFinalEnter \|\| event\.repeat/, 'Evita repetição ou envio de outros fluxos');
+assert.match(questions, /submitButton\.click\(\)/, 'Enter final usa o mesmo caminho do botão Salvar');
+assert.match(closing, /progressive submitOnFinalEnter/, 'Somente Encerramentos habilita salvar com Enter');
 assert.match(questions, /current < total - 1 \? <button type="button" className="qa-next-button" onClick=\{next\}>Próximo/, 'Próximo visível e clicável antes da última pergunta');
 assert.match(questions, /if \(current >= total - 1\) return;/, 'Próximo não conclui análise na última pergunta');
 assert.doesNotMatch(closing, /className=\{'closing-outcome closing-summary '/, 'Card de classificação removido');
