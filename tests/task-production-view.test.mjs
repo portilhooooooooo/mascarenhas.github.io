@@ -10,6 +10,7 @@ assert.match(shell, /navigateTaskTab\('tarefas\/resultados'\)}>Produtividade<\/b
 for (const label of ['Produtividade por colaborador', 'Tempo de conclusão por tipo de tarefa', 'Cobertura de tempo']) {
   assert.ok(component.includes(label), 'A visão operacional precisa conter: ' + label);
 }
+assert.match(component, /withOldApiFallback/, 'A API antiga deve continuar funcionando até o deploy.');
 assert.match(component, /include_growth: '0'/, 'Evitar consultar histórico que a tela não apresenta.');
 assert.match(component, /include_pending: '0'/,
   'Deve dispensar consulta onerosa de pendências.');

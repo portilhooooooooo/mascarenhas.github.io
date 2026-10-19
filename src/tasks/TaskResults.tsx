@@ -60,6 +60,16 @@ const time = (seconds: number | null | undefined) => {
 };
 const comparable = (row: TaskTiming) => row.samples >= MIN_SAMPLES && row.completed > 0 && row.samples / row.completed >= MIN_COVERAGE && row.median_seconds != null;
 
+// Durante a transição, a API em execução pode não reconhecer os filtros novos.
+// Repetir sem eles apenas quando o backend rejeita parâmetros é compatível
+// com o contrato antigo, sem ocultar indisponibilidade ou falhas de autorização.
+const unsupportedFilters = (error: unknown) => /filtros? (de resultados )?inválid|\b400\b/i.test(String((error as Error)?.message || error));
+const withOldApiFallback = (api: ApiRequest, path: string, legacyPath: string) =>
+  api(path).catch((error: unknown) => {
+    if (!unsupportedFilters(error)) throw error;
+    return api(legacyPath);
+  });
+
 function SelectFilter({ title, value, options, onChange }: {
   title: string; value: string; options: { value: string; label: string }[];
   onChange: (value: string) => void;
@@ -114,8 +124,9 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     setPending(true); setError('');
     // Não solicitar o snapshot de pendências: essa visão mede apenas conclusões.
     const params = new URLSearchParams({ ...filters, duration: 'all', include_pending: '0', include_growth: '0' });
+    const legacyParams = new URLSearchParams({ ...filters, duration: 'all' });
     const request = demoMode ? Promise.resolve(createDemoTaskResults({ ...filters, duration: 'all' }))
-      : api('/api/tasks/results?' + params);
+      : withOldApiFallback(api, '/api/tasks/results?' + params, '/api/tasks/results?' + legacyParams);
     request.then((answer: ResultPayload) => {
       if (cancelled || serial !== requestId.current) return;
       if (!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de produtividade.');
@@ -155,7 +166,9 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     setExporting(true); setError('');
     try {
       const params = new URLSearchParams({ ...filters, duration: 'all', include_pending: '0', include_growth: '0' });
-      const result = await api('/api/tasks/results/export?' + params);
+      const legacyParams = new URLSearchParams({ ...filters, duration: 'all' });
+      const result = await withOldApiFallback(api, '/api/tasks/results/export?' + params,
+        '/api/tasks/results/export?' + legacyParams);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
       downloadXlsx(result.content_base64, result.filename);
     } catch (cause: any) { setError(cause?.message || 'Não foi possível exportar os dados.'); }
