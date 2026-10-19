@@ -13,7 +13,24 @@ type Uf = { uf: string; vitorias: number; derrotas: number; tkm?: Numero; amostr
 type Comarca = { comarca: string; uf: string; derrotas: number };
 type Matriz = { tipo: string; faixa: string; quantidade: number };
 type Indicadores = { consultados: number; encontrados: number; analisados: number; ticket_medio: Numero; ticket_amostra: number; aging_medio: Numero };
-type ResumoBennerAnterior = { periodo_inicio: string; periodo_fim_exclusivo: string; enviados: number; encerrados: number; em_andamento: number; fonte: string };
+type ResumoBennerAnterior = {
+  periodo_inicio: string;
+  periodo_fim_exclusivo: string;
+  enviados: number;
+  encerrados: number;
+  em_andamento: number;
+  fonte: string;
+  historico?: {
+    total: number;
+    processos_unicos: number;
+    encerrados: number;
+    em_andamento: number;
+    mes_atual: number;
+    ultimo_andamento_em: string | null;
+    ultima_importacao: string | null;
+    tipos: TipoRow[];
+  };
+};
 type Dados = {
   carteira: string;
   tipo: string | null;
@@ -210,15 +227,14 @@ function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etap
 
 function BennerHistory({ resumo, motivosPendentes, isNubank }: {resumo: ResumoBennerAnterior | null; motivosPendentes: number | null; isNubank: boolean}) {
   const cards = [
-    { icon: Send, label: 'Enviados', value: resumo ? num(resumo.enviados) : '—', detail: 'Histórico do mês anterior' },
-    { icon: CheckCircle2, label: 'Encerrados', value: resumo ? num(resumo.encerrados) : '—', detail: 'Baixas no Benner' },
-    // The historical source returns "Em Andamento", not an explicit rejection status.
+    { icon: Send, label: 'Andamentos do mês anterior', value: resumo ? num(resumo.enviados) : '—', detail: 'Histórico do Benner · mês anterior' },
+    { icon: CheckCircle2, label: 'Baixas no mês anterior', value: resumo ? num(resumo.encerrados) : '—', detail: 'Encerrados conforme o extrato' },
     ...(!isNubank ? [
-      { icon: Clock3, label: 'Negados pelo banco', value: resumo ? num(resumo.em_andamento) : '—', detail: 'Sem baixa no Benner · não confirma negativa' },
+      { icon: Clock3, label: 'Sem baixa no mês anterior', value: resumo ? num(resumo.em_andamento) : '—', detail: 'Em andamento · não indica negativa' },
       { icon: ClipboardList, label: 'Motivo derrota pendente', value: motivosPendentes == null ? '—' : num(motivosPendentes), detail: 'Tarefas aguardando cadastro' },
     ] : []),
   ];
-  return <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do Benner e pendências">
+  return <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do mês anterior e pendências">
     {cards.map(card => <article className="closing-kpi" key={card.label}>
       <div className="closing-kpi-top"><span>{card.label}</span><card.icon size={16} strokeWidth={1.75}/></div>
       <strong>{card.value}</strong><small>{card.detail}</small>

@@ -164,8 +164,8 @@ try {
   assert.equal(await page.locator('.execution-process-heading small').textContent(),'Validação de Defesa');
   const keyboard=page.getByRole('radiogroup',{name:'defense-deadline'}).getByRole('radio',{name:'Não',exact:true}); await keyboard.focus(); await keyboard.press('Enter'); assert.equal(await keyboard.isChecked(),true);
   await page.getByRole('button',{name:'Atribuições',exact:true}).click(); assert.equal(await page.locator('.demo-navbar').isVisible(),true);
-  await page.getByRole('button',{name:'Resultados',exact:true}).click();
-  assert.equal(await page.getByRole('heading',{name:'Resultados',exact:true}).count(),1);
+  await page.getByRole('button',{name:'Produtividade',exact:true}).click();
+  assert.equal(await page.getByRole('heading',{name:'Produtividade',exact:true}).count(),1);
   assert.equal(await page.locator('.demo-navbar').isVisible(),true);
   await page.locator('.tasks-react-subnav').getByRole('button',{name:'Tarefas',exact:true}).click();
   await page.locator('.execution-process-heading').waitFor();

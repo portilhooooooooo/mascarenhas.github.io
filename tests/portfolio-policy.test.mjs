@@ -61,3 +61,15 @@ assert.match(html, /<div class="sidebar-bottom">\s*<div id="portfolio-switcher"[
 assert.match(taskPage, /<SelectMenu label="Tipo de tarefa" value=\{selectedType\} options=\{typeOptions\}/, 'task type filter must use the React listbox');
 assert.match(users, /Visibilidade dos módulos/, 'user permissions must have module view');
 console.log('PASS: portfolio access, module visibility, selectors, and task badge regression checks');
+
+const operationOnly = createPolicy('agibank_enter', {
+  portfolios: portfolios.map(row => row.id === 'agibank_enter' ? {...row, enabled_modules: ['operacao']} : row),
+});
+assert.equal(operationOnly.canAccess('acordos'), true, 'a entrada Operação deve aceitar capacidades explícitas da carteira');
+assert.equal(operationOnly.canAccess('pagamentos'), true, 'pagamentos permanece sujeito à permissão do usuário');
+assert.equal(operationOnly.canAccess('tutelas'), true, 'liminar deve fazer parte da capacidade Operação');
+assert.equal(operationOnly.canAccess('encerramentos'), true, 'encerramentos deve fazer parte da capacidade Operação');
+assert.equal(operationOnly.canAccess('protocolo'), true, 'protocolos só em carteira Enter');
+assert.equal(createPolicy('agibank_mba', {
+  portfolios: portfolios.map(row => row.id === 'agibank_mba' ? {...row, enabled_modules: ['operacao']} : row),
+}).canAccess('protocolo'), false, 'protocolos continuam proibidos fora da Enter');

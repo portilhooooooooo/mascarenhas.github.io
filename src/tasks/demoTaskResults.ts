@@ -80,8 +80,19 @@ function buildPeople(rows: Sample[]): ResultPayload['people'] {
       : (aggregate.analysisDurations[middle - 1] + aggregate.analysisDurations[middle]) / 2;
     aggregate.mean_analysis_seconds = Math.round(aggregate.totalAnalysisSeconds / aggregate.analysis_samples);
     aggregate.mean_step_seconds = Math.round(aggregate.totalStepSeconds / aggregate.step_samples);
+    const timing_by_type: NonNullable<ResultPayload['people'][number]['timing_by_type']> = {};
+    TYPES.forEach(type => {
+      const sampleSet = rows.filter(row => row.personId === person.id && row.type === type);
+      const completedType = sampleSet.reduce((total, row) => total + row.count, 0);
+      if (!completedType) return;
+      const durations = sampleSet.flatMap(row => Array.from({ length: row.count }, () => row.analysisSeconds)).sort((a,b) => a-b);
+      const half = Math.floor(durations.length / 2);
+      const mid = durations.length % 2 ? durations[half] : (durations[half - 1] + durations[half]) / 2;
+      timing_by_type[type] = { completed: completedType, samples: durations.length, median_seconds: mid,
+        mean_seconds: durations.reduce((sum, seconds) => sum + seconds, 0) / durations.length };
+    });
     const { totalAnalysisSeconds, totalStepSeconds, analysisDurations, ...result } = aggregate;
-    return result;
+    return { ...result, timing_by_type };
   });
 }
 
@@ -95,7 +106,8 @@ function pendingCount(filters: DemoFilters) {
 }
 
 export function isDemoTaskResultsHost() {
-  return /^(dev\.portilhobackoffice\.site|local\.portilhobackoffice\.site|localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+  return /^(dev\.portilhobackoffice\.site|local\.portilhobackoffice\.site|localhost|127\.0\.0\.1)$/i.test(window.location.hostname)
+    && new URLSearchParams(window.location.search).get('taskDemo') === '1';
 }
 
 // Mantém os filtros do componente funcionais sem tocar nas APIs, no Supabase ou nos registros reais.
