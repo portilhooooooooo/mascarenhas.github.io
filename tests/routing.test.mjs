@@ -112,3 +112,66 @@ test('autenticação prioriza rota compartilhada', () => {
   assert.match(auth, /const routeRestored = window\.restorePageRoute\?\.\(\) === true/);
   assert.match(auth, /else if \(!routeRestored\)/);
 });
+
+
+test('links de Operação abrem cada submódulo e restauram histórico', () => {
+  const e = environment('/operacao/pagamentos', {
+    allowed: ['acordos', 'pagamentos', 'tutelas', 'encerramentos', 'protocolo'],
+  });
+  const modules = ['pagamentos', 'liminar', 'encerramentos', 'protocolos', 'defesas'];
+  for (const module of modules) {
+    assert.equal(e.window.MBA_NAVIGATE('operacao/' + module), true, module);
+    assert.equal(e.active.get('acordos'), true, module);
+    assert.equal(e.location.pathname, '/operacao/' + module, module);
+    assert.equal(e.window.restorePageRoute(), true, module);
+    assert.equal(e.location.pathname, '/operacao/' + module, module);
+  }
+  e.window.showPage('dashboard');
+  e.window.showPage('acordos');
+  assert.equal(e.location.pathname, '/operacao/defesas', 'Operação retoma a última aba autorizada');
+});
+
+test('links legados de Operação são canônicos, preservando Controladoria', () => {
+  const e = environment('/pagamentos', {
+    allowed: ['acordos', 'pagamentos', 'tutelas', 'encerramentos', 'protocolo'],
+  });
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.location.pathname, '/operacao/pagamentos');
+  assert.equal(e.window.MBA_NAVIGATE('operacao/tutelas'), true);
+  assert.equal(e.location.pathname, '/operacao/liminar');
+  assert.equal(e.window.MBA_NAVIGATE('controladoria/defesas'), true);
+  assert.equal(e.location.pathname, '/controladoria/defesas');
+  assert.equal(e.active.get('protocolo'), true);
+});
+
+test('Operação sem Pagamentos abre o primeiro módulo autorizado', () => {
+  const e = environment('/tarefas', { allowed: ['acordos', 'tutelas', 'tarefas'] });
+  e.window.showPage('acordos');
+  assert.equal(e.location.pathname, '/operacao/liminar');
+  assert.equal(e.window.MBA_NAVIGATE('operacao/pagamentos'), false);
+  assert.equal(e.active.get('sem-acesso'), true);
+});
+
+test('deep links sem permissão não mostram módulos indevidos', () => {
+  const e = environment('/operacao/defesas', { allowed: ['acordos', 'pagamentos'] });
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('sem-acesso'), true);
+  assert.equal(e.location.pathname, '/operacao/defesas');
+  e.allowed.add('protocolo');
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('acordos'), true);
+  assert.equal(e.location.pathname, '/operacao/defesas');
+  const preview = environment('/#/operacao/liminar', {
+    preview: true, allowed: ['acordos', 'tutelas'],
+  });
+  assert.equal(preview.window.restorePageRoute(), true);
+  assert.equal(preview.location.hash, '#/operacao/liminar');
+});
+test('subabas de Operação sincronizam a rota em vez de alterar apenas o estado local', () => {
+  const source = readFileSync(new URL('../src/dashboard/OperacaoPage.tsx', import.meta.url), 'utf8');
+  for (const module of ['pagamentos', 'liminar', 'encerramentos', 'protocolos', 'defesas']) {
+    assert.match(source, new RegExp("navigateOperationModule\\('"+module+"'\\)"));
+  }
+  assert.match(source, /mba:route-changed/);
+  assert.match(source, /operationModuleFromLocation/);
+});
