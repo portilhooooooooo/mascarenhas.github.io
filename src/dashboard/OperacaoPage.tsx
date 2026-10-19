@@ -333,9 +333,22 @@ function PagamentosPage() {
 
 type OperationModule = 'pagamentos' | 'liminar' | 'encerramentos' | 'protocolos' | 'defesas';
 type OperationVisibility = Record<OperationModule, boolean>;
+const OPERATION_MODULES: OperationModule[] = ['pagamentos', 'liminar', 'encerramentos', 'protocolos', 'defesas'];
+function operationModuleFromLocation(): OperationModule | null {
+  const raw = window.location.hash.startsWith('#/')
+    ? window.location.hash.slice(2)
+    : window.location.pathname;
+  const route = raw.replace(/^\/+|\/+$/g, '');
+  const module = route.startsWith('operacao/') ? route.slice('operacao/'.length) : '';
+  return OPERATION_MODULES.includes(module as OperationModule) ? module as OperationModule : null;
+}
+function navigateOperationModule(module: OperationModule) {
+  (window as Window & { MBA_NAVIGATE?: (route: string) => boolean })
+    .MBA_NAVIGATE?.('operacao/' + module);
+}
 
 export function OperacaoPage() {
-  const [module, setModule] = useState<OperationModule>('pagamentos');
+  const [module, setModule] = useState<OperationModule>(() => operationModuleFromLocation() || 'pagamentos');
   const [allowed, setAllowed] = useState<OperationVisibility>({
     pagamentos: false, liminar: false, encerramentos: false, protocolos: false, defesas: false,
   });
@@ -350,17 +363,21 @@ export function OperacaoPage() {
       // O filtro por carteira vem da policy existente. Uma permissão isolada
       // nunca deve abrir Protocolos ou Defesas em carteiras sem esse módulo.
       const canAccessProtocols = shell.MBA_PORTFOLIO_POLICY?.canAccess('protocolo') === true;
+      const policy = shell.MBA_PORTFOLIO_POLICY;
       const next: OperationVisibility = {
-        pagamentos: permissions['pagamentos.view'] === true,
-        liminar: permissions['tutelas.view'] === true,
-        encerramentos: permissions['encerramentos.view'] === true,
+        pagamentos: permissions['pagamentos.view'] === true && policy?.canAccess('pagamentos') === true,
+        liminar: permissions['tutelas.view'] === true && policy?.canAccess('tutelas') === true,
+        encerramentos: permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true,
         protocolos: canAccessProtocols,
         defesas: canAccessProtocols,
       };
       setAllowed(next);
-      setModule(previous => next[previous] ? previous :
-        (['pagamentos', 'liminar', 'encerramentos', 'protocolos', 'defesas'] as OperationModule[])
-          .find(key => next[key]) || 'pagamentos');
+      setModule(previous => {
+        const requested = operationModuleFromLocation();
+        return requested && next[requested] ? requested
+          : next[previous] ? previous
+          : OPERATION_MODULES.find(key => next[key]) || 'pagamentos';
+      });
     };
     sync();
     window.addEventListener('mba:authenticated', sync);
@@ -373,13 +390,28 @@ export function OperacaoPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const syncRoute = () => {
+      const requested = operationModuleFromLocation();
+      if (requested && allowed[requested]) setModule(requested);
+    };
+    window.addEventListener('mba:route-changed', syncRoute);
+    window.addEventListener('popstate', syncRoute);
+    window.addEventListener('hashchange', syncRoute);
+    return () => {
+      window.removeEventListener('mba:route-changed', syncRoute);
+      window.removeEventListener('popstate', syncRoute);
+      window.removeEventListener('hashchange', syncRoute);
+    };
+  }, [allowed]);
+
   return <div className="operacao-module-shell">
     <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
-      {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => setModule('pagamentos')}>Pagamentos</button> : null}
-      {allowed.liminar ? <button type="button" className={module === 'liminar' ? 'active' : ''} aria-current={module === 'liminar' ? 'page' : undefined} onClick={() => setModule('liminar')}>Liminar</button> : null}
-      {allowed.encerramentos ? <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => setModule('encerramentos')}>Encerramentos</button> : null}
-      {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => setModule('protocolos')}>Protocolos</button> : null}
-      {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => setModule('defesas')}>Defesas</button> : null}
+      {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => navigateOperationModule('pagamentos')}>Pagamentos</button> : null}
+      {allowed.liminar ? <button type="button" className={module === 'liminar' ? 'active' : ''} aria-current={module === 'liminar' ? 'page' : undefined} onClick={() => navigateOperationModule('liminar')}>Liminar</button> : null}
+      {allowed.encerramentos ? <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => navigateOperationModule('encerramentos')}>Encerramentos</button> : null}
+      {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => navigateOperationModule('protocolos')}>Protocolos</button> : null}
+      {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => navigateOperationModule('defesas')}>Defesas</button> : null}
     </nav>
     {module === 'pagamentos' && allowed.pagamentos ? <PagamentosPage/> :
       module === 'liminar' && allowed.liminar ? <OperacaoLiminarPage/> :
