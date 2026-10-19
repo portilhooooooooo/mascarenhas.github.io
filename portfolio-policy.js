@@ -60,9 +60,9 @@
       acordos: ['operacao', 'acordos', 'agreements', 'pagamentos', 'liminar', 'tutelas', 'encerramentos', 'controladoria', 'protocolo', 'protocolos'],
       pagamentos: ['operacao', 'pagamentos'],
       automacoes: ['automacoes', 'automations'],
-      protocolo: ['controladoria', 'protocolo', 'protocolos'],
-      tutelas: ['tutelas', 'liminar'],
-      encerramentos: ['encerramentos'],
+      protocolo: ['operacao', 'controladoria', 'protocolo', 'protocolos'],
+      tutelas: ['operacao', 'tutelas', 'liminar'],
+      encerramentos: ['operacao', 'encerramentos'],
     };
     if (ENTER_ONLY.has(pageId) && !isEnter(portfolio)) return false;
     if (pageId === 'automacoes' && !isEnter(portfolio) && canonical(portfolio.id) !== 'agibank_mba') return false;
