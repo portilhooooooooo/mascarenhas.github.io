@@ -26,7 +26,9 @@ const open = (row: Row) => !INACTIVE.has(normalize(row.process.status));
 const inProgress = (row: Row) => normalize(row.process.status) === 'in_progress';
 const deadlineOf = (row: Row) => row.process.deadline_at || row.task.deadline_at;
 const dayStart = (input: string | Date): number | null => {
-  const date = new Date(input);
+  // PostgreSQL returns date-only values; do not shift them to yesterday via UTC parsing.
+  const date = typeof input === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(input)
+    ? new Date(input + 'T12:00:00') : new Date(input);
   if (Number.isNaN(date.getTime())) return null;
   date.setHours(0, 0, 0, 0);
   return date.getTime();
@@ -46,6 +48,10 @@ const bucketOf = (row: Row, today: number): DeadlineBucket => {
 const dateLabel = (row: Row) => {
   const raw = deadlineOf(row);
   const date = raw ? new Date(raw) : null;
+  if (/^\\d{4}-\\d{2}-\\d{2}$/.test(String(raw || ''))) {
+    const iso = String(raw);
+    return iso.slice(8,10) + '/' + iso.slice(5,7) + '/' + iso.slice(0,4);
+  }
   return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString('pt-BR') : '—';
 };
 const sortByDeadline = (a: Row, b: Row) => {
@@ -68,6 +74,8 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   const [assignees, setAssignees] = useState<Record<string, Assignee[]>>({});
   const [loading, setLoading] = useState(false);
   const [loadedCount, setLoadedCount] = useState(0);
+  const [progressTotal, setProgressTotal] = useState(0);
+  const [serverSummary, setServerSummary] = useState<{unassigned:number;today:number;overdue:number;working:number}|null>(null);
   const [loadErrors, setLoadErrors] = useState<string[]>([]);
   const [view, setView] = useState<View>('people');
   const [type, setType] = useState('all');
@@ -90,45 +98,90 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   const types = useMemo(() => Array.from(new Set(activeTasks.map(task => normalize(task.type)))).filter(Boolean).sort(), [activeTasks]);
   const typeKey = types.join(',');
 
+  // Exact, portfolio-scoped totals and case pages are served by PostgreSQL.
+  // Keep the previous guarded loader as a fallback while older API images drain.
   useEffect(() => {
     let cancelled = false;
     setRows([]);
     setSelected([]);
     setLoadedCount(0);
     setLoadErrors([]);
-    setLoading(activeTasks.length > 0);
-    async function load() {
+    setServerSummary(null);
+    setProgressTotal(0);
+    setLoading(true);
+    const load = async () => {
       const errors: string[] = [];
       const found: Row[] = [];
-      for (let i = 0; i < activeTasks.length; i += 5) {
-        if (cancelled) return;
-        const chunk = activeTasks.slice(i, i + 5);
-        const results = await Promise.allSettled(chunk.map(task => api('/api/tasks/' + task.id + '/processes')));
-        if (cancelled) return;
-        results.forEach((result, index) => {
-          if (result.status === 'fulfilled' && Array.isArray(result.value)) {
-            found.push(...(result.value as TaskProcess[]).map(process => ({ task: chunk[index], process })));
-          } else {
-            errors.push(chunk[index].title || taskTypeLabel(chunk[index].type));
-          }
+      const indexedPath = (page: number) => {
+        const params = new URLSearchParams({
+          view: 'task', status: 'all', page: String(page), page_size: '100',
         });
-        // Progressive results: do not show an empty final state while requests are still running.
+        if (type !== 'all') params.set('type', type);
+        return '/api/tasks/assignments?' + params.toString();
+      };
+      let indexed = false;
+      try {
+        const first = await api(indexedPath(1));
+        if (cancelled) return;
+        if (!first || !Array.isArray(first.rows) || !first.summary ||
+            typeof first.total !== 'number' || first.total < 0 || first.total > 50000) {
+          throw new Error('Índice paginado não disponível.');
+        }
+        indexed = true;
+        setServerSummary(first.summary);
+        const pages = Math.ceil(first.total / 100);
+        setProgressTotal(first.total);
+        found.push(...first.rows as Row[]);
         setRows([...found]);
-        setLoadedCount(Math.min(i + chunk.length, activeTasks.length));
+        setLoadedCount(found.length);
+        for (let page = 2; page <= pages; page += 4) {
+          if (cancelled) return;
+          const numbers = Array.from({ length: Math.min(4, pages - page + 1) }, (_, offset) => page + offset);
+          const results = await Promise.allSettled(numbers.map(number => api(indexedPath(number))));
+          if (cancelled) return;
+          results.forEach((result, index) => {
+            if (result.status === 'fulfilled' && Array.isArray(result.value?.rows)) {
+              found.push(...result.value.rows as Row[]);
+            } else {
+              errors.push('Página ' + numbers[index]);
+            }
+          });
+          setRows([...found]);
+          setLoadedCount(found.length);
+        }
+        if (found.length !== first.total) errors.push('Quantidade de processos divergente do total do servidor.');
+      } catch {
+        if (cancelled) return;
+        if (indexed) {
+          errors.push('Falha ao carregar a consulta paginada.');
+        } else {
+          // Compatibility only: the existing endpoint still enforces portfolio/assignment visibility.
+          setServerSummary(null);
+          setProgressTotal(0);
+          found.length = 0;
+          const tasksToLoad = type === 'all' ? activeTasks : activeTasks.filter(item => normalize(item.type) === type);
+          for (let index = 0; index < tasksToLoad.length; index += 3) {
+            if (cancelled) return;
+            const chunk = tasksToLoad.slice(index, index + 3);
+            const results = await Promise.allSettled(chunk.map(task => api('/api/tasks/' + task.id + '/processes')));
+            if (cancelled) return;
+            results.forEach((result, j) => {
+              if (result.status === 'fulfilled' && Array.isArray(result.value)) {
+                found.push(...(result.value as TaskProcess[]).map(process => ({ task: chunk[j], process })));
+              } else errors.push(chunk[j].title || taskTypeLabel(chunk[j].type));
+            });
+            setRows([...found]);
+            setLoadedCount(index + chunk.length);
+          }
+        }
       }
-      if (!cancelled) {
-        setLoadErrors(errors);
-        setLoading(false);
-      }
-    }
+      if (!cancelled) { setRows([...found]); setLoadErrors(errors); setLoading(false); }
+    };
     void load().catch(() => {
-      if (!cancelled) {
-        setLoadErrors(['Falha inesperada ao consultar atribuições']);
-        setLoading(false);
-      }
+      if (!cancelled) { setLoading(false); setLoadErrors(['Falha ao consultar atribuições']); }
     });
     return () => { cancelled = true; };
-  }, [api, taskKey, refresh]);
+  }, [api, taskKey, type, refresh]);
 
   useEffect(() => {
     if (!canAssign || !types.length) return;
@@ -188,12 +241,12 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
     setMode('direct');
   }, [view, type, analyst, status, search, pageSize]);
 
-  const counts = useMemo(() => ({
+  const counts = useMemo(() => serverSummary || ({
     unassigned: scoped.filter(row => open(row) && !row.process.assignee_id).length,
     today: scoped.filter(row => bucketOf(row, today) === 'today').length,
     overdue: scoped.filter(row => bucketOf(row, today) === 'overdue').length,
     working: scoped.filter(row => open(row) && inProgress(row)).length,
-  }), [scoped, today]);
+  }), [scoped, today, serverSummary]);
 
   const groupedPeople = useMemo(() => {
     const groups = new Map<string, { id: string; name: string; rows: Row[]; pending: number; working: number; overdue: number; today: number }>();
@@ -342,7 +395,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   }
 
   const filteredSummary = loading
-    ? 'Consultando ' + loadedCount + ' de ' + activeTasks.length + ' grupos de tarefas · ' + rows.length + ' processos carregados'
+    ? (progressTotal ? 'Carregando ' + loadedCount + ' de ' + progressTotal + ' processos reais' : 'Consultando atribuições…')
     : loadErrors.length
       ? rows.length + ' processos carregados (consulta parcial)'
       : rows.length + ' processos consultados';
