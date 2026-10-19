@@ -9,6 +9,7 @@ const closing = read('src/tasks/ClosingAnalysisFlow.tsx');
 const defense = read('src/tasks/DefenseAnalysisFlow.tsx');
 const legacy = read('src/tasks/renderersLegacy.tsx');
 const renderer = read('src/tasks/renderers.tsx');
+const productivity = read('src/tasks/TaskResults.tsx');
 const style = read('src/tasks/qaWorkspace.css');
 
 assert.match(shell, /mba-qa-v1:.*activeItem\.task\.id.*activeItem\.process\.id/, 'Rascunho isolado por tarefa/processo');
@@ -35,6 +36,8 @@ for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], 
   assert.match(source, /<TaskForm[^>]*draftKey=\{draftKey\}/, name + ' recebe chave de rascunho');
 }
 assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta da API');
+assert.match(productivity, /campos inválidos ou não permitidos/, 'Produtividade reconhece erro 422 do backend legado');
+assert.match(productivity, /withOldApiFallback\(api, '\/api\/tasks\/results\?'/, 'Produtividade tenta parâmetros compatíveis com backend anterior');
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');
 assert.match(style, /\.qa-step\[hidden\]/, 'Somente etapa ativa visível');
 assert.match(questions, /qa-stage-track/, 'Fluxos exibem as etapas');
