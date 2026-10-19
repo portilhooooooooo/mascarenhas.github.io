@@ -36,6 +36,11 @@ const pageRoutes = Object.freeze({
 const nestedPageRoutes = Object.freeze({
   'analytics/encerramentos': 'dashboard',
   'analytics/ranking': 'dashboard',
+  'operacao/pagamentos': 'acordos',
+  'operacao/liminar': 'acordos',
+  'operacao/encerramentos': 'acordos',
+  'operacao/protocolos': 'acordos',
+  'operacao/defesas': 'acordos',
   'controladoria/defesas': 'protocolo',
   'controladoria/indicadores': 'protocolo',
   'tarefas/atribuicoes': 'tarefas',
@@ -47,6 +52,12 @@ const routeAliases = Object.freeze({
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
+  pagamentos: 'operacao/pagamentos',
+  'operacao/liminares': 'operacao/liminar',
+  'operacao/tutelas': 'operacao/liminar',
+  'operacao/encerramento': 'operacao/encerramentos',
+  'operacao/protocolo': 'operacao/protocolos',
+  'operacao/defesa': 'operacao/defesas',
   protocolo: 'controladoria/protocolos',
   controladoria: 'controladoria/protocolos',
   'automacoes/protocolos': 'controladoria/protocolos',
@@ -61,8 +72,25 @@ function routeFromLocation() {
 function routeUrl(route) {
   return window.MBA_LOCAL_PREVIEW ? '#/' + route : '/' + route;
 }
+const operationRoutePermissions = Object.freeze({
+  'operacao/pagamentos': 'pagamentos',
+  'operacao/liminar': 'tutelas',
+  'operacao/encerramentos': 'encerramentos',
+  'operacao/protocolos': 'protocolo',
+  'operacao/defesas': 'protocolo',
+});
+let lastOperationRoute = 'operacao/pagamentos';
+function preferredOperationRoute() {
+  const policy = window.MBA_PORTFOLIO_POLICY;
+  if (policy?.canAccess(operationRoutePermissions[lastOperationRoute]) === true) return lastOperationRoute;
+  return Object.keys(operationRoutePermissions)
+    .find(route => policy?.canAccess(operationRoutePermissions[route]) === true)
+    || 'operacao/pagamentos';
+}
 function resolvePageRoute(route) {
-  const canonical = routeAliases[route] || route;
+  const canonical = (route === 'operacao' || route === 'acordos')
+    ? preferredOperationRoute()
+    : (routeAliases[route] || route);
   if (/^processos\/[^/]+$/.test(canonical)) return {pageId: 'processos', canonical};
   if (/^tarefas\/item\/[a-f0-9-]{36}\/[a-f0-9-]{36}$/.test(canonical)) return {pageId: 'tarefas', canonical};
   if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
@@ -74,6 +102,8 @@ function resolvePageRoute(route) {
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
+  const operationPageId = operationRoutePermissions[route];
+  if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
@@ -83,6 +113,7 @@ function canAccessRoute(pageId, route) {
   return true;
 }
 function publishRoute(route, pageId, replace = false) {
+  if (operationRoutePermissions[route]) lastOperationRoute = route;
   const target = routeUrl(route);
   const current = window.MBA_LOCAL_PREVIEW ? location.hash : location.pathname;
   if (current !== target) history[replace ? 'replaceState' : 'pushState']({ pageId }, '', target);
@@ -97,7 +128,9 @@ function showPage(pageId, updateRoute = true) {
   pageId = authorizedPageId(pageId);
   pages.forEach(page => page.classList.toggle('active', page.id === pageId));
   navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
-  if (updateRoute) publishRoute(pageRoutes[pageId] || 'sem-acesso', pageId);
+  if (updateRoute) publishRoute(pageId === 'acordos'
+    ? preferredOperationRoute()
+    : (pageRoutes[pageId] || 'sem-acesso'), pageId);
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.showPage = showPage;
