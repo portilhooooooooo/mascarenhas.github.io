@@ -134,3 +134,18 @@
   .closing-territory>summary small{max-width:120px;text-align:right}
   .closing-history{gap:10px;padding:12px}
 }
+
+
+/* Indicadores do histórico externo do Benner, distintos da fila automatizada. */
+.closing-benner-historic{margin-bottom:12px}
+.closing-benner-historic .closing-card-head{margin-bottom:12px}
+.closing-benner-last{font-size:10px;color:var(--closing-muted);white-space:nowrap}
+.closing-benner-historic-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.closing-benner-historic-item{display:grid;gap:5px;padding:10px;border:1px solid var(--closing-line);border-radius:7px;background:#f8fafd}
+.closing-benner-historic-item span{font-size:10px;color:var(--mba-text-2,#52647d);line-height:1.35}
+.closing-benner-historic-item strong{font-size:19px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
+.closing-benner-historic-types{display:flex;gap:12px 18px;flex-wrap:wrap;border-top:1px solid var(--closing-line);padding-top:11px;margin-top:12px;font-size:10px;color:var(--mba-text-2,#52647d)}
+.closing-benner-historic-types strong{color:var(--closing-ink);font-variant-numeric:tabular-nums}
+.closing-benner-historic-note{color:var(--closing-muted);font-size:10px;margin:10px 0 0}
+@media(max-width:950px){.closing-benner-historic-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.closing-benner-historic-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-benner-last{white-space:normal}}
