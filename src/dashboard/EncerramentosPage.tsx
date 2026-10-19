@@ -226,17 +226,6 @@ function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etap
 }
 
 function BennerHistory({ resumo, motivosPendentes, isNubank }: {resumo: ResumoBennerAnterior | null; motivosPendentes: number | null; isNubank: boolean}) {
-  const historico = resumo?.historico;
-  const classes = [
-    { tipo: 'VITORIA', label: 'Vitórias' },
-    { tipo: 'DERROTA', label: 'Derrotas' },
-    { tipo: 'DERROTA_VOLUNTARIA', label: 'Derrotas voluntárias' },
-    { tipo: 'ACORDO', label: 'Acordos' },
-    { tipo: 'ERRO_CADASTRO', label: 'Erros de cadastro' },
-  ];
-  const latest = historico?.ultimo_andamento_em
-    ? historico.ultimo_andamento_em.split('-').reverse().join('/')
-    : '—';
   const cards = [
     { icon: Send, label: 'Andamentos do mês anterior', value: resumo ? num(resumo.enviados) : '—', detail: 'Histórico do Benner · mês anterior' },
     { icon: CheckCircle2, label: 'Baixas no mês anterior', value: resumo ? num(resumo.encerrados) : '—', detail: 'Encerrados conforme o extrato' },
@@ -245,38 +234,12 @@ function BennerHistory({ resumo, motivosPendentes, isNubank }: {resumo: ResumoBe
       { icon: ClipboardList, label: 'Motivo derrota pendente', value: motivosPendentes == null ? '—' : num(motivosPendentes), detail: 'Tarefas aguardando cadastro' },
     ] : []),
   ];
-  return <>
-    {!isNubank && historico && <section className="closing-surface closing-benner-historic" aria-label="Resultados históricos registrados no Benner">
-      <header className="closing-card-head">
-        <div>
-          <h2>Andamentos registrados no Benner · histórico completo</h2>
-          <p>Dados do extrato importado, separados dos envios confirmados pela automação</p>
-        </div>
-        <span className="closing-benner-last">Último andamento na fonte: {latest}</span>
-      </header>
-      <div className="closing-benner-historic-kpis">
-        {[
-          { label: 'Andamentos', value: historico.total },
-          { label: 'Processos únicos', value: historico.processos_unicos },
-          { label: 'Encerrados', value: historico.encerrados },
-          { label: 'Em andamento', value: historico.em_andamento },
-          { label: 'No mês atual', value: historico.mes_atual },
-        ].map(item => <div className="closing-benner-historic-item" key={item.label}>
-          <span>{item.label}</span><strong>{num(item.value)}</strong>
-        </div>)}
-      </div>
-      <div className="closing-benner-historic-types">
-        {classes.map(item => <span key={item.tipo}>{item.label}: <strong>{num(valueOrZero(historico.tipos.find(row => row.tipo === item.tipo)?.quantidade))}</strong></span>)}
-      </div>
-      <p className="closing-benner-historic-note">Este bloco apresenta todo o histórico importado e não aplica os filtros de análise acima. O dado “No mês atual” utiliza a data do andamento no extrato.</p>
-    </section>}
-    <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do mês anterior e pendências">
-      {cards.map(card => <article className="closing-kpi" key={card.label}>
-        <div className="closing-kpi-top"><span>{card.label}</span><card.icon size={16} strokeWidth={1.75}/></div>
-        <strong>{card.value}</strong><small>{card.detail}</small>
-      </article>)}
-    </section>
-  </>;
+  return <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do mês anterior e pendências">
+    {cards.map(card => <article className="closing-kpi" key={card.label}>
+      <div className="closing-kpi-top"><span>{card.label}</span><card.icon size={16} strokeWidth={1.75}/></div>
+      <strong>{card.value}</strong><small>{card.detail}</small>
+    </article>)}
+  </section>;
 }
 
 function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa: Etapa; analista: string }) {
