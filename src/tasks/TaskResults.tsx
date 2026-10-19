@@ -63,7 +63,7 @@ const comparable = (row: TaskTiming) => row.samples >= MIN_SAMPLES && row.comple
 // Durante a transição, a API em execução pode não reconhecer os filtros novos.
 // Repetir sem eles apenas quando o backend rejeita parâmetros é compatível
 // com o contrato antigo, sem ocultar indisponibilidade ou falhas de autorização.
-const unsupportedFilters = (error: unknown) => /filtros? (de resultados )?inválid|\b400\b/i.test(String((error as Error)?.message || error));
+const unsupportedFilters = (error: unknown) => /filtros? (de resultados )?inválid|campos inválidos ou não permitidos|\b(?:400|422)\b/i.test(String((error as Error)?.message || error));
 const withOldApiFallback = (api: ApiRequest, path: string, legacyPath: string) =>
   api(path).catch((error: unknown) => {
     if (!unsupportedFilters(error)) throw error;
