@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, ArrowDownUp, Clock3, Download, RefreshCw, Users, CheckCircle2 } from 'lucide-react';
+import { ArrowDownUp, CheckCircle2, Clock3, Download, RefreshCw, Users } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
 import { createDemoTaskResults, isDemoTaskResultsHost } from './demoTaskResults';
@@ -16,15 +16,20 @@ type Person = {
   mean_step_seconds: number | null;
   by_type: Record<string, number>;
 };
-type MotivoClosingRow = {
-  cnj: string; tipo_validado: string; tem_motivo_derrota: boolean | null;
-  motivo_derrota_verificado_em: string | null; enviado_benner_em: string | null;
-};
-type MotivoClosingResult = { status: string; total: number; rows: MotivoClosingRow[]; limit: number };
 export type ResultPayload = {
   period: string;
   people: Person[];
-  summary: { completed: number; today_completed: number; pending: number; growth_percent: number | null; previous_completed: number; people: number; measured_analyses: number; measured_transitions: number; slowest: Person | null };
+  summary: {
+    completed: number;
+    today_completed: number;
+    pending: number;
+    growth_percent: number | null;
+    previous_completed: number;
+    people: number;
+    measured_analyses: number;
+    measured_transitions: number;
+    slowest: Person | null;
+  };
   methodology: string;
   generated_at: string;
   truncated: boolean;
@@ -33,17 +38,9 @@ type Filters = {
   period: 'today' | '7' | '30' | '90' | 'all';
   deadline: 'all' | 'overdue' | 'today' | 'future' | 'none';
   person: string;
-  duration: 'all' | 'under2' | '2to5' | '5to10' | 'over10';
 };
-
-const DEFAULT_FILTERS: Filters = { period: '30', deadline: 'all', person: 'all', duration: 'all' };
+const DEFAULT_FILTERS: Filters = { period: '30', deadline: 'all', person: 'all' };
 const formatInt = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
-const clock = (seconds: number | null) => {
-  if (seconds === null || !Number.isFinite(seconds)) return 'Sem medição';
-  if (seconds < 60) return `${Math.round(seconds)}s`;
-  const rounded = Math.round(seconds / 60);
-  return rounded < 60 ? `${rounded}min` : `${Math.floor(rounded / 60)}h ${String(rounded % 60).padStart(2, '0')}min`;
-};
 
 function SelectFilter({ title, value, options, onChange }: {
   title: string;
@@ -73,7 +70,7 @@ function downloadXlsx(encoded: string, filename: string) {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = filename || 'resultados-equipe.xlsx';
+  anchor.download = filename || 'producao-tarefas.xlsx';
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
@@ -86,22 +83,17 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   canViewOthers: boolean;
   userId?: string;
 }) {
-  // Apenas a interface gerencial no host de desenvolvimento recebe dados demonstrativos.
   const demoMode = canViewOthers && isDemoTaskResultsHost();
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [data, setData] = useState<ResultPayload | null>(null);
-  const [options, setOptions] = useState<{id: string; name: string}[]>([]);
-  const [sortBy, setSortBy] = useState<'completed' | 'step' | 'analysis'>('completed');
+  const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
+  const [sortBy, setSortBy] = useState<'most' | 'least' | 'name'>('most');
   const [pending, setPending] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
-  const [motivoFilter, setMotivoFilter] = useState<'todos' | 'sim' | 'nao'>('todos');
-  const [motivoData, setMotivoData] = useState<MotivoClosingResult | null>(null);
-  const [motivoPending, setMotivoPending] = useState(false);
-  const [motivoError, setMotivoError] = useState('');
   const requestId = useRef(0);
-  const key = [filters.period, filters.deadline, filters.person, filters.duration, revision, userId].join('|');
+  const key = [filters.period, filters.deadline, filters.person, revision, userId].join('|');
   const [loadedKey, setLoadedKey] = useState('');
 
   useEffect(() => {
@@ -110,50 +102,38 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     const serial = ++requestId.current;
     setPending(true);
     setError('');
-    const params = new URLSearchParams({ period: filters.period, deadline: filters.deadline, person: filters.person, duration: filters.duration });
-    const request = demoMode
-      ? Promise.resolve(createDemoTaskResults(filters))
+    // A API ainda aceita 'duration'; não filtrar produção pela média individual
+    // de cronometragem porque isso distorce o total de entregas.
+    const params = new URLSearchParams({ ...filters, duration: 'all' });
+    const request = demoMode ? Promise.resolve(createDemoTaskResults({ ...filters, duration: 'all' }))
       : api('/api/tasks/results?' + params);
     request.then((answer: ResultPayload) => {
-        if (cancelled || serial !== requestId.current) return;
-        if (!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de Resultados.');
-        setData(answer);
-        setLoadedKey(key);
-        if (filters.person === 'all') {
-          setOptions(current => {
-            const merged = new Map(current.map(row => [row.id, row]));
-            answer.people.forEach(row => merged.set(row.id, { id: row.id, name: row.name }));
-            return Array.from(merged.values()).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-          });
-        }
-      })
-      .catch((cause: Error) => {
-        if (!cancelled && serial === requestId.current) { setError(cause.message || 'Falha ao carregar indicadores.'); setLoadedKey(''); }
-      })
-      .finally(() => { if (!cancelled && serial === requestId.current) setPending(false); });
+      if (cancelled || serial !== requestId.current) return;
+      if (!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de produção.');
+      setData(answer);
+      setLoadedKey(key);
+      if (filters.person === 'all') {
+        setOptions(current => {
+          const merged = new Map(current.map(row => [row.id, row]));
+          answer.people.forEach(row => merged.set(row.id, { id: row.id, name: row.name }));
+          return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+        });
+      }
+    }).catch((cause: Error) => {
+      if (!cancelled && serial === requestId.current) {
+        setError(cause.message || 'Falha ao carregar produção.');
+        setLoadedKey('');
+      }
+    }).finally(() => { if (!cancelled && serial === requestId.current) setPending(false); });
     return () => { cancelled = true; };
   }, [visible, key, api, userId, demoMode]);
 
   useEffect(() => {
-    if (!visible || !userId || motivoFilter === 'todos') {
-      setMotivoData(null); setMotivoError(''); setMotivoPending(false);
-      return;
-    }
-    let active = true;
-    setMotivoPending(true); setMotivoError('');
-    void api('/api/tasks/results/motivo-derrota?status=' + motivoFilter)
-      .then((result: MotivoClosingResult) => {
-        if (!active) return;
-        if (!result || !Array.isArray(result.rows)) throw new Error('Resultado Motivo derrota inválido.');
-        setMotivoData(result);
-      })
-      .catch((cause: Error) => { if (active) { setMotivoError(cause.message || 'Falha na consulta ao Benner.'); setMotivoData(null); } })
-      .finally(() => { if (active) setMotivoPending(false); });
-    return () => { active = false; };
-  }, [visible, userId, motivoFilter, revision, api]);
-
-  useEffect(() => {
-    const reset = () => { setMotivoFilter('todos'); setMotivoData(null); setFilters(DEFAULT_FILTERS); setData(null); setOptions([]); setLoadedKey(''); setRevision(value => value + 1); };
+    const reset = () => {
+      requestId.current += 1;
+      setFilters(DEFAULT_FILTERS); setData(null); setOptions([]);
+      setLoadedKey(''); setRevision(value => value + 1);
+    };
     window.addEventListener('mba:portfolio-changed', reset);
     window.addEventListener('mba:logged-out', reset);
     window.addEventListener('mba:session-expired', reset);
@@ -164,150 +144,115 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     };
   }, []);
 
-  const updateFilter = (field: keyof Filters, value: string) => {
-    setFilters(current => ({ ...current, [field]: value }));
-  };
   const exportResults = async () => {
     if (demoMode || exporting || !data || loadedKey !== key) return;
     setExporting(true);
     setError('');
     try {
-      const params = new URLSearchParams({ period: filters.period, deadline: filters.deadline, person: filters.person, duration: filters.duration });
+      const params = new URLSearchParams({ ...filters, duration: 'all' });
       const result = await api('/api/tasks/results/export?' + params);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
       downloadXlsx(result.content_base64, result.filename);
     } catch (cause: any) {
-      setError(cause?.message || 'Não foi possível exportar os resultados.');
+      setError(cause?.message || 'Não foi possível exportar os dados.');
     } finally {
       setExporting(false);
     }
   };
-  const shown = loadedKey === key ? data : null;
-  const sorted = useMemo(() => [...(shown?.people || [])].sort((a, b) => {
-    if (sortBy === 'step') return (b.mean_step_seconds ?? -1) - (a.mean_step_seconds ?? -1) || b.step_samples - a.step_samples;
-    if (sortBy === 'analysis') return (b.mean_analysis_seconds ?? -1) - (a.mean_analysis_seconds ?? -1) || b.analysis_samples - a.analysis_samples;
-    return b.completed - a.completed || a.name.localeCompare(b.name, 'pt-BR');
-  }), [shown, sortBy]);
 
+  const shown = loadedKey === key ? data : null;
+  const people = useMemo(() => (shown?.people || []).filter(row => row.completed > 0), [shown]);
+  const sorted = useMemo(() => [...people].sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name, 'pt-BR');
+    if (sortBy === 'least') return a.completed - b.completed || a.name.localeCompare(b.name, 'pt-BR');
+    return b.completed - a.completed || a.name.localeCompare(b.name, 'pt-BR');
+  }), [people, sortBy]);
   const byType = useMemo(() => {
     const totals = new Map<string, number>();
-    shown?.people.forEach(person => Object.entries(person.by_type || {}).forEach(([type, count]) => totals.set(type, (totals.get(type) || 0) + count)));
-    return [...totals].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  }, [shown]);
+    people.forEach(person => Object.entries(person.by_type || {}).forEach(([type, count]) =>
+      totals.set(type, (totals.get(type) || 0) + count)));
+    return [...totals].sort((a, b) => b[1] - a[1]);
+  }, [people]);
   const maxType = Math.max(1, ...byType.map(([, count]) => count));
-  const winner = shown?.summary?.slowest;
+  const maxPerson = Math.max(1, ...people.map(row => row.completed));
+  const total = shown?.summary.completed || 0;
 
-  return <section className="task-results-page" aria-label="Resultados das tarefas">
+  return <section className="task-results-page" aria-label="Produção das tarefas">
     <div className="task-results-heading">
-      <div><h1>Resultados</h1><p>Produtividade, tempos de análise e progressão no fluxo por colaborador.</p></div>
+      <div><h1>Produção das tarefas</h1><p>Entregas concluídas pela equipe e volume ainda em aberto. Não confunde velocidade de navegação com produtividade.</p></div>
       <div className="task-results-actions">
-        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada para dados fictícios' : undefined}><Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}</button>
+        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada para dados fictícios' : 'A planilha inclui colunas técnicas de telemetria além das entregas'}>
+          <Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}
+        </button>
         <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
       </div>
     </div>
-    {demoMode && <div className="task-results-notice" role="status"><strong>Dados de demonstração.</strong> Números fictícios de Analista 1, Analista 2 e Analista 3, exibidos apenas no desenvolvimento. Não alteram a base real nem os indicadores oficiais.</div>}
+    {demoMode && <div className="task-results-notice" role="status"><strong>Dados de demonstração.</strong> Os números são fictícios e não representam a operação real.</div>}
     <div className="task-results-filters">
-      <SelectFilter title="Período de conclusão" value={filters.period} onChange={value => updateFilter('period', value)} options={[
+      <SelectFilter title="Período das conclusões" value={filters.period} onChange={value => setFilters(current => ({ ...current, period: value as Filters['period'] }))} options={[
         { value: 'today', label: 'Hoje' }, { value: '7', label: 'Últimos 7 dias' }, { value: '30', label: 'Últimos 30 dias' },
-        { value: '90', label: 'Últimos 90 dias' }, { value: 'all', label: 'Histórico (180 dias)' },
+        { value: '90', label: 'Últimos 90 dias' }, { value: 'all', label: 'Últimos 180 dias' },
       ]}/>
-      <SelectFilter title="Prazo da tarefa" value={filters.deadline} onChange={value => updateFilter('deadline', value)} options={[
-        { value: 'all', label: 'Todos' }, { value: 'overdue', label: 'Vencido' }, { value: 'today', label: 'Hoje' },
+      <SelectFilter title="Prazo vinculado à tarefa" value={filters.deadline} onChange={value => setFilters(current => ({ ...current, deadline: value as Filters['deadline'] }))} options={[
+        { value: 'all', label: 'Todos os prazos' }, { value: 'overdue', label: 'Vencido' }, { value: 'today', label: 'Vence hoje' },
         { value: 'future', label: 'A vencer' }, { value: 'none', label: 'Sem prazo' },
       ]}/>
-      <SelectFilter title="Colaborador" value={filters.person} onChange={value => updateFilter('person', value)} options={[
+      <SelectFilter title="Responsável pelas análises" value={filters.person} onChange={value => setFilters(current => ({ ...current, person: value }))} options={[
         { value: 'all', label: canViewOthers ? 'Toda a equipe' : 'Minhas análises' },
         ...(canViewOthers ? options.map(person => ({ value: person.id, label: person.name })) : []),
       ]}/>
-      <SelectFilter title="Motivo derrota" value={motivoFilter} onChange={value => setMotivoFilter(value as typeof motivoFilter)} options={[
-        { value: 'todos', label: 'Todos' }, { value: 'sim', label: 'Sim — cadastrado' },
-        { value: 'nao', label: 'Não — ausente confirmado' },
-      ]}/>
-      <SelectFilter title="Tempo médio de análise" value={filters.duration} onChange={value => updateFilter('duration', value)} options={[
-        { value: 'all', label: 'Todos os tempos' }, { value: 'under2', label: 'Menos de 2 minutos' },
-        { value: '2to5', label: '2 a 5 minutos' }, { value: '5to10', label: '5 a 10 minutos' },
-        { value: 'over10', label: '10 minutos ou mais' },
-      ]}/>
     </div>
-    {motivoFilter !== 'todos' && <article className="task-results-card motivo-resultados-card">
-      <header><h2>Motivo derrota — {motivoFilter === 'sim' ? 'Sim' : 'Não'}</h2>
-        <p>Encerramentos classificados como Derrota ou Derrota Voluntária. “Não” representa ausência confirmada no Benner; registros não verificados ficam fora deste filtro. Os indicadores de produtividade abaixo permanecem inalterados.</p></header>
-      {motivoPending ? <p role="status">Carregando situação dos motivos…</p> : null}
-      {motivoError ? <p role="alert" className="task-results-error">{motivoError}</p> : null}
-      {motivoData && !motivoPending ? <>
-        <p><strong>{formatInt(motivoData.total)}</strong> processo(s) com o filtro selecionado.</p>
-        <div className="task-results-table-scroll"><table className="task-results-table">
-          <thead><tr><th>Processo</th><th>Classificação</th><th>Motivo derrota</th><th>Última verificação</th></tr></thead>
-          <tbody>
-            {motivoData.rows.map(row => <tr key={row.cnj}>
-              <td><strong>{row.cnj.replace(/^(\d{7})(\d{2})(\d{4})(\d)(\d{2})(\d{4})$/, '$1-$2.$3.$4.$5.$6')}</strong></td>
-              <td>{row.tipo_validado === 'DERROTA_VOLUNTARIA' ? 'Derrota Voluntária' : 'Derrota'}</td>
-              <td>{row.tem_motivo_derrota === true ? 'Sim' : 'Não'}</td>
-              <td>{row.motivo_derrota_verificado_em ? new Date(row.motivo_derrota_verificado_em).toLocaleString('pt-BR') : 'Não verificado'}</td>
-            </tr>)}
-            {!motivoData.rows.length ? <tr><td colSpan={4}>Nenhum processo nesse filtro.</td></tr> : null}
-          </tbody></table></div>
-        {motivoData.total > motivoData.rows.length ? <small>Exibindo os {motivoData.rows.length} registros mais recentes.</small> : null}
-      </> : null}
-    </article>}
     {error && <div role="alert" className="task-results-notice task-results-error">{error}<button type="button" onClick={() => setRevision(n => n + 1)}>Tentar novamente</button></div>}
-    {pending && !shown && <div role="status" className="task-results-notice">Carregando dados auditados da carteira…</div>}
+    {pending && !shown && <div role="status" className="task-results-notice">Carregando entregas auditadas da carteira…</div>}
     {shown && <>
-      {shown.truncated && <div role="alert" className="task-results-notice">Volume superior ao limite de consulta. Reduza o período para obter indicadores completos.</div>}
+      {shown.truncated && <div role="alert" className="task-results-notice">A consulta atingiu o limite de registros. Reduza o período: os totais exibidos podem estar incompletos.</div>}
+      <div className="task-results-section-heading"><h2>Produção no período</h2><p>Somente conclusões humanas registradas; importações automáticas não entram no total.</p></div>
       <div className="task-results-stats">
-        {stat('Analisados hoje', formatInt(shown.summary.today_completed), 'Concluídos hoje, no recorte selecionado', CheckCircle2)}
-        {stat('Pendentes', formatInt(shown.summary.pending), 'Fila atribuída ainda em aberto', Clock3)}
-        {stat('Crescimento', shown.summary.growth_percent === null ? '—' : `${shown.summary.growth_percent > 0 ? '+' : ''}${shown.summary.growth_percent.toLocaleString('pt-BR')}%`, shown.summary.growth_percent === null ? 'Sem período comparável' : 'Ante o período anterior equivalente', Activity)}
-        {stat('Análises no período', formatInt(shown.summary.completed), 'Concluídas por pessoas no recorte', CheckCircle2)}
-        {stat('Análises com tempo', formatInt(shown.summary.measured_analyses), 'Medições após ativação da telemetria', Clock3)}
-        {stat('Avanços mensurados', formatInt(shown.summary.measured_transitions), 'Transições registradas pelo novo fluxo', Users)}
+        {stat('Análises concluídas', formatInt(total), 'No período e filtros selecionados', CheckCircle2)}
+        {stat('Concluídas hoje', formatInt(shown.summary.today_completed), 'Hoje, dentro dos filtros de conclusão', Clock3)}
+        {stat('Colaboradores com entregas', formatInt(people.length), 'Pessoas que concluíram ao menos uma análise', Users)}
+        {filters.period !== 'all' ? stat('Variação de entregas', shown.summary.growth_percent === null ? '—' :
+          (shown.summary.growth_percent > 0 ? '+' : '') + shown.summary.growth_percent.toLocaleString('pt-BR') + '%',
+          shown.summary.growth_percent === null ? 'Sem volume no período anterior' :
+            formatInt(shown.summary.previous_completed) + ' conclusões na janela anterior', CheckCircle2) : null}
+      </div>
+      <div className="task-results-section-heading"><h2>Fila atual</h2><p>Fotografia das atribuições abertas agora; não corresponde ao período de conclusão acima.</p></div>
+      <div className="task-results-stats task-results-current-stats">
+        {stat('Análises pendentes', formatInt(shown.summary.pending), 'Ativas e atribuídas, com o mesmo filtro de prazo e colaborador', Clock3)}
       </div>
       <div className="task-results-grid">
-        <article className="task-results-card task-results-ranking">
-          <header><h2>Tempo para avançar de etapa</h2><p>Média do tempo para passar de uma fase do fluxo à seguinte, em ordem decrescente.</p></header>
-          {winner ? <div className="task-results-leader">
-            <div><small>Maior tempo médio mensurado</small><strong>{winner.name}</strong><span>{winner.step_samples} avanços registrados</span></div>
-            <strong>{clock(winner.mean_step_seconds)}</strong>
-          </div> : <p className="task-results-empty">As conclusões históricas já estão contabilizadas. Para comparar a velocidade entre fases, precisamos de cinco transições cronometradas por colaborador após a ativação da telemetria.</p>}
-          <div className="task-results-bars">
-            {shown.people.filter(row => row.step_samples >= 5).sort((a,b)=>(b.mean_step_seconds || 0)-(a.mean_step_seconds || 0)).slice(0,8).map(row => (
-              <div className="task-results-bar-row" key={row.id}>
-                <div><span>{row.name}</span><strong>{clock(row.mean_step_seconds)}</strong></div>
-                <div className="task-results-bar-track"><span style={{ width: `${winner?.mean_step_seconds ? (Number(row.mean_step_seconds || 0) / winner.mean_step_seconds * 100) : 0}%` }} /></div>
-                <small>{row.step_samples} transições</small>
-              </div>
-            ))}
-          </div>
-        </article>
         <article className="task-results-card">
-          <header><h2>Produção por tipo</h2><p>Análises humanas concluídas no período selecionado.</p></header>
+          <header><div><h2>Entregas por tipo de tarefa</h2><p>Distribuição das conclusões no período selecionado.</p></div></header>
           {byType.length ? <div className="task-results-bars">{byType.map(([type, count]) => <div className="task-results-bar-row" key={type}>
             <div><span>{taskTypeLabel(type)}</span><strong>{formatInt(count)}</strong></div>
-            <div className="task-results-bar-track"><span style={{ width: `${count / maxType * 100}%` }}/></div>
-          </div>)}</div> : <p className="task-results-empty">Sem análises no período selecionado.</p>}
+            <div className="task-results-bar-track"><span style={{ width: (count / maxType * 100) + '%' }}/></div>
+          </div>)}</div> : <p className="task-results-empty">Nenhuma análise concluída neste recorte.</p>}
+        </article>
+        <article className="task-results-card">
+          <header><div><h2>Participação da equipe</h2><p>Distribuição das entregas, sem ranquear pessoas por velocidade entre perguntas.</p></div></header>
+          {sorted.length ? <div className="task-results-bars">{[...people].sort((a, b) => b.completed - a.completed).slice(0, 10).map(person => <div className="task-results-bar-row" key={person.id}>
+            <div><span>{person.name}</span><strong>{formatInt(person.completed)}</strong></div>
+            <div className="task-results-bar-track"><span style={{ width: (person.completed / maxPerson * 100) + '%' }}/></div>
+          </div>)}</div> : <p className="task-results-empty">Sem entregas para distribuir.</p>}
         </article>
       </div>
       <article className="task-results-card">
-        <header className="task-results-table-heading"><div><h2>Desempenho por colaborador</h2><p>Concluídos históricos separados dos tempos efetivamente cronometrados.</p></div>
-          <div className="task-results-sort">
-            <ArrowDownUp size={14}/>
-            <select aria-label="Ordenar colaboradores" value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
-              <option value="completed">Mais análises</option><option value="analysis">Maior tempo de análise</option><option value="step">Maior tempo por etapa</option>
-            </select>
-          </div>
+        <header className="task-results-table-heading"><div><h2>Entregas por colaborador</h2><p>Quantidade de análises concluídas, sem inferir qualidade ou tempo efetivamente trabalhado.</p></div>
+          <div className="task-results-sort"><ArrowDownUp size={14}/><select aria-label="Ordenar colaboradores" value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
+            <option value="most">Mais entregas</option><option value="least">Menos entregas</option><option value="name">Nome</option>
+          </select></div>
         </header>
         <div className="task-results-table-scroll"><table className="task-results-table">
-          <thead><tr><th>Colaborador</th><th>Análises</th><th>Tempo médio de análise</th><th>Mediana</th><th>Tempo médio por etapa</th><th>Amostra de etapas</th></tr></thead>
+          <thead><tr><th>Colaborador</th><th>Concluídas no período</th><th>Participação</th><th>Tipos concluídos</th></tr></thead>
           <tbody>{sorted.map(person => <tr key={person.id}>
             <td><strong>{person.name}</strong></td><td>{formatInt(person.completed)}</td>
-            <td>{clock(person.mean_analysis_seconds)}<small>{person.analysis_samples} análise(s) cronometrada(s)</small></td>
-            <td>{clock(person.median_analysis_seconds)}</td>
-            <td>{clock(person.mean_step_seconds)}</td><td>{formatInt(person.step_samples)}</td>
+            <td>{total ? (person.completed / total * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : '—'}</td>
+            <td>{Object.entries(person.by_type || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([type, n]) => taskTypeLabel(type) + ' (' + formatInt(n) + ')').join(' · ') || '—'}</td>
           </tr>)}
-          {!sorted.length && <tr><td colSpan={6}>Nenhum registro com os filtros selecionados.</td></tr>}</tbody>
+          {!sorted.length && <tr><td colSpan={4}>Nenhuma conclusão humana registrada com os filtros selecionados.</td></tr>}</tbody>
         </table></div>
       </article>
-      <p className="task-results-method"><Clock3 size={14}/>{shown.methodology} {demoMode ? 'Sem leitura ou gravação no backend.' : 'Eventos históricos sem início registrado não são utilizados para comparar velocidade. Registros externos importados são excluídos da produtividade humana.'} Atualizado em {new Date(shown.generated_at).toLocaleString('pt-BR')}.</p>
+      <p className="task-results-method"><CheckCircle2 size={14}/>Origem: eventos de conclusão da carteira ativa. Conclusões históricas e atribuições abertas são medidas diferentes. Tempos de navegação não representam horas trabalhadas; concordância, retrabalho e acurácia exigem indicadores auditáveis próprios. Atualizado em {new Date(shown.generated_at).toLocaleString('pt-BR')}.</p>
     </>}
   </section>;
 }

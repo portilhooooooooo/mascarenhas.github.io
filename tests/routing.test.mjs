@@ -48,7 +48,7 @@ test('navbar muda a URL ao navegar para automações e analytics', () => {
   e.window.showPage('dashboard');
   assert.equal(e.location.pathname, '/analytics');
 });
-test('ranking é a última aba de Resultados e exige autorização da carteira', () => {
+test('aba de produção preserva a rota legada e exige autorização da carteira', () => {
   const enabled = environment('/analytics/ranking');
   assert.equal(enabled.window.restorePageRoute(), true);
   assert.equal(enabled.active.get('dashboard'), true);
