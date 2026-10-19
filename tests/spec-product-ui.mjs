@@ -70,9 +70,13 @@ try {
     await page.setViewportSize({width:w,height:h});
     await page.goto(base+'/tarefas/atribuicoes');
     await page.locator('.assignments-board').waitFor();
-    await page.getByRole('heading',{name:'Atribuições'}).waitFor();
-    await page.getByText('Não atribuídas',{exact:true}).first().click();
+    await page.getByRole('heading',{name:'Gestão de atribuições'}).waitFor();
+    await page.getByRole('button',{name:/Por pessoa/}).click();
+    await page.locator('.assignments-person').first().waitFor();
+    await page.getByRole('button',{name:/Por tarefa/}).click();
     await page.locator('.assignments-table').waitFor();
+    await page.getByRole('button',{name:/Por vencimento/}).click();
+    await page.getByText('Vencidas',{exact:true}).first().waitFor();
     await assertNoHorizontalOverflow('Atribuições '+w);
     await page.screenshot({path:'.build/spec-ui/assignments-'+w+'.png',fullPage:true});
   }
@@ -80,13 +84,15 @@ try {
   await page.setViewportSize({width:1440,height:900});
   await page.goto(base+'/tarefas/atribuicoes?fixture=assignments');
   await page.locator('.assignments-board').waitFor();
-  await page.locator('.assignments-table tbody tr').first().locator('input[type="checkbox"]').waitFor();
-  await page.locator('.assignments-table tbody tr').nth(0).locator('input[type="checkbox"]').check();
-  await page.locator('.assignments-table tbody tr').nth(1).locator('input[type="checkbox"]').check();
+  await page.getByRole('button',{name:/Por tarefa/}).click();
+  const cases=page.locator('.assignments-table tbody input[type="checkbox"]');
+  await cases.nth(0).waitFor();
+  await cases.nth(0).check();
+  await cases.nth(1).check();
   await page.locator('.assignments-bulk select').selectOption('fixture-analyst');
-  await page.getByRole('button',{name:'Atribuir selecionadas'}).click();
+  await page.getByRole('button',{name:'Confirmar atribuição'}).click();
   await page.locator('.assignments-notice').getByText(/1 atribuição\(ões\) confirmada\(s\)/).waitFor();
-  await page.locator('.assignments-notice').getByText(/Não concluídas/).waitFor();
+  await page.locator('.assignments-notice').getByText(/Falhas/).waitFor();
   await page.screenshot({path:'.build/spec-ui/assignments-partial-error.png',fullPage:true});
 
   for(const [w,h] of [[1440,900],[390,844]]) {

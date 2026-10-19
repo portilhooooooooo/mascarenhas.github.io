@@ -24,7 +24,7 @@ test('assignments operate per task_process with server-side enforcement', () => 
   assert.match(app, /<AssignmentsBoard tasks=\{allVisibleTasks\}/);
   assert.doesNotMatch(app, /tab === 'management' && manager \? <section className="tasks-management-view"/);
   assert.match(board, /\/api\/task-processes\//);
-  assert.match(board, /assignee_id: recipient/);
+  assert.match(board, /assignee_id: entry.assigneeId/);
   assert.match(board, /canAssign/);
   assert.match(board, /Promise\.allSettled/);
   assert.doesNotMatch(board, /\/api\/tasks\/' \+ row\.task\.id.*PATCH/);

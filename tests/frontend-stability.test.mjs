@@ -31,7 +31,8 @@ assert.doesNotMatch(qaStyle, /data-qa-last='false'[^\n]*button\[type='submit'\][
 
 // All assignment perspectives show the same authorized rows, only regrouped.
 for (const view of ['people', 'task', 'deadline']) assert.match(assignments, new RegExp("view === '"+view+"'"));
-assert.match(assignments, /groupTotals/);
+assert.match(assignments, /groupedPeople/);
+assert.match(assignments, /bucketMeta/);
 assert.match(assignments, /assignments-group-row/);
 assert.doesNotMatch(assignments, /setView\('unassigned'\)|setView\('attention'\)/);
 
