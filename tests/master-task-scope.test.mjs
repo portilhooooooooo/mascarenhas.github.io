@@ -18,7 +18,9 @@ test('usuários comuns continuam limitados às próprias atribuições', () => {
 
 test('processos de terceiros são executáveis por mestre sem alterar o desenho da tela', () => {
   assert.match(model, /if \(user\.is_master_admin \|\| user\.permissions\?\.\['tasks\.manage'\]\) return true/g);
-  assert.match(app, /for \(const task of allAssignedTasks\)/);
-  assert.match(app, /const rows = await hydrateTask\(task\)/);
+  assert.match(app, /for \(const task of queueTasks\)/, 'A fila selecionada inclui processos acessíveis ao mestre');
+  assert.match(app, /const candidates = taskPendingRows\(queueTasks, 'all', selectedType\)/, 'Carregamento cobre o escopo da fila');
+  assert.match(app, /await Promise\.allSettled\(chunk\.map\(task => hydrateTask\(task\)\)\)/, 'Tarefas são carregadas em lotes concorrentes');
+  assert.match(app, /const canExecuteTeam = canExecute && canViewOtherTasks && \(isMaster \|\| user\?\.permissions\?\.\['tasks\.execute_others'\] === true\)/, 'Mestre mantém permissão de execução da equipe');
   assert.doesNotMatch(app, /TaskOversight|tasks-queue-toggle|Tarefas dos colaboradores|Todas as tarefas/);
 });
