@@ -265,7 +265,7 @@ function Metrics({ dados, analises, taxaEnvio, motivosPendentes, onOpen }: {
   const aptos=dados?.etapas?.total;
   const accuracy=dados?.acuracia_originaria;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
-    {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):(dados?num(dados.indicadores.analisados):'—')},
+    {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy && accuracy.avaliados>0 ? percent(accuracy.confirmados/accuracy.avaliados*100):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:taxaEnvio?.percentual != null ? percent(taxaEnvio.percentual):'—'},
@@ -385,7 +385,7 @@ function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa:
   </section>;
 }
 
-function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
+function AnalystsPanel({ analysts, unavailable }: { analysts: Analista[]; unavailable:boolean }) {
   const max = Math.max(1,...analysts.map(a=>a.analisados));
   return <section className="closing-surface closing-bottom">
     <div className="closing-card-head"><h2>Produtividade dos analistas</h2></div>
@@ -396,7 +396,7 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
         <div className="closing-rail"><i style={{width:a.analisados/max*100+'%'}}/></div>
         <b>{num(a.analisados)}</b>
       </div>)}
-    </div> : <p className="closing-nodata">Sem análises atribuídas no período selecionado.</p>}
+    </div> : <p className="closing-nodata">{unavailable ? 'Consulta de análises indisponível.' : 'Sem análises no período selecionado.'}</p>}
   </section>;
 }
 
@@ -528,8 +528,7 @@ export function EncerramentosPage() {
     };
   },[refresh]);
   const shown = loadedKey === filterKey ? dados : null;
-  const analysts = loadedKey===filterKey && analises ? analises.analistas :
-    (shown?.analistas?.length ? shown.analistas : shown?.etapas?.analistas || []);
+  const analysts = loadedKey===filterKey && analises ? analises.analistas : [];
 
   return <div className="closing-page-v2">
     <div className="closing-heading"><h1>Encerramentos</h1></div>
@@ -557,7 +556,7 @@ export function EncerramentosPage() {
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
-      <AnalystsPanel analysts={analysts}/>
+      <AnalystsPanel analysts={analysts} unavailable={!analises || loadedKey!==filterKey}/>
     </div>
     <section className="closing-territory" aria-label="Detalhamento territorial">
       <header className="closing-territory-heading">Detalhamento territorial</header>
