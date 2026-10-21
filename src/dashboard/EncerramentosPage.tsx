@@ -258,6 +258,7 @@ function Metrics({ dados, metaMensal, analises, taxaEnvio, motivosPendentes, onO
         </button>
       : <button className="closing-kpi closing-kpi-button" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
+          title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
           <strong>{card.value}</strong>
