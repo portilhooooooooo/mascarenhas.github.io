@@ -206,12 +206,10 @@ function configureApplicationShell() {
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
-  const baseDados = buttons.find(button => button.textContent?.trim() === 'Documentos') ?? null;
-
   const syncVisibility = () => {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
-      const recognized = visiblePages.has(page) || button === baseDados;
+      const recognized = visiblePages.has(page);
       const eligible = recognized && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
@@ -229,7 +227,6 @@ function configureApplicationShell() {
   buttons.forEach(button => {
     const page = button.dataset.page || '';
     if (visiblePages.has(page)) labelNavItem(button, labels[page]);
-    else if (button === baseDados) labelNavItem(button, 'Base de dados');
     else button.dataset.mbaHidden = 'true';
   });
 
