@@ -238,7 +238,7 @@ function Metrics({ dados, enviados, motivosPendentes, onOpen }: {
     {key:'analisados',icon:UsersRound,value:dados ? num(dados.indicadores.analisados):'—'},
     {key:'acuracia',icon:Target,value:accuracy && accuracy.avaliados>0 ? percent(accuracy.confirmados/accuracy.avaliados*100):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
-    {key:'benner',icon:Send,value:aptos != null && sent != null && aptos>0 ? percent(sent/aptos*100):'—'},
+    {key:'benner',icon:Send,value:aptos != null && sent != null && aptos>0 && sent<=aptos ? percent(sent/aptos*100):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
@@ -312,12 +312,17 @@ function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etap
 }
 
 
-function BennerHistory({ resumo }: {resumo: ResumoBennerAnterior | null}) {
+function BennerHistory({ resumo, inicio, fim }: {resumo: ResumoBennerAnterior | null; inicio:string; fim:string}) {
+  const start = localISO(0).slice(0,7);
+  const currentMonth = inicio.slice(0,7) === start && fim.slice(0,7) === start;
   return <section className="closing-surface closing-benner-history" aria-label="Histórico Benner">
     <h2>Benner · mês anterior</h2>
     <div><span>Andamentos <strong>{resumo?num(resumo.enviados):'—'}</strong></span>
       <span>Baixas <strong>{resumo?num(resumo.encerrados):'—'}</strong></span>
-      <span>Sem baixa <strong>{resumo?num(resumo.em_andamento):'—'}</strong></span></div>
+      <span>Sem baixa <strong>{resumo?num(resumo.em_andamento):'—'}</strong></span>
+      {currentMonth && <span className="closing-carryover" title="Andamentos do mês anterior ainda sem baixa. Contam como pendências a acompanhar neste mês, não como baixas realizadas.">
+        Pendentes trazidos para este mês <strong>{resumo?num(resumo.em_andamento):'—'}</strong>
+      </span>}</div>
   </section>;
 }
 
@@ -361,7 +366,7 @@ function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
         <div className="closing-rail"><i style={{width:a.analisados/max*100+'%'}}/></div>
         <b>{num(a.analisados)}</b>
       </div>)}
-    </div> : <p className="closing-nodata">Sem análises registradas hoje.</p>}
+    </div> : <p className="closing-nodata">Sem análises atribuídas no período selecionado.</p>}
   </section>;
 }
 
@@ -512,16 +517,16 @@ export function EncerramentosPage() {
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} enviados={loadedKey===filterKey?enviados:null}
       motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
+    <BennerHistory resumo={resumoBenner} inicio={inicio} fim={fim}/>
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
       <AnalystsPanel analysts={analysts}/>
     </div>
-    <BennerHistory resumo={resumoBenner}/>
-    <details className="closing-territory">
-      <summary><span>Detalhamento territorial</span></summary>
+    <section className="closing-territory" aria-label="Detalhamento territorial">
+      <header className="closing-territory-heading">Detalhamento territorial</header>
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
-    </details>
+    </section>
     {activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} onClose={()=>setActiveCard(null)}/>}
   </div>;
 }
