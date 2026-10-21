@@ -34,16 +34,17 @@ type Dados = {
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
-type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string };
-type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number };
+type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; concorda:boolean|null };
+type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
 type ClosingSendRate = { aptos:number; enviados:number; percentual:number|null };
-async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,offset=0,q=''):Promise<AnalysisResult> {
+async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,offset=0,q='',concordancia:'todos'|'sim'|'nao'|'nao_avaliados'='todos'):Promise<AnalysisResult> {
   const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
   if(!api)throw new Error('API indisponível.');
   const params=new URLSearchParams({tipo,limit:String(limit),offset:String(offset)});
   if(inicio)params.set('inicio',inicio);
   if(fim)params.set('fim',fim);
   if(q)params.set('q',q);
+  if(concordancia!=='todos')params.set('concordancia',concordancia);
   return api.request('/api/operacao/encerramentos/analises?'+params);
 }
 async function loadClosingSendRate(inicio:string,fim:string,tipo:Tipo):Promise<ClosingSendRate> {
@@ -140,9 +141,10 @@ function saveClosingCsv(rows: ClosingCase[]) {
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
 /** Drill-down de leitura: nunca mistura a contagem da BI com a contagem da fila operacional. */
-function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;onClose:()=>void;inicio:string;fim:string;tipo:Tipo}) {
+function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:ClosingCard;onClose:()=>void;inicio:string;fim:string;tipo:Tipo;tipoRecorte?:Tipo|null}) {
   const [query,setQuery] = useState('');
   const [search,setSearch] = useState('');
+  const [concordancia,setConcordancia] = useState<'todos'|'sim'|'nao'|'nao_avaliados'>('todos');
   const [page,setPage] = useState(1);
   const [items,setItems] = useState<ClosingCase[]>([]);
   const [total,setTotal] = useState<number | null>(null);
@@ -150,29 +152,31 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;
   const [error,setError] = useState('');
   const listStatus: ClosingStatus | null =
     kind==='aptidoes'?'APTOS':kind==='motivo'?'DERROTA':null;
-  const hasDetails = kind==='analisados' || Boolean(listStatus);
+  const hasDetails = kind==='analisados' || kind==='acuracia' || Boolean(listStatus);
   const pageSize=20;
   useEffect(()=>{
     if(!hasDetails)return;
     let active=true;
     setBusy(true);setError('');
     const request: Promise<{rows:ClosingCase[];total:number}> =
-      kind==='analisados'
-      ? loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search).then(data=>({
+      (kind==='analisados'||kind==='acuracia')
+      ? loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search,kind==='acuracia'?concordancia:'todos').then(data=>({
         total:data.total,
         rows:data.rows.map(row=>({
           portfolio_id:'',cnj:row.cnj,analista_id:row.analista,
           tipo_validado:row.tipo,validacao_decisao:null,analisado_em:row.analisado_em,
           validado_em:row.analisado_em,status_envio:undefined,
+          classificador_originario:row.classificador_originario, concorda_originario:row.concorda,
         } as ClosingCase))
       }))
-      : getClosingCases(listStatus!,pageSize,(page-1)*pageSize,search,kind==='motivo'?'nao':'todos');
+      : getClosingCases(listStatus!,pageSize,(page-1)*pageSize,search,kind==='motivo'?'nao':'todos',
+          'todos','todos',kind==='aptidoes'&&tipoRecorte?tipoRecorte:'todos');
     void request
       .then(data=>{if(active){setItems(data.rows || []);setTotal(data.total);}})
       .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:'Consulta indisponível.');setItems([]);setTotal(null);}})
       .finally(()=>{if(active)setBusy(false);});
     return()=>{active=false};
-  },[listStatus,hasDetails,page,search,kind,inicio,fim,tipo]);
+  },[listStatus,hasDetails,page,search,concordancia,kind,inicio,fim,tipo,tipoRecorte]);
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
     window.addEventListener('keydown',onKey);
@@ -184,12 +188,17 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;
   return <div className="closing-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
     <section role="dialog" aria-modal="true" aria-label={CARD_LABELS[kind]} className="closing-dialog">
       <header className="closing-dialog-head">
-        <h2>{CARD_LABELS[kind]}</h2>
+        <h2>{kind==='aptidoes'&&tipoRecorte ? "Composição — "+(CLASSES.find(c=>c.tipo===tipoRecorte)?.label||tipoRecorte) : CARD_LABELS[kind]}</h2>
         <button type="button" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button>
       </header>
       {!hasDetails ? <div className="closing-dialog-empty" role="status">
         A relação de CNJs deste indicador ainda não é disponibilizada pela API de Resultados.
       </div> : <>
+        {kind==='acuracia' && <div className="closing-accuracy-tabs" role="group" aria-label="Concordância com o classificador">
+          {([{key:'todos',label:'Todos'},{key:'sim',label:'Concordantes'},{key:'nao',label:'Divergentes'},{key:'nao_avaliados',label:'Não avaliados'}] as const).map(item=>
+            <button key={item.key} type="button" aria-pressed={concordancia===item.key}
+              className={concordancia===item.key?'active':''} onClick={()=>{setConcordancia(item.key);setPage(1);}}>{item.label}</button>)}
+        </div>}
         <div className="closing-dialog-toolbar">
           <form onSubmit={event=>{event.preventDefault();setPage(1);setSearch(query);}}>
             <Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)}
@@ -200,15 +209,19 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;
             <Download size={15}/>CSV
           </button>
         </div>
-        <p className="closing-dialog-source">{kind==='analisados' ? 'Análises humanas do período selecionado' : 'Relação da fila operacional · os totais podem diferir dos indicadores do período.'}</p>
+        <p className="closing-dialog-source">{kind==='acuracia'?'Classificação sugerida antes da tarefa × concordância declarada pelo analista':
+          kind==='analisados' ? 'Análises humanas do período selecionado' : 'Relação da fila operacional · os totais podem diferir dos indicadores do período.'}</p>
         {error && <p className="closing-error" role="alert">{error}</p>}
         <div className="closing-dialog-table-wrap">
           <table className="closing-dialog-table">
-            <thead><tr><th>CNJ</th><th>Pasta</th><th>Classificação</th><th>Analista</th><th>{kind==='analisados'?'Analisado em':'Benner'}</th></tr></thead>
+            <thead><tr><th>CNJ</th><th>{kind==='acuracia'?'Classificador':'Pasta'}</th><th>{kind==='acuracia'?'Concordância':'Classificação'}</th><th>Analista</th><th>{kind==='analisados'||kind==='acuracia'?'Analisado em':'Benner'}</th></tr></thead>
             <tbody>{items.map(row=><tr key={row.cnj}>
               <td><strong>{closingCnj(row.cnj)}</strong></td>
-              <td>{row.pasta || '—'}</td><td>{row.tipo_validado || '—'}</td>
-              <td>{row.analista_id || '—'}</td><td>{kind==='analisados' ? (row.analisado_em ? new Date(row.analisado_em).toLocaleDateString('pt-BR') : '—') : (row.status_envio || '—')}</td>
+              <td>{kind==='acuracia'?(row as ClosingCase & {classificador_originario?:string|null}).classificador_originario||'—':row.pasta||'—'}</td>
+              <td>{kind==='acuracia'?((row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===true?'Concorda':
+                (row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===false?'Diverge':'Não avaliado'):row.tipo_validado||'—'}</td>
+              <td>{row.analista_id || '—'}</td>
+              <td>{kind==='analisados'||kind==='acuracia'?(row.analisado_em ? new Date(row.analisado_em).toLocaleDateString('pt-BR') : '—') : (row.status_envio || '—')}</td>
             </tr>)}</tbody>
           </table>
           {!busy&&!items.length&&!error&&<div className="closing-dialog-empty">Nenhum registro encontrado.</div>}
@@ -232,12 +245,12 @@ function Metrics({ dados, metaMensal, analises, taxaEnvio, motivosPendentes, onO
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
-  const accuracy=dados?.acuracia_originaria;
+  const accuracy=analises?.acuracia_originaria;
   const goals=metaMensal && metaMensal.carteira!=='Agibank Enter' ? regularAgingSummary(regularAgingGoals(metaMensal.etapas?.aging || [], metaMensal.etapas?.total || 0)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
-    {key:'acuracia',icon:Target,value:accuracy && accuracy.avaliados>0 ? percent(accuracy.confirmados/accuracy.avaliados*100):'—'},
+    {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:taxaEnvio?.percentual != null ? percent(taxaEnvio.percentual):'—'},
     {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
