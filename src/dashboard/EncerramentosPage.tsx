@@ -52,6 +52,26 @@ type Dados = {
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
+type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string };
+type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number };
+type ClosingSendRate = { aptos:number; enviados:number; percentual:number|null };
+async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,offset=0,q=''):Promise<AnalysisResult> {
+  const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
+  if(!api)throw new Error('API indisponível.');
+  const params=new URLSearchParams({tipo,limit:String(limit),offset:String(offset)});
+  if(inicio)params.set('inicio',inicio);
+  if(fim)params.set('fim',fim);
+  if(q)params.set('q',q);
+  return api.request('/api/operacao/encerramentos/analises?'+params);
+}
+async function loadClosingSendRate(inicio:string,fim:string,tipo:Tipo):Promise<ClosingSendRate> {
+  const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
+  if(!api)throw new Error('API indisponível.');
+  const params=new URLSearchParams({tipo});
+  if(inicio)params.set('inicio',inicio);
+  if(fim)params.set('fim',fim);
+  return api.request('/api/operacao/encerramentos/taxa-envio?'+params);
+}
 const TIPOS: { value: Tipo; label: string }[] = [
   { value: 'TODOS', label: 'Todos os tipos' },
   { value: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária' },
@@ -151,7 +171,7 @@ function saveClosingCsv(rows: ClosingCase[]) {
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
 /** Drill-down de leitura: nunca mistura a contagem da BI com a contagem da fila operacional. */
-function ClosingDetailsDialog({kind,onClose}: {kind:ClosingCard;onClose:()=>void}) {
+function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;onClose:()=>void;inicio:string;fim:string;tipo:Tipo}) {
   const [query,setQuery] = useState('');
   const [search,setSearch] = useState('');
   const [page,setPage] = useState(1);
@@ -161,18 +181,29 @@ function ClosingDetailsDialog({kind,onClose}: {kind:ClosingCard;onClose:()=>void
   const [error,setError] = useState('');
   const listStatus: ClosingStatus | null =
     kind==='aptidoes'?'APTOS':kind==='benner'?'ENVIADOS_BENNER':kind==='motivo'?'DERROTA':null;
+  const hasDetails = kind==='analisados' || Boolean(listStatus);
   const pageSize=20;
   useEffect(()=>{
-    if(!listStatus)return;
+    if(!hasDetails)return;
     let active=true;
     setBusy(true);setError('');
-    void getClosingCases(listStatus,pageSize,(page-1)*pageSize,search,
-      kind==='motivo'?'nao':'todos')
+    const request: Promise<{rows:ClosingCase[];total:number}> =
+      kind==='analisados'
+      ? loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search).then(data=>({
+        total:data.total,
+        rows:data.rows.map(row=>({
+          portfolio_id:'',cnj:row.cnj,analista_id:row.analista,
+          tipo_validado:row.tipo,validacao_decisao:null,analisado_em:row.analisado_em,
+          validado_em:row.analisado_em,status_envio:undefined,
+        } as ClosingCase))
+      }))
+      : getClosingCases(listStatus!,pageSize,(page-1)*pageSize,search,kind==='motivo'?'nao':'todos');
+    void request
       .then(data=>{if(active){setItems(data.rows || []);setTotal(data.total);}})
       .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:'Consulta indisponível.');setItems([]);setTotal(null);}})
       .finally(()=>{if(active)setBusy(false);});
     return()=>{active=false};
-  },[listStatus,page,search,kind]);
+  },[listStatus,hasDetails,page,search,kind,inicio,fim,tipo]);
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
     window.addEventListener('keydown',onKey);
@@ -187,7 +218,7 @@ function ClosingDetailsDialog({kind,onClose}: {kind:ClosingCard;onClose:()=>void
         <h2>{CARD_LABELS[kind]}</h2>
         <button type="button" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button>
       </header>
-      {!listStatus ? <div className="closing-dialog-empty" role="status">
+      {!hasDetails ? <div className="closing-dialog-empty" role="status">
         A relação de CNJs deste indicador ainda não é disponibilizada pela API de Resultados.
       </div> : <>
         <div className="closing-dialog-toolbar">
@@ -200,15 +231,15 @@ function ClosingDetailsDialog({kind,onClose}: {kind:ClosingCard;onClose:()=>void
             <Download size={15}/>CSV
           </button>
         </div>
-        <p className="closing-dialog-source">Relação da fila operacional · os totais podem diferir dos indicadores do período.</p>
+        <p className="closing-dialog-source">{kind==='analisados' ? 'Análises humanas do período selecionado' : 'Relação da fila operacional · os totais podem diferir dos indicadores do período.'}</p>
         {error && <p className="closing-error" role="alert">{error}</p>}
         <div className="closing-dialog-table-wrap">
           <table className="closing-dialog-table">
-            <thead><tr><th>CNJ</th><th>Pasta</th><th>Classificação</th><th>Analista</th><th>Benner</th></tr></thead>
+            <thead><tr><th>CNJ</th><th>Pasta</th><th>Classificação</th><th>Analista</th><th>{kind==='analisados'?'Analisado em':'Benner'}</th></tr></thead>
             <tbody>{items.map(row=><tr key={row.cnj}>
               <td><strong>{closingCnj(row.cnj)}</strong></td>
               <td>{row.pasta || '—'}</td><td>{row.tipo_validado || '—'}</td>
-              <td>{row.analista_id || '—'}</td><td>{row.status_envio || '—'}</td>
+              <td>{row.analista_id || '—'}</td><td>{kind==='analisados' ? (row.analisado_em ? new Date(row.analisado_em).toLocaleDateString('pt-BR') : '—') : (row.status_envio || '—')}</td>
             </tr>)}</tbody>
           </table>
           {!busy&&!items.length&&!error&&<div className="closing-dialog-empty">Nenhum registro encontrado.</div>}
@@ -227,18 +258,17 @@ function ClosingDetailsDialog({kind,onClose}: {kind:ClosingCard;onClose:()=>void
   </div>;
 }
 
-function Metrics({ dados, enviados, motivosPendentes, onOpen }: {
-  dados: Dados | null; enviados: Dados | null; motivosPendentes: number | null;
-  onOpen: (kind:ClosingCard)=>void;
+function Metrics({ dados, analises, taxaEnvio, motivosPendentes, onOpen }: {
+  dados: Dados | null; analises: AnalysisResult | null; taxaEnvio: ClosingSendRate | null;
+  motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
-  const sent=enviados?.etapas?.total;
   const accuracy=dados?.acuracia_originaria;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
-    {key:'analisados',icon:UsersRound,value:dados ? num(dados.indicadores.analisados):'—'},
+    {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):(dados?num(dados.indicadores.analisados):'—')},
     {key:'acuracia',icon:Target,value:accuracy && accuracy.avaliados>0 ? percent(accuracy.confirmados/accuracy.avaliados*100):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
-    {key:'benner',icon:Send,value:aptos != null && sent != null && aptos>0 && sent<=aptos ? percent(sent/aptos*100):'—'},
+    {key:'benner',icon:Send,value:taxaEnvio?.percentual != null ? percent(taxaEnvio.percentual):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
@@ -382,7 +412,8 @@ export function EncerramentosPage() {
   const analista = 'todos';
   const etapa:Etapa = 'validados';
   const [dados,setDados] = useState<Dados | null>(null);
-  const [enviados,setEnviados] = useState<Dados | null>(null);
+  const [analises,setAnalises] = useState<AnalysisResult | null>(null);
+  const [taxaEnvio,setTaxaEnvio] = useState<ClosingSendRate | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
@@ -403,7 +434,8 @@ export function EncerramentosPage() {
       setPortfolioRevision(revision => revision + 1);
       setCarteira(next);
       setDados(null);
-      setEnviados(null);
+      setAnalises(null);
+      setTaxaEnvio(null);
       setActiveCard(null);
       setResumoBenner(null);
       setMotivosPendentes(null);
@@ -426,13 +458,15 @@ export function EncerramentosPage() {
     activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
-      const [painel, envios] = await Promise.all([
+      const [painel, registros, taxa] = await Promise.all([
         loadDashboard(carteira,tipo,inicio,fim,analista,etapa),
-        loadDashboard(carteira,tipo,inicio,fim,analista,'enviados_benner').catch(() => null),
+        loadClosingAnalyses(inicio,fim,tipo).catch(() => null),
+        loadClosingSendRate(inicio,fim,tipo).catch(() => null),
       ]);
       if (sequence !== refreshSequence.current) return;
       setDados(painel);
-      setEnviados(envios);
+      setAnalises(registros);
+      setTaxaEnvio(taxa);
       setLoadedKey(filterKey);
       setError('');
     } catch (cause) {
@@ -494,7 +528,8 @@ export function EncerramentosPage() {
     };
   },[refresh]);
   const shown = loadedKey === filterKey ? dados : null;
-  const analysts = shown?.analistas?.length ? shown.analistas : shown?.etapas?.analistas || [];
+  const analysts = loadedKey===filterKey && analises ? analises.analistas :
+    (shown?.analistas?.length ? shown.analistas : shown?.etapas?.analistas || []);
 
   return <div className="closing-page-v2">
     <div className="closing-heading"><h1>Encerramentos</h1></div>
@@ -515,7 +550,8 @@ export function EncerramentosPage() {
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} enviados={loadedKey===filterKey?enviados:null}
+    <Metrics dados={shown} analises={loadedKey===filterKey?analises:null}
+      taxaEnvio={loadedKey===filterKey?taxaEnvio:null}
       motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
     <BennerHistory resumo={resumoBenner} inicio={inicio} fim={fim}/>
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
@@ -527,6 +563,6 @@ export function EncerramentosPage() {
       <header className="closing-territory-heading">Detalhamento territorial</header>
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
     </section>
-    {activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} onClose={()=>setActiveCard(null)}/>}
+    {activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} onClose={()=>setActiveCard(null)}/>}
   </div>;
 }
