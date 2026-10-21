@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
-import { getClosingCases, type ClosingCase, type ClosingStatus } from './operacaoEncerramentosService';
+import { getClosingCases, sendClosingsToBenner, type ClosingCase, type ClosingStatus, type ClosingValidatedFilter } from './operacaoEncerramentosService';
 import { regularAgingGoals, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
 
@@ -14,24 +14,6 @@ type Uf = { uf: string; vitorias: number; derrotas: number; tkm?: Numero; amostr
 type Comarca = { comarca: string; uf: string; derrotas: number };
 type Matriz = { tipo: string; faixa: string; quantidade: number };
 type Indicadores = { consultados: number; encontrados: number; analisados: number; ticket_medio: Numero; ticket_amostra: number; aging_medio: Numero };
-type ResumoBennerAnterior = {
-  periodo_inicio: string;
-  periodo_fim_exclusivo: string;
-  enviados: number;
-  encerrados: number;
-  em_andamento: number;
-  fonte: string;
-  historico?: {
-    total: number;
-    processos_unicos: number;
-    encerrados: number;
-    em_andamento: number;
-    mes_atual: number;
-    ultimo_andamento_em: string | null;
-    ultima_importacao: string | null;
-    tipos: TipoRow[];
-  };
-};
 type Dados = {
   carteira: string;
   tipo: string | null;
@@ -129,31 +111,18 @@ async function loadDashboard(carteira: string, tipo: Tipo, inicio: string, fim: 
   throw new Error('Não foi possível carregar os indicadores.');
 }
 
-async function loadResumoBennerAnterior(): Promise<ResumoBennerAnterior> {
-  const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
-  if (!api) throw new Error('Conexão com a API indisponível.');
-  return api.request<ResumoBennerAnterior>('/api/operacao/encerramentos/resumo-mes-anterior');
-}
-
-type MotivoDerrotaTask = { type: string; status: string; total_processes: number; completed_processes: number };
+// Contador e modal compartilham a mesma relação de processos, não a soma de tarefas.
 async function loadMotivosDerrotaPendentes(): Promise<number> {
-  const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
-  if (!api) throw new Error('Conexão com a API indisponível.');
-  // Tasks expose the existing operational counter. Never infer pending reasons
-  // from DERROTA_VOLUNTARIA cases or the DataJud classification.
-  const tasks = await api.request<MotivoDerrotaTask[]>('/api/tasks?type=motivo_derrota&scope=all');
-  if (!Array.isArray(tasks)) throw new Error('Resposta inválida da fila de motivos de derrota.');
-  return tasks
-    .filter(task => task.type === 'motivo_derrota' && ['pending', 'in_progress'].includes(task.status))
-    .reduce((sum, task) => sum + Math.max(0, Number(task.total_processes || 0) - Number(task.completed_processes || 0)), 0);
+  const result=await getClosingCases('DERROTA',1,0,'','nao','todos','todos','DERROTA');
+  return result.total;
 }
 
 
 
-type ClosingCard = 'analisados' | 'acuracia' | 'aptidoes' | 'benner' | 'motivo';
+type ClosingCard = 'analisados' | 'acuracia' | 'aptidoes' | 'benner' | 'meta' | 'motivo';
 const CARD_LABELS: Record<ClosingCard, string> = {
   analisados: 'Analisados', acuracia: 'Acurácia', aptidoes: 'Aptidões',
-  benner: 'Enviados ao Benner', motivo: 'Motivo derrota',
+  benner: 'Enviados ao Benner', meta: 'Meta', motivo: 'Motivo derrota',
 };
 const closingCnj = (value: string) => {
   const digits = String(value || '').replace(/\D/g, '');
@@ -264,23 +233,211 @@ function Metrics({ dados, analises, taxaEnvio, motivosPendentes, onOpen }: {
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=dados?.acuracia_originaria;
+  const goals=dados?.carteira==='Agibank Enter' ? null : regularAgingSummary(regularAgingGoals(dados?.etapas?.aging || [], aptos || 0));
+  const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy && accuracy.avaliados>0 ? percent(accuracy.confirmados/accuracy.avaliados*100):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:taxaEnvio?.percentual != null ? percent(taxaEnvio.percentual):'—'},
+    {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
-    {cards.map(card=><button className="closing-kpi closing-kpi-button" type="button"
-      key={card.key} onClick={()=>onOpen(card.key)}
-      aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
-      <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
-      <strong>{card.value}</strong>
-    </button>)}
+    {cards.map(card=>card.key==='meta'
+      ? <button className="closing-kpi closing-kpi-button closing-goal-kpi" type="button" key={card.key}
+          onClick={()=>document.getElementById('closing-aging-target')?.scrollIntoView({behavior:'smooth',block:'center'})}
+          aria-label={'Meta: '+card.value+'. Ver metas por aging'}>
+          <span className="closing-goal-kpi-title">Meta</span>
+          <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
+            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
+            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
+              strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
+          </svg>
+          <strong className="closing-gauge-value">{card.value}</strong>
+        </button>
+      : <button className="closing-kpi closing-kpi-button" type="button"
+          key={card.key} onClick={()=>onOpen(card.key)}
+          aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
+          <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
+          <strong>{card.value}</strong>
+        </button>)}
   </section>;
 }
 
+
+
+type QueueView = 'enviados' | 'pendentes';
+const QUEUE_TYPES: Array<{key:ClosingValidatedFilter;label:string}> = [
+  {key:'todos',label:'Todos'},
+  {key:'DERROTA_VOLUNTARIA',label:'Derrota voluntária'},
+  {key:'DERROTA',label:'Derrota'},
+  {key:'ACORDO',label:'Acordos'},
+  {key:'VITORIA',label:'Vitória'},
+];
+const MOVIMENTOS:Record<string,string>={
+  DERROTA:'Apto ao encerramento - Derrota',
+  DERROTA_VOLUNTARIA:'Apto ao encerramento - Derrota Voluntária',
+  VITORIA:'Apto ao encerramento - Vitória',
+};
+const labelTipo=(tipo?:string|null)=>QUEUE_TYPES.find(item=>item.key===tipo)?.label || tipo || '—';
+function queueEligible(row:ClosingCase) {
+  return row.validacao_decisao==='apto' && Boolean(row.validado_em) &&
+    !row.enviado_benner_em && ['NAO_ENVIADO','ERRO'].includes(row.status_envio||'NAO_ENVIADO') &&
+    Object.prototype.hasOwnProperty.call(MOVIMENTOS,row.tipo_validado||'');
+}
+function ClosingQueuePanel({carteira,onSent}: {carteira:string;onSent:()=>void}) {
+  const [view,setView]=useState<QueueView>('enviados');
+  const [tipo,setTipo]=useState<ClosingValidatedFilter>('todos');
+  const [page,setPage]=useState(1);
+  const [search,setSearch]=useState('');
+  const [input,setInput]=useState('');
+  const [rows,setRows]=useState<ClosingCase[]>([]);
+  const [total,setTotal]=useState<number|null>(null);
+  const [selected,setSelected]=useState<Record<string,ClosingCase>>({});
+  const [loading,setLoading]=useState(false);
+  const [sending,setSending]=useState(false);
+  const [error,setError]=useState('');
+  const [feedback,setFeedback]=useState('');
+  const [revision,setRevision]=useState(0);
+  const [canSend,setCanSend]=useState(false);
+  const limit=20;
+  const isPending=view==='pendentes';
+  useEffect(()=>{
+    const sync=()=>{
+      const current=(window as Window & {MBA_CURRENT_USER?:{permissions?:Record<string,boolean>}}).MBA_CURRENT_USER;
+      setCanSend(current?.permissions?.['automations.run']===true && current?.permissions?.['encerramentos.view']===true);
+    };
+    sync();
+    window.addEventListener('mba:authenticated',sync);
+    window.addEventListener('mba:profile-ready',sync);
+    return()=>{window.removeEventListener('mba:authenticated',sync);window.removeEventListener('mba:profile-ready',sync);};
+  },[]);
+  useEffect(()=>{setPage(1);setSelected({});setError('');setFeedback('');},[view,tipo,search,carteira]);
+  useEffect(()=>{
+    let active=true;
+    setLoading(true);setError('');
+    void getClosingCases(isPending?'APTOS':'ENVIADOS_BENNER',limit,(page-1)*limit,
+      search,'todos','todos',isPending?'nao':'sim',isPending?tipo:'todos')
+      .then(data=>{if(active){setRows(data.rows||[]);setTotal(data.total);}})
+      .catch(cause=>{if(active){setRows([]);setTotal(null);setError(cause instanceof Error?cause.message:'Fila indisponível.');}})
+      .finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;};
+  },[isPending,page,search,tipo,carteira,revision]);
+  const eligible=rows.filter(queueEligible);
+  const pageSelected=eligible.length>0 && eligible.every(row=>Boolean(selected[row.cnj]));
+  const checked=Object.values(selected).filter(queueEligible);
+  const pages=Math.max(1,Math.ceil((total||0)/limit));
+  const selectCurrent=()=>{
+    setSelected(prev=>{
+      const next={...prev};
+      if(pageSelected)eligible.forEach(row=>delete next[row.cnj]);
+      else eligible.forEach(row=>{next[row.cnj]=row;});
+      return next;
+    });
+  };
+  const selectAll=async()=>{
+    if(!canSend || sending || !isPending)return;
+    setLoading(true);setError('');
+    try{
+      const first=await getClosingCases('APTOS',100,0,search,'todos','todos','nao',tipo);
+      if(first.total>1500)throw new Error('Mais de 1.500 registros. Filtre por tipo antes de selecionar todos.');
+      const accumulated=[...first.rows];
+      for(let offset=100;offset<first.total;offset+=100){
+        const next=await getClosingCases('APTOS',100,offset,search,'todos','todos','nao',tipo);
+        accumulated.push(...next.rows);
+      }
+      setSelected(Object.fromEntries(accumulated.filter(queueEligible).map(row=>[row.cnj,row])));
+      setFeedback(num(accumulated.filter(queueEligible).length)+' aptos selecionados.');
+    }catch(cause){setError(cause instanceof Error?cause.message:'Não foi possível selecionar todos.');}
+    finally{setLoading(false);}
+  };
+  const send=async()=>{
+    const candidates=Object.values(selected).filter(queueEligible);
+    if(!canSend || !candidates.length || sending)return;
+    if(!window.confirm('Enviar '+num(candidates.length)+' andamento(s) apto(s) ao Benner? A confirmação de baixa depende do retorno do Benner.'))return;
+    setSending(true);setError('');setFeedback('');
+    let sent=0;
+    try{
+      for(let offset=0;offset<candidates.length;offset+=100){
+        const batch=candidates.slice(offset,offset+100);
+        const result=await sendClosingsToBenner(batch.map(row=>({
+          cnj:row.cnj,andamento:MOVIMENTOS[row.tipo_validado||''],
+        })));
+        sent+=result.queued;
+        setSelected(prev=>{
+          const next={...prev};batch.forEach(row=>delete next[row.cnj]);return next;
+        });
+      }
+      setFeedback(num(sent)+' envio(s) encaminhado(s) à fila do Benner.');
+      setRevision(x=>x+1);onSent();
+    }catch(cause){
+      setError('Envio interrompido após '+num(sent)+' item(ns) recebidos. Reconsulte a fila antes de repetir. '+(cause instanceof Error?cause.message:''));
+      setRevision(x=>x+1);onSent();
+    }finally{setSending(false);}
+  };
+  const typeOptions=carteira==='Nubank'?QUEUE_TYPES.filter(item=>item.key!=='DERROTA_VOLUNTARIA'):QUEUE_TYPES;
+  return <section className="closing-surface closing-queue" aria-label="Enviados e pendentes do Benner">
+    <header className="closing-queue-head">
+      <h2>Andamentos Benner</h2>
+      <div className="closing-toggle" role="group" aria-label="Situação de envio">
+        <button type="button" className={view==='enviados'?'active':''} aria-pressed={view==='enviados'} onClick={()=>setView('enviados')}>Enviados</button>
+        <button type="button" className={isPending?'active':''} aria-pressed={isPending} onClick={()=>setView('pendentes')}>Pendentes</button>
+      </div>
+    </header>
+    {isPending && <div className="closing-queue-filters" role="group" aria-label="Tipo de encerramento pendente">
+      {typeOptions.map(item=><button type="button" key={item.key} aria-pressed={tipo===item.key}
+        className={tipo===item.key?'active':''} onClick={()=>setTipo(item.key)}>{item.label}</button>)}
+    </div>}
+    <div className="closing-queue-tools">
+      <form onSubmit={e=>{e.preventDefault();setSearch(input.trim());setPage(1);}}>
+        <Search size={15}/><input value={input} onChange={e=>setInput(e.target.value)} placeholder="Buscar CNJ ou pasta" aria-label="Buscar CNJ ou pasta"/>
+        <button type="submit">Buscar</button>
+      </form>
+      <span className="closing-queue-total">{total===null?'—':num(total)} {isPending?'pendentes':'enviados'}</span>
+      {isPending && canSend && <>
+        <button type="button" className="closing-queue-all" onClick={()=>void selectAll()} disabled={loading||sending}>Selecionar todos</button>
+        <button type="button" className="closing-queue-send" onClick={()=>void send()} disabled={sending||loading||checked.length===0}>
+          <Send size={14}/>{sending?'Enviando…':'Enviar '+num(checked.length)+' ao Benner'}
+        </button>
+      </>}
+    </div>
+    {error && <p className="closing-error" role="alert">{error}</p>}
+    {feedback && <p className="closing-queue-feedback" role="status">{feedback}</p>}
+    <div className="closing-queue-table-wrap"><table className="closing-queue-table">
+      <thead><tr>
+        {isPending&&<th className="closing-check-cell">{canSend&&<input type="checkbox" checked={pageSelected} onChange={selectCurrent}
+          disabled={!eligible.length||loading||sending} aria-label="Selecionar todos os aptos desta página"/>}</th>}
+        <th>CNJ</th><th>Pasta</th><th>Tipo</th><th>Analista</th><th>Situação</th>
+      </tr></thead>
+      <tbody>{rows.map(row=><tr key={row.cnj}>
+        {isPending&&<td className="closing-check-cell"><input type="checkbox" checked={Boolean(selected[row.cnj])}
+          disabled={!canSend||!queueEligible(row)||loading||sending} aria-label={'Selecionar '+closingCnj(row.cnj)}
+          title={!queueEligible(row)?'Registro sem aptidão validada, já em fila ou sem andamento compatível':''}
+          onChange={e=>setSelected(prev=>{
+            const next={...prev};if(e.target.checked)next[row.cnj]=row;else delete next[row.cnj];return next;
+          })}/></td>}
+        <td className="closing-queue-cnj">{closingCnj(row.cnj)}</td>
+        <td>{row.pasta||'—'}</td>
+        <td>{labelTipo(row.tipo_validado)}</td>
+        <td>{row.analista_id||'—'}</td>
+        <td>{row.enviado_benner_em?'Enviado':row.status_envio==='NA_FILA'?'Na fila':
+          row.status_envio==='PROCESSANDO'?'Processando':row.status_envio==='ERRO'?'Erro':'Aguardando envio'}</td>
+      </tr>)}</tbody>
+    </table>
+    {!rows.length && <p className="closing-queue-empty">{loading?'Carregando registros…':'Nenhum registro nesta seleção.'}</p>}
+    </div>
+    {isPending && tipo==='ACORDO' && <p className="closing-queue-warning">Acordos: consulta disponível; envio indisponível neste fluxo de andamentos.</p>}
+    <footer className="closing-queue-footer">
+      <span>{isPending && checked.length?num(checked.length)+' selecionados · ':''}Estoque da carteira · consulta paginada</span>
+      <nav aria-label="Paginação de andamentos">
+        <button type="button" disabled={page===1||loading} onClick={()=>setPage(p=>Math.max(1,p-1))} aria-label="Página anterior"><ChevronLeft size={16}/></button>
+        <span>{page} / {pages}</span>
+        <button type="button" disabled={page>=pages||loading} onClick={()=>setPage(p=>Math.min(pages,p+1))} aria-label="Próxima página"><ChevronRight size={16}/></button>
+      </nav>
+    </footer>
+  </section>;
+}
 
 function AgingPanel({ dados, tipo, inicio, fim }: {
   dados: Dados | null; tipo: Tipo; inicio: string; fim: string;
@@ -300,13 +457,13 @@ function AgingPanel({ dados, tipo, inicio, fim }: {
       return {label:faixa,atual,meta:0,achieved:total?atual/total*100:0};
     });
   const achievement=summary.meta>0?summary.atual/summary.meta*100:0;
-  return <section className="closing-surface closing-aging" aria-label="Meta de aging">
+  return <section id="closing-aging-target" className="closing-surface closing-aging" aria-label="Meta de aging">
     <header className="closing-card-head closing-goal-head">
       <h2>{regular?'Meta de aging':'Distribuição por aging'}</h2>
       {regular && dados?.etapas && <div className="closing-goal-summary" aria-label="Cumprimento da meta">
         <strong>{num(summary.atual)} <span>/ {num(summary.meta)}</span></strong>
         <b>{percent(achievement)}</b>
-        <small>Faltam {num(summary.gap)}</small>
+
       </div>}
     </header>
     {!dados?.etapas?<p className="closing-nodata">Dados indisponíveis.</p>:
@@ -317,7 +474,7 @@ function AgingPanel({ dados, tipo, inicio, fim }: {
         <div className="closing-rail closing-progress"><i style={{width:Math.max(0,Math.min(100,row.achieved))+'%'}}/></div>
       </article>)}</div>}
     {regular && dados?.etapas && !isMonth &&
-      <span className="closing-goal-context">Recorte filtrado · referência: meta mensal integral</span>}
+      <span className="closing-goal-context">Meta mensal integral · valores conforme filtro</span>}
   </section>;
 }
 
@@ -342,19 +499,6 @@ function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etap
 }
 
 
-function BennerHistory({ resumo, inicio, fim }: {resumo: ResumoBennerAnterior | null; inicio:string; fim:string}) {
-  const start = localISO(0).slice(0,7);
-  const currentMonth = inicio.slice(0,7) === start && fim.slice(0,7) === start;
-  return <section className="closing-surface closing-benner-history" aria-label="Histórico Benner">
-    <h2>Benner · mês anterior</h2>
-    <div><span>Andamentos <strong>{resumo?num(resumo.enviados):'—'}</strong></span>
-      <span>Baixas <strong>{resumo?num(resumo.encerrados):'—'}</strong></span>
-      <span>Sem baixa <strong>{resumo?num(resumo.em_andamento):'—'}</strong></span>
-      {currentMonth && <span className="closing-carryover" title="Andamentos do mês anterior ainda sem baixa. Contam como pendências a acompanhar neste mês, não como baixas realizadas.">
-        Pendentes trazidos para este mês <strong>{resumo?num(resumo.em_andamento):'—'}</strong>
-      </span>}</div>
-  </section>;
-}
 
 function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa: Etapa; analista: string }) {
   const [page,setPage] = useState(1);
@@ -415,7 +559,6 @@ export function EncerramentosPage() {
   const [analises,setAnalises] = useState<AnalysisResult | null>(null);
   const [taxaEnvio,setTaxaEnvio] = useState<ClosingSendRate | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
-  const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
   const [snapshotRevision,setSnapshotRevision] = useState(0);
   const [pending,setPending] = useState(false);
@@ -437,7 +580,6 @@ export function EncerramentosPage() {
       setAnalises(null);
       setTaxaEnvio(null);
       setActiveCard(null);
-      setResumoBenner(null);
       setMotivosPendentes(null);
       setError('');
     };
@@ -491,9 +633,6 @@ export function EncerramentosPage() {
   // the current task queue. Reload independently, without zeroing missing data.
   useEffect(() => {
     let active = true;
-    void loadResumoBennerAnterior()
-      .then(value => { if (active) setResumoBenner(value); })
-      .catch(() => { if (active) setResumoBenner(null); });
     if (!isNubank) void loadMotivosDerrotaPendentes()
       .then(value => { if (active) setMotivosPendentes(value); })
       .catch(() => { if (active) setMotivosPendentes(null); });
@@ -552,7 +691,7 @@ export function EncerramentosPage() {
     <Metrics dados={shown} analises={loadedKey===filterKey?analises:null}
       taxaEnvio={loadedKey===filterKey?taxaEnvio:null}
       motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
-    <BennerHistory resumo={resumoBenner} inicio={inicio} fim={fim}/>
+    <ClosingQueuePanel key={carteira} carteira={carteira} onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
