@@ -170,7 +170,7 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
         } as ClosingCase))
       }))
       : getClosingCases(listStatus!,pageSize,(page-1)*pageSize,search,kind==='motivo'?'nao':'todos',
-          'todos','todos',kind==='aptidoes'&&tipoRecorte?tipoRecorte:'todos');
+          'todos','todos',kind==='aptidoes'&&tipoRecorte?tipoRecorte as ClosingValidatedFilter:'todos');
     void request
       .then(data=>{if(active){setItems(data.rows || []);setTotal(data.total);}})
       .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:'Consulta indisponível.');setItems([]);setTotal(null);}})
