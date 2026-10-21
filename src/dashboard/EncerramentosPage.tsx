@@ -36,7 +36,14 @@ type Dados = {
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; concorda:boolean|null };
 type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
-type ClosingSendRate = { aptos:number; enviados:number; percentual:number|null };
+type MonthlyBennerPosition = {
+  periodo:string; unidade:'andamentos'; fonte:string;
+  ultima_importacao?:string|null; ultimo_andamento_em?:string|null;
+  mes_vigente:{enviados:number;sem_baixa:number;com_baixa:number};
+  saldo_mes_anterior:{periodo:string;pendentes:number};
+  total_em_acompanhamento:number; total_sem_baixa:number; total_com_baixa_no_mes_vigente:number;
+};
+
 async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,offset=0,q='',concordancia:'todos'|'sim'|'nao'|'nao_avaliados'='todos'):Promise<AnalysisResult> {
   const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
   if(!api)throw new Error('API indisponível.');
@@ -47,14 +54,12 @@ async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,o
   if(concordancia!=='todos')params.set('concordancia',concordancia);
   return api.request('/api/operacao/encerramentos/analises?'+params);
 }
-async function loadClosingSendRate(inicio:string,fim:string,tipo:Tipo):Promise<ClosingSendRate> {
+async function loadMonthlyBennerPosition():Promise<MonthlyBennerPosition> {
   const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
   if(!api)throw new Error('API indisponível.');
-  const params=new URLSearchParams({tipo});
-  if(inicio)params.set('inicio',inicio);
-  if(fim)params.set('fim',fim);
-  return api.request('/api/operacao/encerramentos/taxa-envio?'+params);
+  return api.request('/api/operacao/encerramentos/consolidado-mensal');
 }
+
 const TIPOS: { value: Tipo; label: string }[] = [
   { value: 'TODOS', label: 'Todos os tipos' },
   { value: 'DERROTA_VOLUNTARIA', label: 'Derrota voluntária' },
@@ -240,8 +245,8 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   </div>;
 }
 
-function Metrics({ dados, metaMensal, analises, taxaEnvio, motivosPendentes, onOpen }: {
-  dados: Dados | null; metaMensal:Dados|null; analises: AnalysisResult | null; taxaEnvio: ClosingSendRate | null;
+function Metrics({ dados, metaMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
+  dados: Dados | null; metaMensal:Dados|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
@@ -252,7 +257,7 @@ function Metrics({ dados, metaMensal, analises, taxaEnvio, motivosPendentes, onO
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
-    {key:'benner',icon:Send,value:taxaEnvio?.percentual != null ? percent(taxaEnvio.percentual):'—'},
+    {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.mes_vigente.enviados):'—'},
     {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
@@ -271,7 +276,8 @@ function Metrics({ dados, metaMensal, analises, taxaEnvio, motivosPendentes, onO
         </button>
       : <button className="closing-kpi closing-kpi-button" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
-          title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':undefined}
+          title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
+            card.key==='benner' ? 'Todos os andamentos registrados no Benner no mês vigente, incluindo lançamentos externos reconciliados. Saldo anterior no detalhe.' : undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
           <strong>{card.value}</strong>
@@ -457,7 +463,7 @@ function ClosingQueuePanel({carteira,onSent}: {carteira:string;onSent:()=>void})
 }
 
 
-function ClosingQueueDialog({carteira,onClose,onSent}: {carteira:string;onClose:()=>void;onSent:()=>void}) {
+function ClosingQueueDialog({carteira,onClose,onSent,posicao}: {carteira:string;onClose:()=>void;onSent:()=>void;posicao:MonthlyBennerPosition|null}) {
   const closeButton=useRef<HTMLButtonElement>(null);
   useEffect(()=>{
     closeButton.current?.focus();
@@ -474,7 +480,25 @@ function ClosingQueueDialog({carteira,onClose,onSent}: {carteira:string;onClose:
         <button ref={closeButton} type="button" aria-label="Fechar andamentos Benner" onClick={onClose}><X size={18}/></button>
       </header>
       <div className="closing-queue-dialog-body">
+        <section className="closing-monthly-summary" aria-label="Consolidação do mês">
+          <div className="closing-monthly-title">
+            <strong>Posição {posicao?.periodo?.split('-').reverse().join('/')||'mensal'}</strong>
+            <span>{posicao?.ultimo_andamento_em?'Andamentos até '+new Date(posicao.ultimo_andamento_em+'T12:00:00').toLocaleDateString('pt-BR'):''}</span>
+          </div>
+          {posicao ? <>
+            <div className="closing-monthly-items">
+              <div><span>Enviados no mês</span><strong>{num(posicao.mes_vigente.enviados)}</strong></div>
+              <div><span>Sem baixa do mês anterior</span><strong>{num(posicao.saldo_mes_anterior.pendentes)}</strong></div>
+              <div className="closing-monthly-total"><span>Total em acompanhamento</span><strong>{num(posicao.total_em_acompanhamento)}</strong></div>
+            </div>
+            <p className="closing-monthly-foot">
+              {num(posicao.total_sem_baixa)} sem baixa · {num(posicao.total_com_baixa_no_mes_vigente)} com baixa
+              {posicao.ultima_importacao?' · Importado em '+new Date(posicao.ultima_importacao).toLocaleDateString('pt-BR'):''}
+            </p>
+          </> : <p className="closing-monthly-unavailable">Consolidado indisponível. A fila operacional continua disponível.</p>}
+        </section>
         <ClosingQueuePanel carteira={carteira} onSent={onSent}/>
+        <p className="closing-monthly-source">Os totais incluem andamentos conciliados externamente. A tabela é a fila operacional da plataforma e pode não conter todos os lançamentos externos.</p>
       </div>
     </section>
   </div>;
@@ -624,7 +648,7 @@ export function EncerramentosPage() {
   const [dados,setDados] = useState<Dados | null>(null);
   const [metaMensal,setMetaMensal] = useState<Dados | null>(null);
   const [analises,setAnalises] = useState<AnalysisResult | null>(null);
-  const [taxaEnvio,setTaxaEnvio] = useState<ClosingSendRate | null>(null);
+  const [posicaoBenner,setPosicaoBenner] = useState<MonthlyBennerPosition | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
   const [tipoRecorte,setTipoRecorte] = useState<Tipo|null>(null);
   const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
@@ -647,7 +671,7 @@ export function EncerramentosPage() {
       setDados(null);
       setMetaMensal(null);
       setAnalises(null);
-      setTaxaEnvio(null);
+      setPosicaoBenner(null);
       setActiveCard(null);
       setMotivosPendentes(null);
       setError('');
@@ -672,17 +696,17 @@ export function EncerramentosPage() {
       const monthStart=localISO(0).slice(0,7)+'-01';
       const monthEnd=localISO(0);
       const isMonthly=inicio===monthStart && fim===monthEnd && tipo==='TODOS';
-      const [painel, registros, taxa, monthly] = await Promise.all([
+      const [painel, registros, posicao, monthly] = await Promise.all([
         loadDashboard(carteira,tipo,inicio,fim,analista,etapa),
         loadClosingAnalyses(inicio,fim,tipo).catch(() => null),
-        loadClosingSendRate(inicio,fim,tipo).catch(() => null),
+        loadMonthlyBennerPosition().catch(() => null),
         isMonthly ? Promise.resolve(null) : loadDashboard(carteira,'TODOS',monthStart,monthEnd,'todos','validados').catch(() => null),
       ]);
       if (sequence !== refreshSequence.current) return;
       setDados(painel);
       setMetaMensal(isMonthly?painel:monthly);
       setAnalises(registros);
-      setTaxaEnvio(taxa);
+      setPosicaoBenner(posicao);
       setLoadedKey(filterKey);
       setError('');
     } catch (cause) {
@@ -763,7 +787,7 @@ export function EncerramentosPage() {
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} metaMensal={loadedKey===filterKey?metaMensal:null} analises={loadedKey===filterKey?analises:null}
-      taxaEnvio={loadedKey===filterKey?taxaEnvio:null}
+      posicaoBenner={loadedKey===filterKey?posicaoBenner:null}
       motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
@@ -775,7 +799,9 @@ export function EncerramentosPage() {
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
     </section>
     {activeCard==='benner'
-      ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira} onClose={()=>setActiveCard(null)}
+      ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira}
+          posicao={loadedKey===filterKey?posicaoBenner:null}
+          onClose={()=>setActiveCard(null)}
           onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
       : activeCard && <ClosingDetailsDialog key={activeCard+filterKey+(tipoRecorte||"")} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} tipoRecorte={tipoRecorte} onClose={()=>{setActiveCard(null);setTipoRecorte(null);}}/>}
   </div>;
