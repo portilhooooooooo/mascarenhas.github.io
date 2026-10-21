@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Activity, CheckCircle2, ClipboardList, Clock3, RefreshCcw, SearchCheck, Send, UsersRound } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
+import { getClosingCases, type ClosingCase, type ClosingStatus } from './operacaoEncerramentosService';
 import { regularAgingGoals, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
 
@@ -46,6 +47,7 @@ type Dados = {
   comarcas?: Comarca[];
   matriz?: Matriz[];
   meta_configurada?: boolean;
+  acuracia_originaria?: { confirmados: number; avaliados: number };
   etapas?: { etapa: Etapa; total: number; tipos: TipoRow[]; aging: AgingRow[]; matriz: Matriz[]; fonte: string; mensagem: string;
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
 };
@@ -63,7 +65,6 @@ const CLASSES = [
   { tipo: 'DERROTA', label: 'Derrota' },
   { tipo: 'VITORIA', label: 'Vitória' },
   { tipo: 'ACORDO', label: 'Acordo' },
-  { tipo: 'EXTINCAO', label: 'Extinção' },
 ];
 const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   ? ['0–12 meses', '12–24 meses', '>24 meses', 'Sem tag / não reconhecida']
@@ -128,117 +129,195 @@ async function loadMotivosDerrotaPendentes(): Promise<number> {
 }
 
 
-function Metrics({ dados, selectedCount, etapa, acordo }: {dados: Dados | null; selectedCount: number | undefined; etapa: Etapa; acordo: boolean}) {
-  const m = dados?.indicadores;
-  const cards = [
-    { icon: SearchCheck, label: acordo ? 'Indícios de acordo' : 'Encontrados', value: m ? num(acordo ? valueOrZero(dados?.distribuicao_tipos.find(t => t.tipo === 'ACORDO')?.quantidade) : m.encontrados) : '—', detail: 'Indícios identificados' },
-    { icon: UsersRound, label: 'Analisados', value: m ? num(m.analisados) : '—', detail: 'Análises registradas' },
-    { icon: CheckCircle2, label: etapa === 'validados' ? 'Aptos validados' : 'Enviados ao Benner', value: selectedCount == null ? '—' : num(selectedCount), detail: 'Etapa selecionada' },
-    { icon: Activity, label: 'Em revisão', value: dados?.analises_humanas ? num(dados.analises_humanas.revisao) : '—', detail: 'Aguardando validação' },
+
+type ClosingCard = 'analisados' | 'acuracia' | 'aptidoes' | 'benner' | 'motivo';
+const CARD_LABELS: Record<ClosingCard, string> = {
+  analisados: 'Analisados', acuracia: 'Acurácia', aptidoes: 'Aptidões',
+  benner: 'Enviados ao Benner', motivo: 'Motivo derrota',
+};
+const closingCnj = (value: string) => {
+  const digits = String(value || '').replace(/\D/g, '');
+  return digits.length === 20
+    ? digits.slice(0,7)+'-'+digits.slice(7,9)+'.'+digits.slice(9,13)+'.'+digits.slice(13,14)+'.'+digits.slice(14,16)+'.'+digits.slice(16)
+    : value;
+};
+function saveClosingCsv(rows: ClosingCase[]) {
+  const cells = [['CNJ','Pasta','Resultado','Analista','Validado em','Situação Benner'],
+    ...rows.map(row => [closingCnj(row.cnj),row.pasta || '',row.tipo_validado || '',row.analista_id || '',
+      row.validado_em || '',row.status_envio || ''])];
+  const csv = '\ufeff' + cells.map(line=>line.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a = document.createElement('a'); a.href=url;a.download='encerramentos_consulta.csv';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+/** Drill-down de leitura: nunca mistura a contagem da BI com a contagem da fila operacional. */
+function ClosingDetailsDialog({kind,onClose}: {kind:ClosingCard;onClose:()=>void}) {
+  const [query,setQuery] = useState('');
+  const [search,setSearch] = useState('');
+  const [page,setPage] = useState(1);
+  const [items,setItems] = useState<ClosingCase[]>([]);
+  const [total,setTotal] = useState<number | null>(null);
+  const [busy,setBusy] = useState(false);
+  const [error,setError] = useState('');
+  const listStatus: ClosingStatus | null =
+    kind==='aptidoes'?'APTOS':kind==='benner'?'ENVIADOS_BENNER':kind==='motivo'?'DERROTA':null;
+  const pageSize=20;
+  useEffect(()=>{
+    if(!listStatus)return;
+    let active=true;
+    setBusy(true);setError('');
+    void getClosingCases(listStatus,pageSize,(page-1)*pageSize,search,
+      kind==='motivo'?'nao':'todos')
+      .then(data=>{if(active){setItems(data.rows || []);setTotal(data.total);}})
+      .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:'Consulta indisponível.');setItems([]);setTotal(null);}})
+      .finally(()=>{if(active)setBusy(false);});
+    return()=>{active=false};
+  },[listStatus,page,search,kind]);
+  useEffect(()=>{
+    const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
+    window.addEventListener('keydown',onKey);
+    const old=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    return()=>{window.removeEventListener('keydown',onKey);document.body.style.overflow=old;};
+  },[onClose]);
+  const pages=Math.max(1,Math.ceil((total||0)/pageSize));
+  return <div className="closing-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
+    <section role="dialog" aria-modal="true" aria-label={CARD_LABELS[kind]} className="closing-dialog">
+      <header className="closing-dialog-head">
+        <h2>{CARD_LABELS[kind]}</h2>
+        <button type="button" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button>
+      </header>
+      {!listStatus ? <div className="closing-dialog-empty" role="status">
+        A relação de CNJs deste indicador ainda não é disponibilizada pela API de Resultados.
+      </div> : <>
+        <div className="closing-dialog-toolbar">
+          <form onSubmit={event=>{event.preventDefault();setPage(1);setSearch(query);}}>
+            <Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)}
+              placeholder="Buscar CNJ" aria-label="Buscar CNJ"/>
+            <button type="submit">Buscar</button>
+          </form>
+          <button type="button" onClick={()=>saveClosingCsv(items)} disabled={!items.length} title="Exporta a página carregada">
+            <Download size={15}/>CSV
+          </button>
+        </div>
+        <p className="closing-dialog-source">Relação da fila operacional · os totais podem diferir dos indicadores do período.</p>
+        {error && <p className="closing-error" role="alert">{error}</p>}
+        <div className="closing-dialog-table-wrap">
+          <table className="closing-dialog-table">
+            <thead><tr><th>CNJ</th><th>Pasta</th><th>Classificação</th><th>Analista</th><th>Benner</th></tr></thead>
+            <tbody>{items.map(row=><tr key={row.cnj}>
+              <td><strong>{closingCnj(row.cnj)}</strong></td>
+              <td>{row.pasta || '—'}</td><td>{row.tipo_validado || '—'}</td>
+              <td>{row.analista_id || '—'}</td><td>{row.status_envio || '—'}</td>
+            </tr>)}</tbody>
+          </table>
+          {!busy&&!items.length&&!error&&<div className="closing-dialog-empty">Nenhum registro encontrado.</div>}
+          {busy&&<div className="closing-dialog-empty" role="status">Consultando registros…</div>}
+        </div>
+        <footer className="closing-dialog-footer">
+          <span>{total === null ? '—' : num(total)} registros na fila</span>
+          <nav aria-label="Páginas da consulta">
+            <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={busy||page===1} aria-label="Anterior"><ChevronLeft size={16}/></button>
+            <span>{page} / {pages}</span>
+            <button onClick={()=>setPage(p=>Math.min(pages,p+1))} disabled={busy||page>=pages} aria-label="Próxima"><ChevronRight size={16}/></button>
+          </nav>
+        </footer>
+      </>}
+    </section>
+  </div>;
+}
+
+function Metrics({ dados, enviados, motivosPendentes, onOpen }: {
+  dados: Dados | null; enviados: Dados | null; motivosPendentes: number | null;
+  onOpen: (kind:ClosingCard)=>void;
+}) {
+  const aptos=dados?.etapas?.total;
+  const sent=enviados?.etapas?.total;
+  const accuracy=dados?.acuracia_originaria;
+  const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
+    {key:'analisados',icon:UsersRound,value:dados ? num(dados.indicadores.analisados):'—'},
+    {key:'acuracia',icon:Target,value:accuracy && accuracy.avaliados>0 ? percent(accuracy.confirmados/accuracy.avaliados*100):'—'},
+    {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
+    {key:'benner',icon:Send,value:aptos != null && sent != null && aptos>0 ? percent(sent/aptos*100):'—'},
+    {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
-  return <section className="closing-kpis" aria-label="Indicadores operacionais">
-    {cards.map(card => <article className="closing-kpi" key={card.label}>
-      <div className="closing-kpi-top"><span>{card.label}</span><card.icon size={16} strokeWidth={1.75}/></div>
-      <strong>{card.value}</strong><small>{card.detail}</small>
-    </article>)}
+  return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
+    {cards.map(card=><button className="closing-kpi closing-kpi-button" type="button"
+      key={card.key} onClick={()=>onOpen(card.key)}
+      aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
+      <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
+      <strong>{card.value}</strong>
+    </button>)}
   </section>;
 }
 
-function AgingPanel({ dados, etapa, tipo, analista, inicio, fim }: {
-  dados: Dados | null; etapa: Etapa; tipo: Tipo; analista: string; inicio: string; fim: string;
+
+function AgingPanel({ dados, tipo, inicio, fim }: {
+  dados: Dados | null; tipo: Tipo; inicio: string; fim: string;
 }) {
   const regular = dados?.carteira !== 'Agibank Enter';
-  const counts = dados?.etapas?.aging || [];
-  const total = valueOrZero(dados?.etapas?.total);
-  const stageLabel = etapa === 'validados' ? 'Validados' : 'Enviados ao Benner';
-  const currentMonthStart = localISO(0).slice(0,7) + '-01';
-  const fullMonth = inicio === currentMonthStart && fim === localISO(0) && tipo === 'TODOS' && analista === 'todos';
-  const goals = regular ? regularAgingGoals(counts, total) : [];
-  const summary = regularAgingSummary(goals);
-  const enterBands = ['0–3 meses', '4–10 meses', '>10 meses'];
-  const rows = regular ? goals.map(goal => ({
-    label: goal.label, atual: goal.atual, meta: goal.meta, gap: goal.gap,
-    achieved: goal.atingidoPercent,
-    composition: goal.composicaoPercent,
-  })) : enterBands.map(faixa => {
-    const atual = valueOrZero(counts.find(row => row.faixa === faixa)?.quantidade);
-    return { label: faixa, atual, meta: null, gap: null, achieved: total ? atual / total * 100 : 0, composition: total ? atual / total * 100 : 0 };
-  });
-  const found = rows.reduce((sum,row) => sum+row.atual,0);
-  const unclassified = Math.max(0,total-found);
-  const totalAchieved = summary.meta ? Math.max(0,Math.min(100,(summary.meta-summary.gap)/summary.meta*100)) : 0;
-  return <section className="closing-surface closing-aging" aria-label="Metas e distribuição por aging">
-    <header className="closing-card-head">
-      <div><h2>{regular ? 'Metas de aging' : 'Distribuição por aging'}</h2><p>{stageLabel} · {num(total)} processos no recorte</p></div>
-      {regular && dados?.etapas && <div className="closing-aging-summary">
-        <span>GAP total</span>
-        <strong>{num(summary.gap)} <small>processos</small></strong>
-        <span>{percent(totalAchieved)} da meta cumprida</span>
+  const counts=dados?.etapas?.aging || [];
+  const total=valueOrZero(dados?.etapas?.total);
+  const monthStart=localISO(0).slice(0,7)+'-01';
+  const isMonth=inicio===monthStart && fim===localISO(0) && tipo==='TODOS';
+  const goals=regular?regularAgingGoals(counts,total):[];
+  const summary=regularAgingSummary(goals);
+  const enterBands=['0–3 meses','4–10 meses','>10 meses'];
+  const rows=regular?goals.map(goal=>({label:goal.label,atual:goal.atual,
+    meta:goal.meta,achieved:goal.atingidoPercent})):
+    enterBands.map(faixa=>{
+      const atual=valueOrZero(counts.find(row=>row.faixa===faixa)?.quantidade);
+      return {label:faixa,atual,meta:0,achieved:total?atual/total*100:0};
+    });
+  const achievement=summary.meta>0?summary.atual/summary.meta*100:0;
+  return <section className="closing-surface closing-aging" aria-label="Meta de aging">
+    <header className="closing-card-head closing-goal-head">
+      <h2>{regular?'Meta de aging':'Distribuição por aging'}</h2>
+      {regular && dados?.etapas && <div className="closing-goal-summary" aria-label="Cumprimento da meta">
+        <strong>{num(summary.atual)} <span>/ {num(summary.meta)}</span></strong>
+        <b>{percent(achievement)}</b>
+        <small>Faltam {num(summary.gap)}</small>
       </div>}
     </header>
-    {!dados?.etapas
-      ? <p className="closing-nodata">Aguardando dados de aging.</p>
-      : <div className="closing-aging-cards">{rows.map(row => <article className="closing-aging-card" key={row.label}>
-        <div className="closing-aging-card-title"><strong>{row.label}</strong><span>{regular ? 'Meta: ' + num(row.meta || 0) : 'Distribuição'}</span></div>
-        <div className="closing-aging-card-value"><strong>{num(row.atual)}</strong><span>{regular ? ' / ' + num(row.meta || 0) + ' processos' : ' processos'}</span></div>
-        <div className="closing-rail closing-progress"><i style={{width: Math.max(0,Math.min(100,row.achieved)) + '%'}}/></div>
-        <div className="closing-aging-card-foot">
-          <span>{regular ? percent(row.achieved) + ' da meta' : percent(row.composition) + ' da composição'}</span>
-          {regular && <strong className={row.gap === 0 ? 'complete' : ''}>{row.gap === 0 ? 'Meta atingida' : 'Faltam ' + num(row.gap || 0)}</strong>}
-        </div>
+    {!dados?.etapas?<p className="closing-nodata">Dados indisponíveis.</p>:
+      <div className="closing-aging-cards">{rows.map(row=><article className="closing-aging-card" key={row.label}>
+        <div className="closing-aging-card-title"><strong>{row.label}</strong><b>{percent(row.achieved)}</b></div>
+        <div className="closing-aging-card-value"><strong>{num(row.atual)}</strong>
+          {regular&&<span>/ {num(row.meta)}</span>}</div>
+        <div className="closing-rail closing-progress"><i style={{width:Math.max(0,Math.min(100,row.achieved))+'%'}}/></div>
       </article>)}</div>}
-    {dados?.etapas && <div className="closing-aging-note">
-      {unclassified > 0 && <span>{num(unclassified)} sem faixa de aging. </span>}
-      {regular && !fullMonth && <span>Para acompanhar a meta mensal, selecione o mês atual, todos os tipos e analistas. </span>}
-      <span>{regular ? 'Metas calculadas sobre a etapa selecionada; não equivalem à baixa efetiva no Benner.' : 'Faixas da carteira Enter.'}</span>
-    </div>}
+    {regular && dados?.etapas && !isMonth &&
+      <span className="closing-goal-context">Recorte filtrado · referência: meta mensal integral</span>}
   </section>;
 }
 
 function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etapa: Etapa; isNubank: boolean}) {
   const types = dados?.etapas?.tipos || [];
-  const bands = ageBands(dados?.carteira || 'Agibank Regular');
-  const matrix = dados?.etapas?.matriz || [];
   const total = valueOrZero(dados?.etapas?.total);
   const count = (kind: string) => valueOrZero(types.find(item=>item.tipo===kind)?.quantidade);
   const rows = CLASSES.filter(item => !isNubank || item.tipo !== 'DERROTA_VOLUNTARIA').map(item=>({...item, quantity: count(item.tipo)}));
   const max = Math.max(1,...rows.map(row=>row.quantity));
   const other = Math.max(0,total-rows.reduce((sum,row)=>sum+row.quantity,0));
   return <section className="closing-surface closing-composition" aria-label="Composição dos encerramentos">
-    <header className="closing-card-head"><div><h2>Composição dos encerramentos</h2><p>{etapa === 'validados' ? 'Validados' : 'Enviados ao Benner'} · {num(total)} processos</p></div></header>
+    <header className="closing-card-head"><h2>Composição dos encerramentos</h2></header>
     {dados?.etapas ? <>
       <div className="closing-composition-list">{rows.map(row=><div className="closing-composition-item" key={row.tipo}>
         <div className="closing-composition-line"><span>{row.label}</span><strong>{num(row.quantity)} <small>· {total ? percent(row.quantity/total*100) : '0,0%'}</small></strong></div>
         <div className="closing-rail"><i style={{width:(row.quantity/max*100)+'%'}}/></div>
       </div>)}</div>
       {other>0 && <p className="closing-composition-other">Outros ou não classificados: {num(other)}</p>}
-      {!isNubank && total>0 && <details className="closing-details">
-        <summary>Cruzamento por tipo e aging <span>Ver tabela</span></summary>
-        <div className="closing-matrix-scroll"><table className="closing-matrix">
-          <thead><tr><th>Tipo / Aging</th>{bands.map(band=><th key={band}>{band}</th>)}<th>Total</th></tr></thead>
-          <tbody>{rows.map(row=><tr key={row.tipo}><th>{row.label}</th>
-            {bands.map(band=><td key={band}>{num(valueOrZero(matrix.find(item=>item.tipo===row.tipo && item.faixa===band)?.quantidade))}</td>)}
-            <td><strong>{num(row.quantity)}</strong></td></tr>)}</tbody>
-        </table></div>
-      </details>}
+
     </> : <p className="closing-nodata">Aguardando composição dos encerramentos.</p>}
   </section>;
 }
 
-function BennerHistory({ resumo, motivosPendentes, isNubank }: {resumo: ResumoBennerAnterior | null; motivosPendentes: number | null; isNubank: boolean}) {
-  const cards = [
-    { icon: Send, label: 'Andamentos do mês anterior', value: resumo ? num(resumo.enviados) : '—', detail: 'Histórico do Benner · mês anterior' },
-    { icon: CheckCircle2, label: 'Baixas no mês anterior', value: resumo ? num(resumo.encerrados) : '—', detail: 'Encerrados conforme o extrato' },
-    ...(!isNubank ? [
-      { icon: Clock3, label: 'Sem baixa no mês anterior', value: resumo ? num(resumo.em_andamento) : '—', detail: 'Em andamento · não indica negativa' },
-      { icon: ClipboardList, label: 'Motivo derrota pendente', value: motivosPendentes == null ? '—' : num(motivosPendentes), detail: 'Tarefas aguardando cadastro' },
-    ] : []),
-  ];
-  return <section className="closing-kpis closing-kpis-benner" aria-label="Histórico do mês anterior e pendências">
-    {cards.map(card => <article className="closing-kpi" key={card.label}>
-      <div className="closing-kpi-top"><span>{card.label}</span><card.icon size={16} strokeWidth={1.75}/></div>
-      <strong>{card.value}</strong><small>{card.detail}</small>
-    </article>)}
+
+function BennerHistory({ resumo }: {resumo: ResumoBennerAnterior | null}) {
+  return <section className="closing-surface closing-benner-history" aria-label="Histórico Benner">
+    <h2>Benner · mês anterior</h2>
+    <div><span>Andamentos <strong>{resumo?num(resumo.enviados):'—'}</strong></span>
+      <span>Baixas <strong>{resumo?num(resumo.encerrados):'—'}</strong></span>
+      <span>Sem baixa <strong>{resumo?num(resumo.em_andamento):'—'}</strong></span></div>
   </section>;
 }
 
@@ -254,7 +333,7 @@ function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa:
   const firstPage = Math.max(1,Math.min(safePage-1,pages-3));
   const buttons = Array.from({length:Math.min(pages,4)},(_,i)=>firstPage+i);
   return <section className="closing-surface closing-bottom">
-    <div className="closing-card-head"><div><h2>Comarcas com mais derrotas</h2><p>{num(list.length)} comarcas · ordem decrescente</p></div></div>
+    <div className="closing-card-head"><h2>Comarcas com mais derrotas</h2></div>
     <div className="closing-comarca-list">
       {slice.map((c,index)=><div className="closing-comarca-row" key={c.uf+c.comarca}>
         <span className="closing-index">{String((safePage-1)*pageSize+index+1).padStart(2,'0')}</span>
@@ -272,14 +351,13 @@ function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa:
 }
 
 function AnalystsPanel({ analysts }: { analysts: Analista[] }) {
-  const total = analysts.reduce((sum,a) => sum+a.analisados,0);
   const max = Math.max(1,...analysts.map(a=>a.analisados));
   return <section className="closing-surface closing-bottom">
-    <div className="closing-card-head"><div><h2>Produtividade dos analistas</h2><p>Análises registradas no período selecionado</p></div></div>
+    <div className="closing-card-head"><h2>Produtividade dos analistas</h2></div>
     {analysts.length ? <div className="closing-staff">
       {analysts.map(a => <div className="closing-staff-row" key={a.id}>
         <span className="closing-avatar">{a.nome.slice(0,2).toUpperCase()}</span>
-        <div className="closing-staff-name"><strong>{a.nome}</strong><small>{total ? percent(a.analisados/total*100) + ' do total' : 'Sem análises'}</small></div>
+        <div className="closing-staff-name"><strong>{a.nome}</strong></div>
         <div className="closing-rail"><i style={{width:a.analisados/max*100+'%'}}/></div>
         <b>{num(a.analisados)}</b>
       </div>)}
@@ -296,9 +374,11 @@ export function EncerramentosPage() {
   const [tipo,setTipo] = useState<Tipo>('TODOS');
   const [inicio,setInicio] = useState(() => { const now = new Date(); return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),'01'].join('-'); });
   const [fim,setFim] = useState(() => localISO(0));
-  const [analista,setAnalista] = useState('todos');
-  const [etapa,setEtapa] = useState<Etapa>('validados');
+  const analista = 'todos';
+  const etapa:Etapa = 'validados';
   const [dados,setDados] = useState<Dados | null>(null);
+  const [enviados,setEnviados] = useState<Dados | null>(null);
+  const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
   const [resumoBenner,setResumoBenner] = useState<ResumoBennerAnterior | null>(null);
   const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
   const [snapshotRevision,setSnapshotRevision] = useState(0);
@@ -318,6 +398,8 @@ export function EncerramentosPage() {
       setPortfolioRevision(revision => revision + 1);
       setCarteira(next);
       setDados(null);
+      setEnviados(null);
+      setActiveCard(null);
       setResumoBenner(null);
       setMotivosPendentes(null);
       setError('');
@@ -339,9 +421,13 @@ export function EncerramentosPage() {
     activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
-      const painel = await loadDashboard(carteira,tipo,inicio,fim,analista,etapa);
+      const [painel, envios] = await Promise.all([
+        loadDashboard(carteira,tipo,inicio,fim,analista,etapa),
+        loadDashboard(carteira,tipo,inicio,fim,analista,'enviados_benner').catch(() => null),
+      ]);
       if (sequence !== refreshSequence.current) return;
       setDados(painel);
+      setEnviados(envios);
       setLoadedKey(filterKey);
       setError('');
     } catch (cause) {
@@ -404,44 +490,38 @@ export function EncerramentosPage() {
   },[refresh]);
   const shown = loadedKey === filterKey ? dados : null;
   const analysts = shown?.analistas?.length ? shown.analistas : shown?.etapas?.analistas || [];
-  const analysed = shown?.etapas?.total;
 
   return <div className="closing-page-v2">
-    <div className="closing-heading">
-      <div><h1>Encerramentos</h1><span>Visão da carteira · dados operacionais</span></div>
-      <div className="closing-heading-actions">
-        <button type="button" className="closing-refresh" onClick={() => { void refresh(); setSnapshotRevision(value => value + 1); }} disabled={pending}><RefreshCcw size={15}/> Atualizar</button>
-      </div>
-    </div>
+    <div className="closing-heading"><h1>Encerramentos</h1></div>
     <div className="closing-filter-row">
-      <label>Carteira<select value={carteira} disabled aria-label="Carteira atual autorizada"><option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option></select></label>
-      <label>Tipo<select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>{visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}</select></label>
-      <fieldset className="closing-date-range"><legend>Período</legend>
-        <label>De<input type="date" aria-label="Data inicial dos encerramentos" value={inicio} max={fim || undefined} onChange={e=>setInicio(e.target.value)}/></label>
-        <label>Até<input type="date" aria-label="Data final dos encerramentos" value={fim} min={inicio || undefined} onChange={e=>setFim(e.target.value)}/></label>
-        <button type="button" className="closing-date-clear" onClick={()=>{setInicio('');setFim('');}} disabled={!inicio && !fim}>Todo o histórico</button>
-      </fieldset>
-      <label>Etapa<select value={etapa} onChange={e=>setEtapa(e.target.value as Etapa)}>
-        <option value="validados">Validados</option>
-        <option value="enviados_benner">Enviados ao Benner</option>
+      <label><span>Carteira</span><select value={carteira} disabled aria-label="Carteira atual autorizada">
+        <option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option>
       </select></label>
-      <label>Analista<select value={analista} onChange={e=>setAnalista(e.target.value)}><option value="todos">Todos</option><option value="gabriel">Gabriel</option><option value="elias">Elias</option><option value="gessica">Géssica</option></select></label>
+      <label><span>Tipo</span><select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>
+        {visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}
+      </select></label>
+      <fieldset className="closing-date-range"><legend>Período</legend>
+        <input type="date" aria-label="Data inicial" value={inicio} max={fim || undefined} onChange={e=>setInicio(e.target.value)}/>
+        <span>até</span>
+        <input type="date" aria-label="Data final" value={fim} min={inicio || undefined} onChange={e=>setFim(e.target.value)}/>
+      </fieldset>
     </div>
     {invalidRange && <p className="closing-error" role="alert">A data inicial não pode ser posterior à data final.</p>}
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} selectedCount={analysed} etapa={etapa} acordo={tipo==='ACORDO'}/>
-    <BennerHistory resumo={resumoBenner} motivosPendentes={motivosPendentes} isNubank={isNubank}/>
-    {!isNubank && <AgingPanel dados={shown} etapa={etapa} tipo={tipo} analista={analista} inicio={inicio} fim={fim}/>}
+    <Metrics dados={shown} enviados={loadedKey===filterKey?enviados:null}
+      motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
+    {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
       <AnalystsPanel analysts={analysts}/>
     </div>
+    <BennerHistory resumo={resumoBenner}/>
     <details className="closing-territory">
-      <summary><span>Detalhamento territorial</span><small>Comarcas com mais derrotas</small></summary>
+      <summary><span>Detalhamento territorial</span></summary>
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
     </details>
-    <p className="closing-disclaimer">Acordos não integram oportunidades aptas ao encerramento.</p>
+    {activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} onClose={()=>setActiveCard(null)}/>}
   </div>;
 }
