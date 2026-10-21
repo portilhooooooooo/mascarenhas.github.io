@@ -225,3 +225,9 @@
  .closing-dialog{max-height:calc(100dvh - 16px)}
  .closing-dialog-toolbar{flex-wrap:wrap}
 }
+
+/* Revisão de outubro: comarca sempre aberta e backlog Benner visível. */
+.closing-territory-heading{padding:12px 16px;border-bottom:1px solid var(--closing-line);font-size:12px;font-weight:650;color:var(--closing-ink)}
+.closing-carryover{border-left:1px solid var(--closing-line);padding-left:15px;color:var(--closing-blue)!important}
+.closing-carryover strong{color:var(--closing-blue)!important}
+@media(max-width:1020px){.closing-benner-history>div{justify-content:flex-start}}
