@@ -519,27 +519,51 @@ function AgingPanel({ dados, tipo, inicio, fim }: {
   </section>;
 }
 
-function CompositionPanel({ dados, etapa, isNubank }: {dados: Dados | null; etapa: Etapa; isNubank: boolean}) {
-  const types = dados?.etapas?.tipos || [];
-  const total = valueOrZero(dados?.etapas?.total);
-  const count = (kind: string) => valueOrZero(types.find(item=>item.tipo===kind)?.quantidade);
-  const rows = CLASSES.filter(item => !isNubank || item.tipo !== 'DERROTA_VOLUNTARIA').map(item=>({...item, quantity: count(item.tipo)}));
-  const max = Math.max(1,...rows.map(row=>row.quantity));
-  const other = Math.max(0,total-rows.reduce((sum,row)=>sum+row.quantity,0));
+function CompositionPanel({ dados, isNubank, onOpenTipo }: {
+  dados: Dados | null; isNubank: boolean; onOpenTipo:(tipo:Tipo)=>void;
+}) {
+  const types=dados?.etapas?.tipos||[];
+  const total=valueOrZero(dados?.etapas?.total);
+  const getQty=(value:string)=>valueOrZero(types.find(t=>t.tipo===value)?.quantidade);
+  const colors=['#a64f34','#d08960','#e8b894','#eddcc9'];
+  const rows=CLASSES.filter(t=>(!isNubank||t.tipo!=='DERROTA_VOLUNTARIA')&&getQty(t.tipo)>0)
+    .map((t,i)=>({...t,qty:getQty(t.tipo),color:colors[i%colors.length]}));
+  const circumference=2*Math.PI*53;
+  let cursor=0;
+  const segments=rows.map(row=>{
+    const length=total>0?row.qty/total*circumference:0;
+    const segment={...row,length,offset:-cursor};
+    cursor+=length;
+    return segment;
+  });
   return <section className="closing-surface closing-composition" aria-label="Composição dos encerramentos">
     <header className="closing-card-head"><h2>Composição dos encerramentos</h2></header>
-    {dados?.etapas ? <>
-      <div className="closing-composition-list">{rows.map(row=><div className="closing-composition-item" key={row.tipo}>
-        <div className="closing-composition-line"><span>{row.label}</span><strong>{num(row.quantity)} <small>· {total ? percent(row.quantity/total*100) : '0,0%'}</small></strong></div>
-        <div className="closing-rail"><i style={{width:(row.quantity/max*100)+'%'}}/></div>
-      </div>)}</div>
-      {other>0 && <p className="closing-composition-other">Outros ou não classificados: {num(other)}</p>}
-
-    </> : <p className="closing-nodata">Aguardando composição dos encerramentos.</p>}
+    {dados?.etapas && total>0 ? <div className="closing-composition-donut">
+      <div className="closing-donut-wrap">
+        <svg className="closing-donut" viewBox="0 0 146 146" role="img" aria-label="Distribuição de encerramentos por classificação">
+          <circle cx="73" cy="73" r="53" fill="none" stroke="#edf0f3" strokeWidth="18"/>
+          {segments.map(seg=><circle key={seg.tipo} cx="73" cy="73" r="53" fill="none" stroke={seg.color}
+            strokeWidth="18" strokeDasharray={seg.length+' '+(circumference-seg.length)}
+            strokeDashoffset={seg.offset} transform="rotate(-90 73 73)"
+            className="closing-donut-slice" role="button" tabIndex={0}
+            aria-label={seg.label+': '+num(seg.qty)+' processos'}
+            onClick={()=>onOpenTipo(seg.tipo as Tipo)}
+            onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();onOpenTipo(seg.tipo as Tipo);}}}>
+            <title>{seg.label}: {num(seg.qty)} ({percent(seg.qty/total*100)})</title>
+          </circle>)}
+        </svg>
+        <div className="closing-donut-center"><strong>{num(total)}</strong><span>Validados</span></div>
+      </div>
+      <div className="closing-donut-legend">
+        {rows.map(row=><button key={row.tipo} type="button" className="closing-donut-legend-item"
+          onClick={()=>onOpenTipo(row.tipo as Tipo)}>
+          <i style={{background:row.color}}/><span className="closing-donut-name">{row.label}</span>
+          <strong>{num(row.qty)}</strong><small>{percent(row.qty/total*100)}</small>
+        </button>)}
+      </div>
+    </div> : <p className="closing-nodata">Sem encerramentos validados no período.</p>}
   </section>;
 }
-
-
 
 function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa: Etapa; analista: string }) {
   const [page,setPage] = useState(1);
@@ -572,8 +596,9 @@ function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa:
 
 function AnalystsPanel({ analysts, unavailable }: { analysts: Analista[]; unavailable:boolean }) {
   const max = Math.max(1,...analysts.map(a=>a.analisados));
+  const total = analysts.reduce((acc,a)=>acc+a.analisados,0);
   return <section className="closing-surface closing-bottom">
-    <div className="closing-card-head"><h2>Produtividade dos analistas</h2></div>
+    <div className="closing-card-head"><h2>Produtividade dos analistas</h2><strong className="closing-productivity-total">{num(total)} análises</strong></div>
     {analysts.length ? <div className="closing-staff">
       {analysts.map(a => <div className="closing-staff-row" key={a.id}>
         <span className="closing-avatar">{a.nome.slice(0,2).toUpperCase()}</span>
@@ -601,6 +626,7 @@ export function EncerramentosPage() {
   const [analises,setAnalises] = useState<AnalysisResult | null>(null);
   const [taxaEnvio,setTaxaEnvio] = useState<ClosingSendRate | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
+  const [tipoRecorte,setTipoRecorte] = useState<Tipo|null>(null);
   const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
   const [snapshotRevision,setSnapshotRevision] = useState(0);
   const [pending,setPending] = useState(false);
@@ -738,10 +764,10 @@ export function EncerramentosPage() {
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
     <Metrics dados={shown} metaMensal={loadedKey===filterKey?metaMensal:null} analises={loadedKey===filterKey?analises:null}
       taxaEnvio={loadedKey===filterKey?taxaEnvio:null}
-      motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
+      motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
-      <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
+      <CompositionPanel dados={shown} isNubank={isNubank} onOpenTipo={t=>{setTipoRecorte(t);setActiveCard("aptidoes");}}/>
       <AnalystsPanel analysts={analysts} unavailable={!analises || loadedKey!==filterKey}/>
     </div>
     <section className="closing-territory" aria-label="Detalhamento territorial">
@@ -751,6 +777,6 @@ export function EncerramentosPage() {
     {activeCard==='benner'
       ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira} onClose={()=>setActiveCard(null)}
           onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
-      : activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} onClose={()=>setActiveCard(null)}/>}
+      : activeCard && <ClosingDetailsDialog key={activeCard+filterKey+(tipoRecorte||"")} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} tipoRecorte={tipoRecorte} onClose={()=>{setActiveCard(null);setTipoRecorte(null);}}/>}
   </div>;
 }
