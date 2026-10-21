@@ -356,3 +356,20 @@
 .closing-accuracy-tabs button.active{background:#f6e8e0;color:#984824;border-color:#e9c3ae;font-weight:650}
 @media(max-width:1050px){.closing-composition-donut{gap:10px}.closing-donut-wrap,.closing-donut{width:144px;height:144px}}
 @media(max-width:600px){.closing-composition-donut{flex-direction:column;align-items:stretch}.closing-donut-wrap{align-self:center}.closing-donut-legend-item{grid-template-columns:10px minmax(0,1fr) auto 55px}}
+
+
+/* Posição mensal Benner: outubro inclui somente pendentes herdados de setembro. */
+.closing-monthly-summary{border:1px solid var(--closing-line);border-radius:8px;background:var(--mba-surface,#fff);padding:12px 14px;margin:0 0 14px}
+.closing-monthly-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.closing-monthly-title strong{font-size:11px;color:var(--closing-ink)}
+.closing-monthly-title span{font-size:10px;color:var(--closing-muted)}
+.closing-monthly-items{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.closing-monthly-items>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;background:var(--mba-subtle,#f5f6f8);border:1px solid var(--closing-line);border-radius:6px}
+.closing-monthly-items span{font-size:10.5px;line-height:1.35;color:var(--closing-muted)}
+.closing-monthly-items strong{font-size:19px;font-weight:680;line-height:1;font-variant-numeric:tabular-nums;color:var(--closing-ink)}
+.closing-monthly-items .closing-monthly-total{background:#f9efe9;border-color:#eacdbc}
+.closing-monthly-items .closing-monthly-total strong{color:#a55031}
+.closing-monthly-foot{font-size:10px;color:var(--closing-muted);margin:8px 0 0}
+.closing-monthly-unavailable{font-size:11px;color:var(--closing-muted);margin:0}
+.closing-monthly-source{font-size:10px;line-height:1.4;color:var(--closing-muted);margin:10px 0 0}
+@media(max-width:730px){.closing-monthly-items{grid-template-columns:1fr}.closing-monthly-items>div{min-height:41px}}
