@@ -498,7 +498,7 @@ function ClosingQueueDialog({carteira,onClose,onSent,posicao}: {carteira:string;
           </> : <p className="closing-monthly-unavailable">Consolidado indisponível. A fila operacional continua disponível.</p>}
         </section>
         <ClosingQueuePanel carteira={carteira} onSent={onSent}/>
-        <p className="closing-monthly-source">Os totais incluem andamentos conciliados externamente. A tabela é a fila operacional da plataforma e pode não conter todos os lançamentos externos.</p>
+        <p className="closing-monthly-source">Contagem por andamento, não por CNJ único. Inclui lançamentos externos conciliados; a tabela operacional pode não conter todos esses registros.</p>
       </div>
     </section>
   </div>;
