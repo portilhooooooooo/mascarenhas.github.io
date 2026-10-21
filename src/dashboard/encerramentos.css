@@ -373,3 +373,7 @@
 .closing-monthly-unavailable{font-size:11px;color:var(--closing-muted);margin:0}
 .closing-monthly-source{font-size:10px;line-height:1.4;color:var(--closing-muted);margin:10px 0 0}
 @media(max-width:730px){.closing-monthly-items{grid-template-columns:1fr}.closing-monthly-items>div{min-height:41px}}
+
+/* Meta consolidada por CNJ: outubro recebe pendencias anteriores sem baixa. */
+.closing-aging-month{font-size:10px;font-weight:500;color:var(--closing-muted)}
+.closing-goal-context{display:block;margin-top:10px;font-size:10px;color:var(--closing-muted);line-height:1.4}
