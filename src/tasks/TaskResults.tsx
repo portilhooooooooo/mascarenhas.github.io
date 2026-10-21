@@ -11,7 +11,7 @@ type Person = {
 };
 type DailyRow = { day: string; user_id: string; person: string; analyses: number; apt: number; inapt: number; measured: number };
 type ProcessRow = {
-  id: string; process_id: string; cnj: string; person: string; user_id: string;
+  id: string; process_id: string; task_id: string; cnj: string; person: string; user_id: string;
   type: string; result: string; raw_decision: string; at: string | null;
   day: string | null; seconds: number | null; status: string;
 };
@@ -76,6 +76,7 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
   const [exporting,setExporting]=useState(false);
   const key=JSON.stringify([filters,revision,userId]);
   const detailKey=JSON.stringify([filters,selection,detailPage,revision,userId]);
+  const refreshNext=useRef(false);
   const requestId=useRef(0);
   const detailRequestId=useRef(0);
 
@@ -84,13 +85,17 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
     let active=true;
     const serial=++requestId.current;
     setOverview(null);setLoading(true);setError('');
-    const params=new URLSearchParams(filters);
+    const fresh=refreshNext.current;
+    refreshNext.current=false;
+    const params=new URLSearchParams({...filters,refresh:fresh?'1':'0'});
     api('/api/tasks/results/overview?'+params.toString())
       .then((response:Overview)=>{
         if(!active||serial!==requestId.current)return;
         if(!response?.summary||!Array.isArray(response.daily))throw new Error('Resposta inválida da API de produtividade.');
         setOverview(response);
-      }).catch((e:Error)=>{if(active&&serial===requestId.current)setError(e.message||'Falha na consulta.');})
+      }).catch((e:Error)=>{if(active&&serial===requestId.current)setError(/campos inválidos ou não permitidos|\b404\b|\b422\b|not found/i.test(e.message||'')
+          ? 'API de Produtividade v2 indisponível neste ambiente. O backend da branch de testes precisa ser publicado junto com o frontend.'
+          : e.message||'Falha na consulta.');})
       .finally(()=>{if(active&&serial===requestId.current)setLoading(false);});
     return()=>{active=false;};
   },[visible,userId,key,api]);
@@ -114,7 +119,7 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
   },[visible,userId,detailKey,api]);
 
   useEffect(()=>{
-    const reset=()=>{requestId.current++;detailRequestId.current++;setFilters(DEFAULT);setOverview(null);setSelection(null);setDetail(null);setDay(localDay());setRevision(n=>n+1);};
+    const reset=()=>{refreshNext.current=false;requestId.current++;detailRequestId.current++;setFilters(DEFAULT);setOverview(null);setSelection(null);setDetail(null);setDay(localDay());setRevision(n=>n+1);};
     window.addEventListener('mba:portfolio-changed',reset);
     window.addEventListener('mba:logged-out',reset);
     window.addEventListener('mba:session-expired',reset);
@@ -149,12 +154,18 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
     }catch(e:any){setDetailError(e?.message||'Erro ao exportar CSV.');}
     finally{setExporting(false);}
   };
+  const openProcess=(row:ProcessRow)=>{
+    if(!row.task_id||!row.process_id)return;
+    const route='tarefas/item/'+row.task_id+'/'+row.process_id;
+    const navigated=(window as Window & {MBA_NAVIGATE?:(route:string)=>boolean}).MBA_NAVIGATE?.(route);
+    if(!navigated)window.location.hash='#/'+route;
+  };
   const status=overview?.summary;
 
   return <section className="task-results-page task-results-v2" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
       <div><h1>Produtividade</h1><p>Resultados auditáveis da equipe, com relação diária de CNJs por colaborador.</p></div>
-      <button className="secondary-button" type="button" onClick={()=>setRevision(n=>n+1)} disabled={loading}>
+      <button className="secondary-button" type="button" onClick={()=>{refreshNext.current=true;setRevision(n=>n+1);}} disabled={loading}>
         <RefreshCw size={15}/> Atualizar
       </button>
     </div>
@@ -215,7 +226,10 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
         <div className="task-results-table-scroll"><table className="task-results-table">
           <thead><tr><th>CNJ</th><th>Colaborador</th><th>Módulo</th><th>Resultado</th><th>Conclusão</th><th>Execução</th><th></th></tr></thead>
           <tbody>{detail.rows.map(row=><tr key={row.id}>
-            <td><strong>{row.cnj||'CNJ indisponível'}</strong></td><td>{row.person}</td>
+            <td><button type="button" className="task-results-link task-results-cnj" onClick={()=>openProcess(row)}
+              title="Abrir processo e histórico" disabled={!row.task_id||!row.process_id}>
+              {row.cnj||'CNJ indisponível'} <ChevronRight size={13}/>
+            </button></td><td>{row.person}</td>
             <td>{taskTypeLabel(row.type)}</td><td>{resultLabel(row)}</td>
             <td>{selection.kind==='pending'?'Em aberto':localDateTime(row.at)}</td>
             <td>{duration(row.seconds)}</td>
