@@ -128,7 +128,7 @@ async function loadMotivosDerrotaPendentes(): Promise<number> {
 type ClosingCard = 'analisados' | 'acuracia' | 'aptidoes' | 'benner' | 'meta' | 'motivo';
 const CARD_LABELS: Record<ClosingCard, string> = {
   analisados: 'Analisados', acuracia: 'Acurácia', aptidoes: 'Aptidões',
-  benner: 'Enviados ao Benner', meta: 'Meta', motivo: 'Motivo derrota',
+  benner: 'Andamentos Benner', meta: 'Meta', motivo: 'Motivo derrota',
 };
 const closingCnj = (value: string) => {
   const digits = String(value || '').replace(/\D/g, '');
@@ -257,7 +257,7 @@ function Metrics({ dados, metaMensal, analises, posicaoBenner, motivosPendentes,
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
-    {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.mes_vigente.enviados):'—'},
+    {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.total_em_acompanhamento):'—'},
     {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
@@ -277,7 +277,7 @@ function Metrics({ dados, metaMensal, analises, posicaoBenner, motivosPendentes,
       : <button className="closing-kpi closing-kpi-button" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
           title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
-            card.key==='benner' ? 'Todos os andamentos registrados no Benner no mês vigente, incluindo lançamentos externos reconciliados. Saldo anterior no detalhe.' : undefined}
+            card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' : undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
           <strong>{card.value}</strong>
