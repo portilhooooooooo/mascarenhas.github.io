@@ -144,7 +144,7 @@
     const name = user.name || user.nome || user.email.split('@')[0];
     const firstName = name.trim().split(/\s+/)[0];
     const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'U';
-    const roleLabels = { admin: 'Administrador', user: 'Usuário' };
+    const roleLabels = { admin: 'Admin', legal_leader: 'Legal Leader', stakeholder: 'Stakeholder', analyst: 'Analista', user: 'Analista' };
 
     document.getElementById('profile-name').textContent = name;
     document.getElementById('profile-role').textContent = roleLabels[user.role] || 'Usuário';
