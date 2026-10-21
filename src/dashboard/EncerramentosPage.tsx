@@ -227,13 +227,13 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;
   </div>;
 }
 
-function Metrics({ dados, analises, taxaEnvio, motivosPendentes, onOpen }: {
-  dados: Dados | null; analises: AnalysisResult | null; taxaEnvio: ClosingSendRate | null;
+function Metrics({ dados, metaMensal, analises, taxaEnvio, motivosPendentes, onOpen }: {
+  dados: Dados | null; metaMensal:Dados|null; analises: AnalysisResult | null; taxaEnvio: ClosingSendRate | null;
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=dados?.acuracia_originaria;
-  const goals=dados?.carteira==='Agibank Enter' ? null : regularAgingSummary(regularAgingGoals(dados?.etapas?.aging || [], aptos || 0));
+  const goals=metaMensal && metaMensal.carteira!=='Agibank Enter' ? regularAgingSummary(regularAgingGoals(metaMensal.etapas?.aging || [], metaMensal.etapas?.total || 0)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
@@ -556,6 +556,7 @@ export function EncerramentosPage() {
   const analista = 'todos';
   const etapa:Etapa = 'validados';
   const [dados,setDados] = useState<Dados | null>(null);
+  const [metaMensal,setMetaMensal] = useState<Dados | null>(null);
   const [analises,setAnalises] = useState<AnalysisResult | null>(null);
   const [taxaEnvio,setTaxaEnvio] = useState<ClosingSendRate | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
@@ -577,6 +578,7 @@ export function EncerramentosPage() {
       setPortfolioRevision(revision => revision + 1);
       setCarteira(next);
       setDados(null);
+      setMetaMensal(null);
       setAnalises(null);
       setTaxaEnvio(null);
       setActiveCard(null);
@@ -600,13 +602,18 @@ export function EncerramentosPage() {
     activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
-      const [painel, registros, taxa] = await Promise.all([
+      const monthStart=localISO(0).slice(0,7)+'-01';
+      const monthEnd=localISO(0);
+      const isMonthly=inicio===monthStart && fim===monthEnd && tipo==='TODOS';
+      const [painel, registros, taxa, monthly] = await Promise.all([
         loadDashboard(carteira,tipo,inicio,fim,analista,etapa),
         loadClosingAnalyses(inicio,fim,tipo).catch(() => null),
         loadClosingSendRate(inicio,fim,tipo).catch(() => null),
+        isMonthly ? Promise.resolve(null) : loadDashboard(carteira,'TODOS',monthStart,monthEnd,'todos','validados').catch(() => null),
       ]);
       if (sequence !== refreshSequence.current) return;
       setDados(painel);
+      setMetaMensal(isMonthly?painel:monthly);
       setAnalises(registros);
       setTaxaEnvio(taxa);
       setLoadedKey(filterKey);
@@ -688,7 +695,7 @@ export function EncerramentosPage() {
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} analises={loadedKey===filterKey?analises:null}
+    <Metrics dados={shown} metaMensal={loadedKey===filterKey?metaMensal:null} analises={loadedKey===filterKey?analises:null}
       taxaEnvio={loadedKey===filterKey?taxaEnvio:null}
       motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
     <ClosingQueuePanel key={carteira} carteira={carteira} onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
