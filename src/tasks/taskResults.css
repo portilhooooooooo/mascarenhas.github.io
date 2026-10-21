@@ -63,28 +63,3 @@
 .task-results-table td:last-child{max-width:none}
 @media(max-width:1080px){.task-results-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.task-results-grid-compact{grid-template-columns:1fr}}
 @media(max-width:640px){.task-results-stats,.task-results-timing-summary{grid-template-columns:1fr}.task-results-table-heading{align-items:stretch!important;flex-direction:column}.task-results-sort>.task-results-filter{min-width:0;width:100%}.task-results-sort>.task-results-filter select{width:100%}}
-
-
-/* Cinco indicadores auditáveis e detalhamento por CNJ (branch de testes). */
-.task-results-v2 .task-results-filters{grid-template-columns:repeat(4,minmax(0,1fr))}
-.task-results-v2 .task-results-five{grid-template-columns:repeat(5,minmax(0,1fr))}
-.task-results-stat-clickable{cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,box-shadow .15s,transform .15s}
-.task-results-stat-clickable:hover,.task-results-stat-clickable:focus-visible,.task-results-stat-clickable.is-active{
- border-color:var(--mba-accent,#e47728);box-shadow:0 0 0 2px rgba(228,119,40,.12);outline:none
-}
-.task-results-stat-action{display:flex;align-items:center;gap:3px;justify-content:flex-end;font-size:10px;color:var(--mba-text-2,#64748b);margin-top:6px}
-.task-results-day-picker{min-width:190px}
-.task-results-day-picker input{min-width:0;width:100%;height:37px;padding:0 9px;background:var(--mba-surface,#fff);
- color:var(--mba-text,#0f1f3d);border:1px solid var(--mba-border,#dbe4ef);border-radius:7px;font:500 12px Inter,sans-serif}
-.task-results-v2 .task-results-actions{display:flex;gap:8px;flex-wrap:wrap}
-.task-results-v2 .task-results-actions button{display:inline-flex;align-items:center;gap:6px}
-.task-results-link,.task-results-copy{display:inline-flex;align-items:center;gap:4px;color:var(--mba-accent,#bd6a29);font-weight:650;font-size:11px;
- border:0;background:none;cursor:pointer;text-align:left;padding:4px}
-.task-results-link:hover,.task-results-copy:hover{text-decoration:underline}
-.task-results-counter{color:var(--mba-text-2,#64748b);font-size:11px;margin:0}
-.task-results-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--mba-text-2,#64748b);font-size:11px}
-.task-results-v2 .task-results-stat strong{white-space:nowrap;font-size:clamp(21px,2.1vw,30px)}
-@media(max-width:1280px){.task-results-v2 .task-results-five{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:900px){.task-results-v2 .task-results-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:640px){.task-results-v2 .task-results-five,.task-results-v2 .task-results-filters{grid-template-columns:1fr}
- .task-results-day-picker{width:100%}.task-results-pagination{flex-wrap:wrap}}
