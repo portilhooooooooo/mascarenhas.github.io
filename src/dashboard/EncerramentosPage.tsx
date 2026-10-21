@@ -36,6 +36,17 @@ type Dados = {
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; concorda:boolean|null };
 type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
+type MonthlyAging = {
+  periodo:string; unidade:'cnjs_unicos'; total_elegivel:number; total_com_faixa:number; sem_tag:number;
+  aging:AgingRow[];
+  origens:{validacoes_do_mes:number;historico_adicional:number;do_mes_adicionais:number;herdados_adicionais:number;
+    sobreposicoes_deduplicadas:number;movimentos_excluidos_por_tipo:number};
+};
+async function loadMonthlyAging():Promise<MonthlyAging> {
+  const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
+  if(!api)throw new Error('API indisponível.');
+  return api.request('/api/operacao/encerramentos/meta-aging-mensal');
+}
 type MonthlyBennerPosition = {
   periodo:string; unidade:'andamentos'; fonte:string;
   ultima_importacao?:string|null; ultimo_andamento_em?:string|null;
@@ -245,13 +256,14 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   </div>;
 }
 
-function Metrics({ dados, metaMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
-  dados: Dados | null; metaMensal:Dados|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
+function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
+  dados: Dados | null; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
-  const goals=metaMensal && metaMensal.carteira!=='Agibank Enter' ? regularAgingSummary(regularAgingGoals(metaMensal.etapas?.aging || [], metaMensal.etapas?.total || 0)):null;
+  const goals=agingMensal && dados?.carteira==='Agibank Regular'
+    ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
@@ -277,7 +289,8 @@ function Metrics({ dados, metaMensal, analises, posicaoBenner, motivosPendentes,
       : <button className="closing-kpi closing-kpi-button" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
           title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
-            card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' : undefined}
+            card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' :
+            card.key==='aptidoes' ? 'Validações auditadas na plataforma. A meta de aging também considera registros Benner reconciliados e o saldo anterior sem baixa.' : undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
           <strong>{card.value}</strong>
@@ -504,14 +517,13 @@ function ClosingQueueDialog({carteira,onClose,onSent,posicao}: {carteira:string;
   </div>;
 }
 
-function AgingPanel({ dados, tipo, inicio, fim }: {
-  dados: Dados | null; tipo: Tipo; inicio: string; fim: string;
+function AgingPanel({ dados, agingMensal }: {
+  dados: Dados | null; agingMensal:MonthlyAging|null;
 }) {
-  const regular = dados?.carteira !== 'Agibank Enter';
-  const counts=dados?.etapas?.aging || [];
-  const total=valueOrZero(dados?.etapas?.total);
-  const monthStart=localISO(0).slice(0,7)+'-01';
-  const isMonth=inicio===monthStart && fim===localISO(0) && tipo==='TODOS';
+  const regular = dados?.carteira === 'Agibank Regular';
+  const counts=regular ? agingMensal?.aging || [] : dados?.etapas?.aging || [];
+  const total=regular ? valueOrZero(agingMensal?.total_elegivel) : valueOrZero(dados?.etapas?.total);
+  const available=regular ? Boolean(agingMensal) : Boolean(dados?.etapas);
   const goals=regular?regularAgingGoals(counts,total):[];
   const summary=regularAgingSummary(goals);
   const enterBands=['0–3 meses','4–10 meses','>10 meses'];
@@ -524,22 +536,24 @@ function AgingPanel({ dados, tipo, inicio, fim }: {
   const achievement=summary.meta>0?summary.atual/summary.meta*100:0;
   return <section id="closing-aging-target" className="closing-surface closing-aging" aria-label="Meta de aging">
     <header className="closing-card-head closing-goal-head">
-      <h2>{regular?'Meta de aging':'Distribuição por aging'}</h2>
-      {regular && dados?.etapas && <div className="closing-goal-summary" aria-label="Cumprimento da meta">
+      <h2>{regular?'Meta de aging':'Distribuição por aging'}{regular && agingMensal && <small className="closing-aging-month"> · {agingMensal.periodo.slice(5,7)}/{agingMensal.periodo.slice(0,4)}</small>}</h2>
+      {regular && available && <div className="closing-goal-summary" aria-label="Cumprimento da meta">
         <strong>{num(summary.atual)} <span>/ {num(summary.meta)}</span></strong>
         <b>{percent(achievement)}</b>
 
       </div>}
     </header>
-    {!dados?.etapas?<p className="closing-nodata">Dados indisponíveis.</p>:
+    {!available?<p className="closing-nodata">{regular?'Meta mensal consolidada temporariamente indisponível.':'Dados indisponíveis.'}</p>:
       <div className="closing-aging-cards">{rows.map(row=><article className="closing-aging-card" key={row.label}>
         <div className="closing-aging-card-title"><strong>{row.label}</strong><b>{percent(row.achieved)}</b></div>
         <div className="closing-aging-card-value"><strong>{num(row.atual)}</strong>
           {regular&&<span>/ {num(row.meta)}</span>}</div>
         <div className="closing-rail closing-progress"><i style={{width:Math.max(0,Math.min(100,row.achieved))+'%'}}/></div>
       </article>)}</div>}
-    {regular && dados?.etapas && !isMonth &&
-      <span className="closing-goal-context">Meta mensal integral · valores conforme filtro</span>}
+    {regular && agingMensal && <span className="closing-goal-context"
+      title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' registros externos adicionais; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
+      {num(agingMensal.total_elegivel)} encerramentos únicos no mês · {num(agingMensal.sem_tag)} sem faixa de aging
+    </span>}
   </section>;
 }
 
@@ -646,7 +660,7 @@ export function EncerramentosPage() {
   const analista = 'todos';
   const etapa:Etapa = 'validados';
   const [dados,setDados] = useState<Dados | null>(null);
-  const [metaMensal,setMetaMensal] = useState<Dados | null>(null);
+  const [agingMensal,setAgingMensal] = useState<MonthlyAging | null>(null);
   const [analises,setAnalises] = useState<AnalysisResult | null>(null);
   const [posicaoBenner,setPosicaoBenner] = useState<MonthlyBennerPosition | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
@@ -669,7 +683,7 @@ export function EncerramentosPage() {
       setPortfolioRevision(revision => revision + 1);
       setCarteira(next);
       setDados(null);
-      setMetaMensal(null);
+      setAgingMensal(null);
       setAnalises(null);
       setPosicaoBenner(null);
       setActiveCard(null);
@@ -693,18 +707,15 @@ export function EncerramentosPage() {
     activeRequest.current = { key: filterKey, sequence };
     setPending(true);
     try {
-      const monthStart=localISO(0).slice(0,7)+'-01';
-      const monthEnd=localISO(0);
-      const isMonthly=inicio===monthStart && fim===monthEnd && tipo==='TODOS';
-      const [painel, registros, posicao, monthly] = await Promise.all([
+      const [painel, registros, posicao, aging] = await Promise.all([
         loadDashboard(carteira,tipo,inicio,fim,analista,etapa),
         loadClosingAnalyses(inicio,fim,tipo).catch(() => null),
         loadMonthlyBennerPosition().catch(() => null),
-        isMonthly ? Promise.resolve(null) : loadDashboard(carteira,'TODOS',monthStart,monthEnd,'todos','validados').catch(() => null),
+        carteira==='Agibank Regular' ? loadMonthlyAging().catch(() => null) : Promise.resolve(null),
       ]);
       if (sequence !== refreshSequence.current) return;
       setDados(painel);
-      setMetaMensal(isMonthly?painel:monthly);
+      setAgingMensal(aging);
       setAnalises(registros);
       setPosicaoBenner(posicao);
       setLoadedKey(filterKey);
@@ -786,10 +797,10 @@ export function EncerramentosPage() {
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} metaMensal={loadedKey===filterKey?metaMensal:null} analises={loadedKey===filterKey?analises:null}
+    <Metrics dados={shown} agingMensal={loadedKey===filterKey?agingMensal:null} analises={loadedKey===filterKey?analises:null}
       posicaoBenner={loadedKey===filterKey?posicaoBenner:null}
       motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
-    {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
+    {!isNubank && <AgingPanel dados={shown} agingMensal={loadedKey===filterKey?agingMensal:null}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} isNubank={isNubank} onOpenTipo={t=>{setTipoRecorte(t);setActiveCard("aptidoes");}}/>
       <AnalystsPanel analysts={analysts} unavailable={!analises || loadedKey!==filterKey}/>
