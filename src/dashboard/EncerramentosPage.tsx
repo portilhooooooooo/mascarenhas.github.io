@@ -149,7 +149,7 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo}: {kind:ClosingCard;
   const [busy,setBusy] = useState(false);
   const [error,setError] = useState('');
   const listStatus: ClosingStatus | null =
-    kind==='aptidoes'?'APTOS':kind==='benner'?'ENVIADOS_BENNER':kind==='motivo'?'DERROTA':null;
+    kind==='aptidoes'?'APTOS':kind==='motivo'?'DERROTA':null;
   const hasDetails = kind==='analisados' || Boolean(listStatus);
   const pageSize=20;
   useEffect(()=>{
@@ -292,6 +292,7 @@ function ClosingQueuePanel({carteira,onSent}: {carteira:string;onSent:()=>void})
   const [page,setPage]=useState(1);
   const [search,setSearch]=useState('');
   const [input,setInput]=useState('');
+  useEffect(()=>{const id=window.setTimeout(()=>setSearch(input.trim()),320);return()=>window.clearTimeout(id);},[input]);
   const [rows,setRows]=useState<ClosingCase[]>([]);
   const [total,setTotal]=useState<number|null>(null);
   const [selected,setSelected]=useState<Record<string,ClosingCase>>({});
@@ -390,10 +391,12 @@ function ClosingQueuePanel({carteira,onSent}: {carteira:string;onSent:()=>void})
         className={tipo===item.key?'active':''} onClick={()=>setTipo(item.key)}>{item.label}</button>)}
     </div>}
     <div className="closing-queue-tools">
-      <form onSubmit={e=>{e.preventDefault();setSearch(input.trim());setPage(1);}}>
-        <Search size={15}/><input value={input} onChange={e=>setInput(e.target.value)} placeholder="Buscar CNJ ou pasta" aria-label="Buscar CNJ ou pasta"/>
-        <button type="submit">Buscar</button>
-      </form>
+      <div className="closing-queue-search" role="search">
+        <Search size={16} aria-hidden="true"/>
+        <input type="search" value={input} onChange={e=>setInput(e.target.value)}
+          placeholder="Buscar CNJ ou pasta" aria-label="Buscar CNJ ou pasta"/>
+        {input.trim() && <button type="button" onClick={()=>{setInput('');setSearch('');setPage(1);}} aria-label="Limpar busca"><X size={14}/></button>}
+      </div>
       <span className="closing-queue-total">{total===null?'—':num(total)} {isPending?'pendentes':'enviados'}</span>
       {isPending && canSend && <>
         <button type="button" className="closing-queue-all" onClick={()=>void selectAll()} disabled={loading||sending}>Selecionar todos</button>
@@ -437,6 +440,30 @@ function ClosingQueuePanel({carteira,onSent}: {carteira:string;onSent:()=>void})
       </nav>
     </footer>
   </section>;
+}
+
+
+function ClosingQueueDialog({carteira,onClose,onSent}: {carteira:string;onClose:()=>void;onSent:()=>void}) {
+  const closeButton=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{
+    closeButton.current?.focus();
+    const previousOverflow=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
+    window.addEventListener('keydown',onKey);
+    return()=>{document.body.style.overflow=previousOverflow;window.removeEventListener('keydown',onKey);};
+  },[onClose]);
+  return <div className="closing-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)onClose();}}>
+    <section className="closing-dialog closing-queue-dialog" role="dialog" aria-modal="true" aria-labelledby="closing-queue-dialog-title">
+      <header className="closing-dialog-head">
+        <h2 id="closing-queue-dialog-title">Andamentos Benner</h2>
+        <button ref={closeButton} type="button" aria-label="Fechar andamentos Benner" onClick={onClose}><X size={18}/></button>
+      </header>
+      <div className="closing-queue-dialog-body">
+        <ClosingQueuePanel carteira={carteira} onSent={onSent}/>
+      </div>
+    </section>
+  </div>;
 }
 
 function AgingPanel({ dados, tipo, inicio, fim }: {
@@ -698,7 +725,6 @@ export function EncerramentosPage() {
     <Metrics dados={shown} metaMensal={loadedKey===filterKey?metaMensal:null} analises={loadedKey===filterKey?analises:null}
       taxaEnvio={loadedKey===filterKey?taxaEnvio:null}
       motivosPendentes={motivosPendentes} onOpen={setActiveCard}/>
-    <ClosingQueuePanel key={carteira} carteira={carteira} onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
     {!isNubank && <AgingPanel dados={shown} tipo={tipo} inicio={inicio} fim={fim}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} etapa={etapa} isNubank={isNubank}/>
@@ -708,6 +734,9 @@ export function EncerramentosPage() {
       <header className="closing-territory-heading">Detalhamento territorial</header>
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
     </section>
-    {activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} onClose={()=>setActiveCard(null)}/>}
+    {activeCard==='benner'
+      ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira} onClose={()=>setActiveCard(null)}
+          onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
+      : activeCard && <ClosingDetailsDialog key={activeCard+filterKey} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} onClose={()=>setActiveCard(null)}/>}
   </div>;
 }
