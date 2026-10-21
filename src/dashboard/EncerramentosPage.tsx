@@ -551,7 +551,7 @@ function AgingPanel({ dados, agingMensal }: {
         <div className="closing-rail closing-progress"><i style={{width:Math.max(0,Math.min(100,row.achieved))+'%'}}/></div>
       </article>)}</div>}
     {regular && agingMensal && <span className="closing-goal-context"
-      title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' registros externos adicionais; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
+      title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' outros registros do mês; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
       {num(agingMensal.total_elegivel)} encerramentos únicos no mês · {num(agingMensal.sem_tag)} sem faixa de aging
     </span>}
   </section>;
