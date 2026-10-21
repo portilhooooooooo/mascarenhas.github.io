@@ -91,3 +91,19 @@
 
 .task-results-cnj{font-variant-numeric:tabular-nums;font-weight:700;color:var(--mba-text,#0f1f3d)}
 .task-results-cnj:hover{color:var(--mba-accent,#bd6a29)}
+
+/* Productivity v3: stable layout before network data and compact metric cards. */
+.task-results-v2 .task-results-five{grid-template-columns:repeat(5,minmax(0,1fr))}
+.task-results-v2 .task-results-stat{min-height:120px;align-content:center;gap:14px}
+.task-results-v2 .task-results-stat strong{font-size:clamp(23px,2.2vw,32px)}
+.task-results-v2 .task-results-placeholder{color:var(--mba-text-2,#94a3b8);opacity:.65}
+.task-results-v2 .task-results-date-range{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.task-results-v2 .task-results-day-picker{min-width:160px}
+.task-results-v2 .task-results-filters{grid-template-columns:repeat(4,minmax(0,1fr))}
+.task-results-v2 .task-results-card header h2{margin:0}
+@media(max-width:1280px){.task-results-v2 .task-results-five{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:720px){.task-results-v2 .task-results-five{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.task-results-v2 .task-results-five,.task-results-v2 .task-results-filters{grid-template-columns:1fr}
+ .task-results-v2 .task-results-date-range{display:grid;grid-template-columns:1fr 1fr;width:100%}
+ .task-results-v2 .task-results-day-picker{min-width:0;width:100%}
+}

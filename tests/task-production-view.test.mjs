@@ -15,6 +15,11 @@ assert.ok(component.includes("title=\"Abrir processo e histórico\""),'CNJ deve 
 assert.ok(component.includes("tarefas/item/"),'Deeplink vinculado a tarefa e processo.');
 assert.ok(component.includes("Relação diária por colaborador"),'Produção diária é visível.');
 assert.ok(component.includes("Ver {format(person.analyses)} CNJs"),'Relação diária abre seus CNJs.');
+assert.ok(component.includes('Data inicial')&&component.includes('Data final'),'Dupla seleção de datas.');
+assert.ok(component.includes("card.value"),'Cards existem mesmo sem dados carregados.');
+assert.ok(!component.includes('Produtividade por colaborador — período selecionado'),'Sem tabela redundante.');
+assert.ok(!component.includes('task-results-method'),'Sem explicações metodológicas.');
+assert.ok(!component.includes('task-results-stat-action'),'Card completo é área de clique.');
 assert.ok(component.includes("pending_as_of"),'Pendências não podem se passar por produção histórica.');
 assert.ok(!component.includes("withOldApiFallback"),'Contrato novo exige API nova, não fallback silencioso.');
 console.log('Produtividade v2: cinco cards, filtros, detalhamentos, exportação e relação diária validados.');

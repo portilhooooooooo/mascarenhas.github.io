@@ -15,16 +15,19 @@ const byType=(arr:any[],module:string)=>module==='all'?arr:arr.filter(row=>row.t
 const api=async (path:string):Promise<any>=>{
 const parsed=new URL(path,'http://localhost');const kind=parsed.searchParams.get('kind')||'analyses';
 const module=parsed.searchParams.get('module')||'all';
-const completed=byType(rows,module);
+const start=parsed.searchParams.get('start_day')||parsed.searchParams.get('end_day');
+const end=parsed.searchParams.get('end_day')||parsed.searchParams.get('start_day');
+const completed=byType(rows,module).filter(row=>(!start||row.day>=start)&&(!end||row.day<=end));
 const pendings=byType(pending,module);
 const apt=completed.filter(r=>r.result==='apto').length;
 const inapt=completed.filter(r=>r.result==='inapto').length;
 const timed=completed.filter(r=>r.seconds!==null);
 if(parsed.pathname.endsWith('/overview')){
+await new Promise(resolve=>setTimeout(resolve,300));
 return {summary:{analyses:completed.length,apt,inapt,unclassified:completed.length-apt-inapt,pending:pendings.length,
  median_seconds:timed.length?120:null,measured:timed.length},
  people:[{id:uid,name:'Analista Teste',analyses:completed.length,apt,inapt,pending:pendings.length,median_seconds:120,measured:timed.length}],
- daily:[{day:today,user_id:uid,person:'Analista Teste',analyses:completed.length,apt,inapt,measured:timed.length}],
+ daily:completed.length?[{day:today,user_id:uid,person:'Analista Teste',analyses:completed.length,apt,inapt,measured:timed.length}]:[],
  pending_as_of:new Date().toISOString(),generated_at:new Date().toISOString(),truncated:false};
 }
 let selected=kind==='pending'?pendings:completed;

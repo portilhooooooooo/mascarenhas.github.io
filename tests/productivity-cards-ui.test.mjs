@@ -15,6 +15,9 @@ try {
  const errors=[];
  page.on('pageerror',error=>errors.push(error.message));
  await page.goto('http://127.0.0.1:5189/tests/productivity-fixture.html');
+ await page.getByRole('button',{name:/Análises realizadas: —/}).waitFor();
+ assert.equal(await page.getByRole('button',{name:/Aptidões: —/}).count(),1,'Card already visible while API loads');
+ assert.equal(await page.getByLabel('Data inicial').count(),1,'Date range mounted on initial paint');
  await page.getByRole('button',{name:/Análises realizadas: 3/}).waitFor();
  const scenarios=[
  ['Análises realizadas','3 registros'],
@@ -39,6 +42,12 @@ try {
  await page.getByRole('button',{name:/Análises realizadas: 2/}).waitFor();
  await page.getByRole('button',{name:/Aptidões: 1/}).click();
  await page.locator('.task-results-drilldown .task-results-counter').getByText('1 registros').waitFor();
+ await page.getByLabel('Data inicial').fill('2026-10-20');
+ await page.getByRole('button',{name:/Análises realizadas: 0/}).waitFor();
+ await page.getByLabel('Data final').fill(new Date().toLocaleDateString('sv-SE',{timeZone:'America/Campo_Grande'}));
+ await page.getByRole('button',{name:/Análises realizadas: 2/}).waitFor();
+ assert.equal(await page.getByText('Produtividade por colaborador — período selecionado').count(),0);
+ assert.equal(await page.getByText('Ver processos',{exact:true}).count(),0);
  assert.deepEqual(errors,[]);
  console.log('PASS: five clickable cards, CNJ deep-link, daily analyst drilldown, module filter, no browser errors.');
 } finally {

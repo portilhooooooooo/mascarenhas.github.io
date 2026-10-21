@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CheckCircle2, Clock3, Download, RefreshCw, XCircle, ClipboardList, ListTodo, Copy, Timer, ChevronRight } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Download, RefreshCw, XCircle, ClipboardList, ListTodo, Copy, Timer, ChevronRight } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
 import './taskResults.css';
@@ -23,9 +23,9 @@ type Overview = {
 };
 type Detail = { kind: Kind; rows: ProcessRow[]; total: number; page: number;
   has_more: boolean; truncated: boolean; pending_as_of: string };
-type Filters = { period: 'today'|'7'|'30'|'90'|'all'; module: string; person: string; deadline: string };
+type Filters = { period: 'today'|'7'|'30'|'90'|'all'; module: string; person: string; deadline: string; start_day: string; end_day: string };
 type Selection = { kind: Kind; day?: string; person?: string };
-const DEFAULT: Filters = { period: '30', module: 'all', person: 'all', deadline: 'all' };
+const DEFAULT: Filters = { period: '30', module: 'all', person: 'all', deadline: 'all', start_day: '', end_day: '' };
 const modules = ['encerramento','defesa','liminar','comprovante_pagamento','acordos','protocolo','motivo_derrota'];
 const format = (n: number) => n.toLocaleString('pt-BR');
 const duration = (v: number | null) => v == null ? 'Sem medição' : v < 60
@@ -66,8 +66,8 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
   const [revision,setRevision]=useState(0);
   const [overview,setOverview]=useState<Overview|null>(null);
   const [loading,setLoading]=useState(false);
+  const [loadedKey,setLoadedKey]=useState('');
   const [error,setError]=useState('');
-  const [day,setDay]=useState(localDay);
   const [selection,setSelection]=useState<Selection|null>(null);
   const [detail,setDetail]=useState<Detail|null>(null);
   const [detailPage,setDetailPage]=useState(1);
@@ -84,7 +84,7 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
     if (!visible || !userId) return;
     let active=true;
     const serial=++requestId.current;
-    setOverview(null);setLoading(true);setError('');
+    setLoading(true);setError('');
     const fresh=refreshNext.current;
     refreshNext.current=false;
     const params=new URLSearchParams({...filters,refresh:fresh?'1':'0'});
@@ -92,7 +92,7 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
       .then((response:Overview)=>{
         if(!active||serial!==requestId.current)return;
         if(!response?.summary||!Array.isArray(response.daily))throw new Error('Resposta inválida da API de produtividade.');
-        setOverview(response);
+        setOverview(response);setLoadedKey(key);
       }).catch((e:Error)=>{if(active&&serial===requestId.current)setError(/campos inválidos ou não permitidos|\b404\b|\b422\b|not found/i.test(e.message||'')
           ? 'API de Produtividade v2 indisponível neste ambiente. O backend da branch de testes precisa ser publicado junto com o frontend.'
           : e.message||'Falha na consulta.');})
@@ -119,7 +119,7 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
   },[visible,userId,detailKey,api]);
 
   useEffect(()=>{
-    const reset=()=>{refreshNext.current=false;requestId.current++;detailRequestId.current++;setFilters(DEFAULT);setOverview(null);setSelection(null);setDetail(null);setDay(localDay());setRevision(n=>n+1);};
+    const reset=()=>{refreshNext.current=false;requestId.current++;detailRequestId.current++;setFilters(DEFAULT);setOverview(null);setLoadedKey('');setSelection(null);setDetail(null);setRevision(n=>n+1);};
     window.addEventListener('mba:portfolio-changed',reset);
     window.addEventListener('mba:logged-out',reset);
     window.addEventListener('mba:session-expired',reset);
@@ -131,16 +131,31 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
   },[]);
 
   const update=(field:keyof Filters,value:string)=>{
-    setFilters(current=>({...current,[field]:value} as Filters));
+    setFilters(current=>{
+      const next={...current,[field]:value};
+      if(field==='start_day'&&value&&current.end_day&&value>current.end_day)next.end_day='';
+      if(field==='end_day'&&value&&current.start_day&&value<current.start_day)next.start_day='';
+      return next;
+    });
     setSelection(null);setDetailPage(1);
   };
   const open=(kind:Kind, options:Partial<Selection>={})=>{
     setDetailPage(1);setSelection({kind,...options});
   };
-  const todayPeople=useMemo(()=>{
-    if(!overview)return [];
-    return overview.daily.filter(entry=>entry.day===day).sort((a,b)=>b.analyses-a.analyses||a.person.localeCompare(b.person,'pt-BR'));
-  },[overview,day]);
+  const rangePeople=useMemo(()=>{
+    if(!overview||loadedKey!==key)return [];
+    // One filled date field is a single-day query, not an open interval.
+    const from=filters.start_day||filters.end_day||localDay();
+    const to=filters.end_day||filters.start_day||localDay();
+    const byUser=new Map<string,DailyRow>();
+    for (const entry of overview.daily) {
+      if(entry.day<from||entry.day>to)continue;
+      const item=byUser.get(entry.user_id);
+      if(!item)byUser.set(entry.user_id,{...entry});
+      else {item.analyses+=entry.analyses;item.apt+=entry.apt;item.inapt+=entry.inapt;item.measured+=entry.measured;}
+    }
+    return [...byUser.values()].sort((a,b)=>b.analyses-a.analyses||a.person.localeCompare(b.person,'pt-BR'));
+  },[overview,loadedKey,key,filters.start_day,filters.end_day]);
   const exportDetails=async()=>{
     if(!selection||exporting)return;
     setExporting(true);setDetailError('');
@@ -160,11 +175,11 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
     const navigated=(window as Window & {MBA_NAVIGATE?:(route:string)=>boolean}).MBA_NAVIGATE?.(route);
     if(!navigated)window.location.hash='#/'+route;
   };
-  const status=overview?.summary;
+  const status=loadedKey===key?overview?.summary:undefined;
 
   return <section className="task-results-page task-results-v2" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
-      <div><h1>Produtividade</h1><p>Resultados auditáveis da equipe, com relação diária de CNJs por colaborador.</p></div>
+      <div><h1>Produtividade</h1></div>
       <button className="secondary-button" type="button" onClick={()=>{refreshNext.current=true;setRevision(n=>n+1);}} disabled={loading}>
         <RefreshCw size={15}/> Atualizar
       </button>
@@ -184,34 +199,28 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
         options={[{label:'Todos os prazos',value:'all'},{label:'Vencido',value:'overdue'},
           {label:'Vence hoje',value:'today'},{label:'A vencer',value:'future'},{label:'Sem prazo',value:'none'}]}/>
     </div>
-    {loading&&<p className="task-results-notice" role="status">Consultando eventos e pendências reais…</p>}
+
     {error&&<p className="task-results-notice task-results-error" role="alert">{error}</p>}
     {overview?.truncated&&<p className="task-results-notice" role="alert">Consulta atingiu limite de registros. Reduza o período; os totais podem estar incompletos.</p>}
-    {status&&!loading&&<div className="task-results-stats task-results-five">
+    <div className="task-results-stats task-results-five" aria-busy={loading||!status}>
       {([
-        {kind:'analyses' as Kind,value:format(status.analyses),foot:status.unclassified
-          ? format(status.unclassified)+' sem classificação de aptidão' : 'Conclusões humanas no período',icon:ClipboardList},
-        {kind:'apt' as Kind,value:format(status.apt),foot:'Decisões explicitamente aptas',icon:CheckCircle2},
-        {kind:'inapt' as Kind,value:format(status.inapt),foot:'Decisões explicitamente inaptas',icon:XCircle},
-        {kind:'pending' as Kind,value:format(status.pending),foot:'Fila atual, não histórica',icon:ListTodo},
-        {kind:'time' as Kind,value:duration(status.median_seconds),foot:format(status.measured)+' análises cronometradas',icon:Timer},
-      ]).map(card=><button type="button" className={'task-results-stat task-results-stat-clickable'+(selection?.kind===card.kind?' is-active':'')}
-          key={card.kind} onClick={()=>open(card.kind)} aria-label={labels[card.kind]+': '+card.value+'. Ver processos.'}>
+        {kind:'analyses' as Kind,value:status?format(status.analyses):'—',icon:ClipboardList},
+        {kind:'apt' as Kind,value:status?format(status.apt):'—',icon:CheckCircle2},
+        {kind:'inapt' as Kind,value:status?format(status.inapt):'—',icon:XCircle},
+        {kind:'pending' as Kind,value:status?format(status.pending):'—',icon:ListTodo},
+        {kind:'time' as Kind,value:status?duration(status.median_seconds):'—',icon:Timer},
+      ]).map(card=><button type="button"
+          className={'task-results-stat task-results-stat-clickable'+(selection?.kind===card.kind?' is-active':'')}
+          key={card.kind} onClick={()=>open(card.kind)}
+          aria-label={labels[card.kind]+': '+card.value}>
           <div className="task-results-stat-top"><span>{labels[card.kind]}</span><card.icon size={17}/></div>
-          <strong>{card.value}</strong><small>{card.foot}</small>
-          <span className="task-results-stat-action">Ver processos <ChevronRight size={13}/></span>
+          <strong className={!status?'task-results-placeholder':undefined}>{card.value}</strong>
         </button>)}
-    </div>}
-    <p className="task-results-method"><Clock3 size={14}/>Análises, aptidões e inaptidões referem-se às conclusões do período selecionado.
-      Pendências são a fila aberta no momento da consulta ({localDateTime(overview?.pending_as_of||null)}).
-      Tempo é mediana observada, não tempo ativo; apenas registros com início e fim válidos (até 30 minutos) entram na amostra.
-      Decisões de outros módulos não são convertidas artificialmente em aptidão/inaptidão.</p>
+    </div>
 
     {selection&&<article className="task-results-card task-results-drilldown" aria-live="polite">
       <header className="task-results-table-heading">
-        <div><h2>{labels[selection.kind]} — relação de processos</h2>
-          <p>{selection.day?'Dia '+selection.day+' · ':''}{selection.person?'Colaborador selecionado · ':''}
-            {selection.kind==='pending'?'Fotografia da fila atual':'Análises individuais auditadas'}</p></div>
+        <div><h2>{labels[selection.kind]}</h2></div>
         <div className="task-results-actions">
           <button className="secondary-button" type="button" disabled={detailLoading||exporting||!detail||detail.truncated}
             onClick={()=>void exportDetails()}><Download size={14}/> {exporting?'Exportando…':'CSV'}</button>
@@ -246,42 +255,37 @@ export function TaskResults({api,visible,canViewOthers,userId}:{
       </>}
     </article>}
 
-    {overview&&!loading&&<>
-      <article className="task-results-card">
-        <header className="task-results-table-heading"><div>
-          <h2>Relação diária por colaborador</h2>
-          <p>Selecione uma data e clique no colaborador para consultar todos os CNJs analisados naquele dia.</p></div>
-          <label className="task-results-filter task-results-day-picker"><span>Data da análise</span>
-            <input type="date" value={day} max={localDay()} onChange={e=>setDay(e.target.value)}/></label>
-        </header>
-        <div className="task-results-table-scroll"><table className="task-results-table">
-          <thead><tr><th>Colaborador</th><th>Dia</th><th>Análises</th><th>Aptidões</th><th>Inaptidões</th><th>Com tempo</th><th>Abrir</th></tr></thead>
-          <tbody>{todayPeople.map(person=><tr key={person.day+'-'+person.user_id}>
-            <td><strong>{person.person}</strong></td><td>{person.day.split('-').reverse().join('/')}</td>
-            <td>{format(person.analyses)}</td><td>{format(person.apt)}</td><td>{format(person.inapt)}</td>
-            <td>{format(person.measured)}</td>
-            <td><button type="button" className="task-results-link" onClick={()=>open('analyses',{person:person.user_id,day:person.day})}>
+    <article className="task-results-card">
+      <header className="task-results-table-heading">
+        <h2>Relação diária por colaborador</h2>
+        <div className="task-results-date-range">
+          <label className="task-results-filter task-results-day-picker"><span>Data inicial</span>
+            <input type="date" aria-label="Data inicial" value={filters.start_day}
+              max={localDay()} onChange={e=>update('start_day',e.target.value)}/></label>
+          <label className="task-results-filter task-results-day-picker"><span>Data final</span>
+            <input type="date" aria-label="Data final" value={filters.end_day}
+              max={localDay()} onChange={e=>update('end_day',e.target.value)}/></label>
+        </div>
+      </header>
+      <div className="task-results-table-scroll"><table className="task-results-table">
+        <thead><tr><th>Colaborador</th><th>Análises</th><th>Aptidões</th>
+          <th>Inaptidões</th><th>Com tempo</th><th>Abrir</th></tr></thead>
+        <tbody>
+          {rangePeople.map(person=><tr key={person.user_id}>
+            <td><strong>{person.person}</strong></td>
+            <td>{format(person.analyses)}</td><td>{format(person.apt)}</td>
+            <td>{format(person.inapt)}</td><td>{format(person.measured)}</td>
+            <td><button type="button" className="task-results-link"
+              onClick={()=>open('analyses',{person:person.user_id,
+                day:filters.start_day||filters.end_day?undefined:localDay()})}>
               Ver {format(person.analyses)} CNJs <ChevronRight size={13}/></button></td>
           </tr>)}
-          {!todayPeople.length&&<tr><td colSpan={7}>Nenhuma análise concluída nesta data dentro do período selecionado.</td></tr>}
-          </tbody></table></div>
-      </article>
-      <article className="task-results-card">
-        <header><div><h2>Produtividade por colaborador — período selecionado</h2>
-          <p>Totais do período. Pendências são a fila atual. Cada linha abre as análises e seus respectivos CNJs.</p></div></header>
-        <div className="task-results-table-scroll"><table className="task-results-table">
-          <thead><tr><th>Colaborador</th><th>Análises</th><th>Aptidões</th><th>Inaptidões</th><th>Pendências atuais</th><th>Tempo mediano</th><th>Relação</th></tr></thead>
-          <tbody>{overview.people.map(person=><tr key={person.id||'unassigned'}>
-            <td><strong>{person.name}</strong></td><td>{format(person.analyses)}</td>
-            <td>{format(person.apt)}</td><td>{format(person.inapt)}</td><td>{format(person.pending)}</td>
-            <td>{duration(person.median_seconds)}<small>{format(person.measured)} medições</small></td>
-            <td>{person.analyses>0&&<button type="button" className="task-results-link" onClick={()=>open('analyses',{person:person.id})}>
-              Ver CNJs <ChevronRight size={13}/></button>}</td>
-          </tr>)}
-          {!overview.people.length&&<tr><td colSpan={7}>Sem registros no recorte.</td></tr>}
-          </tbody></table></div>
-      </article>
-    </>}
+          {!rangePeople.length&&<tr><td colSpan={6}>
+            {loading||!status?'Carregando análises…':'Nenhuma análise encontrada no intervalo selecionado.'}
+          </td></tr>}
+        </tbody>
+      </table></div>
+    </article>
   </section>;
 }
 
