@@ -36,8 +36,8 @@ for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], 
   assert.match(source, /<TaskForm[^>]*draftKey=\{draftKey\}/, name + ' recebe chave de rascunho');
 }
 assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta da API');
-assert.match(productivity, /\/api\/tasks\/results\/overview\?/, 'Produtividade usa endpoint v2 autorizado');
-assert.match(productivity, /\/api\/tasks\/results\/overview\/details\?/, 'Produtividade consulta CNJs que compõem o indicador');
+assert.match(productivity, /campos inválidos ou não permitidos/, 'Produtividade reconhece erro 422 do backend legado');
+assert.match(productivity, /withOldApiFallback\(api, '\/api\/tasks\/results\?'/, 'Produtividade tenta parâmetros compatíveis com backend anterior');
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');
 assert.match(style, /\.qa-step\[hidden\]/, 'Somente etapa ativa visível');
 assert.match(questions, /qa-stage-track/, 'Fluxos exibem as etapas');

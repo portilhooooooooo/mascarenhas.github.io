@@ -88,6 +88,3 @@
 @media(max-width:900px){.task-results-v2 .task-results-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.task-results-v2 .task-results-five,.task-results-v2 .task-results-filters{grid-template-columns:1fr}
  .task-results-day-picker{width:100%}.task-results-pagination{flex-wrap:wrap}}
-
-.task-results-cnj{font-variant-numeric:tabular-nums;font-weight:700;color:var(--mba-text,#0f1f3d)}
-.task-results-cnj:hover{color:var(--mba-accent,#bd6a29)}
