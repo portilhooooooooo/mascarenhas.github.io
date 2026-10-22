@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
-import { VisaoGeralPage } from './VisaoGeralPage';
+import { BaseGeralPage } from './BaseGeralPage';
 import { RankingPage } from '../ranking/RankingPage';
 import './gestaoMetabase.css';
 
@@ -65,10 +65,10 @@ export function GestaoProcessualPage() {
 
   return <div className="gestao-metabase-page gestao-processual-react">
     <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
-      {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Entradas</button>}
+      {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Base Geral</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
     </nav>
-    {displayedTab === 'ranking' ? <RankingPage/> : displayedTab === 'encerramentos' ? <EncerramentosPage/> : <VisaoGeralPage/>}
+    {displayedTab === 'ranking' ? <RankingPage/> : displayedTab === 'encerramentos' ? <EncerramentosPage/> : <BaseGeralPage/>}
   </div>;
 }
