@@ -15,6 +15,9 @@ type Summary = {
   extinct?: number | null;
   upheld?: number | null;
   injunction_granted?: number | null;
+  injunction_denied?: number | null;
+  prescribed?: number | null;
+  suspended?: number | null;
 };
 type Dashboard = {
   summary: Summary;
@@ -22,22 +25,12 @@ type Dashboard = {
   filters: { states: string[]; products: string[]; resolutions: string[] };
   updated_at?: string | null;
 };
-type ProcessRow = { id: number | string; cnj: string; state?: string; situation?: string; pasta?: string | null; tipo_validado?: string | null; last_movement_at?: string | null };
+type ProcessRow = { id: number | string; cnj: string; state?: string; situation?: string; pasta?: string | null; tipo_validado?: string | null; entry_date?: string | null; product?: string | null; resolution?: string | null; last_movement_at?: string | null };
 type Paged = { rows: ProcessRow[]; total: number; page: number; page_size: number };
 type Api = { request: <T>(path: string, options?: RequestInit) => Promise<T>; getPortfolioId?: () => string };
 type Env = Window & { MBA_API?: Api; MBA_AUTOMATION_API?: Api; MBA_NAVIGATE?: (route: string) => boolean };
 type Period = 'all' | 'month' | '90' | '365';
 type Category = 'active' | 'prescribed' | 'closing' | 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction';
-type MovementCategory = 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction' | 'injunctionDenied';
-
-const movements: Record<MovementCategory, string> = {
-  suspended: 'suspensao',
-  dismissed: 'sentence_improcedente',
-  extinct: 'sentence_extincao',
-  upheld: 'sentence_procedente',
-  injunction: 'tutela_deferida',
-  injunctionDenied: 'tutela_indeferida',
-};
 const catalog: Array<{ key: Category; label: string; subtitle: string; icon: LucideIcon }> = [
   { key: 'active', label: 'Base ativa', subtitle: 'Em andamento, fora do aging >18 meses', icon: FolderOpen },
   { key: 'prescribed', label: 'Base prescrita', subtitle: 'Aging superior a 18 meses', icon: Clock3 },
@@ -61,7 +54,7 @@ const dateStart = (period: Period) => {
 const queryFor = (period: Period, uf: string, product: string, situation: string, resolution: string) => {
   const params = new URLSearchParams();
   if (period !== 'all') params.set('entry_start', dateStart(period));
-  if (uf) params.set('state', uf);
+  if (uf) params.set('uf', uf);
   if (product) params.set('product', product);
   if (situation) params.set('situation', situation);
   if (resolution) params.set('resolution', resolution);
@@ -81,15 +74,6 @@ export function operationalAgingCutoff(now = new Date()): string {
   anniversary.setUTCDate(anniversary.getUTCDate() - 1);
   return anniversary.toISOString().slice(0, 10);
 }
-function prescriptionQuery(base: string, cutoff: string) {
-  const params = new URLSearchParams(base);
-  if (params.get('entry_start') && params.get('entry_start')! > cutoff) return null;
-  if (params.get('situation') === 'closed' || params.get('situation') === 'unknown') return null;
-  params.set('entry_end', cutoff);
-  params.set('situation', 'active');
-  return params.toString();
-}
-
 const portfolioName = (id: string) => ({
   agibank_enter: 'Agibank · Enter', agibank_mba: 'Agibank · MBA',
   energisa_enter: 'Energisa · Enter', banco_pan_mba: 'Banco Pan · MBA',
@@ -150,8 +134,6 @@ export function BaseGeralPage() {
   const [dataKey, setDataKey] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  const [movementsCount, setMovementsCount] = useState<Partial<Record<MovementCategory, number>>>({});
-  const [oldActiveCount, setOldActiveCount] = useState<{ key: string; value: number } | null>(null);
   const [closingCount, setClosingCount] = useState<{ key: string; value: number } | null>(null);
   const [detail, setDetail] = useState<Category | null>(null);
   const [tutelaOutcome, setTutelaOutcome] = useState<'deferidas' | 'indeferidas'>('deferidas');
@@ -170,7 +152,6 @@ export function BaseGeralPage() {
   const filterQuery = useMemo(() => queryFor(period, uf, product, situation, resolution), [period, uf, product, situation, resolution]);
   // A API de Processos suporta apenas UF, situação e movimentação.
   const comparable = period === 'all' && !product && !situation && !resolution;
-  const cutoff = operationalAgingCutoff();
   const canSeeClosings = ['agibank_enter','agibank_mba','nubank_mba'].includes(portfolio)
     && (window as Window & { MBA_CURRENT_USER?: { permissions?: Record<string, boolean> } }).MBA_CURRENT_USER?.permissions?.['encerramentos.view'] === true;
   const closingComparable = comparable && !uf && canSeeClosings;
@@ -181,7 +162,7 @@ export function BaseGeralPage() {
     setPending(true);
     try {
       if (!api) throw new Error('API indisponível.');
-      const result = await api.request<unknown>('/api/carteira-processual' + (filterQuery ? '?' + filterQuery : ''));
+      const result = await api.request<unknown>('/api/base-geral/summary' + (filterQuery ? '?' + filterQuery : ''));
       if (sequence !== requestSequence.current) return;
       if (!validDashboard(result)) throw new Error('Estrutura de indicadores inválida.');
       setData(result);
@@ -201,7 +182,7 @@ export function BaseGeralPage() {
       setPortfolio((window as Env).MBA_API?.getPortfolioId?.() || '');
       setRevision(value => value + 1);
       setUf(''); setProduct(''); setSituation(''); setResolution('');
-      setData(null); setDataKey(''); setMovementsCount({}); setOldActiveCount(null); setClosingCount(null);
+      setData(null); setDataKey(''); setClosingCount(null);
       setDetail(null); setDetailData(null); setError('');
       setDetailSearch(''); setDetailSearchInput(''); setTutelaOutcome('deferidas');
       exportSequence.current += 1; setExporting(false); setExportProgress('');
@@ -220,54 +201,6 @@ export function BaseGeralPage() {
   const summary = shown?.summary;
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
 
-  // Counts are available from the existing Processos API without loading the full directory.
-  // When cross-filtering by period/product/resolution, do not mix incompatible totals.
-  useEffect(() => {
-    let cancelled = false;
-    setMovementsCount({});
-    if (!shown || !comparable) return () => { cancelled = true; };
-    const api = getApi();
-    if (!api) return () => { cancelled = true; };
-    const keys = Object.keys(movements) as MovementCategory[];
-    void Promise.allSettled(keys.map(async key => {
-      const params = new URLSearchParams({ movement: movements[key], page: '1', page_size: '10' });
-      if (uf) params.set('uf', uf);
-      const result = await api.request<Paged>('/api/processos?' + params.toString());
-      return { key, total: validNumber(result.total) };
-    })).then(results => {
-      if (cancelled) return;
-      const counts: Partial<Record<MovementCategory, number>> = {};
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value.total != null) counts[result.value.key] = result.value.total;
-      }
-      setMovementsCount(counts);
-    });
-    return () => { cancelled = true; };
-  }, [shown, comparable, uf, portfolio]);
-
-
-  // A consulta agregada usa a mesma carteira e filtros; a data limite
-  // é aplicada no SQL do backend ANTES da contagem (sem transferir 100 mil processos).
-  useEffect(() => {
-    let cancelled = false;
-    setOldActiveCount(null);
-    if (!shown) return () => { cancelled = true; };
-    const query = prescriptionQuery(filterQuery, cutoff);
-    if (query === null) {
-      setOldActiveCount({ key: filterKey, value: 0 });
-      return () => { cancelled = true; };
-    }
-    const api = getApi();
-    if (!api) return () => { cancelled = true; };
-    void api.request<unknown>('/api/carteira-processual?' + query).then(result => {
-      if (!cancelled && validDashboard(result)) {
-        const value = validNumber(result.summary.active);
-        if (value != null) setOldActiveCount({ key: filterKey, value });
-      }
-    }).catch(() => { /* Sem inferir um valor quando a consulta falhar. */ });
-    return () => { cancelled = true; };
-  }, [shown, filterKey, filterQuery, cutoff]);
-
   useEffect(() => {
     let cancelled = false;
     setClosingCount(null);
@@ -278,22 +211,19 @@ export function BaseGeralPage() {
     return () => { cancelled = true; };
   }, [shown, closingComparable, filterKey]);
 
-  const aged = oldActiveCount?.key === filterKey ? oldActiveCount.value : null;
-  const allActive = validNumber(summary?.active);
-  const activeUnderCutoff = allActive !== null && aged !== null ? Math.max(0, allActive - aged) : null;
-  // Divergence guard: the portfolio aggregate can be empty while Processos has
-  // thousands of judicial outcomes. Do not present misleading zero active/aging.
-  const directoryHasCases = comparable && Object.entries(movementsCount).some(([, count]) => (count || 0) > 0);
-  const sourceDivergence = Boolean(shown && summary?.total === 0 && directoryHasCases);
   const categories: Partial<Record<Category, number | null>> = {
-    active: sourceDivergence ? null : activeUnderCutoff,
-    prescribed: sourceDivergence ? null : aged,
+    active: validNumber(summary?.active),
+    prescribed: validNumber(summary?.prescribed),
     closing: closingCount?.key === filterKey ? closingCount.value : null,
-    suspended: movementsCount.suspended,
-    dismissed: validNumber(summary?.dismissed) ?? movementsCount.dismissed,
-    extinct: validNumber(summary?.extinct) ?? movementsCount.extinct,
-    upheld: validNumber(summary?.upheld) ?? movementsCount.upheld,
-    injunction: validNumber(summary?.injunction_granted) ?? movementsCount.injunction,
+    suspended: validNumber(summary?.suspended),
+    dismissed: validNumber(summary?.dismissed),
+    extinct: validNumber(summary?.extinct),
+    upheld: validNumber(summary?.upheld),
+    injunction: validNumber(summary?.injunction_granted),
+  };
+  const tutelaCounts = {
+    deferidas: validNumber(summary?.injunction_granted),
+    indeferidas: validNumber(summary?.injunction_denied),
   };
   const prescribed = categories.prescribed;
   const active = categories.active;
@@ -303,11 +233,11 @@ export function BaseGeralPage() {
     ? { background: 'conic-gradient(var(--mba-orange, #e87828) 0% ' + activeShare + '%, var(--mba-blue, #4577ba) ' + activeShare + '% 100%)' }
     : undefined;
 
-  const detailMovement = detail === 'injunction'
-    ? (tutelaOutcome === 'deferidas' ? movements.injunction : movements.injunctionDenied)
-    : detail && detail in movements ? movements[detail as MovementCategory] : null;
-  const listSupported = detail === 'closing' || Boolean(detailMovement);
-  const filtersSupported = detail === 'closing' ? closingComparable : comparable;
+  const detailCategory = detail === 'injunction'
+    ? (tutelaOutcome === 'deferidas' ? 'injunction_deferida' : 'injunction_indeferida')
+    : detail;
+  const listSupported = Boolean(detail);
+  const filtersSupported = detail === 'closing' ? closingComparable : true;
   useEffect(() => {
     let cancelled = false;
     setDetailData(null);
@@ -315,9 +245,10 @@ export function BaseGeralPage() {
     if (!detail || !listSupported || !filtersSupported) return () => { cancelled = true; };
     const api = getApi();
     if (!api) { setDetailError('API indisponível.'); return () => { cancelled = true; }; }
-    const params = new URLSearchParams({ page: String(detailPage), page_size: '25' });
-    if (uf) params.set('uf', uf);
-    if (detailMovement) params.set('movement', detailMovement);
+    const params = new URLSearchParams(filterQuery);
+    params.set('page', String(detailPage));
+    params.set('page_size', '25');
+    if (detailCategory && detailCategory !== 'closing') params.set('category', detailCategory);
     if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
     setDetailPending(true);
     const request: Promise<Paged> = detail === 'closing'
@@ -326,14 +257,14 @@ export function BaseGeralPage() {
             id: row.cnj, cnj: row.cnj, state: row.uf || '—', pasta: row.pasta, tipo_validado: row.tipo_validado,
             situation: 'Apto, sem envio ao Benner',
           })), total: result.total, page: detailPage, page_size: 25 }))
-      : api.request<Paged>('/api/processos?' + params.toString());
+      : api.request<Paged>('/api/base-geral/processos?' + params.toString());
     void request.then(result => {
       if (!cancelled) setDetailData(result);
     }).catch(cause => {
       if (!cancelled) setDetailError(cause instanceof Error ? cause.message : 'Falha ao carregar processos.');
     }).finally(() => { if (!cancelled) setDetailPending(false); });
     return () => { cancelled = true; };
-  }, [detail, detailPage, detailMovement, detailSearch, listSupported, filtersSupported, uf, portfolio, revision]);
+  }, [detail, detailPage, detailCategory, detailSearch, listSupported, filtersSupported, filterQuery, portfolio, revision]);
 
   const openDetail = (value: Category) => {
     exportSequence.current += 1;
@@ -378,11 +309,12 @@ export function BaseGeralPage() {
               tipo_validado: row.tipo_validado, situation: 'Apto, sem envio ao Benner',
             } satisfies ProcessRow));
           }
-          const params = new URLSearchParams({ page: String(index + 1), page_size: String(pageSize) });
-          if (uf) params.set('uf', uf);
-          if (detailMovement) params.set('movement', detailMovement);
+          const params = new URLSearchParams(filterQuery);
+          params.set('category', detailCategory || 'active');
+          params.set('page', String(index + 1));
+          params.set('page_size', String(pageSize));
           if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
-          const r = await api.request<Paged>('/api/processos?' + params.toString());
+          const r = await api.request<Paged>('/api/base-geral/processos?' + params.toString());
           return r.rows || [];
         }));
         if (serial !== exportSequence.current) return;
@@ -393,8 +325,8 @@ export function BaseGeralPage() {
       if (all.length !== total) throw new Error('A relação mudou durante a exportação. Atualize a consulta antes de tentar novamente.');
       const name = (detail === 'injunction' ? 'tutelas_' + tutelaOutcome : detail).replace(/[^a-z0-9_]/gi, '_');
       const csv = serializeBaseGeralCsv(
-        ['CNJ', 'Situação', 'UF', 'Pasta', 'Classificação'],
-        all.map(row => [row.cnj, row.situation || '', row.state || '', row.pasta || '', row.tipo_validado || '']),
+        ['CNJ', 'Situação', 'UF', 'Pasta', 'Classificação', 'Data entrada', 'Produto', 'Encerramento'],
+        all.map(row => [row.cnj, row.situation || '', row.state || '', row.pasta || '', row.tipo_validado || '', row.entry_date || '', row.product || '', row.resolution || '']),
       );
       saveCsv('base_geral_' + name + '_' + portfolio + '.csv', csv);
       setExportProgress(number(total) + ' registros exportados.');
@@ -426,9 +358,6 @@ export function BaseGeralPage() {
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
     {error && <div className="base-geral-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
-    {sourceDivergence && <div className="base-geral-warning base-geral-source-warning" role="status">
-      Divergência entre fontes: a carteira agregada retornou zero processos, mas o diretório processual possui registros. Os totais de Base ativa e Base prescrita foram ocultados para evitar números inconsistentes. Confirme a consolidação da carteira na API.
-    </div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
     <div className="base-geral-kpis">
       {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card"
@@ -498,7 +427,7 @@ export function BaseGeralPage() {
                 setTutelaOutcome(outcome); setDetailPage(1); setDetailData(null);
               }}>
               {outcome === 'deferidas' ? 'Deferidas' : 'Indeferidas'}
-              <span>{number(movementsCount[outcome === 'deferidas' ? 'injunction' : 'injunctionDenied'])}</span>
+              <span>{number(tutelaCounts[outcome])}</span>
             </button>)}
         </div>}
         {listSupported && filtersSupported && <div className="base-geral-dialog-toolbar">
@@ -515,14 +444,10 @@ export function BaseGeralPage() {
         </div>}
         {listSupported && filtersSupported && <p className="base-geral-dialog-source">
           {detail === 'closing' ? 'Fonte: fila operacional de encerramentos · aptos sem envio confirmado'
-            : 'Fonte: diretório processual · filtro ' + (detailMovement || '')}
+            : 'Fonte: diretório processual · recorte ' + (detailCategory || '')}
           {detailSearch ? ' · busca: ' + detailSearch : ''}
         </p>}
-        {!listSupported && <div className="base-geral-warning">
-          {detail === 'prescribed'
-            ? 'O total corresponde aos processos em andamento com entrada anterior a ' + cutoff.split('-').reverse().join('/') + ' (aging superior a 18 meses). A API ainda não disponibiliza a relação paginada por data de entrada; o CSV desse recorte exige atualização do backend.'
-            : 'A API ainda não disponibiliza a relação filtrada por este critério. Para evitar divergências, não serão exibidos nem exportados processos fora da categoria.'}
-        </div>}
+        {!listSupported && <div className="base-geral-warning">A categoria não está disponível para consulta.</div>}
         {listSupported && !filtersSupported && <div className="base-geral-warning">
           Os filtros atuais não são suportados pela listagem desta categoria. Limpe-os para consultar ou exportar uma relação consistente com os cards.
         </div>}
@@ -530,10 +455,10 @@ export function BaseGeralPage() {
         {exportProgress && <p className="base-geral-export-status" role="status">{exportProgress}</p>}
         {listSupported && filtersSupported && <div className="base-geral-dialog-table-wrap">
           <table className="base-geral-detail-table">
-            <thead><tr><th>CNJ</th><th>Situação</th><th>UF</th>{detail === 'closing' && <><th>Pasta</th><th>Classificação</th></>}</tr></thead>
+            <thead><tr><th>CNJ</th><th>Situação</th><th>UF</th><th>Data entrada</th><th>Produto</th>{detail === 'closing' && <><th>Pasta</th><th>Classificação</th></>}</tr></thead>
             <tbody>{detailData?.rows?.map(row => <tr key={row.id}>
               <td><button type="button" onClick={() => (window as Env).MBA_NAVIGATE?.('processos/' + encodeURIComponent(row.cnj))}>{row.cnj} <ArrowUpRight size={12}/></button></td>
-              <td>{row.situation || '—'}</td><td>{row.state || '—'}</td>
+              <td>{row.situation || '—'}</td><td>{row.state || '—'}</td><td>{row.entry_date || '—'}</td><td>{row.product || '—'}</td>
               {detail === 'closing' && <><td>{row.pasta || '—'}</td><td>{row.tipo_validado || '—'}</td></>}
             </tr>)}</tbody>
           </table>
