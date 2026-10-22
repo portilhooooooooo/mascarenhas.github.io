@@ -349,7 +349,7 @@ export function BaseGeralPage() {
       }
       if (serial !== exportSequence.current) return;
       if (all.length !== total) throw new Error('A relação mudou durante a exportação. Atualize a consulta antes de tentar novamente.');
-      const name = (detail === 'injunction' ? 'tutelas_' + tutelaOutcome : detail).replace(/[^a-z0-9_]/gi, '_');
+      const name = 'closing';
       const csv = serializeBaseGeralCsv(
         ['CNJ', 'Situação', 'UF', 'Pasta', 'Classificação', 'Data entrada', 'Produto', 'Encerramento'],
         all.map(row => [row.cnj, row.situation || '', row.state || '', row.pasta || '', row.tipo_validado || '', row.entry_date || '', row.product || '', row.resolution || '']),
