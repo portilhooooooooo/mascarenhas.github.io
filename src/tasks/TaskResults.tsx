@@ -218,7 +218,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
 
   return <section className="task-results-page" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
-      <div><h1>{canViewOthers ? 'Produtividade' : 'Minha produtividade'}</h1><p>{canViewOthers ? 'Entregas da equipe, tempo observado de conclusão e comparações por tipo de tarefa.' : 'Suas análises concluídas e o tempo observado por tipo de tarefa.'}</p></div>
+      <div><h1>Produtividade</h1><p>{canViewOthers ? 'Entregas da equipe, tempo observado de conclusão e comparações por tipo de tarefa.' : 'Suas análises concluídas e o tempo observado por tipo de tarefa.'}</p></div>
       <div className="task-results-actions">
         <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada na demonstração' : canViewOthers ? 'Exportar dados da equipe' : 'Exportar minha produtividade'}>
           <Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}
