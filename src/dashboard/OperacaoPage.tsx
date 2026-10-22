@@ -349,6 +349,8 @@ function navigateOperationModule(module: OperationModule) {
 
 export function OperacaoPage() {
   const [module, setModule] = useState<OperationModule>(() => operationModuleFromLocation() || 'pagamentos');
+  // Mount an authorized operation only on first visit; keep its filters/data on later visits.
+  const [visited, setVisited] = useState<OperationModule[]>(() => [operationModuleFromLocation() || 'pagamentos']);
   const [allowed, setAllowed] = useState<OperationVisibility>({
     pagamentos: false, liminar: false, encerramentos: false, protocolos: false, defesas: false,
   });
@@ -405,6 +407,10 @@ export function OperacaoPage() {
     };
   }, [allowed]);
 
+  useEffect(() => {
+    if (allowed[module]) setVisited(previous => previous.includes(module) ? previous : [...previous, module]);
+  }, [module, allowed]);
+
   return <div className="operacao-module-shell">
     <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
       {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => navigateOperationModule('pagamentos')}>Pagamentos</button> : null}
@@ -413,11 +419,11 @@ export function OperacaoPage() {
       {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => navigateOperationModule('protocolos')}>Protocolos</button> : null}
       {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => navigateOperationModule('defesas')}>Defesas</button> : null}
     </nav>
-    {module === 'pagamentos' && allowed.pagamentos ? <PagamentosPage/> :
-      module === 'liminar' && allowed.liminar ? <OperacaoLiminarPage/> :
-      module === 'encerramentos' && allowed.encerramentos ? <OperacaoEncerramentosPage/> :
-      module === 'protocolos' && allowed.protocolos ? <ProtocolosPage/> :
-      module === 'defesas' && allowed.defesas ? <DefesasPage/> :
-      <div className="protocolos-empty">Nenhum fluxo autorizado nesta carteira.</div>}
+    {allowed.pagamentos && visited.includes('pagamentos') ? <div style={{display: module === 'pagamentos' ? 'contents' : 'none'}}><PagamentosPage/></div> : null}
+    {allowed.liminar && visited.includes('liminar') ? <div style={{display: module === 'liminar' ? 'contents' : 'none'}}><OperacaoLiminarPage/></div> : null}
+    {allowed.encerramentos && visited.includes('encerramentos') ? <div style={{display: module === 'encerramentos' ? 'contents' : 'none'}}><OperacaoEncerramentosPage/></div> : null}
+    {allowed.protocolos && visited.includes('protocolos') ? <div style={{display: module === 'protocolos' ? 'contents' : 'none'}}><ProtocolosPage/></div> : null}
+    {allowed.defesas && visited.includes('defesas') ? <div style={{display: module === 'defesas' ? 'contents' : 'none'}}><DefesasPage/></div> : null}
+    {!OPERATION_MODULES.some(key => allowed[key]) ? <div className="protocolos-empty">Nenhum fluxo autorizado nesta carteira.</div> : null}
   </div>;
 }
