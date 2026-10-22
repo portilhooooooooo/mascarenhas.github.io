@@ -32,7 +32,7 @@ test('Product and Prejuízo X Lucro sections are interactive and based on real d
 });
 
 test('frontend does not fabricate metrics without API support', () => {
-  assert.match(page, /prescribed: aged/);
+  assert.match(page, /prescribed: sourceDivergence \? null : aged/);
   assert.match(page, /getClosingCases\('APTOS', 10/);
   assert.match(page, /suspended: movementsCount\.suspended/);
   assert.match(page, /não disponibiliza a relação filtrada/);
