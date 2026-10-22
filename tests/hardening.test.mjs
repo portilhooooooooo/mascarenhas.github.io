@@ -53,7 +53,8 @@ assert.doesNotMatch(auth, /renderMicrosoftOnlyLogin/, 'auth must not render logi
 assert.doesNotMatch(auth, /getElementById\('microsoft-login'\)/, 'auth must not mutate the React login button');
 assert.doesNotMatch(auth, /getElementById\('login-error'\)/, 'auth must not own the visible login error box');
 assert.doesNotMatch(auth, /data-auth-provider="google"/, 'auth must not offer Google');
-assert.match(auth, /dispatchModuleAuthentication\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
+assert.match(auth, /dispatchModuleActivation\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
+assert.match(auth, /new CustomEvent\('mba:authenticated', \{ detail: profile \}\)/, 'only a real sign-in may dispatch the authentication event');
 
 assert.match(pageInit, /window\.MBA_REACT_LOGIN = true;/, 'React login ownership must be declared before bootstrap');
 assert.match(pageInit, /window\.MBA_REACT_TASKS = true;/, 'React task ownership must be declared before bootstrap');

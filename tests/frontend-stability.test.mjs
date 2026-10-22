@@ -42,8 +42,6 @@ assert.match(closePage, /indicioFiltro/);
 assert.match(closeApi, /query\.set\('indicio', indicio\)/);
 assert.doesNotMatch(closePage, /rows\.filter\(row=>.*datajud_tipo/);
 
-console.log('Shell, task shortcuts, grouping and indication-filter contracts passed.');
-
 // A tab switch activates lazy modules; it does not reauthenticate the user or
 // reset task state. Visited React modules remain mounted while hidden.
 const app = read('app.js');
@@ -54,3 +52,5 @@ assert.match(app, /addEventListener\('mba:module-activated'/);
 const bancoDadosLifecycle = main.slice(main.indexOf('function syncBancoDadosLifecycle()'), main.indexOf('function configureBancoDadosLifecycle()'));
 assert.doesNotMatch(bancoDadosLifecycle, /document\.hidden|!visible/);
 assert.match(bancoDadosLifecycle, /section\.classList\.contains\('active'\) && !bancoDadosRoot/);
+
+console.log('Shell, task shortcuts, grouping and indication-filter contracts passed.');
