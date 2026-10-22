@@ -45,6 +45,7 @@ export function ProtocolosPage() {
   const [relationFeedback,setRelationFeedback]=useState(''),[uploadFeedback,setUploadFeedback]=useState('');
   const [relationError,setRelationError]=useState(false),[uploadError,setUploadError]=useState(false);
   const inFlight=useRef(false);
+  const visibleRoot=useRef<HTMLDivElement>(null);
   const refresh=useCallback(async()=>{
     if(inFlight.current) return;
     inFlight.current=true;
@@ -65,7 +66,8 @@ export function ProtocolosPage() {
     // The page stays mounted after navigation; avoid polling hidden modules.
     const active=()=>{
       const path=(location.hash.startsWith('#/')?location.hash.slice(2):location.pathname).replace(/^\/+|\/+$/g,'');
-      return !document.hidden && (path==='operacao/protocolos'||path==='controladoria/protocolos');
+      return !document.hidden && Boolean(visibleRoot.current?.getClientRects().length) &&
+        (path==='operacao/protocolos'||path==='controladoria/protocolos');
     };
     const update=()=>{if(active())void refresh();};
     const timer=window.setInterval(update,5000);
@@ -103,7 +105,7 @@ export function ProtocolosPage() {
   if(!canView&&!loading)return <div className="protocolos-empty"><strong>Sem acesso a Protocolos</strong></div>;
   const state=startBusy?'starting':summary?.session?.state||'unknown';
   const busy=['starting','authenticating','connected','in_use'].includes(state);
-  return <div className="protocolos-page-react">
+  return <div className="protocolos-page-react" ref={visibleRoot}>
     <header className="protocolos-header"><div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Protocolos</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
     <section className="protocolos-session-bar" aria-label="Status da automação"><div className="protocolos-session-copy"><span>Status da automação</span><strong className={`protocolos-session-state ${state}`} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong></div><button type="button" className="protocolos-button primary protocolos-start-button" disabled={!canRun||startBusy||busy||loading} onClick={()=>void start()}>{startBusy?<LoaderCircle className="spin" size={15}/>:<Play size={15}/>}Iniciar</button></section>
