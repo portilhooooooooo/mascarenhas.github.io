@@ -18,6 +18,7 @@ type Summary = {
   injunction_denied?: number | null;
   prescribed?: number | null;
   suspended?: number | null;
+  without_entry_date?: number | null;
 };
 type Dashboard = {
   summary: Summary;
@@ -32,7 +33,7 @@ type Env = Window & { MBA_API?: Api; MBA_AUTOMATION_API?: Api; MBA_NAVIGATE?: (r
 type Period = 'all' | 'month' | '90' | '365';
 type Category = 'active' | 'prescribed' | 'closing' | 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction';
 const catalog: Array<{ key: Category; label: string; subtitle: string; icon: LucideIcon }> = [
-  { key: 'active', label: 'Base ativa', subtitle: 'Em andamento, fora do aging >18 meses', icon: FolderOpen },
+  { key: 'active', label: 'Base ativa', subtitle: 'Aging até 18 meses comprovado', icon: FolderOpen },
   { key: 'prescribed', label: 'Base prescrita', subtitle: 'Aging superior a 18 meses', icon: Clock3 },
   { key: 'closing', label: 'Em encerramento', subtitle: 'Aptos sem envio confirmado ao Benner', icon: Hourglass },
   { key: 'suspended', label: 'Suspensos', subtitle: 'Sinal de suspensão na base processual', icon: CirclePause },
@@ -199,6 +200,7 @@ export function BaseGeralPage() {
 
   const shown = dataKey === filterKey ? data : null;
   const summary = shown?.summary;
+  const undated = validNumber(summary?.without_entry_date);
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
 
   useEffect(() => {
@@ -285,13 +287,37 @@ export function BaseGeralPage() {
 
   const exportDetails = async () => {
     if (!detail || !listSupported || !filtersSupported || exporting || detailPending || !detailData) return;
+    const serial = ++exportSequence.current;
+    if (detail !== 'closing') {
+      const api = getApi();
+      if (!api) { setDetailError('API indisponível.'); return; }
+      const params = new URLSearchParams(filterQuery);
+      params.set('category', detailCategory || 'active');
+      if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
+      setExporting(true); setDetailError(''); setExportProgress('Gerando CSV completo na API...');
+      try {
+        const file = await api.request<{filename: string; csv: string; total: number}>(
+          '/api/base-geral/export?' + params.toString());
+        if (serial !== exportSequence.current) return;
+        if (typeof file.csv !== 'string' || !file.filename || !Number.isSafeInteger(file.total)) {
+          throw new Error('Resposta inválida da exportação.');
+        }
+        saveCsv(file.filename, file.csv);
+        setExportProgress(number(file.total) + ' registros exportados.');
+      } catch (cause) {
+        if (serial === exportSequence.current) setDetailError(
+          cause instanceof Error ? cause.message : 'Falha ao exportar CSV.');
+      } finally {
+        if (serial === exportSequence.current) setExporting(false);
+      }
+      return;
+    }
     const total = detailData.total;
     if (!Number.isSafeInteger(total) || total < 0 || total > 10000) {
       setDetailError('A relação excede o limite de 10.000 registros da consulta paginada. É necessário exportar pelo backend.');
       return;
     }
-    const serial = ++exportSequence.current;
-    const pageSize = detail === 'closing' ? 100 : 50;
+    const pageSize = 100;
     const pages = Math.ceil(total / pageSize);
     const api = getApi();
     if (!api) { setDetailError('API indisponível.'); return; }
@@ -358,6 +384,9 @@ export function BaseGeralPage() {
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
     {error && <div className="base-geral-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
+    {undated != null && undated > 0 && <div className="base-geral-warning base-geral-source-warning" role="status">
+      {number(undated)} processos em andamento não têm data de entrada comprovada nas fontes disponíveis. Eles não entram no cálculo de Base ativa, Base prescrita ou no comparativo Prejuízo X Lucro.
+    </div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
     <div className="base-geral-kpis">
       {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card"
@@ -406,7 +435,7 @@ export function BaseGeralPage() {
             {!donutReady && <p className="base-geral-unavailable">Aguardando as contagens filtradas de aging e base ativa.</p>}
           </div>
         </div>
-        <p className="base-geral-caption">Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Base ativa inclui processos sem data de entrada comprovada; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p>
+        <p className="base-geral-caption">Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p>
       </section>
     </div>
     {detail && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
@@ -437,8 +466,8 @@ export function BaseGeralPage() {
             <button type="submit" disabled={detailPending}>Buscar</button>
           </form>
           <button type="button" onClick={() => void exportDetails()}
-            disabled={!detailData || detailPending || exporting || detailData.total > 10000}
-            title="Exporta todos os registros do recorte, até o limite da API de 10 mil processos">
+            disabled={!detailData || detailPending || exporting || (detail === 'closing' && detailData.total > 10000)}
+            title="Exporta a relação completa dos processos filtrados">
             <Download size={15}/> {exporting ? 'Exportando...' : 'CSV completo'}
           </button>
         </div>}
