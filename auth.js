@@ -188,7 +188,7 @@
     return document.querySelector('main .page.active')?.id || 'dashboard';
   }
 
-  function dispatchModuleAuthentication(pageId = activePageId(), force = false) {
+  function dispatchModuleActivation(pageId = activePageId(), force = false) {
     const user = window.MBA_CURRENT_USER;
     if (!user?.permissions) return;
 
@@ -210,8 +210,8 @@
         return Reflect.get(target, property, receiver);
       },
     });
-    const detail = { ...user, permissions };
-    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail }));
+    const detail = { pageId, permissions };
+    window.dispatchEvent(new CustomEvent('mba:module-activated', { detail }));
     gate.active = false;
   }
 
@@ -220,7 +220,7 @@
     if (typeof originalShowPage === 'function' && !originalShowPage.__mbaLazyWrapped) {
       const wrapped = function(pageId, updateRoute = true) {
         const result = originalShowPage(pageId, updateRoute);
-        queueMicrotask(() => dispatchModuleAuthentication(pageId));
+        queueMicrotask(() => dispatchModuleActivation(pageId));
         return result;
       };
       wrapped.__mbaLazyWrapped = true;
@@ -233,12 +233,12 @@
         ? event.target.closest('[data-page], [data-go]')
         : null;
       if (!target) return;
-      queueMicrotask(() => dispatchModuleAuthentication(activePageId()));
+      queueMicrotask(() => dispatchModuleActivation(activePageId()));
     });
 
     const activateFromHistory = () => {
       if (!window.MBA_CURRENT_USER) return;
-      queueMicrotask(() => dispatchModuleAuthentication(activePageId()));
+      queueMicrotask(() => dispatchModuleActivation(activePageId()));
     };
     window.addEventListener('popstate', activateFromHistory);
     window.addEventListener('hashchange', activateFromHistory);
@@ -255,7 +255,9 @@
     applyUser(profile);
     window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
     window.restorePageRoute?.();
-    dispatchModuleAuthentication(activePageId(), true);
+    // Session authentication is a one-time identity change, not a route transition.
+    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: profile }));
+    dispatchModuleActivation(activePageId(), true);
     setAuthState(true);
     publishLoginState({ busy: false, error: null });
   }

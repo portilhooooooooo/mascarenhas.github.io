@@ -1121,6 +1121,10 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
 
 window.addEventListener('mba:authenticated', (event) => {
   authenticatedUser = event.detail;
+});
+
+// Lazy legacy loaders follow module activation without impersonating a new login.
+window.addEventListener('mba:module-activated', (event) => {
   // A gestão de usuários é carregada pelo módulo React somente quando a página é aberta.
   if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
   if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
