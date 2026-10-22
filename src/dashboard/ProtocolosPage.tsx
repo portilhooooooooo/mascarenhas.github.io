@@ -62,8 +62,20 @@ export function ProtocolosPage() {
   },[refresh]);
   useEffect(()=>{
     if(!canView)return;
-    const timer=window.setInterval(()=>{if(!document.hidden)void refresh();},5000);
-    return()=>window.clearInterval(timer);
+    // The page stays mounted after navigation; avoid polling hidden modules.
+    const active=()=>{
+      const path=(location.hash.startsWith('#/')?location.hash.slice(2):location.pathname).replace(/^\/+|\/+$/g,'');
+      return !document.hidden && (path==='operacao/protocolos'||path==='controladoria/protocolos');
+    };
+    const update=()=>{if(active())void refresh();};
+    const timer=window.setInterval(update,5000);
+    window.addEventListener('mba:route-changed',update);
+    document.addEventListener('visibilitychange',update);
+    return()=>{
+      window.clearInterval(timer);
+      window.removeEventListener('mba:route-changed',update);
+      document.removeEventListener('visibilitychange',update);
+    };
   },[canView,refresh]);
   const importRelation=async()=>{
     if(!canRun||!relation[0]||relationBusy)return;
