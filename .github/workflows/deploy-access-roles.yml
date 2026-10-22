@@ -5,6 +5,9 @@ on:
     paths:
       - .github/workflows/deploy-access-roles.yml
       - src/dashboard/UsersPage.tsx
+      - src/dashboard/EncerramentosPage.tsx
+      - src/dashboard/encerramentos.css
+      - src/dashboard/operacaoEncerramentosService.ts
       - src/tasks/TaskResults.tsx
       - src/tasks/TasksApp.tsx
       - src/tasks/model.ts
