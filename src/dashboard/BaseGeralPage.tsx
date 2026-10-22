@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight, CheckCircle2, CirclePause, Clock3, FileCheck2,
-  FileX2, FolderOpen, Hourglass, RefreshCw, ShieldAlert, X,
+  Download, FileX2, FolderOpen, Hourglass, RefreshCw, Search, ShieldAlert, X,
   type LucideIcon,
 } from 'lucide-react';
 import { getClosingCases } from './operacaoEncerramentosService';
@@ -22,13 +22,13 @@ type Dashboard = {
   filters: { states: string[]; products: string[]; resolutions: string[] };
   updated_at?: string | null;
 };
-type ProcessRow = { id: number | string; cnj: string; state?: string; situation?: string; last_movement_at?: string | null };
+type ProcessRow = { id: number | string; cnj: string; state?: string; situation?: string; pasta?: string | null; tipo_validado?: string | null; last_movement_at?: string | null };
 type Paged = { rows: ProcessRow[]; total: number; page: number; page_size: number };
 type Api = { request: <T>(path: string, options?: RequestInit) => Promise<T>; getPortfolioId?: () => string };
 type Env = Window & { MBA_API?: Api; MBA_AUTOMATION_API?: Api; MBA_NAVIGATE?: (route: string) => boolean };
 type Period = 'all' | 'month' | '90' | '365';
 type Category = 'active' | 'prescribed' | 'closing' | 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction';
-type MovementCategory = 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction';
+type MovementCategory = 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction' | 'injunctionDenied';
 
 const movements: Record<MovementCategory, string> = {
   suspended: 'suspensao',
@@ -36,6 +36,7 @@ const movements: Record<MovementCategory, string> = {
   extinct: 'sentence_extincao',
   upheld: 'sentence_procedente',
   injunction: 'tutela_deferida',
+  injunctionDenied: 'tutela_indeferida',
 };
 const catalog: Array<{ key: Category; label: string; subtitle: string; icon: LucideIcon }> = [
   { key: 'active', label: 'Base ativa', subtitle: 'Em andamento, fora do aging >18 meses', icon: FolderOpen },
@@ -101,6 +102,28 @@ const validDashboard = (value: unknown): value is Dashboard => {
 };
 const getApi = () => (window as Env).MBA_AUTOMATION_API || (window as Env).MBA_API;
 
+
+// XLS/Excel-safe semicolon CSV with BOM; no formula from imported data is evaluated.
+export function serializeBaseGeralCsv(header: string[], rows: Array<Array<unknown>>) {
+  const safe = (value: unknown) => {
+    let text = String(value ?? '');
+    if (/^[\s]*[=+@\t\r]/.test(text) || /^-[^0-9]/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  };
+  return '\ufeff' + [header, ...rows].map(row => row.map(safe).join(';')).join('\r\n');
+}
+function saveCsv(filename: string, content: string) {
+  const uri = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = uri;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(uri), 1000);
+}
+
+
 function Select({ label, value, options, onChange }: {
   label: string; value: string; options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
@@ -131,6 +154,12 @@ export function BaseGeralPage() {
   const [oldActiveCount, setOldActiveCount] = useState<{ key: string; value: number } | null>(null);
   const [closingCount, setClosingCount] = useState<{ key: string; value: number } | null>(null);
   const [detail, setDetail] = useState<Category | null>(null);
+  const [tutelaOutcome, setTutelaOutcome] = useState<'deferidas' | 'indeferidas'>('deferidas');
+  const [detailSearchInput, setDetailSearchInput] = useState('');
+  const [detailSearch, setDetailSearch] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState('');
+  const exportSequence = useRef(0);
   const [detailPage, setDetailPage] = useState(1);
   const [detailData, setDetailData] = useState<Paged | null>(null);
   const [detailPending, setDetailPending] = useState(false);
@@ -174,6 +203,8 @@ export function BaseGeralPage() {
       setUf(''); setProduct(''); setSituation(''); setResolution('');
       setData(null); setDataKey(''); setMovementsCount({}); setOldActiveCount(null); setClosingCount(null);
       setDetail(null); setDetailData(null); setError('');
+      setDetailSearch(''); setDetailSearchInput(''); setTutelaOutcome('deferidas');
+      exportSequence.current += 1; setExporting(false); setExportProgress('');
     };
     window.addEventListener('mba:portfolio-changed', changed);
     return () => { window.removeEventListener('mba:portfolio-changed', changed); ++requestSequence.current; };
@@ -250,9 +281,13 @@ export function BaseGeralPage() {
   const aged = oldActiveCount?.key === filterKey ? oldActiveCount.value : null;
   const allActive = validNumber(summary?.active);
   const activeUnderCutoff = allActive !== null && aged !== null ? Math.max(0, allActive - aged) : null;
+  // Divergence guard: the portfolio aggregate can be empty while Processos has
+  // thousands of judicial outcomes. Do not present misleading zero active/aging.
+  const directoryHasCases = comparable && Object.entries(movementsCount).some(([, count]) => (count || 0) > 0);
+  const sourceDivergence = Boolean(shown && summary?.total === 0 && directoryHasCases);
   const categories: Partial<Record<Category, number | null>> = {
-    active: activeUnderCutoff,
-    prescribed: aged,
+    active: sourceDivergence ? null : activeUnderCutoff,
+    prescribed: sourceDivergence ? null : aged,
     closing: closingCount?.key === filterKey ? closingCount.value : null,
     suspended: movementsCount.suspended,
     dismissed: validNumber(summary?.dismissed) ?? movementsCount.dismissed,
@@ -268,7 +303,9 @@ export function BaseGeralPage() {
     ? { background: 'conic-gradient(var(--mba-orange, #e87828) 0% ' + activeShare + '%, var(--mba-blue, #4577ba) ' + activeShare + '% 100%)' }
     : undefined;
 
-  const detailMovement = detail && detail in movements ? movements[detail as MovementCategory] : null;
+  const detailMovement = detail === 'injunction'
+    ? (tutelaOutcome === 'deferidas' ? movements.injunction : movements.injunctionDenied)
+    : detail && detail in movements ? movements[detail as MovementCategory] : null;
   const listSupported = detail === 'closing' || Boolean(detailMovement);
   const filtersSupported = detail === 'closing' ? closingComparable : comparable;
   useEffect(() => {
@@ -281,11 +318,12 @@ export function BaseGeralPage() {
     const params = new URLSearchParams({ page: String(detailPage), page_size: '25' });
     if (uf) params.set('uf', uf);
     if (detailMovement) params.set('movement', detailMovement);
+    if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
     setDetailPending(true);
     const request: Promise<Paged> = detail === 'closing'
-      ? getClosingCases('APTOS', 25, (detailPage - 1) * 25, '', 'todos', 'todos', 'nao', 'todos')
+      ? getClosingCases('APTOS', 25, (detailPage - 1) * 25, detailSearch.trim(), 'todos', 'todos', 'nao', 'todos')
           .then(result => ({ rows: (result.rows || []).map(row => ({
-            id: row.cnj, cnj: row.cnj, state: row.uf || '—',
+            id: row.cnj, cnj: row.cnj, state: row.uf || '—', pasta: row.pasta, tipo_validado: row.tipo_validado,
             situation: 'Apto, sem envio ao Benner',
           })), total: result.total, page: detailPage, page_size: 25 }))
       : api.request<Paged>('/api/processos?' + params.toString());
@@ -295,12 +333,77 @@ export function BaseGeralPage() {
       if (!cancelled) setDetailError(cause instanceof Error ? cause.message : 'Falha ao carregar processos.');
     }).finally(() => { if (!cancelled) setDetailPending(false); });
     return () => { cancelled = true; };
-  }, [detail, detailPage, detailMovement, listSupported, filtersSupported, uf, portfolio, revision]);
+  }, [detail, detailPage, detailMovement, detailSearch, listSupported, filtersSupported, uf, portfolio, revision]);
 
   const openDetail = (value: Category) => {
+    exportSequence.current += 1;
     setDetail(value); setDetailPage(1); setDetailData(null);
+    setDetailSearch(''); setDetailSearchInput(''); setTutelaOutcome('deferidas');
+    setDetailError(''); setExportProgress(''); setExporting(false);
   };
-  const detailLabel = detail ? catalog.find(item => item.key === detail)?.label : '';
+  const closeDetail = () => { exportSequence.current += 1; setExporting(false); setDetail(null); };
+  useEffect(() => {
+    if (!detail) return;
+    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') closeDetail(); };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', keydown);
+    return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', keydown); };
+  }, [detail]);
+  const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
+
+  const exportDetails = async () => {
+    if (!detail || !listSupported || !filtersSupported || exporting || detailPending || !detailData) return;
+    const total = detailData.total;
+    if (!Number.isSafeInteger(total) || total < 0 || total > 10000) {
+      setDetailError('A relação excede o limite de 10.000 registros da consulta paginada. É necessário exportar pelo backend.');
+      return;
+    }
+    const serial = ++exportSequence.current;
+    const pageSize = detail === 'closing' ? 100 : 50;
+    const pages = Math.ceil(total / pageSize);
+    const api = getApi();
+    if (!api) { setDetailError('API indisponível.'); return; }
+    setExporting(true); setDetailError(''); setExportProgress('Preparando CSV...');
+    const all: ProcessRow[] = [];
+    try {
+      for (let first = 0; first < pages; first += 4) {
+        if (serial !== exportSequence.current) return;
+        const indexes = Array.from({ length: Math.min(4, pages - first) }, (_, i) => first + i);
+        const batches = await Promise.all(indexes.map(async index => {
+          if (detail === 'closing') {
+            const r = await getClosingCases('APTOS', pageSize, index * pageSize, detailSearch.trim(), 'todos', 'todos', 'nao', 'todos');
+            return (r.rows || []).map(row => ({
+              id: row.cnj, cnj: row.cnj, state: row.uf || '—', pasta: row.pasta,
+              tipo_validado: row.tipo_validado, situation: 'Apto, sem envio ao Benner',
+            } satisfies ProcessRow));
+          }
+          const params = new URLSearchParams({ page: String(index + 1), page_size: String(pageSize) });
+          if (uf) params.set('uf', uf);
+          if (detailMovement) params.set('movement', detailMovement);
+          if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
+          const r = await api.request<Paged>('/api/processos?' + params.toString());
+          return r.rows || [];
+        }));
+        if (serial !== exportSequence.current) return;
+        batches.forEach(rows => all.push(...rows));
+        setExportProgress('Consultados ' + number(all.length) + ' de ' + number(total));
+      }
+      if (serial !== exportSequence.current) return;
+      if (all.length !== total) throw new Error('A relação mudou durante a exportação. Atualize a consulta antes de tentar novamente.');
+      const name = (detail === 'injunction' ? 'tutelas_' + tutelaOutcome : detail).replace(/[^a-z0-9_]/gi, '_');
+      const csv = serializeBaseGeralCsv(
+        ['CNJ', 'Situação', 'UF', 'Pasta', 'Classificação'],
+        all.map(row => [row.cnj, row.situation || '', row.state || '', row.pasta || '', row.tipo_validado || '']),
+      );
+      saveCsv('base_geral_' + name + '_' + portfolio + '.csv', csv);
+      setExportProgress(number(total) + ' registros exportados.');
+    } catch (cause) {
+      if (serial === exportSequence.current) setDetailError(cause instanceof Error ? cause.message : 'Falha ao exportar CSV.');
+    } finally {
+      if (serial === exportSequence.current) setExporting(false);
+    }
+  };
   return <section className="base-geral-page" aria-label="Base Geral da carteira processual">
     <header className="base-geral-header">
       <div><h1>Base Geral</h1><p>Indicadores consolidados da carteira processual</p></div>
@@ -323,19 +426,31 @@ export function BaseGeralPage() {
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
     {error && <div className="base-geral-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
+    {sourceDivergence && <div className="base-geral-warning base-geral-source-warning" role="status">
+      Divergência entre fontes: a carteira agregada retornou zero processos, mas o diretório processual possui registros. Os totais de Base ativa e Base prescrita foram ocultados para evitar números inconsistentes. Confirme a consolidação da carteira na API.
+    </div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
     <div className="base-geral-kpis">
       {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card"
         onClick={() => openDetail(key)} aria-label={'Abrir relação: ' + label}>
-        <span className="base-geral-card-top"><span>{label}</span><Icon size={17} strokeWidth={1.7}/></span>
+        <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
         <strong>{shown ? number(categories[key]) : '—'}</strong>
-        <span className="base-geral-card-bottom">{subtitle}<ArrowUpRight size={14}/></span>
+        <span className="base-geral-card-bottom">{subtitle}</span>
       </button>)}
     </div>
     <div className="base-geral-bottom">
       <section className="base-geral-panel" id="base-geral-produtos">
-        <header><div><h2>Produto</h2><p>Card 9 · Distribuição da carteira por produto</p></div>
-          <span className="base-geral-tally">{number(products.reduce((sum, item) => sum + Number(item.value), 0))} registros</span>
+        <header><div><h2>Produto</h2><p>Distribuição da carteira por produto</p></div>
+          <div className="base-geral-panel-actions"><span className="base-geral-tally">{number(products.reduce((sum, item) => sum + Number(item.value), 0))} registros</span>
+            <button type="button" className="base-geral-csv-action" disabled={!products.length} onClick={() =>
+              saveCsv('base_geral_produtos_' + portfolio + '.csv', serializeBaseGeralCsv(
+                ['Produto', 'Processos', 'Participação (%)'],
+                products.map(item => [item.label, item.value,
+                  products.reduce((acc, p) => acc + Number(p.value), 0)
+                    ? (Number(item.value) / products.reduce((acc, p) => acc + Number(p.value), 0) * 100).toFixed(1).replace('.', ',')
+                    : '0'])
+              ))}><Download size={14}/> CSV</button>
+          </div>
         </header>
         <div className="base-geral-table-scroll">
           <table className="base-geral-products"><thead><tr><th>Produto</th><th>Processos</th><th>Participação</th><th>Detalhar</th></tr></thead>
@@ -350,7 +465,7 @@ export function BaseGeralPage() {
         </div>
       </section>
       <section className="base-geral-panel base-geral-comparison">
-        <header><div><h2>Prejuízo X Lucro</h2><p>Card 10 · Base prescrita versus base ativa (quantidade de processos)</p></div></header>
+        <header><div><h2>Prejuízo X Lucro</h2><p>Base prescrita versus base ativa · quantidade de processos</p></div></header>
         <div className="base-geral-chart-area">
           <button type="button" className={'base-geral-donut ' + (!donutReady ? 'is-unavailable' : '')}
             style={chartStyle} onClick={() => openDetail('active')} aria-label="Detalhar comparação entre base prescrita e base ativa">
@@ -365,34 +480,74 @@ export function BaseGeralPage() {
         <p className="base-geral-caption">Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Base ativa inclui processos sem data de entrada comprovada; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p>
       </section>
     </div>
-    {detail && <div className="base-geral-overlay" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setDetail(null); }}>
-      <section className="base-geral-drawer" role="dialog" aria-modal="true" aria-label={'Relação de processos: ' + detailLabel}>
-        <header><div><h2>{detailLabel}</h2><p>Relação de processos da carteira selecionada</p></div>
-          <button type="button" className="base-geral-dismiss" onClick={() => setDetail(null)} aria-label="Fechar relação"><X size={19}/></button>
+    {detail && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
+      if (event.target === event.currentTarget) closeDetail();
+    }}>
+      <section className="base-geral-dialog" role="dialog" aria-modal="true" aria-label={'Relação de processos: ' + detailLabel}>
+        <header className="base-geral-dialog-head">
+          <div><h2>{detailLabel}</h2><p>Relação de CNJs da carteira selecionada</p></div>
+          <button type="button" className="base-geral-dismiss" onClick={closeDetail} aria-label="Fechar relação"><X size={19}/></button>
         </header>
+        {detail === 'injunction' && <div className="base-geral-outcome-tabs" role="group" aria-label="Situação das tutelas">
+          {(['deferidas', 'indeferidas'] as const).map(outcome =>
+            <button key={outcome} type="button" className={tutelaOutcome === outcome ? 'active' : ''}
+              aria-pressed={tutelaOutcome === outcome} onClick={() => {
+                if (outcome === tutelaOutcome) return;
+                exportSequence.current += 1;
+                setExporting(false); setExportProgress(''); setDetailError('');
+                setTutelaOutcome(outcome); setDetailPage(1); setDetailData(null);
+              }}>
+              {outcome === 'deferidas' ? 'Deferidas' : 'Indeferidas'}
+              <span>{number(movementsCount[outcome === 'deferidas' ? 'injunction' : 'injunctionDenied'])}</span>
+            </button>)}
+        </div>}
+        {listSupported && filtersSupported && <div className="base-geral-dialog-toolbar">
+          <form onSubmit={event => { event.preventDefault(); setDetailPage(1); setDetailSearch(detailSearchInput.trim()); }}>
+            <Search size={15}/><input value={detailSearchInput} onChange={event => setDetailSearchInput(event.target.value)}
+              placeholder={detail === 'closing' ? 'Buscar CNJ ou pasta' : 'Buscar CNJ'} aria-label="Buscar processo"/>
+            <button type="submit" disabled={detailPending}>Buscar</button>
+          </form>
+          <button type="button" onClick={() => void exportDetails()}
+            disabled={!detailData || detailPending || exporting || detailData.total > 10000}
+            title="Exporta todos os registros do recorte, até o limite da API de 10 mil processos">
+            <Download size={15}/> {exporting ? 'Exportando...' : 'CSV completo'}
+          </button>
+        </div>}
+        {listSupported && filtersSupported && <p className="base-geral-dialog-source">
+          {detail === 'closing' ? 'Fonte: fila operacional de encerramentos · aptos sem envio confirmado'
+            : 'Fonte: diretório processual · filtro ' + (detailMovement || '')}
+          {detailSearch ? ' · busca: ' + detailSearch : ''}
+        </p>}
         {!listSupported && <div className="base-geral-warning">
           {detail === 'prescribed'
-            ? 'O total corresponde aos processos em andamento com entrada anterior a ' + cutoff.split('-').reverse().join('/') + ' (aging superior a 18 meses). A API existente calcula o total, mas ainda não disponibiliza a relação paginada por data de entrada.'
-            : 'A relação de processos não pode ser filtrada com segurança pelo critério desta categoria na API atual. Não exibiremos processos fora do recorte.'}
+            ? 'O total corresponde aos processos em andamento com entrada anterior a ' + cutoff.split('-').reverse().join('/') + ' (aging superior a 18 meses). A API ainda não disponibiliza a relação paginada por data de entrada; o CSV desse recorte exige atualização do backend.'
+            : 'A API ainda não disponibiliza a relação filtrada por este critério. Para evitar divergências, não serão exibidos nem exportados processos fora da categoria.'}
         </div>}
-        {listSupported && !filtersSupported && <div className="base-geral-warning">Os filtros atuais não são suportados pela listagem desta categoria. Limpe os filtros para consultar uma relação consistente com o card.</div>}
-        {listSupported && filtersSupported && <>
-          {detailPending && <p className="base-geral-muted" role="status">Carregando relação...</p>}
-          {detailError && <p className="base-geral-error" role="alert">{detailError}</p>}
-          {detailData && <><p className="base-geral-drawer-total">{number(detailData.total)} processos encontrados</p>
-            <div className="base-geral-table-scroll">
-              <table className="base-geral-detail-table"><thead><tr><th>CNJ</th><th>Situação</th><th>UF</th></tr></thead>
-              <tbody>{detailData.rows?.map(row => <tr key={row.id}><td><button type="button" onClick={() => (window as Env).MBA_NAVIGATE?.('processos/' + encodeURIComponent(row.cnj))}>{row.cnj} <ArrowUpRight size={12}/></button></td><td>{row.situation || '—'}</td><td>{row.state || '—'}</td></tr>)}</tbody></table>
-            </div>
-            {!detailData.rows?.length && <p className="base-geral-muted">Nenhum processo localizado.</p>}
-            <div className="base-geral-pagination">
-              <button type="button" disabled={detailPage <= 1 || detailPending} onClick={() => setDetailPage(value => value - 1)}>Anterior</button>
-              <span>Página {detailPage}</span>
-              <button type="button" disabled={detailPending || detailPage * 25 >= detailData.total} onClick={() => setDetailPage(value => value + 1)}>Próxima</button>
-            </div>
-          </>}
-        </>}
-        <button type="button" className="base-geral-open-processos" onClick={() => { setDetail(null); (window as Env).MBA_NAVIGATE?.('processos'); }}>Abrir módulo Processos <ArrowUpRight size={14}/></button>
+        {listSupported && !filtersSupported && <div className="base-geral-warning">
+          Os filtros atuais não são suportados pela listagem desta categoria. Limpe-os para consultar ou exportar uma relação consistente com os cards.
+        </div>}
+        {detailError && <p className="base-geral-error base-geral-dialog-error" role="alert">{detailError}</p>}
+        {exportProgress && <p className="base-geral-export-status" role="status">{exportProgress}</p>}
+        {listSupported && filtersSupported && <div className="base-geral-dialog-table-wrap">
+          <table className="base-geral-detail-table">
+            <thead><tr><th>CNJ</th><th>Situação</th><th>UF</th>{detail === 'closing' && <><th>Pasta</th><th>Classificação</th></>}</tr></thead>
+            <tbody>{detailData?.rows?.map(row => <tr key={row.id}>
+              <td><button type="button" onClick={() => (window as Env).MBA_NAVIGATE?.('processos/' + encodeURIComponent(row.cnj))}>{row.cnj} <ArrowUpRight size={12}/></button></td>
+              <td>{row.situation || '—'}</td><td>{row.state || '—'}</td>
+              {detail === 'closing' && <><td>{row.pasta || '—'}</td><td>{row.tipo_validado || '—'}</td></>}
+            </tr>)}</tbody>
+          </table>
+          {detailPending && <p className="base-geral-dialog-empty" role="status">Consultando registros...</p>}
+          {!detailPending && detailData && !detailData.rows?.length && <p className="base-geral-dialog-empty">Nenhum processo localizado.</p>}
+        </div>}
+        <footer className="base-geral-dialog-footer">
+          <span>{listSupported && filtersSupported ? (detailData ? number(detailData.total) + ' registros' : '—') : 'Relação indisponível'}</span>
+          {listSupported && filtersSupported && <nav aria-label="Páginas da consulta">
+            <button type="button" disabled={detailPage <= 1 || detailPending} onClick={() => setDetailPage(value => value - 1)} aria-label="Página anterior">Anterior</button>
+            <span>Página {detailPage}{detailData ? ' de ' + Math.max(1, Math.ceil(detailData.total / 25)) : ''}</span>
+            <button type="button" disabled={detailPending || !detailData || detailPage * 25 >= detailData.total} onClick={() => setDetailPage(value => value + 1)} aria-label="Próxima página">Próxima</button>
+          </nav>}
+        </footer>
       </section>
     </div>}
   </section>;
