@@ -779,7 +779,7 @@ export function TasksApp() {
       <button type="button" disabled={!(manager || canViewOtherTasks)} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
       <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Produtividade</button>
     </nav>
-    {tab === 'results' ? <TaskResults api={apiRequest} visible={pageVisible} canViewOthers={canViewOtherTasks} userId={user?.id} /> : null}
+    {tab === 'results' ? <TaskResults api={apiRequest} visible={pageVisible} canViewOthers={isMaster || (user?.role === "legal_leader" && canViewOtherTasks)} userId={user?.id} /> : null}
 
     {tab === 'management' && (manager || canViewOtherTasks) ? <AssignmentsBoard tasks={allVisibleTasks} api={apiRequest} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /> : null}
 

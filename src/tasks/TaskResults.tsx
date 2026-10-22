@@ -114,7 +114,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const requestId = useRef(0);
-  const key = [filters.period, filters.deadline, filters.person, revision, userId].join('|');
+  const key = [filters.period, filters.deadline, filters.person, revision, userId, canViewOthers].join('|');
   const [loadedKey, setLoadedKey] = useState('');
 
   useEffect(() => {
@@ -123,8 +123,8 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     const serial = ++requestId.current;
     setPending(true); setError('');
     // Não solicitar o snapshot de pendências: essa visão mede apenas conclusões.
-    const params = new URLSearchParams({ ...filters, duration: 'all', include_pending: '0', include_growth: '0' });
-    const legacyParams = new URLSearchParams({ ...filters, duration: 'all' });
+    const params = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all', include_pending: '0', include_growth: '0' });
+    const legacyParams = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all' });
     const request = demoMode ? Promise.resolve(createDemoTaskResults({ ...filters, duration: 'all' }))
       : withOldApiFallback(api, '/api/tasks/results?' + params, '/api/tasks/results?' + legacyParams);
     request.then((answer: ResultPayload) => {
@@ -132,7 +132,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       if (!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de produtividade.');
       setData(answer);
       setLoadedKey(key);
-      if (filters.person === 'all') setOptions(current => {
+      if (canViewOthers && filters.person === 'all') setOptions(current => {
         const merged = new Map(current.map(row => [row.id, row]));
         answer.people.forEach(row => merged.set(row.id, { id: row.id, name: row.name }));
         return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -144,6 +144,13 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     }).finally(() => { if (!cancelled && serial === requestId.current) setPending(false); });
     return () => { cancelled = true; };
   }, [visible, key, api, userId, demoMode]);
+
+  useEffect(() => {
+    if (!canViewOthers && filters.person !== 'all') {
+      setFilters(current => ({ ...current, person: 'all' }));
+      setOptions([]);
+    }
+  }, [canViewOthers, filters.person]);
 
   useEffect(() => {
     const reset = () => {
@@ -165,8 +172,8 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     if (demoMode || exporting || !data || loadedKey !== key) return;
     setExporting(true); setError('');
     try {
-      const params = new URLSearchParams({ ...filters, duration: 'all', include_pending: '0', include_growth: '0' });
-      const legacyParams = new URLSearchParams({ ...filters, duration: 'all' });
+      const params = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all', include_pending: '0', include_growth: '0' });
+      const legacyParams = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all' });
       const result = await withOldApiFallback(api, '/api/tasks/results/export?' + params,
         '/api/tasks/results/export?' + legacyParams);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
@@ -176,7 +183,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   };
 
   const shown = loadedKey === key ? data : null;
-  const people = useMemo(() => (shown?.people || []).filter(row => row.completed > 0), [shown]);
+  const people = useMemo(() => (shown?.people || []).filter(row => row.completed > 0 && (canViewOthers || row.id === userId)), [shown, canViewOthers, userId]);
   const sorted = useMemo(() => [...people].sort((a, b) => {
     if (sortBy === 'name') return a.name.localeCompare(b.name, 'pt-BR');
     if (sortBy === 'least') return a.completed - b.completed || a.name.localeCompare(b.name, 'pt-BR');
@@ -211,9 +218,9 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
 
   return <section className="task-results-page" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
-      <div><h1>Produtividade</h1><p>Entregas da equipe, tempo observado de conclusão e comparações por tipo de tarefa.</p></div>
+      <div><h1>{canViewOthers ? 'Produtividade' : 'Minha produtividade'}</h1><p>{canViewOthers ? 'Entregas da equipe, tempo observado de conclusão e comparações por tipo de tarefa.' : 'Suas análises concluídas e o tempo observado por tipo de tarefa.'}</p></div>
       <div className="task-results-actions">
-        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada na demonstração' : 'Exportar produção e medições por colaborador'}>
+        <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada na demonstração' : canViewOthers ? 'Exportar dados da equipe' : 'Exportar minha produtividade'}>
           <Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}
         </button>
         <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
@@ -229,10 +236,10 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         { value: 'all', label: 'Todos os prazos' }, { value: 'overdue', label: 'Vencido' }, { value: 'today', label: 'Vence hoje' },
         { value: 'future', label: 'A vencer' }, { value: 'none', label: 'Sem prazo' },
       ]}/>
-      <SelectFilter title="Colaborador" value={filters.person} onChange={value => setFilters(current => ({ ...current, person: value }))} options={[
-        { value: 'all', label: canViewOthers ? 'Toda a equipe' : 'Minhas análises' },
-        ...(canViewOthers ? options.map(person => ({ value: person.id, label: person.name })) : []),
-      ]}/>
+      {canViewOthers && <SelectFilter title="Colaborador" value={filters.person} onChange={value => setFilters(current => ({ ...current, person: value }))} options={[
+        { value: 'all', label: 'Toda a equipe' },
+        ...options.map(person => ({ value: person.id, label: person.name })),
+      ]}/>}
     </div>
     {error && <div role="alert" className="task-results-notice task-results-error">{error}<button type="button" onClick={() => setRevision(n => n + 1)}>Tentar novamente</button></div>}
     {pending && !shown && <div role="status" className="task-results-notice">Carregando conclusões auditadas…</div>}
@@ -241,7 +248,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       <div className="task-results-stats">
         {stat('Concluídas no período', formatInt(total), 'Análises humanas concluídas', CheckCircle2)}
         {stat('Concluídas hoje', formatInt(shown.summary.today_completed), 'Hoje, dentro do filtro escolhido', Clock3)}
-        {stat('Colaboradores ativos', formatInt(people.length), 'Com pelo menos uma conclusão', Users)}
+        {canViewOthers ? stat('Colaboradores ativos', formatInt(people.length), 'Com pelo menos uma conclusão', Users) : stat('Minha mediana por análise', time(people[0]?.median_analysis_seconds), 'Tempo central das análises medidas', Clock3)}
         {stat('Cobertura de tempo', percent(recorded, total), formatInt(recorded) + ' de ' + formatInt(total) + ' com início e término válidos', Gauge)}
       </div>
       <div className="task-results-grid task-results-grid-compact">
@@ -258,7 +265,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           <p className="task-results-explainer">Comparar a velocidade só faz sentido dentro de um mesmo tipo de tarefa. A complexidade de uma defesa e de um protocolo não é equivalente.</p>
         </article>
       </div>
-      <article className="task-results-card">
+      {canViewOthers && <article className="task-results-card">
         <header className="task-results-table-heading"><div><h2>Produtividade por colaborador</h2><p>Entrega total e distribuição dos tempos observados. Mediana não equivale a qualidade.</p></div>
           <div className="task-results-sort"><ArrowDownUp size={14}/><select aria-label="Ordenar colaboradores" value={sortBy} onChange={event => setSortBy(event.target.value as typeof sortBy)}>
             <option value="most">Mais entregas</option><option value="least">Menos entregas</option><option value="name">Nome</option>
@@ -276,31 +283,31 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           </tr>)}
           {!sorted.length && <tr><td colSpan={6}>Nenhuma conclusão registrada no período.</td></tr>}</tbody>
         </table></div>
-      </article>
+      </article>}
       <article className="task-results-card">
-        <header className="task-results-table-heading"><div><h2>Tempo de conclusão por tipo de tarefa</h2><p>Compare colaboradores realizando o mesmo tipo de análise, ordenados pela menor mediana válida.</p></div>
+        <header className="task-results-table-heading"><div><h2>Tempo de conclusão por tipo de tarefa</h2><p>{canViewOthers ? 'Compare colaboradores realizando o mesmo tipo de análise, ordenados pela menor mediana válida.' : 'Confira suas medianas e a cobertura de medições por modalidade de tarefa.'}</p></div>
           <div className="task-results-sort">
             <SelectFilter title="Tipo de tarefa" value={activeType} onChange={setSelectedType} options={byType.map(([type]) => ({ value: type, label: taskTypeLabel(type) }))}/>
           </div>
         </header>
         {!hasTimingByType && people.length > 0 ? <p className="task-results-empty" role="status">O servidor ainda não disponibiliza tempos segregados por tipo de tarefa. As medianas gerais acima permanecem disponíveis.</p> : null}
         {hasTimingByType && activeType ? <>
-          <div className="task-results-timing-summary">
+          {canViewOthers && <div className="task-results-timing-summary">
             <div><small>Menor mediana comparável — {taskTypeLabel(activeType)}</small>
               <strong>{fastest ? fastest.person.name : 'Sem amostra suficiente'}</strong>
               <span>{fastest ? time(fastest.measure.median_seconds) + ' · ' + formatInt(fastest.measure.samples) + ' medições' : 'Para comparar: 2 colaboradores, cada um com 5 medições e 50% de cobertura.'}</span>
             </div>
             <div><small>Colaboradores comparáveis</small><strong>{formatInt(eligibleCount)}</strong><span>Mesma modalidade e critério de amostra</span></div>
-          </div>
+          </div>}
           <div className="task-results-table-scroll"><table className="task-results-table">
-            <thead><tr><th>Colaborador</th><th>Concluídas</th><th>Mediana</th><th>Média</th><th>Amostra</th><th>Comparação</th></tr></thead>
+            <thead><tr>{canViewOthers && <th>Colaborador</th>}<th>Concluídas</th><th>Mediana</th><th>Média</th><th>Amostra</th>{canViewOthers && <th>Comparação</th>}</tr></thead>
             <tbody>{timingRows.map(({ person, measure }) => <tr key={person.id}>
-              <td><strong>{person.name}</strong></td><td>{formatInt(measure.completed)}</td>
+              {canViewOthers && <td><strong>{person.name}</strong></td>}<td>{formatInt(measure.completed)}</td>
               <td>{time(measure.median_seconds)}</td><td>{time(measure.mean_seconds)}</td>
               <td>{formatInt(measure.samples)} / {formatInt(measure.completed)}<small>{percent(measure.samples, measure.completed)} de cobertura</small></td>
-              <td>{shown.truncated ? 'Consulta incompleta' : comparable(measure) ? (fastest?.person.id === person.id ? 'Menor mediana' : eligibleCount >= 2 ? 'Comparável' : 'Sem outro comparável') : 'Amostra insuficiente'}</td>
+              {canViewOthers && <td>{shown.truncated ? 'Consulta incompleta' : comparable(measure) ? (fastest?.person.id === person.id ? 'Menor mediana' : eligibleCount >= 2 ? 'Comparável' : 'Sem outro comparável') : 'Amostra insuficiente'}</td>}
             </tr>)}
-            {!timingRows.length && <tr><td colSpan={6}>Sem conclusões deste tipo na seleção atual.</td></tr>}</tbody>
+            {!timingRows.length && <tr><td colSpan={canViewOthers ? 6 : 4}>Sem conclusões deste tipo na seleção atual.</td></tr>}</tbody>
           </table></div>
         </> : null}
       </article>

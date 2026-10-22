@@ -4,6 +4,7 @@ export interface MbaUser {
   id?: string;
   access_kind?: string;
   is_master_admin?: boolean;
+  role?: string;
   allowed_modules?: string[];
   permissions?: Record<string, boolean>;
 }

@@ -5,6 +5,9 @@ on:
     paths:
       - .github/workflows/deploy-access-roles.yml
       - src/dashboard/UsersPage.tsx
+      - src/tasks/TaskResults.tsx
+      - src/tasks/TasksApp.tsx
+      - src/tasks/model.ts
       - app.js
       - auth.js
       - index.html
