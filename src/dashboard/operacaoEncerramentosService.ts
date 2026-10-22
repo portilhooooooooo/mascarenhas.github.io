@@ -1,5 +1,6 @@
 export type ClosingStatus = 'PENDENTES' | 'APTOS' | 'INAPTOS' | 'EM_FASE_RECURSAL' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'VITORIA' | 'ENVIADOS_BENNER';
 export type ClosingType = 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'VITORIA';
+export type ClosingValidatedFilter = 'todos' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'VITORIA' | 'ACORDO';
 
 export interface ClosingCase {
   portfolio_id: string;
@@ -47,13 +48,14 @@ function api(): ApiClient {
 export function getClosingSummary(): Promise<ClosingSummary> {
   return api().request('/api/operacao/encerramentos/summary');
 }
-export function getClosingCases(status: ClosingStatus, limit: number, offset: number, search = '', motivoDerrota: MotivoDerrotaFilter = 'todos', indicio: ClosingIndicioFilter = 'todos', enviadoBenner: EnviadoBennerFilter = 'todos'): Promise<ClosingList> {
+export function getClosingCases(status: ClosingStatus, limit: number, offset: number, search = '', motivoDerrota: MotivoDerrotaFilter = 'todos', indicio: ClosingIndicioFilter = 'todos', enviadoBenner: EnviadoBennerFilter = 'todos', tipoValidado: ClosingValidatedFilter = 'todos'): Promise<ClosingList> {
   const query = new URLSearchParams({status, limit: String(limit), offset: String(offset)});
   if (search.trim()) query.set('q', search.trim());
   if (motivoDerrota !== 'todos') query.set('motivo_derrota', motivoDerrota);
   // Query must run on the complete portfolio before LIMIT/OFFSET on the API.
   if (indicio !== 'todos') query.set('indicio', indicio);
   if (enviadoBenner !== 'todos') query.set('enviado_benner', enviadoBenner);
+  if (tipoValidado !== 'todos') query.set('tipo_validado', tipoValidado);
   return api().request('/api/operacao/encerramentos/items?' + query);
 }
 export function sendClosingsToBenner(items: {cnj: string; andamento: string}[]): Promise<ClosingSendResult> {
