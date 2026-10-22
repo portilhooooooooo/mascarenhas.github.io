@@ -251,6 +251,7 @@ function PagamentosPage() {
   const [canImport,setCanImport]=useState(false);
   const [canRun,setCanRun]=useState(false);
   const inFlight=useRef(false);
+  const lastRefreshAt=useRef(0);
 
   const refresh=useCallback(async()=>{
     if(inFlight.current)return;
@@ -258,6 +259,7 @@ function PagamentosPage() {
     try{
       const [nextSummary,nextItems]=await Promise.all([getPagamentoOperacaoSummary(),getPagamentoOperacaoItems()]);
       setSummary(nextSummary);setItems(nextItems);setError('');
+      lastRefreshAt.current=Date.now();
     }catch(cause){
       setError(cause instanceof Error?cause.message:'Não foi possível consultar Pagamentos.');
       setSummary(current=>current?{...current,session:{state:'unknown'}}:null);
@@ -274,6 +276,20 @@ function PagamentosPage() {
     permissions();window.addEventListener('mba:authenticated',permissions);return()=>window.removeEventListener('mba:authenticated',permissions);
   },[refresh]);
 
+  useEffect(()=>{
+    // Show the retained list instantly; revalidate in the background if stale.
+    const revalidate=()=>{
+      if(!canView||document.hidden||operationModuleFromLocation()!=='pagamentos'||
+          !document.getElementById('acordos')?.classList.contains('active'))return;
+      if(Date.now()-lastRefreshAt.current>30000)void refresh();
+    };
+    window.addEventListener('mba:route-changed',revalidate);
+    document.addEventListener('visibilitychange',revalidate);
+    return()=>{
+      window.removeEventListener('mba:route-changed',revalidate);
+      document.removeEventListener('visibilitychange',revalidate);
+    };
+  },[canView,refresh]);
 
   const importFile=async()=>{
     if(!file||!canImport||importBusy)return;
@@ -385,10 +401,12 @@ export function OperacaoPage() {
     window.addEventListener('mba:authenticated', sync);
     window.addEventListener('mba:profile-ready', sync);
     window.addEventListener('mba:portfolio-changed', sync);
+    window.addEventListener('mba:module-visibility-updated', sync);
     return () => {
       window.removeEventListener('mba:authenticated', sync);
       window.removeEventListener('mba:profile-ready', sync);
       window.removeEventListener('mba:portfolio-changed', sync);
+      window.removeEventListener('mba:module-visibility-updated', sync);
     };
   }, []);
 
