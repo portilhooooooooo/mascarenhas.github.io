@@ -108,7 +108,7 @@ function canAccessRoute(pageId, route) {
   if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
-    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
+    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true || user?.permissions?.['tasks.assign'] === true || user?.permissions?.['tasks.view_others'] === true;
   }
   return true;
 }
@@ -254,7 +254,7 @@ let permissionCatalog = [];
 let userPortfolioCatalog = [];
 let selectedUser = null;
 let authenticatedUser = null;
-const roleLabels = { admin: 'Administrador', user: 'Usuário', operational: 'Operacional' };
+const roleLabels = { admin: 'Admin', legal_leader: 'Legal Leader', stakeholder: 'Stakeholder', analyst: 'Analista', user: 'Analista', operational: 'Operacional' };
 const userKind = user => user.access_kind === 'operational' ? 'operational' : user.role;
 const exclusiveUsersEmail = 'gabriel.portilho@mascarenhasbarbosa.com.br';
 const permissionSections = { dashboard: 'Dashboard', automations: 'Automações', tutelas: 'Tutelas', encerramentos: 'Encerramentos', pagamentos: 'Pagamentos', agreements: 'Acordos', tasks: 'Tarefas', users: 'Usuários', settings: 'Configurações' };
@@ -304,7 +304,7 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-name').textContent = user.name || 'Sem nome';
   document.querySelector('#selected-user-email').textContent = user.email;
   document.querySelector('#selected-user-role').value = userKind(user);
-  document.querySelector('#selected-user-role').disabled = true;
+  document.querySelector('#selected-user-role').disabled = user.email.toLowerCase() === exclusiveUsersEmail;
   document.querySelector('#selected-user-active').checked = Boolean(user.active);
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
   const operational = user.access_kind === 'operational';
@@ -383,6 +383,10 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
   const original = button.textContent;
   try {
     if (selectedUser.email.toLowerCase() === exclusiveUsersEmail) return;
+    const role = document.querySelector('#selected-user-role').value;
+    if (role !== selectedUser.role) {
+      await window.MBA_API.request(`/api/users/${selectedUser.id}/role`, {method: 'PATCH', body: JSON.stringify({role})});
+    }
     await window.MBA_USER_ACCESS.save(selectedUser.id);
     const active = document.querySelector('#selected-user-active').checked;
     if (active !== selectedUser.active) {
@@ -407,8 +411,9 @@ document.querySelector('#user-create-role')?.addEventListener('change', event =>
 document.querySelector('#user-create-form')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget, errorBox = document.querySelector('#user-create-error'), submit = form.querySelector('[type="submit"]');
-  const access_kind = form.elements.role.value;
-  const payload = {access_kind, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: access_kind === 'operational' ? [...form.querySelectorAll('[name="allowed_modules"]:checked')].map(input => input.value) : []};
+  const role = form.elements.role.value;
+  const access_kind = 'administrative';
+  const payload = {role, access_kind, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: access_kind === 'operational' ? [...form.querySelectorAll('[name="allowed_modules"]:checked')].map(input => input.value) : []};
   submit.disabled = true; errorBox.hidden = true;
   try {
     const existing = usersCache.find(user => String(user.email || '').toLowerCase() === payload.email.toLowerCase());
