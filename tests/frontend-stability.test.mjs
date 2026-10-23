@@ -42,4 +42,18 @@ assert.match(closePage, /indicioFiltro/);
 assert.match(closeApi, /query\.set\('indicio', indicio\)/);
 assert.doesNotMatch(closePage, /rows\.filter\(row=>.*datajud_tipo/);
 
+
+const tasksApp = read('src/tasks/TasksApp.tsx');
+const analyticsShell = read('src/dashboard/GestaoProcessualPage.tsx');
+const operationShell = read('src/dashboard/OperacaoPage.tsx');
+// State is preserved for navigation, but reset for permission, portfolio and session changes.
+assert.match(tasksApp, /if \(identity === lastIdentity\) return;/);
+assert.match(tasksApp, /Date\.now\(\) - lastSuccessfulTaskLoad\.current < NAVIGATION_REVALIDATE_MS/);
+assert.match(tasksApp, /setLoading\(resetCache \|\| lastSuccessfulTaskLoad\.current === 0\)/);
+assert.match(main, /if \(!allowed\) unmountOperacaoPage\(\);\s*else if \(active\) mountOperacaoPage\(\);/);
+assert.match(main, /if \(section\.classList\.contains\('active'\) && !processosRoot\)/);
+assert.match(operationShell, /visited\.includes\('pagamentos'\)/);
+assert.match(analyticsShell, /visitedTabs\.includes\('encerramentos'\)/);
+assert.match(analyticsShell, /event\.type !== 'mba:authenticated'/);
+
 console.log('Shell, task shortcuts, grouping and indication-filter contracts passed.');
