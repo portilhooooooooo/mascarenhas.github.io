@@ -282,10 +282,12 @@ function unmountOperacaoPage() {
 function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
-  const visible = section?.classList.contains('active') === true && !document.hidden;
+  const active = section?.classList.contains('active') === true;
   const allowed = mayOpen('acordos');
-  if (visible && allowed) mountOperacaoPage();
-  else unmountOperacaoPage();
+  // Keep previously visited modules mounted across navigation and tab visibility.
+  // Drop their state only when authorization/session/portfolio actually changes.
+  if (!allowed) unmountOperacaoPage();
+  else if (active) mountOperacaoPage();
 }
 
 function configureOperacaoLifecycle() {
@@ -294,6 +296,9 @@ function configureOperacaoLifecycle() {
   const observer = new MutationObserver(syncOperacaoLifecycle);
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncOperacaoLifecycle);
+  window.addEventListener('mba:profile-ready', syncOperacaoLifecycle);
+  window.addEventListener('mba:module-visibility-updated', syncOperacaoLifecycle);
+  window.addEventListener('mba:portfolio-changed', () => { unmountOperacaoPage(); syncOperacaoLifecycle(); });
   window.addEventListener('mba:session-expired', unmountOperacaoPage);
   window.addEventListener('mba:logged-out', unmountOperacaoPage);
   document.addEventListener('visibilitychange', syncOperacaoLifecycle);
@@ -329,10 +334,10 @@ function unmountProtocolosPage() {
 function syncProtocolosLifecycle() {
   const section = document.getElementById('protocolo');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
-  const visible = section?.classList.contains('active') === true && !document.hidden;
+  const active = section?.classList.contains('active') === true;
   const allowed = mayOpen('protocolo');
-  if (visible && allowed) mountProtocolosPage();
-  else unmountProtocolosPage();
+  if (!allowed) unmountProtocolosPage();
+  else if (active) mountProtocolosPage();
 }
 
 function configureProtocolosLifecycle() {
@@ -342,10 +347,46 @@ function configureProtocolosLifecycle() {
   const observer = new MutationObserver(syncProtocolosLifecycle);
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncProtocolosLifecycle);
+  window.addEventListener('mba:profile-ready', syncProtocolosLifecycle);
+  window.addEventListener('mba:module-visibility-updated', syncProtocolosLifecycle);
+  window.addEventListener('mba:portfolio-changed', () => { unmountProtocolosPage(); syncProtocolosLifecycle(); });
   window.addEventListener('mba:session-expired', unmountProtocolosPage);
   window.addEventListener('mba:logged-out', unmountProtocolosPage);
   document.addEventListener('visibilitychange', syncProtocolosLifecycle);
   syncProtocolosLifecycle();
+}
+
+let bancoDadosRoot: Root | null = null;
+function unmountBancoDados() {
+  if (!bancoDadosRoot) return;
+  bancoDadosRoot.unmount();
+  bancoDadosRoot = null;
+  document.getElementById('banco-dados')?.replaceChildren();
+}
+function syncBancoDadosLifecycle() {
+  const section = document.getElementById('banco-dados');
+  if (!section) return;
+  // Hiding a tab or the browser must not destroy a visited React root.
+  if (!mayOpen('banco-dados')) {
+    unmountBancoDados();
+    return;
+  }
+  if (section.classList.contains('active') && !bancoDadosRoot) {
+    bancoDadosRoot = createRoot(section);
+    bancoDadosRoot.render(<StrictMode><BancoDadosPage /></StrictMode>);
+  }
+}
+function configureBancoDadosLifecycle() {
+  const section = document.getElementById('banco-dados');
+  if (!section) return;
+  new MutationObserver(syncBancoDadosLifecycle).observe(section, { attributes: true, attributeFilter: ['class'] });
+  for (const event of ['mba:authenticated', 'mba:profile-ready', 'mba:module-visibility-updated']) {
+    window.addEventListener(event, syncBancoDadosLifecycle);
+  }
+  window.addEventListener('mba:portfolio-changed', () => { unmountBancoDados(); syncBancoDadosLifecycle(); });
+  window.addEventListener('mba:session-expired', unmountBancoDados);
+  window.addEventListener('mba:logged-out', unmountBancoDados);
+  syncBancoDadosLifecycle();
 }
 
 let usersRoot: Root | null = null;
@@ -378,10 +419,10 @@ function unmountUsersPage() {
 function syncUsersLifecycle() {
   const section = document.getElementById('usuarios');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
-  const visible = section?.classList.contains('active') === true && !document.hidden;
+  const active = section?.classList.contains('active') === true;
   const allowed = mayOpen('usuarios');
-  if (visible && allowed) mountUsersPage();
-  else unmountUsersPage();
+  if (!allowed) unmountUsersPage();
+  else if (active) mountUsersPage();
 }
 
 function configureUsersLifecycle() {
@@ -390,6 +431,9 @@ function configureUsersLifecycle() {
   const observer = new MutationObserver(syncUsersLifecycle);
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncUsersLifecycle);
+  window.addEventListener('mba:profile-ready', syncUsersLifecycle);
+  window.addEventListener('mba:module-visibility-updated', syncUsersLifecycle);
+  window.addEventListener('mba:portfolio-changed', () => { unmountUsersPage(); syncUsersLifecycle(); });
   window.addEventListener('mba:session-expired', unmountUsersPage);
   window.addEventListener('mba:logged-out', unmountUsersPage);
   document.addEventListener('visibilitychange', syncUsersLifecycle);
@@ -449,13 +493,17 @@ function unmountProcessos() {
 }
 function syncProcessos() {
   const section = document.getElementById('processos');
-  if (!section?.classList.contains('active') || !mayOpen('processos')) { unmountProcessos(); return; }
-  if (!processosRoot) { processosRoot = createRoot(section); processosRoot.render(<StrictMode><ProcessosPage/></StrictMode>); }
+  if (!section || !mayOpen('processos')) { unmountProcessos(); return; }
+  if (section.classList.contains('active') && !processosRoot) {
+    processosRoot = createRoot(section);
+    processosRoot.render(<StrictMode><ProcessosPage/></StrictMode>);
+  }
 }
 const processosHost = document.getElementById('processos');
 if (processosHost) {
   new MutationObserver(syncProcessos).observe(processosHost, {attributes:true,attributeFilter:['class']});
   for (const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated']) window.addEventListener(event,syncProcessos);
-  for (const event of ['mba:portfolio-changed','mba:session-expired','mba:logged-out']) window.addEventListener(event,unmountProcessos);
+  window.addEventListener('mba:portfolio-changed', () => { unmountProcessos(); syncProcessos(); });
+  for (const event of ['mba:session-expired','mba:logged-out']) window.addEventListener(event,unmountProcessos);
   syncProcessos();
 }
