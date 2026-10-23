@@ -10,6 +10,9 @@ const qaStyle = read('src/tasks/qaWorkspace.css');
 const assignments = read('src/tasks/AssignmentsBoard.tsx');
 const closePage = read('src/dashboard/OperacaoEncerramentosPage.tsx');
 const closeApi = read('src/dashboard/operacaoEncerramentosService.ts');
+const tasksApp = read('src/tasks/TasksApp.tsx');
+const analytics = read('src/dashboard/GestaoProcessualPage.tsx');
+const operation = read('src/dashboard/OperacaoPage.tsx');
 
 // Legacy HTML remains to support old links, but permission refresh must not
 // make their sidebar buttons reappear during a failed React initialization.
@@ -52,5 +55,14 @@ assert.match(app, /addEventListener\('mba:module-activated'/);
 const bancoDadosLifecycle = main.slice(main.indexOf('function syncBancoDadosLifecycle()'), main.indexOf('function configureBancoDadosLifecycle()'));
 assert.doesNotMatch(bancoDadosLifecycle, /document\.hidden|!visible/);
 assert.match(bancoDadosLifecycle, /section\.classList\.contains\('active'\) && !bancoDadosRoot/);
+
+// Navigation must not impersonate a login: preserve mounted React state and cached task rows.
+assert.match(tasksApp, /if \(identity === lastIdentity\) return;/);
+assert.match(tasksApp, /const onPortfolioChanged = \(\) => \{[\s\S]*?resetSession\(\);/);
+assert.match(tasksApp, /const onExpired = \(\) => \{[\s\S]*?resetSession\(\);/);
+assert.match(tasksApp, /Date\.now\(\) - lastSuccessfulTaskLoad\.current < NAVIGATION_REVALIDATE_MS/);
+assert.match(tasksApp, /setLoading\(resetCache \|\| lastSuccessfulTaskLoad\.current === 0\)/);
+assert.match(analytics, /event\.type !== 'mba:authenticated'/);
+assert.match(operation, /OPERATION_MODULES\.every\(key => previous\[key\] === next\[key\]\)/);
 
 console.log('Shell, task shortcuts, grouping and indication-filter contracts passed.');
