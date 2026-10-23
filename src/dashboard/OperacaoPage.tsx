@@ -389,7 +389,8 @@ export function OperacaoPage() {
         protocolos: canAccessProtocols,
         defesas: canAccessProtocols,
       };
-      setAllowed(next);
+      // Evita rerender de todos os fluxos a cada revalidação sintética do shell.
+      setAllowed(previous => OPERATION_MODULES.every(key => previous[key] === next[key]) ? previous : next);
       setModule(previous => {
         const requested = operationModuleFromLocation();
         return requested && next[requested] ? requested
