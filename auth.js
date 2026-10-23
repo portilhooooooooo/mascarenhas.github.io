@@ -299,6 +299,9 @@
     .replace(/=+$/, '');
 
   async function initializeAuth() {
+    // A slow /api/me response can belong to a session replaced in another tab.
+    // Only invalidate the token that was actually checked by this boot attempt.
+    let validatingToken = null;
     sessionStorage.removeItem('mba_task_worker_token');
     sessionStorage.removeItem('mba_task_only_user');
     sessionStorage.removeItem('mba_google_verifier');
@@ -332,14 +335,31 @@
         }
       }
 
-      if (getStoredToken()) {
+      validatingToken = getStoredToken();
+      if (validatingToken) {
         await loadProfileWithRetry();
       } else {
         setAuthState(false);
         publishLoginState({ busy: false, error: null });
       }
     } catch (error) {
-      const hasToken = Boolean(getStoredToken());
+      const currentToken = getStoredToken();
+      if (validatingToken && currentToken && currentToken !== validatingToken) {
+        // The failing request authenticated an older token. Never erase the
+        // newer one, especially when a Microsoft handoff completed meanwhile.
+        if (window.MBA_CURRENT_USER && document.body.classList.contains('auth-signed-in')) return;
+        try {
+          await loadProfileWithRetry();
+        } catch (_) {
+          setAuthState(false);
+          publishLoginState({
+            busy: false,
+            error: 'Não foi possível validar sua sessão agora. A sessão atual foi preservada; atualize a página.',
+          });
+        }
+        return;
+      }
+      const hasToken = Boolean(currentToken);
       const invalidSession = error?.status === 401
         && ['SESSION_INVALID', 'AUTH_REQUIRED'].includes(error?.code);
       const unauthorizedProfile = error?.status === 403 && error?.code === 'PROFILE_NOT_AUTHORIZED';
