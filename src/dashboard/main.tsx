@@ -356,39 +356,6 @@ function configureProtocolosLifecycle() {
   syncProtocolosLifecycle();
 }
 
-let bancoDadosRoot: Root | null = null;
-function unmountBancoDados() {
-  if (!bancoDadosRoot) return;
-  bancoDadosRoot.unmount();
-  bancoDadosRoot = null;
-  document.getElementById('banco-dados')?.replaceChildren();
-}
-function syncBancoDadosLifecycle() {
-  const section = document.getElementById('banco-dados');
-  if (!section) return;
-  // Hiding a tab or the browser must not destroy a visited React root.
-  if (!mayOpen('banco-dados')) {
-    unmountBancoDados();
-    return;
-  }
-  if (section.classList.contains('active') && !bancoDadosRoot) {
-    bancoDadosRoot = createRoot(section);
-    bancoDadosRoot.render(<StrictMode><BancoDadosPage /></StrictMode>);
-  }
-}
-function configureBancoDadosLifecycle() {
-  const section = document.getElementById('banco-dados');
-  if (!section) return;
-  new MutationObserver(syncBancoDadosLifecycle).observe(section, { attributes: true, attributeFilter: ['class'] });
-  for (const event of ['mba:authenticated', 'mba:profile-ready', 'mba:module-visibility-updated']) {
-    window.addEventListener(event, syncBancoDadosLifecycle);
-  }
-  window.addEventListener('mba:portfolio-changed', () => { unmountBancoDados(); syncBancoDadosLifecycle(); });
-  window.addEventListener('mba:session-expired', unmountBancoDados);
-  window.addEventListener('mba:logged-out', unmountBancoDados);
-  syncBancoDadosLifecycle();
-}
-
 let usersRoot: Root | null = null;
 
 function mountUsersPage() {
