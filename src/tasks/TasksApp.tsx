@@ -45,6 +45,16 @@ import './taskStation.css';
 import './qaWorkspace.css';
 
 const REFRESH_MS = 300000;
+const NAVIGATION_REVALIDATE_MS = 45000;
+
+function sessionFingerprint(account: MbaUser | null | undefined) {
+  if (!account) return '';
+  return JSON.stringify([
+    account.id,
+    account.is_master_admin === true,
+    Object.entries(account.permissions || {}).sort(([left], [right]) => left.localeCompare(right)),
+  ]);
+}
 const LAST_TASK_TYPE_KEY = 'mba-last-task-type';
 const HYDRATION_CONCURRENCY = 3;
 type TaskStatusFilter = string;
@@ -248,6 +258,7 @@ export function TasksApp() {
   const processCache = useRef(new Map<string, TaskProcess[]>());
   const inFlight = useRef(new Map<string, Promise<TaskProcess[]>>());
   const refreshGeneration = useRef(0);
+  const lastSuccessfulTaskLoad = useRef(0);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<'management' | 'execution' | 'results'>(currentTaskTab);
@@ -319,8 +330,10 @@ export function TasksApp() {
   const relevantTasks = useMemo(() => queueTasks.filter(isTaskActive), [queueTasks]);
 
   useEffect(() => {
+    let lastIdentity = sessionFingerprint(mbaWindow.MBA_CURRENT_USER);
     const resetSession = () => {
       refreshGeneration.current += 1;
+      lastSuccessfulTaskLoad.current = 0;
       processCache.current.clear();
       inFlight.current.clear();
       setTasks([]);
@@ -334,10 +347,17 @@ export function TasksApp() {
       setProcessVersion(value => value + 1);
     };
     const onAuth = () => {
+      const nextUser = mbaWindow.MBA_CURRENT_USER || null;
+      const identity = sessionFingerprint(nextUser);
+      // The legacy shell emits mba:authenticated on module activation.
+      // This is NOT a new login: preserve the current queue, draft and caches.
+      if (identity === lastIdentity) return;
+      lastIdentity = identity;
       resetSession();
-      setUser(mbaWindow.MBA_CURRENT_USER || null);
+      setUser(nextUser);
     };
     const onExpired = () => {
+      lastIdentity = '';
       resetSession();
       setUser(null);
       setTasks([]);
@@ -347,6 +367,7 @@ export function TasksApp() {
       setActiveKey(null);
     };
     const onPortfolioChanged = () => {
+      lastIdentity = sessionFingerprint(mbaWindow.MBA_CURRENT_USER);
       resetSession();
       setUser(mbaWindow.MBA_CURRENT_USER ? { ...mbaWindow.MBA_CURRENT_USER } : null);
     };
@@ -449,7 +470,8 @@ export function TasksApp() {
   const loadTaskList = useCallback(async (resetCache = false) => {
     if (!user?.permissions?.['tasks.view']) return;
     const generation = ++refreshGeneration.current;
-    setLoading(true);
+    // Revalidation should not erase a queue that is already being displayed.
+    setLoading(resetCache || lastSuccessfulTaskLoad.current === 0);
     setLoadError(null);
     try {
       const [rows, otherRows] = await Promise.all([
@@ -466,6 +488,7 @@ export function TasksApp() {
       }
       setTasks(nextTasks);
       setVisibleTasks(nextVisibleTasks);
+      lastSuccessfulTaskLoad.current = Date.now();
       void refreshAssigneeTotals();
 
       const available = nextTasks.filter(task => isTaskActive(task) && taskAssignedToUser(task, user, manager)).sort(compareTasks);
@@ -492,6 +515,8 @@ export function TasksApp() {
 
   useEffect(() => {
     if (!pageVisible || !user?.permissions?.['tasks.view']) return;
+    // A quick tab round-trip uses the existing snapshot without a loading flash.
+    if (Date.now() - lastSuccessfulTaskLoad.current < NAVIGATION_REVALIDATE_MS) return;
     void loadTaskList(false);
   }, [pageVisible, user]);
 
