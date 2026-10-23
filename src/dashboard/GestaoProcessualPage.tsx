@@ -24,16 +24,22 @@ export function GestaoProcessualPage() {
   const [permissions, setPermissions] = useState(getPermissions);
   const [, forcePortfolioPolicySync] = useState(0);
   const [activeTab, setActiveTab] = useState<AnalyticsTab>(currentAnalyticsTab);
+  const [visitedTabs, setVisitedTabs] = useState<AnalyticsTab[]>(() => [currentAnalyticsTab()]);
   const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
   const canViewRanking = canViewAnalytics && policy?.canAccess('ranking') === true;
 
   useEffect(() => {
-    const sync = () => {
-      setPermissions(getPermissions());
-      // canAccess depende da carteira ativa; grants podem manter a mesma referência.
-      forcePortfolioPolicySync(value => value + 1);
+    const sync = (event: Event) => {
+      const next = getPermissions();
+      setPermissions(previous => {
+        const keys = Object.keys(previous);
+        return keys.length === Object.keys(next).length &&
+          keys.every(key => previous[key] === next[key]) ? previous : next;
+      });
+      // Synthetic module-activation events do not change the portfolio policy.
+      if (event.type !== 'mba:authenticated') forcePortfolioPolicySync(value => value + 1);
     };
     window.addEventListener('mba:authenticated', sync);
     window.addEventListener('mba:profile-ready', sync);
@@ -61,6 +67,10 @@ export function GestaoProcessualPage() {
       ? 'encerramentos'
       : 'geral';
 
+  useEffect(() => {
+    setVisitedTabs(previous => previous.includes(displayedTab) ? previous : [...previous, displayedTab]);
+  }, [displayedTab]);
+
   if (!canViewAnalytics && !canViewClosing) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
   return <div className="gestao-metabase-page gestao-processual-react">
@@ -69,6 +79,8 @@ export function GestaoProcessualPage() {
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
     </nav>
-    {displayedTab === 'ranking' ? <RankingPage/> : displayedTab === 'encerramentos' ? <EncerramentosPage/> : <BaseGeralPage/>}
+    {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage/></div> : null}
+    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage/></div> : null}
+    {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage/></div> : null}
   </div>;
 }
