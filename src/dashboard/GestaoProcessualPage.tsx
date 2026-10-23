@@ -31,10 +31,17 @@ export function GestaoProcessualPage() {
   const canViewRanking = canViewAnalytics && policy?.canAccess('ranking') === true;
 
   useEffect(() => {
-    const sync = () => {
-      setPermissions(getPermissions());
-      // canAccess depende da carteira ativa; grants podem manter a mesma referência.
-      forcePortfolioPolicySync(value => value + 1);
+    const sync = (event: Event) => {
+      const next = getPermissions();
+      // Revalidar grants reais; um evento de ativação de módulo não altera a policy.
+      setPermissions(previous => {
+        const previousKeys = Object.keys(previous);
+        return previousKeys.length === Object.keys(next).length &&
+          previousKeys.every(key => previous[key] === next[key]) ? previous : next;
+      });
+      // mba:authenticated também é emitido periodicamente ao navegar.
+      // Não repintar todos os painéis React por causa desse evento sintético.
+      if (event.type !== 'mba:authenticated') forcePortfolioPolicySync(value => value + 1);
     };
     window.addEventListener('mba:authenticated', sync);
     window.addEventListener('mba:profile-ready', sync);
