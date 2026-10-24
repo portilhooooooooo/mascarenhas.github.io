@@ -121,7 +121,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       const params=new URLSearchParams({...filters,duration:'all',include_pending:'0',include_growth:'0'});
       const answer:ResultPayload=demoMode ? createDemoTaskResults({...filters,duration:'all'}) : await api('/api/tasks/results?'+params,{signal});
       if(scope!==runtimeScope()) throw new Error('Resposta de escopo anterior descartada.');
-      if(!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de produtividade.');
+      if(!answer || !Array.isArray(answer.people) || !answer.summary || ![answer.summary.completed,answer.summary.today_completed].every(v=>Number.isFinite(v)&&v>=0)) throw new Error('Resposta inválida da API de produtividade.');
       return answer;
     }},runtimeQueries);
   const data=query.data || null;
@@ -132,7 +132,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const setError=setExportError;
   const refresh=()=>{void query.refetch();};
   useEffect(()=>{
-    if(filters.person==='all' && data) setOptions(data.people.map(row=>({id:row.id,name:row.name})).sort((a,b)=>a.name.localeCompare(b.name,'pt-BR')));
+    if(filters.person==='all' && data) setOptions(previous=>{const values=new Map(previous.map(row=>[row.id,row]));data.people.forEach(row=>values.set(row.id,{id:row.id,name:row.name}));return [...values.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));});
   },[data,filters.person]);
   useEffect(()=>{
     try { sessionStorage.setItem(preferenceKey,JSON.stringify({filters,sortBy})); } catch { /* Quota only disables preferences. */ }
