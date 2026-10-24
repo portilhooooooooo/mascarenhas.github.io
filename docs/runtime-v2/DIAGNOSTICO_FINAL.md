@@ -129,4 +129,3 @@ A amostra real offline abrange Admin/Legal Leader/Analista e Enter/Regular/Nuban
 7. Só então solicitar promoção expressa, realizar rollback ensaiado e observar por duas horas.
 
 Rollback e comandos locais: [ROLLBACK.md](ROLLBACK.md), [RUN_LOCAL.md](RUN_LOCAL.md). Não houve migração de schema nem dados a reverter nesta fase. Os candidatos estão em branches de teste; produção não foi promovida.
-

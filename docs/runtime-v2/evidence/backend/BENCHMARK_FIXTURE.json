@@ -1,0 +1,604 @@
+{
+  "fixture": true,
+  "real_integration": false,
+  "workers_emulated": 2,
+  "threads_per_worker": 4,
+  "critical_requests": 30,
+  "analytics_requests": 10,
+  "induced_analytics_ms": 150,
+  "limitations": [
+    "Flask test_client with two bounded executors; not Gunicorn HTTP",
+    "No real authorization, SQL, proxy, network or durable write",
+    "No release SLO or production improvement claim"
+  ],
+  "before": {
+    "limit_per_worker": 0,
+    "critical": {
+      "n": 30,
+      "median_ms": 247.54356523044407,
+      "p95_ms": 256.24412298202515,
+      "max_queue_ms": 255.04679279401898
+    },
+    "analytics_statuses": {
+      "200": 10,
+      "429": 0
+    },
+    "requests": [
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.9491131640970707,
+        "service_ms": 267.3414289020002,
+        "total_ms": 268.29054206609726
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.2764137461781502,
+        "service_ms": 269.5991504006088,
+        "total_ms": 269.8755641467869
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.2276729792356491,
+        "service_ms": 263.96300829946995,
+        "total_ms": 264.1906812787056
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 1.3056681491434574,
+        "service_ms": 265.6397260725498,
+        "total_ms": 266.9453942216933
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.706803984940052,
+        "service_ms": 259.7939847037196,
+        "total_ms": 260.50078868865967
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 26.578981894999743,
+        "service_ms": 234.1224430128932,
+        "total_ms": 260.70142490789294
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.2953028306365013,
+        "service_ms": 231.83435620740056,
+        "total_ms": 232.12965903803706
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.6486941128969193,
+        "service_ms": 237.6392255537212,
+        "total_ms": 238.2879196666181
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 226.0629520751536,
+        "service_ms": 151.4967088587582,
+        "total_ms": 377.5596609339118
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 227.90965903550386,
+        "service_ms": 151.11572202295065,
+        "total_ms": 379.0253810584545
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 226.92430019378662,
+        "service_ms": 4.163940902799368,
+        "total_ms": 231.088241096586
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 231.76055820658803,
+        "service_ms": 16.278035007417202,
+        "total_ms": 248.03859321400523
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 228.7137652747333,
+        "service_ms": 1.5605348162353039,
+        "total_ms": 230.2743000909686
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 232.406887691468,
+        "service_ms": 4.950813017785549,
+        "total_ms": 237.35770070925355
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 229.4823001138866,
+        "service_ms": 14.037317130714655,
+        "total_ms": 243.51961724460125
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 233.07932680472732,
+        "service_ms": 0.6833369843661785,
+        "total_ms": 233.7626637890935
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 230.24688474833965,
+        "service_ms": 18.49918905645609,
+        "total_ms": 248.74607380479574
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 233.761936891824,
+        "service_ms": 0.6780661642551422,
+        "total_ms": 234.44000305607915
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 231.00141622126102,
+        "service_ms": 9.95058985427022,
+        "total_ms": 240.95200607553124
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 234.43822795525193,
+        "service_ms": 1.6133920289576054,
+        "total_ms": 236.05161998420954
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 240.9747876226902,
+        "service_ms": 13.55815539136529,
+        "total_ms": 254.5329430140555
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 236.05179321020842,
+        "service_ms": 5.867344792932272,
+        "total_ms": 241.9191380031407
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 243.43892699107528,
+        "service_ms": 0.980691984295845,
+        "total_ms": 244.41961897537112
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 237.25209292024374,
+        "service_ms": 0.7700240239501,
+        "total_ms": 238.02211694419384
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 244.41772187128663,
+        "service_ms": 6.199190858751535,
+        "total_ms": 250.61691273003817
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 238.02452627569437,
+        "service_ms": 9.024010971188545,
+        "total_ms": 247.04853724688292
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 248.63836588338017,
+        "service_ms": 1.2275190092623234,
+        "total_ms": 249.8658848926425
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 241.86922702938318,
+        "service_ms": 0.7276241667568684,
+        "total_ms": 242.59685119614005
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 249.86523017287254,
+        "service_ms": 3.511935006827116,
+        "total_ms": 253.37716517969966
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 242.5949084572494,
+        "service_ms": 2.517996821552515,
+        "total_ms": 245.11290527880192
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 250.56373188272119,
+        "service_ms": 0.6537260487675667,
+        "total_ms": 251.21745793148875
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 245.12242199853063,
+        "service_ms": 1.0118260979652405,
+        "total_ms": 246.13424809649587
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 251.21480505913496,
+        "service_ms": 5.029317922890186,
+        "total_ms": 256.24412298202515
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 246.1302257142961,
+        "service_ms": 6.438976153731346,
+        "total_ms": 252.56920186802745
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 253.32538271322846,
+        "service_ms": 3.2365783117711544,
+        "total_ms": 256.5619610249996
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 246.9449038617313,
+        "service_ms": 4.905578214675188,
+        "total_ms": 251.85048207640648
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 254.35276655480266,
+        "service_ms": 0.6973422132432461,
+        "total_ms": 255.0501087680459
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 247.7218797430396,
+        "service_ms": 6.225413177162409,
+        "total_ms": 253.94729292020202
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 255.04679279401898,
+        "service_ms": 0.7294397801160812,
+        "total_ms": 255.77623257413507
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 251.82198593392968,
+        "service_ms": 1.0493542067706585,
+        "total_ms": 252.87134014070034
+      }
+    ]
+  },
+  "after": {
+    "limit_per_worker": 2,
+    "critical": {
+      "n": 30,
+      "median_ms": 12.27609091438353,
+      "p95_ms": 21.94560505449772,
+      "max_queue_ms": 21.238985005766153
+    },
+    "analytics_statuses": {
+      "200": 4,
+      "429": 6
+    },
+    "requests": [
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.34192902967333794,
+        "service_ms": 151.85348968952894,
+        "total_ms": 152.19541871920228
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.260205939412117,
+        "service_ms": 152.0577259361744,
+        "total_ms": 152.3179318755865
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.1709572970867157,
+        "service_ms": 151.86160383746028,
+        "total_ms": 152.032561134547
+      },
+      {
+        "kind": "analytics",
+        "status": 200,
+        "queue_ms": 0.22042077034711838,
+        "service_ms": 150.86714923381805,
+        "total_ms": 151.08757000416517
+      },
+      {
+        "kind": "analytics",
+        "status": 429,
+        "queue_ms": 0.6263265386223793,
+        "service_ms": 0.9714784100651741,
+        "total_ms": 1.5978049486875534
+      },
+      {
+        "kind": "analytics",
+        "status": 429,
+        "queue_ms": 0.20283926278352737,
+        "service_ms": 3.9203669875860214,
+        "total_ms": 4.123206250369549
+      },
+      {
+        "kind": "analytics",
+        "status": 429,
+        "queue_ms": 1.3107801787555218,
+        "service_ms": 0.7552467286586761,
+        "total_ms": 2.066026907414198
+      },
+      {
+        "kind": "analytics",
+        "status": 429,
+        "queue_ms": 0.16569392755627632,
+        "service_ms": 1.027802936732769,
+        "total_ms": 1.1934968642890453
+      },
+      {
+        "kind": "analytics",
+        "status": 429,
+        "queue_ms": 1.8933122046291828,
+        "service_ms": 0.8486099541187286,
+        "total_ms": 2.7419221587479115
+      },
+      {
+        "kind": "analytics",
+        "status": 429,
+        "queue_ms": 0.42197806760668755,
+        "service_ms": 1.3453229330480099,
+        "total_ms": 1.7673010006546974
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 2.732256893068552,
+        "service_ms": 0.6761839613318443,
+        "total_ms": 3.4084408544003963
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 1.783275045454502,
+        "service_ms": 0.6818468682467937,
+        "total_ms": 2.465121913701296
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 0.4196302033960819,
+        "service_ms": 0.9157117456197739,
+        "total_ms": 1.3353419490158558
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 2.452552318572998,
+        "service_ms": 6.762734614312649,
+        "total_ms": 9.215286932885647
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 1.3363971374928951,
+        "service_ms": 5.5504958145320415,
+        "total_ms": 6.886892952024937
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 2.842513844370842,
+        "service_ms": 1.808584202080965,
+        "total_ms": 4.651098046451807
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 3.200612962245941,
+        "service_ms": 0.6691683083772659,
+        "total_ms": 3.869781270623207
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 4.648740869015455,
+        "service_ms": 2.953355200588703,
+        "total_ms": 7.602096069604158
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 3.8651442155241966,
+        "service_ms": 1.4813928864896297,
+        "total_ms": 5.346537102013826
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 7.597762625664473,
+        "service_ms": 5.839147139340639,
+        "total_ms": 13.436909765005112
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 5.34375524148345,
+        "service_ms": 0.6627896800637245,
+        "total_ms": 6.0065449215471745
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 9.126883931457996,
+        "service_ms": 2.843241672962904,
+        "total_ms": 11.9701256044209
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 6.001932080835104,
+        "service_ms": 3.7998738698661327,
+        "total_ms": 9.801805950701237
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 11.94999273866415,
+        "service_ms": 4.33792918920517,
+        "total_ms": 16.28792192786932
+      },
+      {
+        "kind": "auth",
+        "status": 200,
+        "queue_ms": 6.75524864345789,
+        "service_ms": 1.4763600192964077,
+        "total_ms": 8.231608662754297
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 13.363510835915804,
+        "service_ms": 0.7222327403724194,
+        "total_ms": 14.085743576288223
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 8.232308086007833,
+        "service_ms": 4.349748138338327,
+        "total_ms": 12.582056224346161
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 14.082964975386858,
+        "service_ms": 4.156912211328745,
+        "total_ms": 18.239877186715603
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 9.729628916829824,
+        "service_ms": 0.7043872028589249,
+        "total_ms": 10.43401611968875
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 16.231974586844444,
+        "service_ms": 0.6282483227550983,
+        "total_ms": 16.860222909599543
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 10.432795155793428,
+        "service_ms": 0.6951969116926193,
+        "total_ms": 11.127992067486048
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 16.85929112136364,
+        "service_ms": 4.459203686565161,
+        "total_ms": 21.3184948079288
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 11.125143151730299,
+        "service_ms": 3.610400017350912,
+        "total_ms": 14.735543169081211
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 18.188123125582933,
+        "service_ms": 1.1839400976896286,
+        "total_ms": 19.372063223272562
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 12.503655161708593,
+        "service_ms": 5.2431621588766575,
+        "total_ms": 17.74681732058525
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 19.370535854250193,
+        "service_ms": 0.982227735221386,
+        "total_ms": 20.35276358947158
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 14.70971992239356,
+        "service_ms": 0.7009762339293957,
+        "total_ms": 15.410696156322956
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 20.35148488357663,
+        "service_ms": 2.008928917348385,
+        "total_ms": 22.360413800925016
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 15.409104991704226,
+        "service_ms": 3.5421322099864483,
+        "total_ms": 18.951237201690674
+      },
+      {
+        "kind": "write",
+        "status": 200,
+        "queue_ms": 21.238985005766153,
+        "service_ms": 0.7066200487315655,
+        "total_ms": 21.94560505449772
+      }
+    ]
+  }
+}

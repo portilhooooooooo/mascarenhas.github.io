@@ -1,0 +1,36 @@
+
+> mba-backoffice-frontend@1.0.0 test:ux
+> node tests/operational-ux.test.mjs
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
++   agree: false,
++   answers: {
++     decided: null,
++     judgment: null,
++     requested: 'nao',
++     result: null
++   }
+-   decision: 'nao_solicitada',
+-   notes: null
+  }
+
+    at file:///home/ubuntu/runtime-v2-frontend/tests/operational-ux.test.mjs:61:12 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: {
+    agree: false,
+    answers: { requested: 'nao', decided: null, result: null, judgment: null }
+  },
+  expected: { decision: 'nao_solicitada', notes: null },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.2

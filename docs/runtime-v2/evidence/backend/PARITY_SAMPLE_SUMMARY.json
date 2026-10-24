@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-10-24T03:10:55.906655+00:00",
+  "source_commit": "b7ba52b",
+  "candidate_source_sha256": "6a3d8a513f0bcb3d38708b040a712b5df5f198b611fa93f02d0b9c8bc9fa9249",
+  "fixture_sha256": "558a28160884c5abcee7bb0f820a0fac35e0970056dbe267fe2fd6a579fe54fe",
+  "reference_sha256": "6f9f8c73504b42f3d970de2084ac025cab93edca2aa563cc60d9bf4b0b584abe",
+  "captured_at": "2026-10-24T03:03:33.959577+00:00",
+  "events": 139,
+  "tasks": 21,
+  "profiles": 13,
+  "cases": 1125,
+  "failures": 0,
+  "elapsed_seconds": 1.311,
+  "limitations": [
+    "Offline replay, not HTTP/PostgREST/auth integration",
+    "Deterministic event tie order in captured sample; live order ties not certified",
+    "Pending queue, complete database and exports not certified",
+    "timing_by_type is additive in branch and absent in effective runtime; excluded explicitly",
+    "methodology wording differs between runtime and branch; excluded explicitly, numeric shared fields compared"
+  ]
+}

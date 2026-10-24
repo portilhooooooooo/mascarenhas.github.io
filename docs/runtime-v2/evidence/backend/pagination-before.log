@@ -1,0 +1,123 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_fetch_all_replaces_mutable_range_and_preserves_scope[False] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e0824549c10>
+scoped = False
+
+    @pytest.mark.parametrize('scoped', [False, True])
+    def test_fetch_all_replaces_mutable_range_and_preserves_scope(monkeypatch, scoped):
+        monkeypatch.setattr(task_results, 'PAGE_SIZE', 2)
+        raw = MutableQuery(list(range(5)))
+        query = raw
+        if scoped:
+            class Scoped:
+                _builder = raw
+                def range(self, *args):
+                    raw.range(*args)
+                    return self
+                def execute(self):
+                    return raw.execute()
+            query = Scoped()
+>       rows, truncated = task_results._fetch_all(query, max_rows=10)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_task_results_pagination.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+routes/api/task_results.py:42: in _fetch_all
+    batch = query.range(offset, offset + PAGE_SIZE - 1).execute().data or []
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_task_results_pagination.MutableQuery object at 0x7e083110a480>
+
+    def execute(self):
+>       assert len(self.request.params.get_list('offset')) == 1, 'range accumulated duplicate offset'
+E       AssertionError: range accumulated duplicate offset
+E       assert 2 == 1
+E        +  where 2 = len(['0', '2'])
+E        +    where ['0', '2'] = get_list('offset')
+E        +      where get_list = QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2').get_list
+E        +        where QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2') = namespace(params=QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2')).params
+E        +          where namespace(params=QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2')) = <test_task_results_pagination.MutableQuery object at 0x7e083110a480>.request
+
+tests/test_task_results_pagination.py:19: AssertionError
+_______ test_fetch_all_replaces_mutable_range_and_preserves_scope[True] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e082470c3e0>
+scoped = True
+
+    @pytest.mark.parametrize('scoped', [False, True])
+    def test_fetch_all_replaces_mutable_range_and_preserves_scope(monkeypatch, scoped):
+        monkeypatch.setattr(task_results, 'PAGE_SIZE', 2)
+        raw = MutableQuery(list(range(5)))
+        query = raw
+        if scoped:
+            class Scoped:
+                _builder = raw
+                def range(self, *args):
+                    raw.range(*args)
+                    return self
+                def execute(self):
+                    return raw.execute()
+            query = Scoped()
+>       rows, truncated = task_results._fetch_all(query, max_rows=10)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_task_results_pagination.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+routes/api/task_results.py:42: in _fetch_all
+    batch = query.range(offset, offset + PAGE_SIZE - 1).execute().data or []
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_task_results_pagination.py:39: in execute
+    return raw.execute()
+           ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_task_results_pagination.MutableQuery object at 0x7e08258305c0>
+
+    def execute(self):
+>       assert len(self.request.params.get_list('offset')) == 1, 'range accumulated duplicate offset'
+E       AssertionError: range accumulated duplicate offset
+E       assert 2 == 1
+E        +  where 2 = len(['0', '2'])
+E        +    where ['0', '2'] = get_list('offset')
+E        +      where get_list = QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2').get_list
+E        +        where QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2') = namespace(params=QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2')).params
+E        +          where namespace(params=QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2')) = <test_task_results_pagination.MutableQuery object at 0x7e08258305c0>.request
+
+tests/test_task_results_pagination.py:19: AssertionError
+_________ test_fetch_all_reports_cap_instead_of_claiming_completeness __________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7e082457fc80>
+
+    def test_fetch_all_reports_cap_instead_of_claiming_completeness(monkeypatch):
+        monkeypatch.setattr(task_results, 'PAGE_SIZE', 2)
+>       rows, truncated = task_results._fetch_all(MutableQuery(list(range(6))), max_rows=4)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_task_results_pagination.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+routes/api/task_results.py:42: in _fetch_all
+    batch = query.range(offset, offset + PAGE_SIZE - 1).execute().data or []
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_task_results_pagination.MutableQuery object at 0x7e082457fbc0>
+
+    def execute(self):
+>       assert len(self.request.params.get_list('offset')) == 1, 'range accumulated duplicate offset'
+E       AssertionError: range accumulated duplicate offset
+E       assert 2 == 1
+E        +  where 2 = len(['0', '2'])
+E        +    where ['0', '2'] = get_list('offset')
+E        +      where get_list = QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2').get_list
+E        +        where QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2') = namespace(params=QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2')).params
+E        +          where namespace(params=QueryParams('portfolio_id=eq.fixture&offset=0&offset=2&limit=2&limit=2')) = <test_task_results_pagination.MutableQuery object at 0x7e082457fbc0>.request
+
+tests/test_task_results_pagination.py:19: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_task_results_pagination.py::test_fetch_all_replaces_mutable_range_and_preserves_scope[False]
+FAILED tests/test_task_results_pagination.py::test_fetch_all_replaces_mutable_range_and_preserves_scope[True]
+FAILED tests/test_task_results_pagination.py::test_fetch_all_reports_cap_instead_of_claiming_completeness
+3 failed in 2.25s
