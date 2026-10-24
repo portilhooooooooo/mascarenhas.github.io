@@ -1,3 +1,5 @@
+b9d83ed test(runtime): archive timestamped browser traces and backend validation evidence
+94aef18 docs(runtime): consolidate measured checkpoint, full matrix and no-go release gate
 e643f7b fix(runtime): keep unavailable timestamps neutral during filter changes
 58c5704 fix(runtime-v2): finish scope invalidation before portfolio revalidation
 9e2d825 fix(runtime-v2): purge operational drafts when authorization changes

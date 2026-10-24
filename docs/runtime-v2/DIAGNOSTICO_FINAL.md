@@ -108,7 +108,8 @@ A tabela completa A01–A20 e B01–B06, com resultado integral/recorte, ações
 - Paridade real offline: 1.125 casos, zero diferenças numéricas compartilhadas; replay reconstruído em 1,311 s.
 - Smoke/unit frontend: test:hardening e dez testes API/Base Geral/acesso PASSARAM; auxiliares de sessão/papel/encerramentos/Metabase passaram na execução registrada.
 - Preview legado test:ux: FALHOU, pois espera {decision,notes} e o renderer atual envia {agree,answers}; o renderer não foi modificado pela migração. Não é prova de integração nem falha silenciosamente descartada.
-- Firefox, integração autenticada real, carga completa, revisão formal de segurança, CI hospedado e duas horas de produção: NÃO EXECUTADOS/certificados.
+- CI hospedado: Runtime V2 frontend (20 subcasos + operacional), React Migration, Base Geral e backend (59 testes + benchmark + replay) PASSARAM. Execuções 40057583540/40057583475/40057583409 e 40057335445; commits e steps em [CI_RESULTS.json](evidence/CI_RESULTS.json). Backend CI: 59 em 2,27 s.
+- Firefox, integração autenticada real, carga completa, revisão formal de segurança e duas horas de produção: NÃO EXECUTADOS/certificados.
 
 [Antes A04](evidence/baseline-repeat/A04.png) e [depois A04](evidence/qualified/A04.png) foram inspecionados visualmente. Layout, sidebar, tipografia, cor e ordem permanecem; slots/status neutros são as mudanças permitidas. Os screenshots ilustram estados; os asserts e o trace registram a espera, pois o screenshot final de um teste pode ocorrer após a resposta.
 
@@ -125,7 +126,7 @@ A amostra real offline abrange Admin/Legal Leader/Analista e Enter/Regular/Nuban
 3. Provisionar ambiente equivalente e identidade técnica de teste, sem reutilizar sessões de colaboradores, para B01–B06, acesso real e carga 30+10 com gravações idempotentes.
 4. Correlacionar proxy/fila/Gunicorn/auth/transporte/PostgREST/SQL; resolver orçamento server-side, repetir medições separando sucesso/erro e frio/quente.
 5. Completar coordenação OAuth/Admin entre navegadores, auditoria de revogação, revisão dos rascunhos v1 e caches/polling ainda legados; revisar retry de handoff herdado.
-6. Alinhar a suíte legada ao contrato vigente, observar CI hospedado e executar revisão formal de segurança. A skill de scan não pôde executar: preflight referenciado indisponível e ferramentas de scan ausentes.
+6. Alinhar a suíte legada ao contrato vigente, manter os checks CI aprovados e executar revisão formal de segurança. A skill de scan não pôde executar: preflight referenciado indisponível e ferramentas de scan ausentes.
 7. Só então solicitar promoção expressa, realizar rollback ensaiado e observar por duas horas.
 
 Rollback e comandos locais: [ROLLBACK.md](ROLLBACK.md), [RUN_LOCAL.md](RUN_LOCAL.md). Não houve migração de schema nem dados a reverter nesta fase. Os candidatos estão em branches de teste; produção não foi promovida.
