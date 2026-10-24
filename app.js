@@ -111,12 +111,19 @@ function canAccessRoute(pageId, route) {
   }
   return true;
 }
+const routeScrollPositions=new Map();
+const preferredModuleRoutes=new Map();
+let lastViewRoute=(window.MBA_LOCAL_PREVIEW?location.hash.replace(/^#\//,''):location.pathname.replace(/^\//,'')).replace(/\/$/,'');
+function rememberRouteScroll(){if(lastViewRoute)routeScrollPositions.set(lastViewRoute,Number(window.scrollY||0));}
 function publishRoute(route, pageId, replace = false) {
+  lastViewRoute=route;
+  preferredModuleRoutes.set(pageId,route);
   if (operationRoutePermissions[route]) lastOperationRoute = route;
   const target = routeUrl(route);
   const current = window.MBA_LOCAL_PREVIEW ? location.hash : location.pathname;
   if (current !== target) history[replace ? 'replaceState' : 'pushState']({ pageId }, '', target);
   window.dispatchEvent(new CustomEvent('mba:route-changed', { detail: { route, pageId } }));
+  if(routeScrollPositions.has(route))requestAnimationFrame(()=>requestAnimationFrame(()=>{if(lastViewRoute===route)window.scrollTo({top:routeScrollPositions.get(route)||0,behavior:'instant'});}));
 }
 function authorizedPageId(pageId) {
   if (pageId === 'sem-acesso') return pageId;
@@ -125,14 +132,16 @@ function authorizedPageId(pageId) {
 }
 const moduleScrollPositions = new Map();
 function showPage(pageId, updateRoute = true) {
+  rememberRouteScroll();
   const previous = document.querySelector('main .page.active')?.id;
   if(previous && previous!==pageId)moduleScrollPositions.set(previous,window.scrollY);
   pageId = authorizedPageId(pageId);
   pages.forEach(page => page.classList.toggle('active', page.id === pageId));
   navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
-  if (updateRoute) publishRoute(pageId === 'acordos'
-    ? preferredOperationRoute()
-    : (pageRoutes[pageId] || 'sem-acesso'), pageId);
+  if (updateRoute) {
+    const preferred=preferredModuleRoutes.get(pageId);
+    publishRoute(preferred && canAccessRoute(pageId,preferred) ? preferred : pageId==='acordos' ? preferredOperationRoute() : (pageRoutes[pageId]||'sem-acesso'),pageId);
+  }
   if(previous!==pageId) window.scrollTo({top:moduleScrollPositions.get(pageId)||0,behavior:'instant'});
 }
 window.showPage = showPage;
@@ -146,7 +155,7 @@ function navigateRoute(route) {
   }
   showPage(match.pageId, false);
   publishRoute(match.canonical, match.pageId);
-  requestAnimationFrame(()=>{const list=window.MBA_RUNTIME_METRICS || (window.MBA_RUNTIME_METRICS=[]);list.push({kind:'navigation',route:match.canonical.replace(/item\/.*/, 'item/:id'),ms:performance.now()-navigationStarted});if(list.length>200)list.shift();});
+  requestAnimationFrame(()=>{const list=window.MBA_RUNTIME_METRICS || (window.MBA_RUNTIME_METRICS=[]);list.push({kind:'navigation',route:match.canonical.replace(/item\/.*/, 'item/:id').replace(/^processos\/.+/,'processos/:id'),ms:performance.now()-navigationStarted});if(list.length>200)list.shift();});
   return true;
 }
 window.MBA_NAVIGATE = navigateRoute;
@@ -1151,4 +1160,12 @@ for (const [selector, action] of [['#unlock-user', 'unlock'], ['#revoke-user-ses
   });
 }
 
-for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed'])window.addEventListener(event,()=>moduleScrollPositions.clear());
+let navigationOwner='';
+for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:authenticated'])window.addEventListener(event,()=>{
+  const user=window.MBA_CURRENT_USER;
+  const owner=user?JSON.stringify([user.id,user.role,window.MBA_SESSION_GENERATION,window.MBA_API?.getPortfolioId?.(),Object.entries(user.permissions||{}).sort()]):'';
+  if(event==='mba:authenticated' && owner===navigationOwner)return;
+  navigationOwner=owner;moduleScrollPositions.clear();routeScrollPositions.clear();preferredModuleRoutes.clear();
+  const pageId=document.querySelector('main .page.active')?.id;
+  if(event==='mba:authenticated' && pageId && canAccessRoute(pageId,lastViewRoute))preferredModuleRoutes.set(pageId,lastViewRoute);
+});
