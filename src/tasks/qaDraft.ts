@@ -1,3 +1,4 @@
+import {runtimeScope} from './runtimeQueries';
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
 // Um rascunho por usuário/carteira/tarefa/processo, restrito à aba atual.
@@ -34,6 +35,16 @@ export function clearQaDraft(key: string) {
   try { sessionStorage.removeItem(key); } catch { /* armazenamento indisponível */ }
 }
 
-for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed'])window.addEventListener(event,()=>{
- try{for(const key of Object.keys(sessionStorage))if(key.startsWith('mba-qa-v1:')||key.startsWith('mba-qa-v2:'))sessionStorage.removeItem(key);}catch{/* Storage unavailable. */}
+let draftScope=runtimeScope();
+for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready','mba:authenticated'])window.addEventListener(event,()=>{
+ const next=runtimeScope();
+ const env=window as Window & {MBA_CURRENT_USER?:{id?:string;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
+ const user=env.MBA_CURRENT_USER;
+ const purgeAll=['mba:logged-out','mba:session-expired','mba:portfolio-changed'].includes(event) || (!!draftScope && next!==draftScope) || (!!user && user.permissions?.['tasks.view']!==true);
+ const prefix=user?.id?'mba-qa-v2:'+user.id+':'+env.MBA_API?.getPortfolioId?.()+':':'';
+ try{for(const key of Object.keys(sessionStorage)){
+   if(!key.startsWith('mba-qa-v1:')&&!key.startsWith('mba-qa-v2:'))continue;
+   if(purgeAll || (prefix && !key.startsWith(prefix)))sessionStorage.removeItem(key);
+ }}catch{/* Storage unavailable. */}
+ draftScope=next;
 });
