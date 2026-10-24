@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { runtimeQueries, runtimeScope } from './runtimeQueries';
+import { runtimeQueries, runtimeScope, readSummary, saveSummary } from './runtimeQueries';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownUp, CheckCircle2, Clock3, Download, RefreshCw, Users, Gauge } from 'lucide-react';
 import type { ApiRequest } from './renderers';
@@ -164,8 +164,12 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     return [...totals].sort((a, b) => b[1] - a[1]);
   }, [people]);
   const maxType = Math.max(1, ...byType.map(([, count]) => count));
+  const snapshotKey=JSON.stringify([scope,filters]);
+  const snapshot=useMemo(()=>readSummary(snapshotKey),[snapshotKey]);
   const total = shown?.summary.completed || 0;
   const recorded = people.reduce((sum, p) => sum + p.analysis_samples, 0);
+  const cardSummary=shown ? {completed:total,today_completed:shown.summary.today_completed,people:people.length,recorded} : snapshot;
+  useEffect(()=>{if(shown)saveSummary(snapshotKey,{completed:total,today_completed:shown.summary.today_completed,people:people.length,recorded});},[shown,snapshotKey,total,people.length,recorded]);
   const hasTimingByType = people.some(p => p.timing_by_type !== undefined);
   const activeType = byType.some(([type]) => type === selectedType) ? selectedType : (byType[0]?.[0] || '');
   const timingRows = useMemo(() => {
@@ -210,14 +214,14 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       ]}/>
     </div>
     {error && <div role="alert" className="task-results-notice task-results-error">{error}<button type="button" onClick={() => refresh()}>Tentar novamente</button></div>}
-    <span role="status" className="runtime-query-status">{pending ? 'Atualizando…' : error ? 'Dados desatualizados' : ''}</span>
+    <span role="status" className="runtime-query-status">{pending ? (snapshot && !shown ? 'Último resumo autorizado · atualizando…' : 'Atualizando…') : error ? 'Dados desatualizados' : ''}</span>
     <>
       {shown?.truncated && <div role="alert" className="task-results-notice">A consulta atingiu seu limite de registros. Reduza o período: as contagens e medianas podem estar incompletas, e o destaque de velocidade está desativado.</div>}
       <div className="task-results-stats">
-        {stat('Concluídas no período', (shown ? formatInt(total) : '—'), 'Análises humanas concluídas', CheckCircle2)}
-        {stat('Concluídas hoje', (shown ? formatInt(shown.summary.today_completed) : '—'), 'Hoje, dentro do filtro escolhido', Clock3)}
-        {stat('Colaboradores ativos', (shown ? formatInt(people.length) : '—'), 'Com pelo menos uma conclusão', Users)}
-        {stat('Cobertura de tempo', (shown ? percent(recorded, total) : '—'), shown ? formatInt(recorded) + ' de ' + formatInt(total) + ' com início e término válidos' : 'Aguardando dados do filtro', Gauge)}
+        {stat('Concluídas no período', (cardSummary ? formatInt(cardSummary.completed) : '—'), 'Análises humanas concluídas', CheckCircle2)}
+        {stat('Concluídas hoje', (cardSummary ? formatInt(cardSummary.today_completed) : '—'), 'Hoje, dentro do filtro escolhido', Clock3)}
+        {stat('Colaboradores ativos', (cardSummary ? formatInt(cardSummary.people) : '—'), 'Com pelo menos uma conclusão', Users)}
+        {stat('Cobertura de tempo', (cardSummary ? percent(cardSummary.recorded,cardSummary.completed) : '—'), shown ? formatInt(recorded) + ' de ' + formatInt(total) + ' com início e término válidos' : 'Aguardando dados do filtro', Gauge)}
       </div>
       <div className="task-results-grid task-results-grid-compact">
         <article className="task-results-card">

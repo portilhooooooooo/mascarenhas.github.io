@@ -1,3 +1,4 @@
+import { useModuleVisible } from './useModuleVisible';
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
 import { BaseGeralPage } from './BaseGeralPage';
@@ -21,10 +22,11 @@ function getPermissions() {
 }
 
 export function GestaoProcessualPage() {
+  const visible=useModuleVisible('dashboard');
   const [permissions, setPermissions] = useState(getPermissions);
   const [, forcePortfolioPolicySync] = useState(0);
   const [activeTab, setActiveTab] = useState<AnalyticsTab>(currentAnalyticsTab);
-  const [visitedTabs, setVisitedTabs] = useState<AnalyticsTab[]>(() => [currentAnalyticsTab()]);
+  const [visitedTabs, setVisitedTabs] = useState<AnalyticsTab[]>(() => /^\/?analytics(?:\/|$)/.test(location.pathname) ? [currentAnalyticsTab()] : []);
   const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
@@ -55,7 +57,7 @@ export function GestaoProcessualPage() {
     };
   }, []);
   useEffect(() => {
-    const sync = () => setActiveTab(currentAnalyticsTab());
+    const sync = () => { if (/^\/?analytics(?:\/|$)/.test(location.pathname)) setActiveTab(currentAnalyticsTab()); };
     window.addEventListener('mba:route-changed', sync);
     return () => window.removeEventListener('mba:route-changed', sync);
   }, []);
@@ -68,8 +70,9 @@ export function GestaoProcessualPage() {
       : 'geral';
 
   useEffect(() => {
+    if(!visible)return;
     setVisitedTabs(previous => previous.includes(displayedTab) ? previous : [...previous, displayedTab]);
-  }, [displayedTab]);
+  }, [displayedTab,visible]);
 
   if (!canViewAnalytics && !canViewClosing) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
@@ -79,8 +82,8 @@ export function GestaoProcessualPage() {
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
     </nav>
-    {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage/></div> : null}
-    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage/></div> : null}
+    {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage visible={visible && displayedTab==='geral'}/></div> : null}
+    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage visible={visible && displayedTab==='encerramentos'}/></div> : null}
     {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage/></div> : null}
   </div>;
 }

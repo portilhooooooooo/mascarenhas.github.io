@@ -123,14 +123,17 @@ function authorizedPageId(pageId) {
   if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
   return pageId;
 }
+const moduleScrollPositions = new Map();
 function showPage(pageId, updateRoute = true) {
+  const previous = document.querySelector('main .page.active')?.id;
+  if(previous && previous!==pageId)moduleScrollPositions.set(previous,window.scrollY);
   pageId = authorizedPageId(pageId);
   pages.forEach(page => page.classList.toggle('active', page.id === pageId));
   navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
   if (updateRoute) publishRoute(pageId === 'acordos'
     ? preferredOperationRoute()
     : (pageRoutes[pageId] || 'sem-acesso'), pageId);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if(previous!==pageId) window.scrollTo({top:moduleScrollPositions.get(pageId)||0,behavior:'instant'});
 }
 window.showPage = showPage;
 function navigateRoute(route) {
@@ -1145,3 +1148,5 @@ for (const [selector, action] of [['#unlock-user', 'unlock'], ['#revoke-user-ses
     } catch (error) { window.alert(error.message); }
   });
 }
+
+for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed'])window.addEventListener(event,()=>moduleScrollPositions.clear());

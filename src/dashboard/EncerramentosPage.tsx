@@ -1,3 +1,4 @@
+import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
 import { getClosingCases, sendClosingsToBenner, type ClosingCase, type ClosingStatus, type ClosingValidatedFilter } from './operacaoEncerramentosService';
@@ -105,27 +106,9 @@ async function loadDashboard(carteira: string, tipo: Tipo, inicio: string, fim: 
   if (fim) query.set('fim', fim);
   if (analista !== 'todos') query.set('analista', analista);
   const path = '/api/operacao/encerramentos/dashboard?' + query.toString();
-  // The dashboard is a read-only request. A momentary 502/503 or transport
-  // reset should not blank all KPIs; retry briefly without repeating mutations.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 15000);
-      try {
-        return await api.request<Dados>(path, { signal: controller.signal });
-      } finally {
-        window.clearTimeout(timeout);
-      }
-    } catch (error) {
-      const status = (error as Error & { status?: number })?.status;
-      const transient = status === 429 || status === 500 || status === 502
-        || status === 503 || status === 504
-        || (status == null && (error instanceof TypeError || (error as Error)?.name === 'AbortError'));
-      if (!transient || attempt === 2) throw error;
-      await new Promise<void>(resolve => window.setTimeout(resolve, (attempt + 1) * 450));
-    }
-  }
-  throw new Error('Não foi possível carregar os indicadores.');
+  const controller=new AbortController();
+  const timer=window.setTimeout(()=>controller.abort(),10000);
+  try{return await api.request<Dados>(path,{signal:controller.signal});}finally{window.clearTimeout(timer);}
 }
 
 // Contador e modal compartilham a mesma relação de processos, não a soma de tarefas.
@@ -648,7 +631,8 @@ function AnalystsPanel({ analysts, unavailable }: { analysts: Analista[]; unavai
   </section>;
 }
 
-export function EncerramentosPage() {
+export function EncerramentosPage({visible=true}:{visible?:boolean}) {
+  const visibleRef=useRef(visible); visibleRef.current=visible;
   const [portfolioRevision,setPortfolioRevision] = useState(0);
   const [carteira,setCarteira] = useState(() => {
     const id = (window as Window & { MBA_API?: { getPortfolioId?: () => string } }).MBA_API?.getPortfolioId?.();
@@ -669,6 +653,7 @@ export function EncerramentosPage() {
   const [snapshotRevision,setSnapshotRevision] = useState(0);
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
+  const [blockErrors,setBlockErrors]=useState<Record<string,string>>({});
   const refreshSequence = useRef(0);
   const activeRequest = useRef<{ key: string; sequence: number } | null>(null);
   // The page can remain mounted while the authenticated portfolio changes.
@@ -700,37 +685,27 @@ export function EncerramentosPage() {
   const filterKey = [carteira,tipo,inicio,fim,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
   const refresh = useCallback(async () => {
-    // Duplicate realtime events must not continually supersede pending data.
-    // A change of filters or portfolio still starts a new request.
-    if (invalidRange || activeRequest.current?.key === filterKey) return;
-    const sequence = ++refreshSequence.current;
-    activeRequest.current = { key: filterKey, sequence };
-    setPending(true);
-    try {
-      const [painel, registros, posicao, aging] = await Promise.all([
-        loadDashboard(carteira,tipo,inicio,fim,analista,etapa),
-        loadClosingAnalyses(inicio,fim,tipo).catch(() => null),
-        loadMonthlyBennerPosition().catch(() => null),
-        carteira==='Agibank Regular' ? loadMonthlyAging().catch(() => null) : Promise.resolve(null),
-      ]);
-      if (sequence !== refreshSequence.current) return;
-      setDados(painel);
-      setAgingMensal(aging);
-      setAnalises(registros);
-      setPosicaoBenner(posicao);
-      setLoadedKey(filterKey);
-      setError('');
-    } catch (cause) {
-      if (sequence === refreshSequence.current) {
-        setError(cause instanceof Error ? cause.message : 'Erro ao carregar encerramentos.');
-      }
-    } finally {
-      if (activeRequest.current?.sequence === sequence) activeRequest.current = null;
-      if (sequence === refreshSequence.current) setPending(false);
-    }
+    if(!visibleRef.current || invalidRange || activeRequest.current?.key===filterKey)return;
+    const sequence=++refreshSequence.current;
+    const scope=runtimeScope();
+    const valid=()=>sequence===refreshSequence.current && scope===runtimeScope();
+    activeRequest.current={key:filterKey,sequence};
+    setPending(true);setError('');setBlockErrors({});
+    if(loadedKey!==filterKey){setDados(null);setAnalises(null);setPosicaoBenner(null);setAgingMensal(null);}
+    const run=<T,>(name:string,load:()=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
+      queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],queryFn:load,staleTime:60000,
+    }).then(value=>{if(valid())apply(value);}).catch(cause=>{if(valid())setBlockErrors(previous=>({...previous,[name]:cause instanceof Error?cause.message:'Consulta indisponível'}));});
+    await Promise.allSettled([
+      run('resumo',()=>loadDashboard(carteira,tipo,inicio,fim,analista,etapa),painel=>{setDados(painel);setLoadedKey(filterKey);}),
+      run('analises',()=>loadClosingAnalyses(inicio,fim,tipo),setAnalises),
+      run('benner',loadMonthlyBennerPosition,setPosicaoBenner),
+      ...(carteira==='Agibank Regular'?[run('aging',loadMonthlyAging,setAgingMensal)]:[]),
+    ]);
+    if(activeRequest.current?.sequence===sequence)activeRequest.current=null;
+    if(valid())setPending(false);
   },[carteira,tipo,inicio,fim,analista,etapa,invalidRange,filterKey]);
 
-  useEffect(() => {void refresh();},[refresh]);
+  useEffect(() => {if(visible)void refresh();},[refresh,visible]);
   useEffect(() => () => {
     // React StrictMode runs effect cleanup/setup twice. Clearing the request
     // lease allows the second setup to load rather than showing blank KPIs.
@@ -742,15 +717,15 @@ export function EncerramentosPage() {
   // the current task queue. Reload independently, without zeroing missing data.
   useEffect(() => {
     let active = true;
-    if (!isNubank) void loadMotivosDerrotaPendentes()
+    if (visible && !isNubank) void loadMotivosDerrotaPendentes()
       .then(value => { if (active) setMotivosPendentes(value); })
       .catch(() => { if (active) setMotivosPendentes(null); });
     return () => { active = false; };
-  },[carteira,portfolioRevision,snapshotRevision,isNubank]);
+  },[carteira,portfolioRevision,snapshotRevision,isNubank,visible]);
 
   // Events drive normal updates. The 5-minute check recovers missed events.
   useEffect(() => {
-    const update = () => { if (!document.hidden) { void refresh(); setSnapshotRevision(value => value + 1); } };
+    const update = () => { if (visibleRef.current && !document.hidden) { void refresh(); setSnapshotRevision(value => value + 1); } };
     const id = window.setInterval(update,300000);
     const visible = update;
     document.addEventListener('visibilitychange', visible);
@@ -759,7 +734,7 @@ export function EncerramentosPage() {
   useEffect(() => {
     let timeout: number | undefined;
     const schedule = () => {
-      if (document.hidden) return;
+      if (!visibleRef.current || document.hidden) return;
       window.clearTimeout(timeout);
       timeout = window.setTimeout(() => { void refresh(); setSnapshotRevision(value => value + 1); },350);
     };
@@ -779,6 +754,7 @@ export function EncerramentosPage() {
   const analysts = loadedKey===filterKey && analises ? analises.analistas : [];
 
   return <div className="closing-page-v2">
+    {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
     <div className="closing-heading"><h1>Encerramentos</h1></div>
     <div className="closing-filter-row">
       <label><span>Carteira</span><select value={carteira} disabled aria-label="Carteira atual autorizada">

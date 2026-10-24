@@ -123,7 +123,7 @@ const fromValues = (values: string[]) => [
   { value: '', label: 'Todos' }, ...values.map(value => ({ value, label: value })),
 ];
 
-export function BaseGeralPage() {
+export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [portfolio, setPortfolio] = useState(() => (window as Env).MBA_API?.getPortfolioId?.() || '');
   const [revision, setRevision] = useState(0);
   const [period, setPeriod] = useState<Period>('all');
@@ -157,7 +157,9 @@ export function BaseGeralPage() {
     && (window as Window & { MBA_CURRENT_USER?: { permissions?: Record<string, boolean> } }).MBA_CURRENT_USER?.permissions?.['encerramentos.view'] === true;
   const closingComparable = comparable && !uf && canSeeClosings;
 
+  const visibleRef=useRef(visible); visibleRef.current=visible;
   const refresh = useCallback(async () => {
+    if(!visibleRef.current)return;
     const sequence = ++requestSequence.current;
     const api = getApi();
     setPending(true);
@@ -176,7 +178,7 @@ export function BaseGeralPage() {
     }
   }, [filterKey, filterQuery]);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => { if(visible)void refresh(); }, [refresh,visible]);
   useEffect(() => {
     const changed = () => {
       ++requestSequence.current;
@@ -192,7 +194,7 @@ export function BaseGeralPage() {
     return () => { window.removeEventListener('mba:portfolio-changed', changed); ++requestSequence.current; };
   }, []);
   useEffect(() => {
-    const tick = () => { if (!document.hidden) void refresh(); };
+    const tick = () => { if (visibleRef.current && !document.hidden) void refresh(); };
     const interval = window.setInterval(tick, 300000);
     document.addEventListener('visibilitychange', tick);
     return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', tick); };
