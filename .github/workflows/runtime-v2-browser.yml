@@ -1,0 +1,26 @@
+name: Runtime V2 browser fixtures
+on:
+  push:
+    branches: [dev/tasks-workspace]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: PHASE=ci node tests/runtime-v2/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-v2-fixture-evidence
+          path: docs/runtime-v2/evidence/ci

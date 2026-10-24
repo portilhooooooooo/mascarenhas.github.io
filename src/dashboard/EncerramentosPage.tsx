@@ -684,7 +684,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const invalidRange = Boolean(inicio && fim && inicio > fim);
   const filterKey = [carteira,tipo,inicio,fim,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force=false) => {
     if(!visibleRef.current || invalidRange || activeRequest.current?.key===filterKey)return;
     const sequence=++refreshSequence.current;
     const scope=runtimeScope();
@@ -693,7 +693,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     setPending(true);setError('');setBlockErrors({});
     if(loadedKey!==filterKey){setDados(null);setAnalises(null);setPosicaoBenner(null);setAgingMensal(null);}
     const run=<T,>(name:string,load:()=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
-      queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],queryFn:load,staleTime:60000,
+      queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],queryFn:load,staleTime:force?0:60000,
     }).then(value=>{if(valid())apply(value);}).catch(cause=>{if(valid())setBlockErrors(previous=>({...previous,[name]:cause instanceof Error?cause.message:'Consulta indisponível'}));});
     await Promise.allSettled([
       run('resumo',()=>loadDashboard(carteira,tipo,inicio,fim,analista,etapa),painel=>{setDados(painel);setLoadedKey(filterKey);}),
@@ -725,7 +725,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
 
   // Events drive normal updates. The 5-minute check recovers missed events.
   useEffect(() => {
-    const update = () => { if (visibleRef.current && !document.hidden) { void refresh(); setSnapshotRevision(value => value + 1); } };
+    const update = () => { if (visibleRef.current && !document.hidden) { void refresh(true); setSnapshotRevision(value => value + 1); } };
     const id = window.setInterval(update,300000);
     const visible = update;
     document.addEventListener('visibilitychange', visible);
@@ -736,7 +736,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     const schedule = () => {
       if (!visibleRef.current || document.hidden) return;
       window.clearTimeout(timeout);
-      timeout = window.setTimeout(() => { void refresh(); setSnapshotRevision(value => value + 1); },350);
+      timeout = window.setTimeout(() => { void refresh(true); setSnapshotRevision(value => value + 1); },350);
     };
     const onRealtime = (event: Event) => {
       const module = (event as CustomEvent<{module?: string}>).detail?.module;
@@ -789,7 +789,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
       ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira}
           posicao={loadedKey===filterKey?posicaoBenner:null}
           onClose={()=>setActiveCard(null)}
-          onSent={()=>{void refresh();setSnapshotRevision(x=>x+1);}}/>
+          onSent={()=>{void refresh(true);setSnapshotRevision(x=>x+1);}}/>
       : activeCard && <ClosingDetailsDialog key={activeCard+filterKey+(tipoRecorte||"")} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} tipoRecorte={tipoRecorte} onClose={()=>{setActiveCard(null);setTipoRecorte(null);}}/>}
   </div>;
 }

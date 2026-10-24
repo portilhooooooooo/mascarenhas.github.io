@@ -1,3 +1,4 @@
+import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight, CheckCircle2, CirclePause, Clock3, FileCheck2,
@@ -165,7 +166,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     setPending(true);
     try {
       if (!api) throw new Error('API indisponível.');
-      const result = await api.request<unknown>('/api/base-geral/summary' + (filterQuery ? '?' + filterQuery : ''));
+      const result = await runtimeQueries.fetchQuery({queryKey:['runtime-v2',runtimeScope(),'base-geral',filterQuery],staleTime:60000,queryFn:()=>api.request<unknown>('/api/base-geral/summary' + (filterQuery ? '?' + filterQuery : ''))});
       if (sequence !== requestSequence.current) return;
       if (!validDashboard(result)) throw new Error('Estrutura de indicadores inválida.');
       setData(result);
