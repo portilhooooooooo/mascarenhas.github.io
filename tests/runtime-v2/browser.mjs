@@ -38,6 +38,7 @@ try{
  await context.route('https://api.portilhobackoffice.site/**',async route=>{
   const url=new URL(route.request().url());calls.push({t:Date.now(),path:url.pathname,query:url.search});
   if(url.pathname==='/api/me'){if(meDelay)await new Promise(r=>setTimeout(r,meDelay));return route.fulfill({status:meStatus,json:meStatus===200?currentProfile:{error:'Fixture indisponível',reason:meReason,code:meStatus===401?'SESSION_INVALID':meStatus===403?'PROFILE_NOT_AUTHORIZED':'AUTH_DEPENDENCY_UNAVAILABLE'}});}
+  if(url.pathname==='/api/events/stream')return route.fulfill({status:403,json:{code:'REALTIME_PAUSED',error:'Fixture stream paused'}});
   if(url.pathname==='/api/me/state')return route.fulfill({json:{id:currentProfile.id,policy_epoch:currentProfile.policy_epoch||'legacy'}});
   if(url.pathname==='/api/tasks/results'){if(delay)await new Promise(r=>setTimeout(r,delay));return route.fulfill({status:resultStatus,json:resultStatus===200?payload(resultCount ?? (url.searchParams.get('period')==='7'?7:30)):{error:'Falha fixture',code:'DEPENDENCY_UNAVAILABLE'}});}
   if(url.pathname==='/api/base-geral/summary')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},charts:{por_produto:[]},filters:{states:[],products:[],resolutions:[]}}});
@@ -109,7 +110,37 @@ try{
   await test('A13',async()=>{detailDelay=15000;const started=performance.now();await navigate('analytics/encerramentos');await page.getByRole('button',{name:/Aptidões: 19/}).waitFor({timeout:4000});const kpiMs=performance.now()-started;assert.ok(kpiMs<4000);assert.ok(calls.some(c=>c.path.endsWith('/analises')));await page.waitForTimeout(15000);detailDelay=0;return {kpiMs,detailDelayMs:15000};});
   await navigate('tarefas/resultados');
   await test('A14',async()=>{const fresh=await context.newPage();const before=calls.length;await fresh.goto(base+'/tarefas/resultados');await fresh.locator('body.auth-signed-in').waitFor();await fresh.waitForTimeout(250);const journey=calls.slice(before);await fresh.close();assert.equal(journey.filter(c=>c.path==='/api/tasks'||c.path.startsWith('/api/base-geral')||c.path.startsWith('/api/operacao/encerramentos/')).length,0);return journey;});
-  await test('A17',async()=>{
+  await test('A14-realtime-paused',async()=>{await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForTimeout(200);const count=calls.filter(c=>c.path==='/api/events/stream').length;await page.waitForTimeout(2200);assert.equal(calls.filter(c=>c.path==='/api/events/stream').length,count,'Realtime pausado não deve reconectar em avalanche');});
+ await test('A15-write-intent',async()=>{
+  const path='/api/task-processes/12345678-1234-4234-8234-123456789abc/encerramento-analysis';let status=503;const sent=[];
+  await context.route('**'+path,async route=>{sent.push(route.request().headers()['idempotency-key']);await new Promise(r=>setTimeout(r,250));return route.fulfill({status,json:status===201?{saved:true}:{code:'WRITE_DEPENDENCY_UNAVAILABLE',error:'Fixture write unavailable'}});});
+  const body=JSON.stringify({decision:'inapto',notes:'Private draft fixture'});
+  const first=await page.evaluate(async({path,body})=>Promise.allSettled([window.MBA_API.request(path,{method:'POST',body}),window.MBA_API.request(path,{method:'POST',body})]).then(rows=>rows.map(r=>r.status)),{path,body});
+  assert.deepEqual(first,['rejected','rejected']);assert.equal(sent.length,1);assert.match(sent[0],/^[0-9a-f-]{36}$/);
+  const stored=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith('mba_write_intent:')));
+  assert.equal(stored.length,1);assert.ok(!JSON.stringify(stored).includes('Private draft fixture'));
+  assert.deepEqual(Object.keys(JSON.parse(stored[0][1])).sort(),['at','id','version']);
+  await page.reload();await page.locator('body.auth-signed-in').waitFor();assert.equal(sent.length,1,'No automatic write on F5');
+  status=201;assert.deepEqual(await page.evaluate(({path,body})=>window.MBA_API.request(path,{method:'POST',body}),{path,body}),{saved:true});
+  assert.equal(sent.length,2);assert.equal(sent[1],sent[0],'Same operation ID recovered after F5');
+  assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith('mba_write_intent:')).length),0);
+  await context.unroute('**'+path);return {networkCommands:2,concurrentCalls:2,automaticRetries:0,recoveredIntent:true};
+ });
+ await test('A11-handoff-same-user',async()=>{
+  await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='old-session-node');
+  const generation=await page.evaluate(()=>window.MBA_SESSION_GENERATION);
+  await context.route('**/auth/session/exchange',route=>route.fulfill({json:{access_token:'ba_fixture_new_intentional_session'}}));
+  await page.evaluate(()=>{sessionStorage.setItem('mba_oauth_handoff','fixture-handoff');sessionStorage.setItem('mba_oauth_verifier','fixture-verifier');window.dispatchEvent(new Event('mba:authorization-invalidated'));});
+  await page.waitForFunction(()=>localStorage.getItem('mba_session_token')==='ba_fixture_new_intentional_session'&&window.MBA_AUTH.getLoginState().status==='authenticated');
+  assert.notEqual(await page.evaluate(()=>window.MBA_SESSION_GENERATION),generation);
+  await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+  assert.notEqual(await page.locator('.task-results-page').getAttribute('data-instance'),'old-session-node');
+  assert.equal(calls.filter(c=>c.path==='/auth/microsoft/start').length,0);
+  await context.unroute('**/auth/session/exchange');
+  await page.evaluate(()=>{localStorage.setItem('mba_session_token','ba_runtime_fixture');window.dispatchEvent(new StorageEvent('storage',{key:'mba_session_token'}));});
+  await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='authenticated');return {scopePurgedForSameUserNewSession:true,oauthStarts:0};
+ });
+ await test('A17',async()=>{
    await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
    const statuses=[];
    for(const status of [429,502,503,504]){

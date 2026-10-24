@@ -53,9 +53,14 @@
   };
 
   const setStoredToken = token => {
+    const changed=token!==getStoredToken();
     localStorage.setItem(tokenKey, token);
     sessionStorage.removeItem(tokenKey);
-    setGeneration(crypto.randomUUID());
+    if(changed){
+      setGeneration(crypto.randomUUID());
+      window.MBA_CURRENT_USER=null;
+      window.dispatchEvent(new Event('mba:logged-out'));
+    }
   };
 
   const clearStoredToken = () => {
@@ -251,8 +256,14 @@
 
   async function loadProfile(options, generation) {
     const token = getStoredToken();
-    const profile = await window.MBA_API.request('/api/me', options);
-    if (token !== getStoredToken() || generation !== bootstrapGeneration) throw Object.assign(new Error('Identidade alterada durante validação.'), {code:'STALE_IDENTITY'});
+    let profile;
+    try { profile = await window.MBA_API.request('/api/me', options); }
+    catch (error) {
+      if (token !== getStoredToken() || generation !== bootstrapGeneration)
+        throw Object.assign(new Error('Identidade alterada durante validação.'), {code:'STALE_IDENTITY',revalidate:generation===bootstrapGeneration && token!==getStoredToken()});
+      throw error;
+    }
+    if (token !== getStoredToken() || generation !== bootstrapGeneration) throw Object.assign(new Error('Identidade alterada durante validação.'), {code:'STALE_IDENTITY',revalidate:generation===bootstrapGeneration && token!==getStoredToken()});
     const accessKey = user => user && JSON.stringify([user.id,user.role,user.active_portfolio_id||user.default_portfolio_id,
       Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),user.authorization_version]);
     const accessChanged = accessKey(window.MBA_CURRENT_USER) !== accessKey(profile);
@@ -366,7 +377,10 @@
         publishLoginState({ busy: false, error: null });
       }
     } catch (error) {
-      if (error?.code === 'STALE_IDENTITY') return;
+      if (error?.code === 'STALE_IDENTITY') {
+        if(error.revalidate && getStoredToken())await initializeAuth(deadline,1);
+        return;
+      }
       const hasToken = Boolean(getStoredToken());
       const invalidSession = error?.status === 401
         && ['SESSION_INVALID', 'AUTH_REQUIRED'].includes(error?.code);
