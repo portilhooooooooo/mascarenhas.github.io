@@ -182,6 +182,7 @@
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
       error.status = response.status;
+      error.reason = ['session_replaced', 'session_revoked', 'session_expired'].includes(data?.reason) ? data.reason : 'invalid';
 
       const sessionInvalid = response.status === 401
         && Boolean(tokenBeforeRequest)
@@ -190,8 +191,14 @@
       if (sessionInvalid && !document.body.classList.contains('auth-loading')) {
         clearStoredToken();
         window.dispatchEvent(new CustomEvent('mba:session-expired', {
-          detail: { code: data?.code },
+          detail: Object.freeze({ code: data?.code, reason: error.reason }),
         }));
+      }
+      if (response.status === 403 && path !== '/api/me' && tokenBeforeRequest
+        && ['PERMISSION_DENIED','PORTFOLIO_ACCESS_DENIED','PROFILE_NOT_AUTHORIZED'].includes(data?.code)) {
+        window.MBA_CURRENT_USER = null;
+        window.dispatchEvent(new Event('mba:logged-out'));
+        window.dispatchEvent(new Event('mba:authorization-invalidated'));
       }
       throw error;
     }

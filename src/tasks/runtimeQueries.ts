@@ -4,11 +4,11 @@ export const runtimeQueries = new QueryClient({defaultOptions:{queries:{
   staleTime:45000,gcTime:300000,retry:false,refetchOnWindowFocus:false,
 }}});
 export function runtimeScope() {
-  const w = window as Window & {MBA_CURRENT_USER?: {id?:string;role?:string;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
+  const w = window as Window & {MBA_CURRENT_USER?: {id?:string;role?:string;authorization_version?:string;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
   const user=w.MBA_CURRENT_USER;
   if(!user) return '';
   return JSON.stringify([user.id,(window as Window & {MBA_SESSION_GENERATION?:string}).MBA_SESSION_GENERATION,w.MBA_API?.getPortfolioId?.(),user.role,
-    Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),'runtime-v2.1']);
+    Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),user.authorization_version||'legacy','runtime-v2.2']);
 }
 let scope=runtimeScope();
 for(const event of ['mba:authenticated','mba:profile-ready','mba:logged-out','mba:session-expired','mba:portfolio-changed']) {

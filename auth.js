@@ -10,6 +10,10 @@
   let microsoftLoginInFlight = false;
   let loginState = { busy: false, error: null, status: 'initializing' };
   let bootstrapGeneration = 0;
+  const sessionEndMessage = reason => reason === 'session_replaced'
+    ? 'Sua sessão foi substituída por um novo login em outro navegador ou dispositivo. Entre novamente se desejar continuar aqui.'
+    : reason === 'session_revoked' ? 'Sua sessão foi revogada. Entre novamente.'
+    : 'Sua sessão terminou. Entre novamente.';
   const immutableCopy = value => {
     const copy = JSON.parse(JSON.stringify(value));
     const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; };
@@ -262,11 +266,10 @@
     publishLoginState({ busy: false, error: null, status: 'authenticated' });
   }
 
-  async function loadProfileWithRetry() {
+  async function loadProfileWithRetry(deadline = performance.now() + 10000, maxAttempts = 2) {
     const generation = ++bootstrapGeneration;
-    const deadline = performance.now() + 10000;
     let lastError;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const controller = new AbortController();
       const remaining = deadline - performance.now();
       if (remaining <= 0) break;
@@ -274,28 +277,33 @@
       try { return await loadProfile({signal:controller.signal}, generation); }
       catch (error) {
         lastError = error;
-        if (generation !== bootstrapGeneration || error?.code === 'STALE_IDENTITY' || [401,403,429].includes(error?.status)) throw error;
-        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 200));
+        if (generation !== bootstrapGeneration || error?.code === 'STALE_IDENTITY' || (error?.status && ![502,503,504].includes(error.status))) throw error;
+        if (attempt + 1 < maxAttempts) await new Promise(resolve => setTimeout(resolve, 200));
       } finally { clearTimeout(timer); }
     }
     throw lastError || new Error('Orçamento de validação esgotado.');
   }
 
-  async function exchangeOAuthHandoff(code, verifier) {
+  async function exchangeOAuthHandoff(code, verifier, deadline) {
     let lastError;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const remaining = deadline - performance.now();
+      if (remaining <= 0) break;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), attempt === 0 ? Math.min(4750, remaining) : remaining);
       try {
         return await window.MBA_API.request('/auth/session/exchange', {
           method: 'POST',
+          signal: controller.signal,
           body: JSON.stringify({ handoff_code: code, handoff_verifier: verifier }),
         });
       } catch (error) {
         lastError = error;
-        if ([401, 403, 422].includes(error?.status)) throw error;
-        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
-      }
+        if (error?.status && ![409,502,503,504].includes(error.status)) throw error;
+        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 200));
+      } finally { clearTimeout(timer); }
     }
-    throw lastError;
+    throw lastError || new Error('Orçamento de acesso esgotado.');
   }
 
   const base64url = bytes => btoa(String.fromCharCode(...bytes))
@@ -303,7 +311,7 @@
     .replace(/\//g, '_')
     .replace(/=+$/, '');
 
-  async function initializeAuth() {
+  async function initializeAuth(deadline = performance.now() + 10000, maxAttempts = 2) {
     if(getStoredToken()){
       document.body.classList.add('auth-validating');
       document.querySelector('.app-shell')?.setAttribute('inert','');
@@ -335,7 +343,7 @@
           throw new Error('Não foi possível concluir o acesso. Inicie o login novamente.');
         }
         try {
-          const result = await exchangeOAuthHandoff(code, verifier);
+          const result = await exchangeOAuthHandoff(code, verifier, deadline);
           if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
           setStoredToken(result.access_token);
           localStorage.removeItem('mba_oauth_lease');
@@ -347,7 +355,7 @@
       }
 
       if (getStoredToken()) {
-        await loadProfileWithRetry();
+        await loadProfileWithRetry(deadline, maxAttempts);
       } else {
         setAuthState(false);
         publishLoginState({ busy: false, error: null });
@@ -369,7 +377,7 @@
           busy: false,
           error: unauthorizedProfile
             ? 'Seu usuário não possui acesso ativo ao Backoffice.'
-            : 'Sua sessão terminou. Entre novamente.',
+            : sessionEndMessage(error?.reason),
         });
       } else if (hasToken) {
         document.body.classList.remove('auth-loading', 'auth-signed-out', 'auth-signed-in', 'auth-validating');
@@ -467,14 +475,14 @@
     }
   });
 
-  window.addEventListener('mba:session-expired', () => {
+  window.addEventListener('mba:session-expired', event => {
     clearStoredToken();
     clearOAuthFlow();
     moduleActivationAt.clear();
     window.MBA_CURRENT_USER = null;
     microsoftLoginInFlight = false;
     setAuthState(false);
-    publishLoginState({ busy: false, error: 'Sua sessão terminou. Entre novamente.' });
+    publishLoginState({ busy: false, error: sessionEndMessage(event.detail?.reason) });
   });
 
   window.addEventListener('mba:authorization-invalidated',()=>{
@@ -491,5 +499,43 @@
     setGeneration(crypto.randomUUID());
     void initializeAuth();
   });
+  // One lightweight global authorization guard; hidden modules do not own polls.
+  // Only enabled when the API supplies a policy version. No token enters its key.
+  let guardTimer;
+  let guardRunning = false;
+  const scheduleGuard = () => {
+    clearTimeout(guardTimer);
+    if (window.MBA_CURRENT_USER?.authorization_version) guardTimer = setTimeout(checkAuthorization, 15000);
+  };
+  async function checkAuthorization() {
+    if (guardRunning) return;
+    const profile = window.MBA_CURRENT_USER;
+    if (document.hidden || loginState.status !== 'authenticated' || !profile?.authorization_version) { scheduleGuard(); return; }
+    guardRunning = true;
+    const deadline = performance.now() + 10000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    try {
+      const state = await window.MBA_API.request('/api/me/state', {signal:controller.signal});
+      if (profile !== window.MBA_CURRENT_USER) return;
+      if (state?.id !== profile.id || typeof state?.authorization_version !== 'string') throw new Error('Estado de autorização inválido.');
+      if (state.authorization_version !== profile.authorization_version) {
+        window.MBA_CURRENT_USER = null;
+        window.dispatchEvent(new Event('mba:logged-out'));
+        window.dispatchEvent(new Event('mba:authorization-invalidated'));
+      }
+    } catch (error) {
+      if (error?.code !== 'STALE_IDENTITY' && getStoredToken() && profile === window.MBA_CURRENT_USER) {
+        document.querySelector('.app-shell')?.setAttribute('inert','');
+        publishLoginState({status:'initializing'});
+        await initializeAuth(deadline, 1);
+      }
+    } finally {
+      clearTimeout(timer); guardRunning = false; scheduleGuard();
+    }
+  }
+  window.addEventListener('mba:authenticated', scheduleGuard);
+  window.addEventListener('mba:logged-out', () => clearTimeout(guardTimer));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) void checkAuthorization(); });
   initializeAuth();
 })();
