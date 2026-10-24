@@ -7,13 +7,14 @@ export function runtimeScope() {
   const w = window as Window & {MBA_CURRENT_USER?: {id?:string;role?:string;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
   const user=w.MBA_CURRENT_USER;
   if(!user) return '';
-  return JSON.stringify([user.id,sessionStorage.getItem('mba_runtime_generation'),w.MBA_API?.getPortfolioId?.(),user.role,
+  return JSON.stringify([user.id,(window as Window & {MBA_SESSION_GENERATION?:string}).MBA_SESSION_GENERATION,w.MBA_API?.getPortfolioId?.(),user.role,
     Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),'runtime-v2.1']);
 }
 let scope=runtimeScope();
 for(const event of ['mba:authenticated','mba:profile-ready','mba:logged-out','mba:session-expired','mba:portfolio-changed']) {
   window.addEventListener(event,()=>{
     const next=runtimeScope();
+    if(next)pruneRuntimeStorage(next);
     if(next!==scope || event==='mba:portfolio-changed' || event==='mba:logged-out' || event==='mba:session-expired') {
       if(scope || event==='mba:portfolio-changed' || event==='mba:logged-out' || event==='mba:session-expired')purgeRuntimeStorage();
       void runtimeQueries.cancelQueries(); runtimeQueries.clear(); scope=next;
@@ -41,3 +42,11 @@ export function readSummary(key:string):SummarySnapshot|null {
 export function saveSummary(key:string,data:SummarySnapshot){
   try{if(runtimeScope())sessionStorage.setItem(SNAPSHOT_PREFIX+key,JSON.stringify({version:1,at:Date.now(),data,checksum:checksum(JSON.stringify(data))}));}catch{/* Quota failure must not block queries. */}
 }
+
+function pruneRuntimeStorage(next:string){
+ try{for(const key of Object.keys(sessionStorage)){
+  if(key.startsWith(SNAPSHOT_PREFIX)){let owner='';try{owner=JSON.parse(key.slice(SNAPSHOT_PREFIX.length))[0];}catch{}if(owner!==next)sessionStorage.removeItem(key);}
+  if(key.startsWith('mba_runtime_filters:')&&key.slice('mba_runtime_filters:'.length)!==next)sessionStorage.removeItem(key);
+ }}catch{/* Storage disabled. */}
+}
+if(scope)pruneRuntimeStorage(scope);

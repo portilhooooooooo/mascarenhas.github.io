@@ -13,7 +13,8 @@
     "dev:ux": "vite --config vite.ux.config.ts --host 127.0.0.1",
     "build:ux": "vite build --config vite.ux.config.ts",
     "test:ux": "node tests/operational-ux.test.mjs",
-    "test:processos": "node tests/processos-ui.mjs"
+    "test:processos": "node tests/processos-ui.mjs",
+    "test:runtime-v2": "PHASE=final node tests/runtime-v2/browser.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",

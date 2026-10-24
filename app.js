@@ -137,6 +137,7 @@ function showPage(pageId, updateRoute = true) {
 }
 window.showPage = showPage;
 function navigateRoute(route) {
+  const navigationStarted = performance.now();
   const match = resolvePageRoute(String(route || '').replace(/^\/+|\/+$/g, ''));
   if (!match || !window.MBA_CURRENT_USER) return false;
   if (!canAccessRoute(match.pageId, match.canonical)) {
@@ -145,6 +146,7 @@ function navigateRoute(route) {
   }
   showPage(match.pageId, false);
   publishRoute(match.canonical, match.pageId);
+  requestAnimationFrame(()=>{const list=window.MBA_RUNTIME_METRICS || (window.MBA_RUNTIME_METRICS=[]);list.push({kind:'navigation',route:match.canonical.replace(/item\/.*/, 'item/:id'),ms:performance.now()-navigationStarted});if(list.length>200)list.shift();});
   return true;
 }
 window.MBA_NAVIGATE = navigateRoute;

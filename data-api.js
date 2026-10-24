@@ -13,6 +13,7 @@
   const taskProcessCache = new Map();
   const processToTask = new Map();
   const inFlightGets = new Map();
+  let authorizationEpoch=0;
   const TASK_PROCESS_CACHE_MS = 15000;
 
   const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
@@ -25,7 +26,10 @@
   const setPortfolioId = (portfolioId) => {
     const value = String(portfolioId || '').trim().toLowerCase();
     if (!/^[a-z0-9_]+$/.test(value)) throw new Error('Carteira inválida.');
+    if(value===getPortfolioId())return value;
     localStorage.setItem(portfolioKey, value);
+    window.MBA_CURRENT_USER=null;
+    window.dispatchEvent(new CustomEvent('mba:authorization-invalidated'));
     taskProcessCache.clear();
     processToTask.clear();
     inFlightGets.clear();
@@ -168,10 +172,11 @@
   async function performRequest(path, options, method) {
     const tokenBeforeRequest = getStoredToken();
     const portfolioBeforeRequest = getPortfolioId();
+    const epochBeforeRequest=authorizationEpoch;
     if (path !== '/api/me' && path.startsWith('/api/') && document.body.classList.contains('auth-unavailable')) throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
-    if (tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
+    if (epochBeforeRequest!==authorizationEpoch || tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
     if (!response.ok) {
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
@@ -217,7 +222,7 @@
     }
   }
 
-  for (const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready']) window.addEventListener(event, () => { userDetailCache.clear(); taskProcessCache.clear(); processToTask.clear(); inFlightGets.clear(); });
+  for (const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready','mba:authenticated','mba:authorization-invalidated']) window.addEventListener(event, () => { authorizationEpoch+=1; userDetailCache.clear(); taskProcessCache.clear(); processToTask.clear(); inFlightGets.clear(); });
 
   async function createTaskWithImportedProcesses(payload, file) {
     if (!(file instanceof File) || !/\.(xlsx|csv)$/i.test(file.name)) throw new Error('Selecione uma planilha XLSX ou CSV.');
@@ -283,7 +288,7 @@
       method: 'GET', headers: { Accept: 'text/event-stream' },
       signal: controller.signal,
     });
-    if (tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
+    if (epochBeforeRequest!==authorizationEpoch || tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
     if (!response.ok) {
       const problem = new Error('Realtime indisponível (' + response.status + ')');
       problem.status = response.status;

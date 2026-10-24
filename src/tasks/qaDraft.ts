@@ -1,6 +1,6 @@
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
 
-// Um rascunho por usuário/tarefa/processo, restrito à aba atual.
+// Um rascunho por usuário/carteira/tarefa/processo, restrito à aba atual.
 // Nenhuma resposta em cache é enviada à API antes de "Salvar e próximo".
 function read(key: string): Record<string, unknown> {
   if (!key) return {};
@@ -33,3 +33,7 @@ export function clearQaDraft(key: string) {
   if (!key) return;
   try { sessionStorage.removeItem(key); } catch { /* armazenamento indisponível */ }
 }
+
+for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed'])window.addEventListener(event,()=>{
+ try{for(const key of Object.keys(sessionStorage))if(key.startsWith('mba-qa-v1:')||key.startsWith('mba-qa-v2:'))sessionStorage.removeItem(key);}catch{/* Storage unavailable. */}
+});

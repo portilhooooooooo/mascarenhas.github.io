@@ -16,7 +16,8 @@
     return freeze(copy);
   };
   const generationKey = 'mba_runtime_generation';
-  if (!sessionStorage.getItem(generationKey)) sessionStorage.setItem(generationKey, crypto.randomUUID());
+  const setGeneration = value => { window.MBA_SESSION_GENERATION=value; try{sessionStorage.setItem(generationKey,value);}catch{} };
+  try{setGeneration(sessionStorage.getItem(generationKey)||crypto.randomUUID());}catch{setGeneration(crypto.randomUUID());}
 
   const pagePermissionScopes = Object.freeze({
     dashboard: ['dashboard.view'],
@@ -50,7 +51,7 @@
   const setStoredToken = token => {
     localStorage.setItem(tokenKey, token);
     sessionStorage.removeItem(tokenKey);
-    sessionStorage.setItem(generationKey, crypto.randomUUID());
+    setGeneration(crypto.randomUUID());
   };
 
   const clearStoredToken = () => {
@@ -468,12 +469,18 @@
     publishLoginState({ busy: false, error: 'Sua sessão terminou. Entre novamente.' });
   });
 
+  window.addEventListener('mba:authorization-invalidated',()=>{
+    bootstrapGeneration+=1;
+    document.querySelector('.app-shell')?.setAttribute('inert','');
+    publishLoginState({status:'initializing'});
+    void initializeAuth();
+  });
   window.addEventListener('storage', event => {
     if (event.key !== tokenKey && event.key !== 'mba_portfolio_id') return;
     bootstrapGeneration += 1;
     window.MBA_CURRENT_USER = null;
     window.dispatchEvent(new Event('mba:logged-out'));
-    sessionStorage.setItem(generationKey, crypto.randomUUID());
+    setGeneration(crypto.randomUUID());
     void initializeAuth();
   });
   initializeAuth();

@@ -51,7 +51,7 @@ const NAVIGATION_REVALIDATE_MS = 45000;
 function sessionFingerprint(account: MbaUser | null | undefined) {
   if (!account) return '';
   return JSON.stringify([
-    account.id,
+    account.id,account.role,runtimeScope(),
     account.is_master_admin === true,
     Object.entries(account.permissions || {}).sort(([left], [right]) => left.localeCompare(right)),
   ]);
@@ -63,7 +63,7 @@ type AssigneeTotal = { id: string; name: string; count: number; task_ids: string
 
 type MbaWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: MbaUser | null;
-  MBA_API?: { request: ApiRequest };
+  MBA_API?: { request: ApiRequest; getPortfolioId?:()=>string };
   MBA_TASK_IMPORT?: {
     createTaskWithImportedProcesses: (payload: Record<string, any>, file: File) => Promise<{ rowsImported?: number; rowsSkipped?: number }>;
   };
@@ -392,13 +392,14 @@ export function TasksApp() {
     if (!force && processCache.current.has(task.id)) return processCache.current.get(task.id) || [];
     if (inFlight.current.has(task.id)) return inFlight.current.get(task.id)!;
 
+    const scopeIdentity=runtimeScope();
     const sessionUserId = user?.id;
     const scope = assigneeScopeRef.current;
     const assignee = scope === 'mine' ? sessionUserId : scope === 'all' ? null : scope;
     const query = `?active_only=1${assignee ? `&assignee_id=${encodeURIComponent(assignee)}` : ''}`;
     const promise = apiRequest(`/api/tasks/${task.id}/processes${query}`)
       .then(rows => {
-        if (mbaWindow.MBA_CURRENT_USER?.id !== sessionUserId || assigneeScopeRef.current !== scope) return [];
+        if (scopeIdentity!==runtimeScope() || mbaWindow.MBA_CURRENT_USER?.id !== sessionUserId || assigneeScopeRef.current !== scope) return [];
         const list = (Array.isArray(rows) ? rows : []).filter(process => canViewTeam || processAssignedToUser(task, process, user, manager));
         processCache.current.set(task.id, list);
         setProcessVersion(value => value + 1);
@@ -648,7 +649,7 @@ export function TasksApp() {
 
   const activeItem = useMemo(() => filteredItems.find(item => workItemKey(item) === activeKey) || null, [filteredItems, activeKey]);
   const queueHydrating = relevantTasks.some(task => !processCache.current.has(task.id));
-  const qaDraftKey = activeItem ? 'mba-qa-v1:' + String(user?.id || 'no-user') + ':' + activeItem.task.id + ':' + activeItem.process.id : '';
+  const qaDraftKey = activeItem ? 'mba-qa-v2:' + String(user?.id || 'no-user') + ':' + String(mbaWindow.MBA_API?.getPortfolioId?.() || 'no-portfolio') + ':' + activeItem.task.id + ':' + activeItem.process.id : '';
   const activeIndex = filteredItems.findIndex(item => workItemKey(item) === activeKey);
   const windowStart = activeIndex >= 0 ? Math.floor(activeIndex / queueSize) * queueSize : 0;
   const visibleItems = filteredItems.slice(windowStart, windowStart + queueSize);
@@ -805,7 +806,7 @@ export function TasksApp() {
     </nav>
     {visitedTabs.has('results') ? <div hidden={tab !== 'results'}><TaskResults key={runtimeScope()} api={apiRequest} visible={pageVisible && tab === 'results'} canViewOthers={canViewOtherTasks} userId={user?.id} /></div> : null}
 
-    {visitedTabs.has('management') && (manager || canViewOtherTasks) ? <div hidden={tab !== 'management'}><AssignmentsBoard tasks={allVisibleTasks} api={apiRequest} visible={pageVisible && tab === 'management'} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /></div> : null}
+    {visitedTabs.has('management') && (manager || canViewOtherTasks) ? <div hidden={tab !== 'management'}><AssignmentsBoard key={runtimeScope()} tasks={allVisibleTasks} api={apiRequest} visible={pageVisible && tab === 'management'} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /></div> : null}
 
     {visitedTabs.has('execution') ? <div hidden={tab !== 'execution'} style={{display:tab==='execution'?'contents':'none'}}>
 
