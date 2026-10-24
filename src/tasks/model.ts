@@ -1,6 +1,7 @@
 export type TaskStateKey = 'urgent' | 'overdue' | 'pending' | 'on_time';
 
 export interface MbaUser {
+  role?: string;
   id?: string;
   access_kind?: string;
   is_master_admin?: boolean;
