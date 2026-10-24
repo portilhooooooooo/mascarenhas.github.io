@@ -38,7 +38,7 @@ try{
  await context.route('https://api.portilhobackoffice.site/**',async route=>{
   const url=new URL(route.request().url());calls.push({t:Date.now(),path:url.pathname,query:url.search});
   if(url.pathname==='/api/me'){if(meDelay)await new Promise(r=>setTimeout(r,meDelay));return route.fulfill({status:meStatus,json:meStatus===200?currentProfile:{error:'Fixture indisponível',reason:meReason,code:meStatus===401?'SESSION_INVALID':meStatus===403?'PROFILE_NOT_AUTHORIZED':'AUTH_DEPENDENCY_UNAVAILABLE'}});}
-  if(url.pathname==='/api/me/state')return route.fulfill({json:{id:currentProfile.id,authorization_version:currentProfile.authorization_version||'legacy'}});
+  if(url.pathname==='/api/me/state')return route.fulfill({json:{id:currentProfile.id,policy_epoch:currentProfile.policy_epoch||'legacy'}});
   if(url.pathname==='/api/tasks/results'){if(delay)await new Promise(r=>setTimeout(r,delay));return route.fulfill({status:resultStatus,json:resultStatus===200?payload(resultCount ?? (url.searchParams.get('period')==='7'?7:30)):{error:'Falha fixture',code:'DEPENDENCY_UNAVAILABLE'}});}
   if(url.pathname==='/api/base-geral/summary')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},charts:{por_produto:[]},filters:{states:[],products:[],resolutions:[]}}});
   if(url.pathname==='/api/operacao/encerramentos/dashboard')return route.fulfill({json:{carteira:'Agibank Enter',tipo:null,indicadores:{consultados:19,encontrados:19,analisados:19,ticket_medio:null,ticket_amostra:0,aging_medio:null},aging:[],estados:[],analistas:[],classificacoes:[],distribuicao_tipos:[],etapas:{etapa:'validados',total:19,tipos:[],aging:[],matriz:[],fonte:'fixture',mensagem:''}}});
@@ -125,10 +125,10 @@ try{
   await test('A12',async()=>{const states=[];for(const role of ['admin','legal_leader','analyst'])for(const portfolio of ['agibank_enter','agibank_mba','nubank_mba']){currentProfile={...profile,id:'fixture-'+role,role,is_master_admin:role==='admin',permissions:{...profile.permissions,'tasks.view_others':role!=='analyst','tasks.manage':role!=='analyst','tasks.assign':role!=='analyst'}};resultCount=10+states.length;await page.evaluate(id=>window.MBA_API.setPortfolioId(id),portfolio);await page.reload();await page.waitForFunction(n=>document.querySelector('.task-results-stat strong')?.textContent===String(n),resultCount);assert.equal(await page.evaluate(id=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).every(k=>k.includes(id)),currentProfile.id),true);states.push({role,portfolio,count:resultCount});}currentProfile=profile;resultCount=null;await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));await page.reload();await page.locator('body.auth-signed-in').waitFor();return {coverage:'9 combinações com autorização fixture; não comprova RLS/SQL',states};});
   await test('A20',async()=>{await page.evaluate(()=>sessionStorage.setItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture','{}'));await page.evaluate(()=>{window.MBA_CURRENT_USER={...window.MBA_CURRENT_USER,permissions:{...window.MBA_CURRENT_USER.permissions,'tasks.view':false}};window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER}));});await page.waitForTimeout(150);assert.equal(await page.locator('.task-results-page').count(),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba-qa-v2:')).length),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).length),0);await page.reload();await page.locator('body.auth-signed-in').waitFor();});
   await test('A20-policy',async()=>{
-   currentProfile={...profile,authorization_version:'fixture-policy-1'};
+   currentProfile={...profile,authorization_version:'fixture-policy-1',policy_epoch:'1'};
    await page.reload();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
    const count=calls.filter(c=>c.path==='/api/me').length;
-   currentProfile={...currentProfile,authorization_version:'fixture-policy-2',permissions:{...profile.permissions,'tasks.view':false}};
+   currentProfile={...currentProfile,authorization_version:'fixture-policy-2',policy_epoch:'2',permissions:{...profile.permissions,'tasks.view':false}};
    await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
    await page.waitForFunction(()=>window.MBA_CURRENT_USER?.authorization_version==='fixture-policy-2');
    assert.equal(await page.locator('.task-results-page').count(),0);
@@ -136,6 +136,24 @@ try{
    assert.equal(calls.filter(c=>c.path==='/api/me').length,count+1);
    assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_runtime_fixture');
    currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
+  });
+  await test('A20-unrelated',async()=>{
+   currentProfile={...profile,authorization_version:'same-access',policy_epoch:'10'};
+   await page.reload();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+   await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='unrelated-policy');
+   await page.evaluate(()=>sessionStorage.setItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture','{"draft":true}'));
+   const before=calls.filter(c=>c.path==='/api/tasks/results').length;
+   let writes=0;
+   await context.route('**/api/runtime-fixture/write',async route=>{writes++;await new Promise(r=>setTimeout(r,800));return route.fulfill({json:{saved:true}});});
+   await page.evaluate(()=>{window.__pendingPolicyWrite=window.MBA_API.request('/api/runtime-fixture/write',{method:'POST',body:'{}'}).then(value=>({value}),error=>({error:error.message}));});
+   currentProfile={...currentProfile,policy_epoch:'11'};
+   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+   await page.waitForFunction(()=>window.MBA_CURRENT_USER?.policy_epoch==='11');
+   assert.deepEqual(await page.evaluate(()=>window.__pendingPolicyWrite),{value:{saved:true}});
+   assert.equal(writes,1);assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'unrelated-policy');
+   assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,before);
+   assert.ok(await page.evaluate(()=>sessionStorage.getItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture')));
+   await context.unroute('**/api/runtime-fixture/write');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
   });
  }
  await test('A08',async()=>{meStatus=503;const start=performance.now();await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:10500});assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_runtime_fixture');assert.equal(await page.locator('body.auth-signed-out').count(),0);assert.equal(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'temporarily_unavailable');return {observedMs:performance.now()-start,auth:await page.evaluate(()=>window.__metrics.auth)};});

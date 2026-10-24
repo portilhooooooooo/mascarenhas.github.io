@@ -253,15 +253,20 @@
     const token = getStoredToken();
     const profile = await window.MBA_API.request('/api/me', options);
     if (token !== getStoredToken() || generation !== bootstrapGeneration) throw Object.assign(new Error('Identidade alterada durante validação.'), {code:'STALE_IDENTITY'});
+    const accessKey = user => user && JSON.stringify([user.id,user.role,user.active_portfolio_id||user.default_portfolio_id,
+      Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),user.authorization_version]);
+    const accessChanged = accessKey(window.MBA_CURRENT_USER) !== accessKey(profile);
     window.MBA_API.configurePortfolios?.(
       profile.portfolios,
       profile.default_portfolio_id
     );
     applyUser(profile);
-    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: immutableCopy(profile) }));
-    window.restorePageRoute?.();
-    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: immutableCopy(profile) }));
-    dispatchModuleAuthentication(activePageId(), true);
+    if (accessChanged) {
+      window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: immutableCopy(profile) }));
+      window.restorePageRoute?.();
+      window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: immutableCopy(profile) }));
+      dispatchModuleAuthentication(activePageId(), true);
+    }
     setAuthState(true);
     publishLoginState({ busy: false, error: null, status: 'authenticated' });
   }
@@ -505,12 +510,12 @@
   let guardRunning = false;
   const scheduleGuard = () => {
     clearTimeout(guardTimer);
-    if (window.MBA_CURRENT_USER?.authorization_version) guardTimer = setTimeout(checkAuthorization, 15000);
+    if (window.MBA_CURRENT_USER?.policy_epoch) guardTimer = setTimeout(checkAuthorization, 15000);
   };
   async function checkAuthorization() {
     if (guardRunning) return;
     const profile = window.MBA_CURRENT_USER;
-    if (document.hidden || loginState.status !== 'authenticated' || !profile?.authorization_version) { scheduleGuard(); return; }
+    if (document.hidden || loginState.status !== 'authenticated' || !profile?.policy_epoch) { scheduleGuard(); return; }
     guardRunning = true;
     const deadline = performance.now() + 10000;
     const controller = new AbortController();
@@ -518,12 +523,8 @@
     try {
       const state = await window.MBA_API.request('/api/me/state', {signal:controller.signal});
       if (profile !== window.MBA_CURRENT_USER) return;
-      if (state?.id !== profile.id || typeof state?.authorization_version !== 'string') throw new Error('Estado de autorização inválido.');
-      if (state.authorization_version !== profile.authorization_version) {
-        window.MBA_CURRENT_USER = null;
-        window.dispatchEvent(new Event('mba:logged-out'));
-        window.dispatchEvent(new Event('mba:authorization-invalidated'));
-      }
+      if (state?.id !== profile.id || typeof state?.policy_epoch !== 'string') throw new Error('Estado de autorização inválido.');
+      if (state.policy_epoch !== profile.policy_epoch) await initializeAuth(deadline, 1);
     } catch (error) {
       if (error?.code !== 'STALE_IDENTITY' && getStoredToken() && profile === window.MBA_CURRENT_USER) {
         document.querySelector('.app-shell')?.setAttribute('inert','');
