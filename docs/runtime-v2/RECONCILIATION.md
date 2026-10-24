@@ -14,4 +14,6 @@ Replay offline de 1.125 combinações da amostra real desidentificada repetido s
 
 Pendente: inventariar assets/dependências/configuração de inicialização/writable layer além dos fontes, completar build de release e rollback, novos endpoints/SQL, tracing fila/rede/SQL, acesso e carga equivalentes, segurança, CI específico dessa branch e gates integrais. Produção não foi alterada. As branches antigas e o checkout operacional foram preservados. Esta referência reduz a divergência de código como bloqueio; não libera promoção.
 
-Atualização: b8088ae adiciona CI específico para a branch reconciliada, sem deploy. A execução hospedada ainda deve ser observada; não é alegada como aprovada neste checkpoint. O replay local sobre a imagem passou: 1.125 combinações, zero diferenças numéricas, 1,219 s.
+Atualização: b8088ae adiciona CI específico para a branch reconciliada, sem deploy. A execução hospedada foi posteriormente observada e aprovada, conforme registro abaixo. O replay local sobre a imagem passou: 1.125 combinações, zero diferenças numéricas, 1,219 s.
+
+CI reconciliado aprovado: execução 40118137422, commit b8088ae82787e71d9a92a63978d2308eb98d1a41. Workflow de testes e replay concluído com sucesso, sem deploy. URL: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40118137422
