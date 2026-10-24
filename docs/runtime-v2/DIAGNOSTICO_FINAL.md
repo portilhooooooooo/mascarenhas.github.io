@@ -130,3 +130,7 @@ A amostra real offline abrange Admin/Legal Leader/Analista e Enter/Regular/Nuban
 7. Só então solicitar promoção expressa, realizar rollback ensaiado e observar por duas horas.
 
 Rollback e comandos locais: [ROLLBACK.md](ROLLBACK.md), [RUN_LOCAL.md](RUN_LOCAL.md). Não houve migração de schema nem dados a reverter nesta fase. Os candidatos estão em branches de teste; produção não foi promovida.
+
+## Continuação em 24/10/2026 — reconciliação de fontes
+
+A referência 34c48c7 preserva os 161 arquivos de código/build do escopo da aplicação efetiva. A branch migration/runtime-v2-reconciled-20261024 (b8088ae) reaplica as correções de autenticação sobre essa base, em commits separados. Passaram 59 testes reconciliados em 3,34 s e novamente na imagem reconstruída em 3,37 s; o conjunto difere do anterior porque dois testes de timing_by_type não correspondem ao runtime e foram substituídos por dois testes de proveniência. A primeira coleta incompatível foi preservada como evidência. Replay offline: 1.125 casos sem diferença numérica, 1,219 s. Inventário ampliado identifica arquivos extras, backups e 13 fontes da aplicação não encontrados no histórico. Código reconciliado não significa release integral: dependências/assets/configuração, SQL, integração/carga e rollback seguem pendentes. Produção intacta. Ver [RECONCILIATION.md](RECONCILIATION.md). NO-GO mantido.
