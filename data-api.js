@@ -29,11 +29,12 @@
     if(value===getPortfolioId())return value;
     localStorage.setItem(portfolioKey, value);
     window.MBA_CURRENT_USER=null;
-    window.dispatchEvent(new CustomEvent('mba:authorization-invalidated'));
     taskProcessCache.clear();
     processToTask.clear();
     inFlightGets.clear();
     window.dispatchEvent(new CustomEvent('mba:portfolio-changed', { detail: { portfolio_id: value } }));
+    // Complete every invalidation before starting the new identity request.
+    window.dispatchEvent(new CustomEvent('mba:authorization-invalidated'));
     return value;
   };
   const configurePortfolios = (portfolios, fallback = defaultPortfolioId) => {
