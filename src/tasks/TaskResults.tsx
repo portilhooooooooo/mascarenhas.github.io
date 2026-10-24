@@ -287,7 +287,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           </table></div>
         </> : null}
       </article>
-      <p className="task-results-method"><Clock3 size={14}/>Origem: eventos auditáveis de conclusão e início de etapas na carteira ativa. A mediana geral mistura tipos de tarefa; utilize a comparação por tipo para avaliar velocidade. Tempos superiores a 30 minutos são excluídos da telemetria atual, o que pode subrepresentar tarefas longas. Atualizado em {new Date(shown?.generated_at || 0).toLocaleString('pt-BR')}.</p>
+      <p className="task-results-method"><Clock3 size={14}/>Origem: eventos auditáveis de conclusão e início de etapas na carteira ativa. A mediana geral mistura tipos de tarefa; utilize a comparação por tipo para avaliar velocidade. Tempos superiores a 30 minutos são excluídos da telemetria atual, o que pode subrepresentar tarefas longas. Atualizado em {shown ? new Date(shown.generated_at).toLocaleString('pt-BR') : '—'}.</p>
     </>
   </section>;
 }
