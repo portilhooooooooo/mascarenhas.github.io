@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 
 const source = readFileSync(new URL('../auth.js', import.meta.url), 'utf8');
 
@@ -31,6 +32,7 @@ async function runCase(replaceToken) {
   const events = [];
   const profile = { id: 'test-id', email: 'person@example.org', name: 'Test Analyst', role: 'analyst', permissions: {'dashboard.view':true}, portfolios: [], default_portfolio_id: null };
   const window = {
+    setInterval:()=>1, clearInterval:()=>{},
     MBA_PORTFOLIO_POLICY: { canAccess: () => true },
     MBA_API: {
       request: path => {
@@ -49,7 +51,8 @@ async function runCase(replaceToken) {
     window, document, localStorage:persistence, sessionStorage:persistence,
     history: { replaceState:()=>{} },
     location: {hash:'',pathname:'/',search:''},
-    URLSearchParams, Date, Reflect, Set, Map, Proxy, Object, Promise,
+    URLSearchParams, Date, Reflect, Set, Map, Proxy, Object, Promise, performance, AbortController, crypto:webcrypto,
+    navigator:{locks:null},
     CustomEvent:class { constructor(type) { this.type=type; } },
     Event:class { constructor(type) { this.type=type; } },
     queueMicrotask,

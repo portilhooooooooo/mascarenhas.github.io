@@ -34,6 +34,7 @@ import {
 } from './renderers';
 import { LiminarRenderer } from './LiminarRenderer';
 import { ProtocolCollectionRenderer } from './ProtocolCollectionRenderer';
+import { runtimeScope } from './runtimeQueries';
 import { TaskResults } from './TaskResults';
 import { AssignmentsBoard } from './AssignmentsBoard';
 import { ProcessHeading, TaskBrief } from './TaskExecution';
@@ -50,7 +51,7 @@ const NAVIGATION_REVALIDATE_MS = 45000;
 function sessionFingerprint(account: MbaUser | null | undefined) {
   if (!account) return '';
   return JSON.stringify([
-    account.id,
+    account.id,account.role,runtimeScope(),
     account.is_master_admin === true,
     Object.entries(account.permissions || {}).sort(([left], [right]) => left.localeCompare(right)),
   ]);
@@ -62,7 +63,7 @@ type AssigneeTotal = { id: string; name: string; count: number; task_ids: string
 
 type MbaWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: MbaUser | null;
-  MBA_API?: { request: ApiRequest };
+  MBA_API?: { request: ApiRequest; getPortfolioId?:()=>string };
   MBA_TASK_IMPORT?: {
     createTaskWithImportedProcesses: (payload: Record<string, any>, file: File) => Promise<{ rowsImported?: number; rowsSkipped?: number }>;
   };
@@ -262,6 +263,8 @@ export function TasksApp() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState<'management' | 'execution' | 'results'>(currentTaskTab);
+  const [visitedTabs,setVisitedTabs] = useState(() => new Set([currentTaskTab()]));
+  useEffect(() => { setVisitedTabs(previous => previous.has(tab) ? previous : new Set([...previous,tab])); }, [tab]);
   const [selectedAssignee, setSelectedAssignee] = useState('mine');
   const [assigneeTotals, setAssigneeTotals] = useState<AssigneeTotal[]>([]);
   const [assigneeError, setAssigneeError] = useState<string | null>(null);
@@ -280,7 +283,7 @@ export function TasksApp() {
   const [assignTask, setAssignTask] = useState<Task | null>(null);
 
   useEffect(() => {
-    const sync = () => { setTab(currentTaskTab()); setTaskRoute((location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname).replace(/^\//, '')); };
+    const sync = () => { const route = (location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname).replace(/^\//, ''); if (!/^tarefas(?:\/|$)/.test(route)) return; setTab(currentTaskTab()); setTaskRoute((location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname).replace(/^\//, '')); };
     window.addEventListener('mba:route-changed', sync);
     return () => window.removeEventListener('mba:route-changed', sync);
   }, []);
@@ -391,13 +394,14 @@ export function TasksApp() {
     if (!force && processCache.current.has(task.id)) return processCache.current.get(task.id) || [];
     if (inFlight.current.has(task.id)) return inFlight.current.get(task.id)!;
 
+    const scopeIdentity=runtimeScope();
     const sessionUserId = user?.id;
     const scope = assigneeScopeRef.current;
     const assignee = scope === 'mine' ? sessionUserId : scope === 'all' ? null : scope;
     const query = `?active_only=1${assignee ? `&assignee_id=${encodeURIComponent(assignee)}` : ''}`;
     const promise = apiRequest(`/api/tasks/${task.id}/processes${query}`)
       .then(rows => {
-        if (mbaWindow.MBA_CURRENT_USER?.id !== sessionUserId || assigneeScopeRef.current !== scope) return [];
+        if (scopeIdentity!==runtimeScope() || mbaWindow.MBA_CURRENT_USER?.id !== sessionUserId || assigneeScopeRef.current !== scope) return [];
         const list = (Array.isArray(rows) ? rows : []).filter(process => canViewTeam || processAssignedToUser(task, process, user, manager));
         processCache.current.set(task.id, list);
         setProcessVersion(value => value + 1);
@@ -440,7 +444,7 @@ export function TasksApp() {
   }, [taskRoute, pageVisible, user]);
 
   const refreshAssigneeTotals = useCallback(async () => {
-    if (!user?.permissions?.['tasks.view']) return;
+  if (!user?.permissions?.['tasks.view']) return;
     try {
       const rows = await apiRequest('/api/tasks/queue-assignees');
       if (mbaWindow.MBA_CURRENT_USER?.id !== user.id) return;
@@ -463,9 +467,9 @@ export function TasksApp() {
   }, []);
 
   useEffect(() => {
-    if (!pageVisible || !user?.permissions?.['tasks.view']) return;
+    if (!pageVisible || tab === 'results' || !user?.permissions?.['tasks.view']) return;
     void refreshAssigneeTotals();
-  }, [pageVisible, user?.id, refreshAssigneeTotals]);
+  }, [pageVisible, tab, user?.id, refreshAssigneeTotals]);
 
   const loadTaskList = useCallback(async (resetCache = false) => {
     if (!user?.permissions?.['tasks.view']) return;
@@ -514,16 +518,15 @@ export function TasksApp() {
   }, [user, manager, hydrateTask, hydrateInBackground, activeKey, canViewOtherTasks, isMaster, refreshAssigneeTotals]);
 
   useEffect(() => {
-    if (!pageVisible || !user?.permissions?.['tasks.view']) return;
-    // A quick tab round-trip uses the existing snapshot without a loading flash.
+    if (!pageVisible || tab === 'results' || !user?.permissions?.['tasks.view']) return;
     if (Date.now() - lastSuccessfulTaskLoad.current < NAVIGATION_REVALIDATE_MS) return;
     void loadTaskList(false);
-  }, [pageVisible, user]);
+  }, [pageVisible, tab, user]);
 
   // Another authorized user completed/assigned a task in this portfolio.
   // Coalesce simultaneous events; never reset active forms while typing.
   useEffect(() => {
-    if (!pageVisible || !user?.permissions?.['tasks.view']) return undefined;
+    if (!pageVisible || tab === 'results' || !user?.permissions?.['tasks.view']) return undefined;
     let pending: number | undefined;
     const changed = (event: Event) => {
       if ((event as CustomEvent<{module?: string}>).detail?.module !== 'tarefas') return;
@@ -537,10 +540,10 @@ export function TasksApp() {
       window.clearTimeout(pending);
       window.removeEventListener('mba:realtime-invalidate', changed);
     };
-  }, [pageVisible, user?.id, loadTaskList]);
+  }, [pageVisible, tab, user?.id, loadTaskList]);
 
   useEffect(() => {
-    if (!pageVisible || !user?.permissions?.['tasks.view']) return undefined;
+    if (!pageVisible || tab === 'results' || !user?.permissions?.['tasks.view']) return undefined;
     const timer = window.setInterval(async () => {
       try {
         const [rows, otherRows] = await Promise.all([
@@ -560,7 +563,7 @@ export function TasksApp() {
       }
     }, REFRESH_MS);
     return () => window.clearInterval(timer);
-  }, [pageVisible, user?.id, activeKey, hydrateTask, canViewOtherTasks, isMaster, refreshAssigneeTotals]);
+  }, [pageVisible, tab, user?.id, activeKey, hydrateTask, canViewOtherTasks, isMaster, refreshAssigneeTotals]);
 
   const workItems = useMemo(() => {
     void processVersion;
@@ -649,7 +652,7 @@ export function TasksApp() {
 
   const activeItem = useMemo(() => filteredItems.find(item => workItemKey(item) === activeKey) || null, [filteredItems, activeKey]);
   const queueHydrating = relevantTasks.some(task => !processCache.current.has(task.id));
-  const qaDraftKey = activeItem ? 'mba-qa-v1:' + String(user?.id || 'no-user') + ':' + activeItem.task.id + ':' + activeItem.process.id : '';
+  const qaDraftKey = activeItem ? 'mba-qa-v2:' + String(user?.id || 'no-user') + ':' + String(mbaWindow.MBA_API?.getPortfolioId?.() || 'no-portfolio') + ':' + activeItem.task.id + ':' + activeItem.process.id : '';
   const activeIndex = filteredItems.findIndex(item => workItemKey(item) === activeKey);
   const windowStart = activeIndex >= 0 ? Math.floor(activeIndex / queueSize) * queueSize : 0;
   const visibleItems = filteredItems.slice(windowStart, windowStart + queueSize);
@@ -794,6 +797,10 @@ export function TasksApp() {
     }
   };
 
+    if(!user && currentTaskTab()==='results' && (document.body.classList.contains('auth-validating')||document.body.classList.contains('auth-unavailable')))return <div className="tasks-react-root">
+    <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas"><button disabled>Tarefas</button><button disabled>Atribuições</button><button disabled className="active">Produtividade</button></nav>
+    <TaskResults api={apiRequest} visible={false} canViewOthers={false}/>
+  </div>;
   if (!user?.permissions?.['tasks.view']) return <div className="tasks-react-state"><strong>Sem acesso ao módulo de tarefas</strong><span>Solicite a autorização tasks.view.</span></div>;
 
   const activeState = activeItem ? taskState(activeItem.task) : null;
@@ -804,11 +811,11 @@ export function TasksApp() {
       <button type="button" disabled={!(manager || canViewOtherTasks)} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
       <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Produtividade</button>
     </nav>
-    {tab === 'results' ? <TaskResults api={apiRequest} visible={pageVisible} canViewOthers={isMaster || (user?.role === "legal_leader" && canViewOtherTasks)} userId={user?.id} /> : null}
+    {visitedTabs.has('results') ? <div hidden={tab !== 'results'}><TaskResults key={runtimeScope()} api={apiRequest} visible={pageVisible && tab === 'results'} canViewOthers={isMaster || (user?.role === "legal_leader" && canViewOtherTasks)} userId={user?.id} /></div> : null}
 
-    {tab === 'management' && (manager || canViewOtherTasks) ? <AssignmentsBoard tasks={allVisibleTasks} api={apiRequest} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /> : null}
+    {visitedTabs.has('management') && (manager || canViewOtherTasks) ? <div hidden={tab !== 'management'}><AssignmentsBoard key={runtimeScope()} tasks={allVisibleTasks} api={apiRequest} visible={pageVisible && tab === 'management'} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /></div> : null}
 
-    {tab === 'execution' ? <>
+    {visitedTabs.has('execution') ? <div hidden={tab !== 'execution'} style={{display:tab==='execution'?'contents':'none'}}>
 
       {loadError ? <div className="workbench-notice" role="alert"><span>Não foi possível atualizar a fila. {loadError}</span><button type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button></div> : null}
       {actionNotice ? <div className="execution-notification" role="status"><span>{actionNotice}</span><button type="button" aria-label="Fechar confirmação" onClick={() => setActionNotice(null)}>×</button></div> : null}
@@ -827,7 +834,7 @@ export function TasksApp() {
             onCompleted={process => markCompleted(activeItem.task, process)}
             onQueued={process => markMotivoQueued(activeItem.task, process)}
             onSkipped={process => markSkipped(activeItem.task, process)} />
-    ) : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div>}</main></section></> : null}
+    ) : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div>}</main></section></div> : null}
 
     {createOpen && canCreate ? <CreateTaskModal onClose={() => setCreateOpen(false)} onCreated={() => loadTaskList(true)} /> : null}
     {assignTask && canManage ? <AssignTaskModal task={assignTask} onClose={() => setAssignTask(null)} onAssigned={() => loadTaskList(true)} /> : null}

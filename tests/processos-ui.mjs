@@ -1,6 +1,6 @@
 // Playwright exercises the built application; all API responses below are test fixtures.
 import assert from 'node:assert/strict';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium} from 'playwright';
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--outDir','dist','--host','127.0.0.1','--port','5175','--strictPort'],{stdio:'pipe'});
@@ -48,6 +48,7 @@ try {
   if(path.startsWith('/api/processos/'))return reply({error:'Processo não encontrado.'},404);
   return reply([]);
  });
+ await context.tracing.start({screenshots:true,snapshots:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  const noOverflow=async label=>{const dims=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth}));if(dims.scroll>dims.width+2){console.log(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+2).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width})).slice(-20)));await page.screenshot({path:out+'/overflow-debug.png',fullPage:true});}assert.ok(dims.scroll<=dims.width+2,label+JSON.stringify(dims));};
  await mkdir(out,{recursive:true});
@@ -113,6 +114,17 @@ try {
  await page.keyboard.press('Backspace'); // focused textarea edits text and must not navigate.
  assert.ok(await page.locator('.closing-disagreement-field textarea').isVisible());
  await page.screenshot({path:out+'/encerramento-revisao.png',fullPage:true});
+ const draftBefore=await page.locator('.closing-disagreement-field textarea').inputValue();
+ const executionRoute=await page.evaluate(()=>location.pathname);
+ await page.evaluate(()=>window.MBA_NAVIGATE('analytics'));
+ await page.evaluate(route=>window.MBA_NAVIGATE(route),executionRoute);
+ assert.equal(await page.locator('.closing-disagreement-field textarea').inputValue(),draftBefore,'Rascunho permanece ao navegar');
+ await page.reload();
+ await page.locator('.closing-disagreement-field textarea').waitFor();
+ assert.equal(await page.locator('.closing-disagreement-field textarea').inputValue(),draftBefore,'Rascunho isolado por usuário/carteira recupera após F5');
+ assert.equal(writes.filter(w=>w.path.endsWith('/encerramento-analysis')).length,0,'Navegação e F5 não salvam a análise');
+ await page.screenshot({path:out+'/runtime-v2-rascunho-f5.png',fullPage:true});
+
  // Enter na última pergunta de Encerramentos equivale a Salvar e próximo.
  await page.getByRole('radiogroup',{name:'closing-classification-agreement'}).getByRole('radio',{name:'Não',exact:true}).focus();
  await page.keyboard.press('Enter');
@@ -139,6 +151,7 @@ try {
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:auth-state',{detail:{busy:true,error:null}})));assert.ok(await page.getByRole('button',{name:'Redirecionando…'}).isDisabled());
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:auth-state',{detail:{busy:false,error:'Falha de SSO de teste'}})));await page.getByRole('alert').getByText('Falha de SSO de teste').waitFor();
  assert.deepEqual(errors,[]);
- await writeFile(out+'/measurements.json',JSON.stringify({fixture:true,viewports:measurements,requests:calls.length,writes:writes.length,jsErrors:errors},null,2));
+ await writeFile(out+'/measurements.json',JSON.stringify({fixture:true,commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),timestamp:new Date().toISOString(),draftNavigationAndF5:true,viewports:measurements,requests:calls.length,writes:writes.length,jsErrors:errors},null,2));
+ await context.tracing.stop({path:out+'/runtime-v2-trace.zip'});
  console.log('Built UI: Processos, paginação, timeline, criação explícita, tarefa vinculada, Encerramento NA/revisão, 4 viewports, troca de carteira, erros, permissões e login validados.');
 }finally{if(browser)await browser.close();server.kill('SIGTERM');}

@@ -12,7 +12,7 @@ const renderer = read('src/tasks/renderers.tsx');
 const productivity = read('src/tasks/TaskResults.tsx');
 const style = read('src/tasks/qaWorkspace.css');
 
-assert.match(shell, /mba-qa-v1:.*activeItem\.task\.id.*activeItem\.process\.id/, 'Rascunho isolado por tarefa/processo');
+assert.match(shell, /mba-qa-v2:.*activeItem\.task\.id.*activeItem\.process\.id/, 'Rascunho isolado por tarefa/processo');
 assert.match(shell, /<SelectMenu label="Tipo de tarefa" value=\{selectedType\} options=\{typeOptions\}/, 'Filtro de fila seleciona tipo de tarefa');
 assert.match(shell, /normalize\(item\.task\.type\) !== selectedType/, 'Filtro aplica tipo nas linhas da fila');
 assert.match(shell, /relevantTasks\.map\(task => normalize\(task\.type\)\)/, 'Tipos provêm das tarefas disponíveis na carteira');
@@ -37,7 +37,7 @@ for (const [name, source] of [['Encerramentos', closing], ['Defesas', defense], 
 }
 assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta da API');
 assert.match(productivity, /campos inválidos ou não permitidos/, 'Produtividade reconhece erro 422 do backend legado');
-assert.match(productivity, /withOldApiFallback\(api, '\/api\/tasks\/results\?'/, 'Produtividade tenta parâmetros compatíveis com backend anterior');
+assert.match(productivity, /await api\('\/api\/tasks\/results\?'/, 'Produtividade usa uma consulta autoritativa, sem repetição em camadas');
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');
 assert.match(style, /\.qa-step\[hidden\]/, 'Somente etapa ativa visível');
 assert.match(questions, /qa-stage-track/, 'Fluxos exibem as etapas');

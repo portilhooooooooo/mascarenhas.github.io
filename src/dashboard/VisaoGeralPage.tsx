@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { ArrowUpRight, CheckCircle2, Clock3, FileCheck2, FolderOpen, Layers3, RefreshCw, Scale, SearchCheck, ShieldAlert } from 'lucide-react';
 import './visaoGeral.css';
 
@@ -97,22 +99,15 @@ function isDashboard(value: unknown): value is Dashboard {
     Array.isArray(data.charts.por_produto) && Array.isArray(data.charts.aging));
 }
 
-export function VisaoGeralPage() {
-  const [portfolio,setPortfolio] = useState(() => (window as Environment).MBA_API?.getPortfolioId?.() || '');
-  const [revision,setRevision] = useState(0);
+export function VisaoGeralPage({visible=true}:{visible?:boolean}) {
+  const portfolio=(window as Environment).MBA_API?.getPortfolioId?.() || '';
+  const scope=runtimeScope();
   const [period,setPeriod] = useState<Period>('all');
   const [uf,setUf] = useState('');
   const [product,setProduct] = useState('');
   const [situation,setSituation] = useState('');
   const [attention,setAttention] = useState('');
   const [resolution,setResolution] = useState('');
-  const [data,setData] = useState<Dashboard|null>(null);
-  const [dataKey,setDataKey] = useState('');
-  const [error,setError] = useState('');
-  const [pending,setPending] = useState(false);
-  const sequence = useRef(0);
-
-  const filterKey = [portfolio,revision,period,uf,product,situation,attention,resolution].join('|');
   const query = useMemo(() => {
     const params = new URLSearchParams();
     if (period === 'month') params.set('entry_start',isoDaysBack(new Date().getDate()-1));
@@ -126,45 +121,22 @@ export function VisaoGeralPage() {
     return params.toString();
   },[period,uf,product,situation,attention,resolution]);
 
-  const refresh = useCallback(async () => {
-    const serial = ++sequence.current;
-    const api = (window as Environment).MBA_AUTOMATION_API || (window as Environment).MBA_API;
-    setPending(true);
-    try {
-      if (!api) throw new Error('Conexão com a API indisponível.');
-      const answer = await api.request<unknown>('/api/carteira-processual' + (query ? '?'+query : ''));
-      if (serial !== sequence.current) return;
-      if (!isDashboard(answer)) throw new Error('A API retornou uma estrutura de indicadores inválida.');
-      setData(answer);
-      setDataKey(filterKey);
-      setError('');
-    } catch(cause) {
-      if (serial === sequence.current) setError(cause instanceof Error ? cause.message : 'Não foi possível carregar a carteira.');
-    } finally {
-      if(serial === sequence.current) setPending(false);
-    }
-  },[filterKey,query]);
-
-  useEffect(()=>{void refresh();},[refresh]);
-  useEffect(()=>{
-    const onChange = () => {
-      sequence.current += 1;
-      setPortfolio((window as Environment).MBA_API?.getPortfolioId?.() || '');
-      setRevision(n => n+1);
-      setUf('');setProduct('');setSituation('');setAttention('');setResolution('');
-      setData(null);setDataKey('');setError('');
-    };
-    window.addEventListener('mba:portfolio-changed',onChange);
-    return ()=>{window.removeEventListener('mba:portfolio-changed',onChange);sequence.current += 1;};
-  },[]);
-  useEffect(()=>{
-    const visible = () => {if (!document.hidden) void refresh();};
-    const timer=window.setInterval(()=>{if(!document.hidden) void refresh();},300000);
-    document.addEventListener('visibilitychange',visible);
-    return ()=>{window.clearInterval(timer);document.removeEventListener('visibilitychange',visible);};
-  },[refresh]);
-
-  const shown = dataKey===filterKey ? data : null;
+  const result=useQuery({queryKey:['runtime-v2',scope,'base-geral','entradas',query],
+    enabled:visible && !!scope,staleTime:60000,
+    refetchInterval:visible?300000:false,
+    queryFn:async({signal})=>{
+      const api=(window as Environment).MBA_AUTOMATION_API || (window as Environment).MBA_API;
+      if(!api)throw new Error('Conexão com a API indisponível.');
+      const answer=await api.request<unknown>('/api/carteira-processual'+(query?'?'+query:''),{signal});
+      if(scope!==runtimeScope())throw new Error('Resposta de escopo anterior descartada.');
+      if(!isDashboard(answer))throw new Error('A API retornou uma estrutura de indicadores inválida.');
+      return answer;
+    }},runtimeQueries);
+  const shown=result.data || null;
+  const data=shown;
+  const pending=result.isFetching;
+  const error=result.error instanceof Error?result.error.message:'';
+  const refresh=()=>result.refetch();
   const summary = shown?.summary;
   const source = shown?.updated_at ? new Date(shown.updated_at) : null;
   const outdated = !source || Date.now()-source.getTime()>30*86400000;
@@ -172,8 +144,9 @@ export function VisaoGeralPage() {
   const ageCaption = ageComputed ? (outdated ? 'Dias desde a entrada · base histórica' : 'Dias desde a entrada') : 'Aguardando cálculo pela data de entrada';
   const hasData = Boolean(summary?.total);
   const allFilters = data?.filters;
-  const entries = shown?.movement?.entries ?? 0;
-  const closures = shown?.movement?.closures ?? 0;
+  const entries = shown?.movement?.entries;
+  const closures = shown?.movement?.closures;
+  const content=(value:number|null|undefined)=>shown?integer(value):'—';
 
   return <section className="overview-page" aria-label="Entradas da carteira processual">
     <div className="overview-heading">
@@ -211,23 +184,23 @@ export function VisaoGeralPage() {
           <div className="overview-legend"><span><i className="entry"/> Entradas</span><span><i className="close"/> Encerramentos</span></div>
         </header>
         <div className="overview-movement">
-          <div><span>Entradas</span><strong>{integer(entries)}</strong></div>
-          <div><span>Encerramentos</span><strong>{integer(closures)}</strong></div>
-          <div><span>Saldo</span><strong>{integer(entries-closures)}</strong></div>
+          <div><span>Entradas</span><strong>{content(entries)}</strong></div>
+          <div><span>Encerramentos</span><strong>{content(closures)}</strong></div>
+          <div><span>Saldo</span><strong>{shown?integer((entries??0)-(closures??0)):'—'}</strong></div>
         </div>
         <Timeline rows={shown?.charts.timeline || []}/>
       </section>
       <section className="overview-panel overview-situation">
         <header><div><h2>Situação da carteira</h2><p>Distribuição por situação no Benner</p></div></header>
-        <div className="overview-situation-total">{integer(summary?.total)}<span>processos</span></div>
-        <div className="overview-situation-track" role="img" aria-label={`${integer(summary?.active)} ativos, ${integer(summary?.closed)} encerrados`}>
+        <div className="overview-situation-total">{content(summary?.total)}<span>processos</span></div>
+        <div className="overview-situation-track" role="img" aria-label={`${content(summary?.active)} ativos, ${content(summary?.closed)} encerrados`}>
           <span style={{width:`${summary?.total ? summary.active/summary.total*100 : 0}%`}}/>
           <span style={{width:`${summary?.total ? summary.closed/summary.total*100 : 0}%`}}/>
         </div>
         <div className="overview-status-rows">
-          <div><span><i className="entry"/> Ativos</span><strong>{integer(summary?.active)}</strong></div>
-          <div><span><i className="close"/> Encerrados</span><strong>{integer(summary?.closed)}</strong></div>
-          <div><span><i className="other"/> Não informados</span><strong>{integer(summary?.unknown)}</strong></div>
+          <div><span><i className="entry"/> Ativos</span><strong>{content(summary?.active)}</strong></div>
+          <div><span><i className="close"/> Encerrados</span><strong>{content(summary?.closed)}</strong></div>
+          <div><span><i className="other"/> Não informados</span><strong>{content(summary?.unknown)}</strong></div>
         </div>
         <button type="button" className="overview-link" onClick={()=>{(window as Environment).MBA_NAVIGATE?.('processos');}}>Abrir módulo Processos <ArrowUpRight size={14}/></button>
       </section>

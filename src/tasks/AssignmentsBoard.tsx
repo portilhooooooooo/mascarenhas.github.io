@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import {runtimeQueries,runtimeScope} from './runtimeQueries';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeftRight, CalendarClock, Check, ChevronDown, ChevronRight, Download, RefreshCw, Search, Scale, Users, X } from 'lucide-react';
 import { isTaskActive, normalize, PROCESS_STATUS_LABELS, taskTypeLabel, type Task, type TaskProcess } from './model';
 import type { ApiRequest } from './renderers';
@@ -67,8 +68,8 @@ const csvCell = (value: unknown) => {
   return '"' + safe.replace(/"/g, '""') + '"';
 };
 
-export function AssignmentsBoard({ tasks, api, canAssign }: {
-  tasks: Task[]; api: ApiRequest; canAssign: boolean;
+export function AssignmentsBoard({ tasks, api, canAssign, visible = true }: {
+  tasks: Task[]; api: ApiRequest; canAssign: boolean; visible?: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [assignees, setAssignees] = useState<Record<string, Assignee[]>>({});
@@ -98,12 +99,16 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   const types = useMemo(() => Array.from(new Set(activeTasks.map(task => normalize(task.type)))).filter(Boolean).sort(), [activeTasks]);
   const typeKey = types.join(',');
 
+  const lastLoad=useRef<{key:string;revision:number;at:number}|null>(null);
   // Exact, portfolio-scoped totals and case pages are served by PostgreSQL.
   // Keep the previous guarded loader as a fallback while older API images drain.
   useEffect(() => {
+    if (!visible) return;
+    const identity=taskKey+'|'+type;
+    const previous=lastLoad.current;
+    if(previous?.key===identity && previous.revision===refresh && Date.now()-previous.at<45000)return;
     let cancelled = false;
-    setRows([]);
-    setSelected([]);
+    if(previous?.key!==identity){setRows([]);setSelected([]);}
     setLoadedCount(0);
     setLoadErrors([]);
     setServerSummary(null);
@@ -175,18 +180,18 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
           }
         }
       }
-      if (!cancelled) { setRows([...found]); setLoadErrors(errors); setLoading(false); }
+      if (!cancelled) { setRows([...found]); setLoadErrors(errors); setLoading(false); if(!errors.length)lastLoad.current={key:identity,revision:refresh,at:Date.now()}; }
     };
     void load().catch(() => {
       if (!cancelled) { setLoading(false); setLoadErrors(['Falha ao consultar atribuições']); }
     });
     return () => { cancelled = true; };
-  }, [api, taskKey, type, refresh]);
+  }, [api, taskKey, type, refresh, visible]);
 
   useEffect(() => {
-    if (!canAssign || !types.length) return;
+    if (!visible || !canAssign || !types.length) return;
     let cancelled = false;
-    void Promise.allSettled(types.map(item => api('/api/task-assignees?module=' + encodeURIComponent(item))))
+    void Promise.allSettled(types.map(item => runtimeQueries.fetchQuery({queryKey:['runtime-v2',runtimeScope(),'task-assignees',item],staleTime:45000,queryFn:()=>api('/api/task-assignees?module=' + encodeURIComponent(item))})))
       .then(result => {
         if (cancelled) return;
         const found: Record<string, Assignee[]> = {};
@@ -196,7 +201,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
         setAssignees(found);
       });
     return () => { cancelled = true; };
-  }, [api, typeKey, canAssign]);
+  }, [api, typeKey, canAssign, visible]);
 
   function nameOf(row: Row): string {
     const id = String(row.process.assignee_id || '');

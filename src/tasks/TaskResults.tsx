@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { runtimeQueries, runtimeScope, readSummary, saveSummary } from './runtimeQueries';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownUp, CheckCircle2, Clock3, Download, RefreshCw, Users, Gauge } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
@@ -103,70 +105,38 @@ function downloadXlsx(encoded: string, filename: string) {
 export function TaskResults({ api, visible, canViewOthers, userId }: {
   api: ApiRequest; visible: boolean; canViewOthers: boolean; userId?: string;
 }) {
+  const pageRef=useRef<HTMLElement>(null);
+  const blockHeights=useRef(new Map<number,number>());
   const demoMode = canViewOthers && isDemoTaskResultsHost();
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
-  const [data, setData] = useState<ResultPayload | null>(null);
+  const [filters, setFilters] = useState<Filters>(()=>{try { const v=JSON.parse(sessionStorage.getItem('mba_runtime_filters:'+runtimeScope())||'null')?.filters; return v && ['today','7','30','90','all'].includes(v.period) && ['all','overdue','today','future','none'].includes(v.deadline) && typeof v.person==='string' ? v : DEFAULT_FILTERS; } catch {return DEFAULT_FILTERS;} });
+  const scope=runtimeScope();
+  const preferenceKey='mba_runtime_filters:'+scope;
   const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
-  const [sortBy, setSortBy] = useState<'most' | 'least' | 'name'>('most');
+  const [sortBy, setSortBy] = useState<'most' | 'least' | 'name'>(()=>{try{const v=JSON.parse(sessionStorage.getItem(preferenceKey)||'null')?.sortBy;return ['most','least','name'].includes(v)?v:'most';}catch{return 'most';}});
   const [selectedType, setSelectedType] = useState('');
-  const [pending, setPending] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [error, setError] = useState('');
-  const [revision, setRevision] = useState(0);
-  const requestId = useRef(0);
-  const key = [filters.period, filters.deadline, filters.person, revision, userId, canViewOthers].join('|');
-  const [loadedKey, setLoadedKey] = useState('');
-
-  useEffect(() => {
-    if (!visible || !userId) return;
-    let cancelled = false;
-    const serial = ++requestId.current;
-    setPending(true); setError('');
-    // Não solicitar o snapshot de pendências: essa visão mede apenas conclusões.
-    const params = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all', include_pending: '0', include_growth: '0' });
-    const legacyParams = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all' });
-    const request = demoMode ? Promise.resolve(createDemoTaskResults({ ...filters, duration: 'all' }))
-      : withOldApiFallback(api, '/api/tasks/results?' + params, '/api/tasks/results?' + legacyParams);
-    request.then((answer: ResultPayload) => {
-      if (cancelled || serial !== requestId.current) return;
-      if (!answer || !Array.isArray(answer.people) || !answer.summary) throw new Error('Resposta inválida da API de produtividade.');
-      setData(answer);
-      setLoadedKey(key);
-      if (canViewOthers && filters.person === 'all') setOptions(current => {
-        const merged = new Map(current.map(row => [row.id, row]));
-        answer.people.forEach(row => merged.set(row.id, { id: row.id, name: row.name }));
-        return [...merged.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-      });
-    }).catch((cause: Error) => {
-      if (!cancelled && serial === requestId.current) {
-        setError(cause.message || 'Falha ao carregar produtividade.'); setLoadedKey('');
-      }
-    }).finally(() => { if (!cancelled && serial === requestId.current) setPending(false); });
-    return () => { cancelled = true; };
-  }, [visible, key, api, userId, demoMode]);
-
-  useEffect(() => {
-    if (!canViewOthers && filters.person !== 'all') {
-      setFilters(current => ({ ...current, person: 'all' }));
-      setOptions([]);
-    }
-  }, [canViewOthers, filters.person]);
-
-  useEffect(() => {
-    const reset = () => {
-      requestId.current += 1;
-      setFilters(DEFAULT_FILTERS); setData(null); setOptions([]);
-      setLoadedKey(''); setSelectedType(''); setRevision(value => value + 1);
-    };
-    window.addEventListener('mba:portfolio-changed', reset);
-    window.addEventListener('mba:logged-out', reset);
-    window.addEventListener('mba:session-expired', reset);
-    return () => {
-      window.removeEventListener('mba:portfolio-changed', reset);
-      window.removeEventListener('mba:logged-out', reset);
-      window.removeEventListener('mba:session-expired', reset);
-    };
-  }, []);
+  const [exportError, setExportError] = useState('');
+  const query = useQuery({queryKey:['runtime-v2',scope,'tasks-results',filters],enabled:visible && !!userId && !!scope,
+    queryFn:async ({signal})=>{
+      const params=new URLSearchParams({...filters,person:canViewOthers?filters.person:'all',duration:'all',include_pending:'0',include_growth:'0'});
+      const answer:ResultPayload=demoMode ? createDemoTaskResults({...filters,duration:'all'}) : await api('/api/tasks/results?'+params,{signal});
+      if(scope!==runtimeScope()) throw new Error('Resposta de escopo anterior descartada.');
+      if(!answer || !Array.isArray(answer.people) || !answer.summary || ![answer.summary.completed,answer.summary.today_completed].every(v=>Number.isFinite(v)&&v>=0)) throw new Error('Resposta inválida da API de produtividade.');
+      return answer;
+    }},runtimeQueries);
+  const data=query.data || null;
+  const pending=query.isFetching;
+  const error=exportError || (query.error ? 'Não foi possível atualizar. '+query.error.message : '');
+  const key=JSON.stringify([scope,filters]);
+  const loadedKey=data ? key : '';
+  const setError=setExportError;
+  const refresh=()=>{void query.refetch();};
+  useEffect(()=>{
+    if(filters.person==='all' && data) setOptions(previous=>{const values=new Map(previous.map(row=>[row.id,row]));data.people.forEach(row=>values.set(row.id,{id:row.id,name:row.name}));return [...values.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));});
+  },[data,filters.person]);
+  useEffect(()=>{
+    try { sessionStorage.setItem(preferenceKey,JSON.stringify({filters,sortBy})); } catch { /* Quota only disables preferences. */ }
+  },[preferenceKey,filters,sortBy]);
 
   const exportResults = async () => {
     if (demoMode || exporting || !data || loadedKey !== key) return;
@@ -177,12 +147,14 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       const result = await withOldApiFallback(api, '/api/tasks/results/export?' + params,
         '/api/tasks/results/export?' + legacyParams);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
+      if(scope!==runtimeScope())return;
       downloadXlsx(result.content_base64, result.filename);
     } catch (cause: any) { setError(cause?.message || 'Não foi possível exportar os dados.'); }
     finally { setExporting(false); }
   };
 
   const shown = loadedKey === key ? data : null;
+  useLayoutEffect(()=>{pageRef.current?.querySelectorAll<HTMLElement>('.task-results-card,.task-results-stats').forEach((block,index)=>{if(shown){block.style.minHeight='';blockHeights.current.set(index,block.getBoundingClientRect().height);}else{const height=blockHeights.current.get(index);if(height)block.style.minHeight=height+'px';}});},[shown]);
   const people = useMemo(() => (shown?.people || []).filter(row => row.completed > 0 && (canViewOthers || row.id === userId)), [shown, canViewOthers, userId]);
   const sorted = useMemo(() => [...people].sort((a, b) => {
     if (sortBy === 'name') return a.name.localeCompare(b.name, 'pt-BR');
@@ -196,8 +168,12 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     return [...totals].sort((a, b) => b[1] - a[1]);
   }, [people]);
   const maxType = Math.max(1, ...byType.map(([, count]) => count));
+  const snapshotKey=JSON.stringify([scope,filters]);
+  const snapshot=useMemo(()=>readSummary(snapshotKey),[snapshotKey]);
   const total = shown?.summary.completed || 0;
   const recorded = people.reduce((sum, p) => sum + p.analysis_samples, 0);
+  const cardSummary=shown ? {completed:total,today_completed:shown.summary.today_completed,people:people.length,recorded} : snapshot;
+  useEffect(()=>{if(shown)saveSummary(snapshotKey,{completed:total,today_completed:shown.summary.today_completed,people:people.length,recorded});},[shown,snapshotKey,total,people.length,recorded]);
   const hasTimingByType = people.some(p => p.timing_by_type !== undefined);
   const activeType = byType.some(([type]) => type === selectedType) ? selectedType : (byType[0]?.[0] || '');
   const timingRows = useMemo(() => {
@@ -216,14 +192,14 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const eligibleCount = timingRows.filter(row => comparable(row.measure)).length;
   const fastest = !shown?.truncated && eligibleCount >= 2 ? timingRows.find(row => comparable(row.measure)) : undefined;
 
-  return <section className="task-results-page" aria-label="Produtividade das tarefas">
+  return <section ref={pageRef} className="task-results-page" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
       <div><h1>Produtividade</h1><p>{canViewOthers ? 'Entregas da equipe, tempo observado de conclusão e comparações por tipo de tarefa.' : 'Suas análises concluídas e o tempo observado por tipo de tarefa.'}</p></div>
       <div className="task-results-actions">
         <button type="button" className="secondary-button" onClick={() => void exportResults()} disabled={demoMode || exporting || pending || !shown?.people?.length} title={demoMode ? 'Exportação desativada na demonstração' : canViewOthers ? 'Exportar dados da equipe' : 'Exportar minha produtividade'}>
           <Download size={15}/> {exporting ? 'Exportando…' : 'Baixar XLSX'}
         </button>
-        <button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
+        <button type="button" className="secondary-button" onClick={() => refresh()} disabled={pending}><RefreshCw size={15}/> Atualizar</button>
       </div>
     </div>
     {demoMode && <div className="task-results-notice" role="status"><strong>Dados de demonstração.</strong> Todos os números e nomes de analistas exibidos neste ambiente são fictícios.</div>}
@@ -241,15 +217,15 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         ...options.map(person => ({ value: person.id, label: person.name })),
       ]}/>}
     </div>
-    {error && <div role="alert" className="task-results-notice task-results-error">{error}<button type="button" onClick={() => setRevision(n => n + 1)}>Tentar novamente</button></div>}
-    {pending && !shown && <div role="status" className="task-results-notice">Carregando conclusões auditadas…</div>}
-    {shown && <>
-      {shown.truncated && <div role="alert" className="task-results-notice">A consulta atingiu seu limite de registros. Reduza o período: as contagens e medianas podem estar incompletas, e o destaque de velocidade está desativado.</div>}
+    {error && <div role="alert" className="task-results-notice task-results-error">{error}<button type="button" onClick={() => refresh()}>Tentar novamente</button></div>}
+    <span role="status" className="runtime-query-status">{pending ? (snapshot && !shown ? 'Último resumo autorizado · atualizando…' : 'Atualizando…') : error ? 'Dados desatualizados' : ''}</span>
+    <>
+      {shown?.truncated && <div role="alert" className="task-results-notice">A consulta atingiu seu limite de registros. Reduza o período: as contagens e medianas podem estar incompletas, e o destaque de velocidade está desativado.</div>}
       <div className="task-results-stats">
-        {stat('Concluídas no período', formatInt(total), 'Análises humanas concluídas', CheckCircle2)}
-        {stat('Concluídas hoje', formatInt(shown.summary.today_completed), 'Hoje, dentro do filtro escolhido', Clock3)}
-        {canViewOthers ? stat('Colaboradores ativos', formatInt(people.length), 'Com pelo menos uma conclusão', Users) : stat('Minha mediana por análise', time(people[0]?.median_analysis_seconds), 'Tempo central das análises medidas', Clock3)}
-        {stat('Cobertura de tempo', percent(recorded, total), formatInt(recorded) + ' de ' + formatInt(total) + ' com início e término válidos', Gauge)}
+        {stat('Concluídas no período', (cardSummary ? formatInt(cardSummary.completed) : '—'), 'Análises humanas concluídas', CheckCircle2)}
+        {stat('Concluídas hoje', (cardSummary ? formatInt(cardSummary.today_completed) : '—'), 'Hoje, dentro do filtro escolhido', Clock3)}
+        {canViewOthers ? stat('Colaboradores ativos', (cardSummary ? formatInt(cardSummary.people) : '—'), 'Com pelo menos uma conclusão', Users) : stat('Minha mediana por análise', shown ? time(people[0]?.median_analysis_seconds) : '—', 'Tempo central das análises medidas', Clock3)}
+        {stat('Cobertura de tempo', (cardSummary ? percent(cardSummary.recorded,cardSummary.completed) : '—'), shown ? formatInt(recorded) + ' de ' + formatInt(total) + ' com início e término válidos' : 'Aguardando dados do filtro', Gauge)}
       </div>
       <div className="task-results-grid task-results-grid-compact">
         <article className="task-results-card">
@@ -257,7 +233,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           {byType.length ? <div className="task-results-bars">{byType.map(([type, count]) => <div className="task-results-bar-row" key={type}>
             <div><span>{taskTypeLabel(type)}</span><strong>{formatInt(count)}</strong></div>
             <div className="task-results-bar-track"><span style={{ width: count / maxType * 100 + '%' }}/></div>
-          </div>)}</div> : <p className="task-results-empty">Sem análises no período.</p>}
+          </div>)}</div> : <p className="task-results-empty">{shown ? 'Sem análises no período.' : 'Aguardando dados do filtro.'}</p>}
         </article>
         <article className="task-results-card">
           <header><div><h2>Sobre as medições</h2><p>As comparações usam eventos registrados, não tempo ativo de tela.</p></div></header>
@@ -281,7 +257,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
             <td>{time(person.mean_analysis_seconds)}</td>
             <td>{formatInt(person.analysis_samples)} / {formatInt(person.completed)}<small>{percent(person.analysis_samples, person.completed)} de cobertura</small></td>
           </tr>)}
-          {!sorted.length && <tr><td colSpan={6}>Nenhuma conclusão registrada no período.</td></tr>}</tbody>
+          {!sorted.length && <tr><td colSpan={6}>{shown ? 'Nenhuma conclusão registrada no período.' : 'Aguardando dados do filtro.'}</td></tr>}</tbody>
         </table></div>
       </article>}
       <article className="task-results-card">
@@ -305,13 +281,13 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
               {canViewOthers && <td><strong>{person.name}</strong></td>}<td>{formatInt(measure.completed)}</td>
               <td>{time(measure.median_seconds)}</td><td>{time(measure.mean_seconds)}</td>
               <td>{formatInt(measure.samples)} / {formatInt(measure.completed)}<small>{percent(measure.samples, measure.completed)} de cobertura</small></td>
-              {canViewOthers && <td>{shown.truncated ? 'Consulta incompleta' : comparable(measure) ? (fastest?.person.id === person.id ? 'Menor mediana' : eligibleCount >= 2 ? 'Comparável' : 'Sem outro comparável') : 'Amostra insuficiente'}</td>}
+              {canViewOthers && <td>{shown?.truncated ? 'Consulta incompleta' : comparable(measure) ? (fastest?.person.id === person.id ? 'Menor mediana' : eligibleCount >= 2 ? 'Comparável' : 'Sem outro comparável') : 'Amostra insuficiente'}</td>}
             </tr>)}
             {!timingRows.length && <tr><td colSpan={canViewOthers ? 6 : 4}>Sem conclusões deste tipo na seleção atual.</td></tr>}</tbody>
           </table></div>
         </> : null}
       </article>
-      <p className="task-results-method"><Clock3 size={14}/>Origem: eventos auditáveis de conclusão e início de etapas na carteira ativa. A mediana geral mistura tipos de tarefa; utilize a comparação por tipo para avaliar velocidade. Tempos superiores a 30 minutos são excluídos da telemetria atual, o que pode subrepresentar tarefas longas. Atualizado em {new Date(shown.generated_at).toLocaleString('pt-BR')}.</p>
-    </>}
+      <p className="task-results-method"><Clock3 size={14}/>Origem: eventos auditáveis de conclusão e início de etapas na carteira ativa. A mediana geral mistura tipos de tarefa; utilize a comparação por tipo para avaliar velocidade. Tempos superiores a 30 minutos são excluídos da telemetria atual, o que pode subrepresentar tarefas longas. Atualizado em {shown ? new Date(shown.generated_at).toLocaleString('pt-BR') : '—'}.</p>
+    </>
   </section>;
 }

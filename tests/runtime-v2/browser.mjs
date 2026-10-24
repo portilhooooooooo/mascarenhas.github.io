@@ -1,0 +1,167 @@
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+import {spawn,execFileSync} from 'node:child_process';
+import {mkdir,writeFile} from 'node:fs/promises';
+const phase=process.env.PHASE||'baseline';
+const port=process.env.PORT||'5186';
+const out=`docs/runtime-v2/evidence/${phase}`;
+await mkdir(out,{recursive:true});
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--outDir','dist','--host','127.0.0.1','--port',port,'--strictPort']);
+const base='http://127.0.0.1:'+port;
+const profile={id:'fixture-analyst',email:'runtime@fixture.invalid',name:'Runtime Fixture',role:'legal_leader',permissions:Object.fromEntries(['tasks.view','tasks.view_others','tasks.assign','tasks.manage','tasks.execute','dashboard.view','encerramentos.view'].map(p=>[p,true])),portfolios:[{id:'agibank_enter',display_name:'Agibank · Enter'},{id:'agibank_mba',display_name:'Agibank · Regular'},{id:'nubank_mba',display_name:'Nubank · MBA'}],default_portfolio_id:'agibank_enter'};
+const payload=(n=30)=>({period:'30',people:[{id:'fixture-analyst',name:'Pessoa Fixture',completed:n,analysis_samples:n,median_analysis_seconds:60,mean_analysis_seconds:70,step_samples:n,mean_step_seconds:70,by_type:{encerramento:n}}],summary:{completed:n,today_completed:3,pending:null,growth_percent:null,previous_completed:0,people:1,measured_analyses:n,measured_transitions:n,slowest:null},generated_at:new Date().toISOString(),methodology:'fixture',truncated:false});
+let browser;
+const results=[],calls=[],errors=[];
+try{
+ for(let i=0;i<100;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
+ browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
+ const context=await browser.newContext({viewport:{width:1440,height:900}});
+ await context.tracing.start({screenshots:true,snapshots:true});
+ await context.addInitScript(()=>{
+  localStorage.setItem('mba_session_token','ba_runtime_fixture');
+  window.__metrics={shifts:[],long:[],marks:[],auth:[]};
+  window.__listenerCount=0;
+  const registry=new WeakMap(),add=EventTarget.prototype.addEventListener,remove=EventTarget.prototype.removeEventListener;
+  const capture=o=>typeof o==='boolean'?o:!!o?.capture;
+  EventTarget.prototype.addEventListener=function(type,fn,options){let rows=registry.get(this);if(!rows){rows=[];registry.set(this,rows);}if(fn&&!rows.some(r=>r.type===type&&r.fn===fn&&r.capture===capture(options))){rows.push({type,fn,capture:capture(options)});window.__listenerCount++;}return add.call(this,type,fn,options);};
+  EventTarget.prototype.removeEventListener=function(type,fn,options){const rows=registry.get(this)||[];const i=rows.findIndex(r=>r.type===type&&r.fn===fn&&r.capture===capture(options));if(i>=0){rows.splice(i,1);window.__listenerCount--;}return remove.call(this,type,fn,options);};
+  window.__listenerStats=()=>({window:(registry.get(window)||[]).length,document:(registry.get(document)||[]).length,connectedDOM:[...document.querySelectorAll('*')].reduce((n,target)=>n+(registry.get(target)||[]).length,0)});
+  const intervals=new Set(),startInterval=window.setInterval,endInterval=window.clearInterval;
+  window.setInterval=(...args)=>{const id=startInterval(...args);intervals.add(id);return id;};
+  window.clearInterval=id=>{intervals.delete(id);return endInterval(id);};window.__intervals=intervals;
+  if(localStorage.getItem('fixture_quota')==='1'){const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(this===sessionStorage)throw new DOMException('fixture full','QuotaExceededError');return set.call(this,k,v);};}
+
+  window.addEventListener('mba:auth-state',e=>window.__metrics.auth.push({t:performance.now(),status:e.detail.status}));
+  for(const type of ['layout-shift','longtask'])try{new PerformanceObserver(list=>{for(const e of list.getEntries())window.__metrics[type==='longtask'?'long':'shifts'].push({t:e.startTime,value:e.value,duration:e.duration});}).observe({type,buffered:true});}catch{}
+ });
+ let delay=0,meStatus=200,meReason=null,meDelay=0,detailDelay=0,currentProfile=profile,resultStatus=200,resultCount=null;
+ await context.route('https://api.portilhobackoffice.site/**',async route=>{
+  const url=new URL(route.request().url());calls.push({t:Date.now(),path:url.pathname,query:url.search});
+  if(url.pathname==='/api/me'){if(meDelay)await new Promise(r=>setTimeout(r,meDelay));return route.fulfill({status:meStatus,json:meStatus===200?currentProfile:{error:'Fixture indisponível',reason:meReason,code:meStatus===401?'SESSION_INVALID':meStatus===403?'PROFILE_NOT_AUTHORIZED':'AUTH_DEPENDENCY_UNAVAILABLE'}});}
+  if(url.pathname==='/api/me/state')return route.fulfill({json:{id:currentProfile.id,policy_epoch:currentProfile.policy_epoch||'legacy'}});
+  if(url.pathname==='/api/tasks/results'){if(delay)await new Promise(r=>setTimeout(r,delay));return route.fulfill({status:resultStatus,json:resultStatus===200?payload(resultCount ?? (url.searchParams.get('period')==='7'?7:30)):{error:'Falha fixture',code:'DEPENDENCY_UNAVAILABLE'}});}
+  if(url.pathname==='/api/carteira-processual')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},movement:{entries:10,closures:0,balance:10},charts:{timeline:[],por_uf:[],por_produto:[],aging:[]},filters:{states:[],products:[],resolutions:[]},updated_at:new Date().toISOString()}});
+  if(url.pathname==='/api/base-geral/summary')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},charts:{por_produto:[]},filters:{states:[],products:[],resolutions:[]}}});
+  if(url.pathname==='/api/operacao/encerramentos/dashboard')return route.fulfill({json:{carteira:'Agibank Enter',tipo:null,indicadores:{consultados:19,encontrados:19,analisados:19,ticket_medio:null,ticket_amostra:0,aging_medio:null},aging:[],estados:[],analistas:[],classificacoes:[],distribuicao_tipos:[],etapas:{etapa:'validados',total:19,tipos:[],aging:[],matriz:[],fonte:'fixture',mensagem:''}}});
+  if(url.pathname==='/api/operacao/encerramentos/analises'){if(detailDelay)await new Promise(r=>setTimeout(r,detailDelay));return route.fulfill({json:{total:23,rows:[],analistas:[],limit:20,offset:0}});}
+  if(url.pathname==='/api/operacao/encerramentos/casos')return route.fulfill({json:{total:0,rows:[]}});
+  return route.fulfill({json:[]});
+ });
+ const page=await context.newPage();page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
+ const test=async(id,fn)=>{if(process.env.TEST_IDS && !process.env.TEST_IDS.split(',').includes(id))return;const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}console.log(JSON.stringify(results.at(-1)));delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
+ await page.goto(base+'/tarefas/resultados');await page.locator('body.auth-signed-in').waitFor();
+ await test('A01',async()=>{await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER})));assert.deepEqual(await page.evaluate(()=>window.MBA_CURRENT_USER.permissions),profile.permissions);await page.locator('.task-results-stat').first().waitFor({timeout:3000});});
+ if(phase.startsWith('baseline')){
+  // Counterfactual isolation only: original interceptor masks lifecycle defects.
+  await context.route('**/react-compat.js*',route=>route.fulfill({contentType:'text/javascript',body:''}));await page.reload();
+ }
+ await page.locator('.task-results-stat').first().waitFor({timeout:5000});
+ await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+ const navigate=async route=>{await page.waitForFunction(()=>typeof window.MBA_NAVIGATE==='function');return page.evaluate(r=>window.MBA_NAVIGATE(r),route);};
+ await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='baseline-node');
+ await test('A02',async()=>{
+  const filter=page.locator('.task-results-filters select').first();
+  await filter.selectOption('90');await page.waitForTimeout(150);
+  await page.getByLabel('Ordenar colaboradores').selectOption('name');
+  await page.evaluate(()=>scrollTo(0,100));const scroll=await page.evaluate(()=>scrollY);assert.ok(scroll>0);
+  const count=calls.filter(c=>c.path==='/api/tasks/results').length;
+  await page.locator('.main-nav [data-page="dashboard"]').click();
+  await page.locator('.main-nav [data-page="tarefas"]').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'baseline-node');
+  assert.equal(await filter.inputValue(),'90');assert.equal(await page.getByLabel('Ordenar colaboradores').inputValue(),'name');
+  assert.equal(await page.evaluate(()=>scrollY),scroll);
+  assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,count);
+  await filter.selectOption('30');await page.getByLabel('Ordenar colaboradores').selectOption('most');await page.evaluate(()=>scrollTo(0,0));
+ });
+ await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='subtab-node');
+ await test('A03',async()=>{
+  const filter=page.locator('.task-results-filters select').first();await filter.selectOption('90');
+  await page.getByLabel('Ordenar colaboradores').selectOption('least');await page.evaluate(()=>scrollTo(0,100));const scroll=await page.evaluate(()=>scrollY);
+  await navigate('tarefas/atribuicoes');await page.locator('.assignments-board').waitFor();
+  await navigate('tarefas/resultados');await page.waitForTimeout(150);
+  assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'subtab-node');assert.equal(await filter.inputValue(),'90');
+  assert.equal(await page.getByLabel('Ordenar colaboradores').inputValue(),'least');assert.equal(await page.evaluate(()=>scrollY),scroll);
+  await filter.selectOption('30');await page.getByLabel('Ordenar colaboradores').selectOption('most');await page.evaluate(()=>scrollTo(0,0));
+ });
+ await test('A04',async()=>{await page.locator('.task-results-stat').first().waitFor();delay=15000;const before=await page.locator('.task-results-stats').boundingBox();await page.getByRole('button',{name:'Atualizar',exact:true}).click();await page.waitForTimeout(300);assert.equal(await page.locator('.task-results-stat').count(),4);assert.deepEqual(await page.locator('.task-results-stats').boundingBox(),before);await page.waitForTimeout(15000);delay=0;});
+ await test('A05',async()=>{delay=15000;await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForTimeout(250);assert.equal(await page.locator('.task-results-stat').count(),4);assert.equal(await page.locator('.task-results-stat strong').first().innerText(),'—');assert.ok(!(await page.locator('.task-results-method').innerText()).includes('1970'));await page.waitForTimeout(15000);assert.equal(await page.locator('.task-results-stat strong').first().innerText(),'7');delay=0;});
+ await test('A06',async()=>{await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');await page.getByLabel('Ordenar colaboradores').selectOption('name');meDelay=1500;delay=15000;await page.reload();await page.waitForTimeout(300);assert.ok(await page.locator('.app-shell').isVisible());assert.equal(await page.locator('.task-results-stat strong').allTextContents().then(values=>values.some(v=>v!=='—')),false,'nenhum valor antes da identidade validada');await page.locator('body.auth-signed-in').waitFor();await page.locator('.task-results-stat').first().waitFor();assert.equal(await page.locator('.task-results-filters select').first().inputValue(),'7');assert.equal(await page.getByLabel('Ordenar colaboradores').inputValue(),'name');assert.equal(await page.locator('.task-results-stat strong').first().innerText(),'7','resumo autorizado restaurado enquanto consulta nova aguarda');meDelay=0;await page.waitForTimeout(15000);});
+ if(!phase.startsWith('baseline') && phase!=='m1'){
+  await test('A07',async()=>{
+   await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
+   for(const mode of ['corrupt','expired','schema']){
+    await page.evaluate(mode=>{for(const key of Object.keys(sessionStorage))if(key.startsWith('mba_runtime_summary:')&&JSON.parse(key.slice('mba_runtime_summary:'.length))[1]?.period==='7'){if(mode==='corrupt')sessionStorage.setItem(key,'{broken');else{const v=JSON.parse(sessionStorage.getItem(key));if(mode==='expired')v.at=Date.now()-121000;else v.version=999;sessionStorage.setItem(key,JSON.stringify(v));}}},mode);
+    const before=calls.filter(c=>c.path==='/api/tasks/results').length;await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
+    assert.equal(await page.locator('.task-results-stat').count(),4);assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,before+1);await page.waitForFunction(()=>Object.keys(sessionStorage).some(key=>{if(!key.startsWith('mba_runtime_summary:')||JSON.parse(key.slice('mba_runtime_summary:'.length))[1]?.period!=='7')return false;try{const value=JSON.parse(sessionStorage.getItem(key));return value.version===1&&Date.now()-value.at<120000;}catch{return false;}}));
+   }
+  });
+  await test('A07-quota',async()=>{await page.evaluate(()=>localStorage.setItem('fixture_quota','1'));await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');assert.equal(await page.locator('.task-results-stat').count(),4);await page.evaluate(()=>localStorage.removeItem('fixture_quota'));await page.reload();await page.locator('body.auth-signed-in').waitFor();});
+  await test('A10',async()=>{const tab=await context.newPage();await tab.goto(base+'/tarefas/resultados');await tab.locator('body.auth-signed-in').waitFor();assert.equal(calls.filter(c=>c.path==='/auth/microsoft/start').length,0);await tab.close();return {coverage:'Duas abas sem OAuth; substituição em outro navegador e Admin SQL não exercitados'};});
+  await test('A11',async()=>{let release;await context.route('**/api/runtime-race',async route=>{await new Promise(r=>release=r);await route.fulfill({status:401,json:{code:'SESSION_INVALID'}});});await page.evaluate(()=>{window.__race=window.MBA_API.request('/api/runtime-race').catch(e=>e.code);});while(!release)await page.waitForTimeout(10);await page.evaluate(()=>localStorage.setItem('mba_session_token','ba_new_fixture'));release();await page.waitForFunction(()=>window.__race);assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_new_fixture');assert.equal(await page.evaluate(()=>window.__race),'STALE_IDENTITY');await page.evaluate(()=>localStorage.setItem('mba_session_token','ba_runtime_fixture'));
+   let payloadRelease;await context.route('**/api/runtime-payload-race',async route=>{await new Promise(r=>payloadRelease=r);await route.fulfill({json:{oldPortfolio:'Enter'}});});
+   await page.evaluate(()=>{window.__payloadRace=window.MBA_API.request('/api/runtime-payload-race').catch(e=>e.code);});while(!payloadRelease)await page.waitForTimeout(10);
+   await page.evaluate(()=>window.MBA_API.setPortfolioId('nubank_mba'));
+   await page.waitForFunction(()=>window.MBA_CURRENT_USER&&!document.body.classList.contains('auth-validating'));
+   payloadRelease();assert.equal(await page.evaluate(()=>window.__payloadRace),'STALE_IDENTITY');assert.equal(await page.evaluate(()=>window.MBA_API.getPortfolioId()),'nubank_mba');
+   await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));await page.waitForFunction(()=>window.MBA_CURRENT_USER&&!document.body.classList.contains('auth-validating'));
+   await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
+  });
+  await test('A13',async()=>{detailDelay=15000;const started=performance.now();await navigate('analytics/encerramentos');await page.getByRole('button',{name:/Aptidões: 19/}).waitFor({timeout:4000});const kpiMs=performance.now()-started;assert.ok(kpiMs<4000);assert.ok(calls.some(c=>c.path.endsWith('/analises')));await page.waitForTimeout(15000);detailDelay=0;return {kpiMs,detailDelayMs:15000};});
+  await navigate('tarefas/resultados');
+  await test('A14',async()=>{const fresh=await context.newPage();const before=calls.length;await fresh.goto(base+'/tarefas/resultados');await fresh.locator('body.auth-signed-in').waitFor();await fresh.waitForTimeout(250);const journey=calls.slice(before);await fresh.close();assert.equal(journey.filter(c=>c.path==='/api/tasks'||c.path.startsWith('/api/base-geral')||c.path.startsWith('/api/operacao/encerramentos/')).length,0);return journey;});
+  await test('A17',async()=>{
+   await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
+   const statuses=[];
+   for(const status of [429,502,503,504]){
+    resultStatus=status;const before=calls.filter(c=>c.path==='/api/tasks/results').length;await page.getByRole('button',{name:'Atualizar',exact:true}).click();await page.getByRole('alert').filter({hasText:'Não foi possível atualizar'}).waitFor();
+    assert.equal(await page.locator('.task-results-stat strong').first().innerText(),'7');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,before+1);
+    resultStatus=200;await page.getByRole('button',{name:'Tentar novamente',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('.task-results-error'));statuses.push(status);
+   }
+   const before=calls.filter(c=>c.path==='/api/tasks/results').length;await page.evaluate(()=>window.MBA_API.request('/api/task-processes/fixture/activity',{method:'POST',body:'{}'}));await page.waitForTimeout(150);assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,before+1);
+   return {statuses,mutationInvalidation:true};
+  });
+  await test('A18',async()=>{await navigate('analytics');await page.locator('.overview-page').waitFor();await page.waitForFunction(()=>!document.querySelector('.overview-refresh')?.disabled);await page.evaluate(()=>new Promise(requestAnimationFrame));await navigate('tarefas/resultados');await page.waitForTimeout(100);const before=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));const startCalls=calls.filter(c=>c.path==='/api/tasks/results').length;await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='fifty');const runs=[],checkpoints=[];for(let i=0;i<50;i++){const start=await page.evaluate(()=>performance.now());await navigate('analytics');await navigate('tarefas/resultados');runs.push(await page.evaluate(t=>performance.now()-t,start));if(i%10===9)checkpoints.push(await page.evaluate(()=>({listeners:window.__listenerStats(),intervals:window.__intervals.size,heap:performance.memory?.usedJSHeapSize})));}assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'fifty');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,startCalls);const after=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));assert.deepEqual(after.listeners,before.listeners,JSON.stringify({before,after,checkpoints}));assert.equal(after.intervals,before.intervals);return {roundTripsMs:runs,before,after,checkpoints,navigation:await page.evaluate(()=>window.MBA_RUNTIME_METRICS),coverage:'50 navegações, DOM, requests, listeners e intervals; heap observado sem certificação de leak'};});
+  await test('A19',async()=>{assert.equal(errors.length,0,JSON.stringify(errors));await navigate('tarefas/atribuicoes');assert.ok(await page.locator('.task-results-page').isHidden());assert.equal(await page.getByRole('heading',{name:'Produtividade',exact:true}).count(),0);await navigate('tarefas/resultados');});
+  await test('A12',async()=>{const states=[];for(const role of ['admin','legal_leader','analyst'])for(const portfolio of ['agibank_enter','agibank_mba','nubank_mba']){currentProfile={...profile,id:'fixture-'+role,role,is_master_admin:role==='admin',permissions:{...profile.permissions,'tasks.view_others':role!=='analyst','tasks.manage':role!=='analyst','tasks.assign':role!=='analyst'}};resultCount=10+states.length;await page.evaluate(id=>window.MBA_API.setPortfolioId(id),portfolio);await page.reload();await page.waitForFunction(n=>document.querySelector('.task-results-stat strong')?.textContent===String(n),resultCount);assert.equal(await page.evaluate(id=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).every(k=>k.includes(id)),currentProfile.id),true);states.push({role,portfolio,count:resultCount});}currentProfile=profile;resultCount=null;await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));await page.reload();await page.locator('body.auth-signed-in').waitFor();return {coverage:'9 combinações com autorização fixture; não comprova RLS/SQL',states};});
+  await test('A20',async()=>{await page.evaluate(()=>sessionStorage.setItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture','{}'));await page.evaluate(()=>{window.MBA_CURRENT_USER={...window.MBA_CURRENT_USER,permissions:{...window.MBA_CURRENT_USER.permissions,'tasks.view':false}};window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER}));});await page.waitForTimeout(150);assert.equal(await page.locator('.task-results-page').count(),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba-qa-v2:')).length),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).length),0);await page.reload();await page.locator('body.auth-signed-in').waitFor();});
+  await test('A20-policy',async()=>{
+   currentProfile={...profile,authorization_version:'fixture-policy-1',policy_epoch:'1'};
+   await page.reload();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+   const count=calls.filter(c=>c.path==='/api/me').length;
+   currentProfile={...currentProfile,authorization_version:'fixture-policy-2',policy_epoch:'2',permissions:{...profile.permissions,'tasks.view':false}};
+   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+   await page.waitForFunction(()=>window.MBA_CURRENT_USER?.authorization_version==='fixture-policy-2');
+   assert.equal(await page.locator('.task-results-page').count(),0);
+   assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).length),0);
+   assert.equal(calls.filter(c=>c.path==='/api/me').length,count+1);
+   assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_runtime_fixture');
+   currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
+  });
+  await test('A20-unrelated',async()=>{
+   currentProfile={...profile,authorization_version:'same-access',policy_epoch:'10'};
+   await page.reload();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+   await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='unrelated-policy');
+   await page.evaluate(()=>sessionStorage.setItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture','{"draft":true}'));
+   const before=calls.filter(c=>c.path==='/api/tasks/results').length;
+   let writes=0;
+   await context.route('**/api/runtime-fixture/write',async route=>{writes++;await new Promise(r=>setTimeout(r,800));return route.fulfill({json:{saved:true}});});
+   await page.evaluate(()=>{window.__pendingPolicyWrite=window.MBA_API.request('/api/runtime-fixture/write',{method:'POST',body:'{}'}).then(value=>({value}),error=>({error:error.message}));});
+   currentProfile={...currentProfile,policy_epoch:'11'};
+   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+   await page.waitForFunction(()=>window.MBA_CURRENT_USER?.policy_epoch==='11');
+   assert.deepEqual(await page.evaluate(()=>window.__pendingPolicyWrite),{value:{saved:true}});
+   assert.equal(writes,1);assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'unrelated-policy');
+   assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,before);
+   assert.ok(await page.evaluate(()=>sessionStorage.getItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture')));
+   await context.unroute('**/api/runtime-fixture/write');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
+  });
+ }
+ await test('A08',async()=>{meStatus=503;const start=performance.now();await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:10500});assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_runtime_fixture');assert.equal(await page.locator('body.auth-signed-out').count(),0);assert.equal(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'temporarily_unavailable');return {observedMs:performance.now()-start,auth:await page.evaluate(()=>window.__metrics.auth)};});
+ if(!phase.startsWith('baseline') && phase!=='m1'){
+  await test('A08-timeout',async()=>{meStatus=200;meDelay=20000;const count=calls.filter(c=>c.path==='/api/me').length;await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:11000});const states=await page.evaluate(()=>window.__metrics.auth);assert.ok(states.at(-1).t<11000);assert.equal(calls.filter(c=>c.path==='/api/me').length-count,2);assert.equal(await page.locator('body.auth-signed-out').count(),0);meDelay=0;return {states,attempts:2};});
+  await test('A09',async()=>{for(const status of [401,403]){meStatus=status;meReason=status===401?'session_replaced':null;await page.reload();await page.locator('body.auth-signed-out').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),null);assert.equal(await page.locator('.task-results-page').count(),0);if(status===401)assert.match(await page.evaluate(()=>window.MBA_AUTH.getLoginState().error),/novo login/);}return {statuses:[401,403],replacementReason:true};});
+ }
+ await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,results,calls,errors,performance:await page.evaluate(()=>window.__metrics)},null,2));
+ await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU'))process.exitCode=1;
+}finally{await browser?.close();server.kill();}
