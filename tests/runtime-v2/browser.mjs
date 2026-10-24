@@ -33,8 +33,8 @@ try{
   if(url.pathname==='/api/operacao/encerramentos/casos')return route.fulfill({json:{total:0,rows:[]}});
   return route.fulfill({json:[]});
  });
- const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
- const test=async(id,fn)=>{const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
+ const page=await context.newPage();page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
+ const test=async(id,fn)=>{const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}console.log(JSON.stringify(results.at(-1)));delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
  await page.goto(base+'/tarefas/resultados');await page.locator('body.auth-signed-in').waitFor();
  await test('A01',async()=>{await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER})));assert.deepEqual(await page.evaluate(()=>window.MBA_CURRENT_USER.permissions),profile.permissions);await page.locator('.task-results-stat').first().waitFor({timeout:3000});});
  if(phase==='baseline'){
@@ -42,7 +42,8 @@ try{
   await context.route('**/react-compat.js*',route=>route.fulfill({contentType:'text/javascript',body:''}));await page.reload();
  }
  await page.locator('.task-results-stat').first().waitFor({timeout:5000});
- const navigate=route=>page.evaluate(r=>window.MBA_NAVIGATE(r),route);
+ await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+ const navigate=async route=>{await page.waitForFunction(()=>typeof window.MBA_NAVIGATE==='function');return page.evaluate(r=>window.MBA_NAVIGATE(r),route);};
  await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='baseline-node');
  await test('A02',async()=>{const count=calls.filter(c=>c.path==='/api/tasks/results').length;await navigate('analytics');await navigate('tarefas/resultados');await page.waitForTimeout(250);assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'baseline-node');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,count);});
  await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='subtab-node');

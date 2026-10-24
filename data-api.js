@@ -195,6 +195,7 @@
   }
 
   async function request(path, options = {}) {
+    if(path.startsWith('/api/') && path!=='/api/me' && document.body.classList.contains('auth-unavailable'))throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
     const method = String(options.method || 'GET').toUpperCase();
 
@@ -216,7 +217,7 @@
     }
   }
 
-  for (const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed']) window.addEventListener(event, () => { userDetailCache.clear(); taskProcessCache.clear(); processToTask.clear(); inFlightGets.clear(); });
+  for (const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready']) window.addEventListener(event, () => { userDetailCache.clear(); taskProcessCache.clear(); processToTask.clear(); inFlightGets.clear(); });
 
   async function createTaskWithImportedProcesses(payload, file) {
     if (!(file instanceof File) || !/\.(xlsx|csv)$/i.test(file.name)) throw new Error('Selecione uma planilha XLSX ou CSV.');

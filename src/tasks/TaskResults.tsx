@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { runtimeQueries, runtimeScope, readSummary, saveSummary } from './runtimeQueries';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownUp, CheckCircle2, Clock3, Download, RefreshCw, Users, Gauge } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
@@ -105,6 +105,8 @@ function downloadXlsx(encoded: string, filename: string) {
 export function TaskResults({ api, visible, canViewOthers, userId }: {
   api: ApiRequest; visible: boolean; canViewOthers: boolean; userId?: string;
 }) {
+  const pageRef=useRef<HTMLElement>(null);
+  const blockHeights=useRef(new Map<number,number>());
   const demoMode = canViewOthers && isDemoTaskResultsHost();
   const [filters, setFilters] = useState<Filters>(()=>{try { const v=JSON.parse(sessionStorage.getItem('mba_runtime_filters:'+runtimeScope())||'null')?.filters; return v && ['today','7','30','90','all'].includes(v.period) && ['all','overdue','today','future','none'].includes(v.deadline) && typeof v.person==='string' ? v : DEFAULT_FILTERS; } catch {return DEFAULT_FILTERS;} });
   const scope=runtimeScope();
@@ -145,12 +147,14 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       const result = await withOldApiFallback(api, '/api/tasks/results/export?' + params,
         '/api/tasks/results/export?' + legacyParams);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
+      if(scope!==runtimeScope())return;
       downloadXlsx(result.content_base64, result.filename);
     } catch (cause: any) { setError(cause?.message || 'Não foi possível exportar os dados.'); }
     finally { setExporting(false); }
   };
 
   const shown = loadedKey === key ? data : null;
+  useLayoutEffect(()=>{pageRef.current?.querySelectorAll<HTMLElement>('.task-results-card,.task-results-stats').forEach((block,index)=>{if(shown){block.style.minHeight='';blockHeights.current.set(index,block.getBoundingClientRect().height);}else{const height=blockHeights.current.get(index);if(height)block.style.minHeight=height+'px';}});},[shown]);
   const people = useMemo(() => (shown?.people || []).filter(row => row.completed > 0), [shown]);
   const sorted = useMemo(() => [...people].sort((a, b) => {
     if (sortBy === 'name') return a.name.localeCompare(b.name, 'pt-BR');
@@ -188,7 +192,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const eligibleCount = timingRows.filter(row => comparable(row.measure)).length;
   const fastest = !shown?.truncated && eligibleCount >= 2 ? timingRows.find(row => comparable(row.measure)) : undefined;
 
-  return <section className="task-results-page" aria-label="Produtividade das tarefas">
+  return <section ref={pageRef} className="task-results-page" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
       <div><h1>Produtividade</h1><p>Entregas da equipe, tempo observado de conclusão e comparações por tipo de tarefa.</p></div>
       <div className="task-results-actions">
