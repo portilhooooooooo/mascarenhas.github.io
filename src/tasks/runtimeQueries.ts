@@ -50,3 +50,15 @@ function pruneRuntimeStorage(next:string){
  }}catch{/* Storage disabled. */}
 }
 if(scope)pruneRuntimeStorage(scope);
+
+// One bridge for confirmed mutations/realtime; hidden observers are only marked
+// stale and revalidate on reentry. No optimistic or duplicated write is issued.
+for(const event of ['mba:server-data-changed','mba:realtime-invalidate'])window.addEventListener(event,(raw:Event)=>{
+ const detail=(raw as CustomEvent<{module?:string;portfolio_id?:string}>).detail;
+ const w=window as Window & {MBA_API?:{getPortfolioId?:()=>string}};
+ if(detail?.portfolio_id && detail.portfolio_id!==w.MBA_API?.getPortfolioId?.())return;
+ const names=detail?.module==='tarefas'?['tasks-results','task-assignees','encerramentos']:
+   detail?.module==='encerramentos'?['tasks-results','encerramentos','base-geral']:
+   detail?.module==='pagamentos'?['base-geral']:[];
+ if(names.length)void runtimeQueries.invalidateQueries({predicate:query=>query.queryKey[0]==='runtime-v2' && query.queryKey[1]===runtimeScope() && names.includes(String(query.queryKey[2]))});
+});

@@ -196,6 +196,10 @@
     }
     updateUserCache(path, method, data);
     updateTaskProcessCache(path, method, data);
+    if(method!=='GET' && path.startsWith('/api/')){
+      const module=path.startsWith('/api/task')?'tarefas':path.includes('/encerramentos')?'encerramentos':path.includes('/pagamentos')?'pagamentos':null;
+      if(module)window.dispatchEvent(new CustomEvent('mba:server-data-changed',{detail:{module,portfolio_id:portfolioBeforeRequest}}));
+    }
     return data;
   }
 
