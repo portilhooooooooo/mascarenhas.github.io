@@ -215,7 +215,7 @@
 
     if (method !== 'GET') return performRequest(path, options, method);
 
-    const requestKey = JSON.stringify([getStoredToken(),getPortfolioId(),path]);
+    const requestKey = JSON.stringify([window.MBA_CURRENT_USER?.id||'unvalidated',window.MBA_SESSION_GENERATION||'bootstrap',authorizationEpoch,getPortfolioId(),path]);
     if (!options.signal && inFlightGets.has(requestKey)) return inFlightGets.get(requestKey);
     const pending = performRequest(path, options, method);
     if (!options.signal) inFlightGets.set(requestKey, pending);
