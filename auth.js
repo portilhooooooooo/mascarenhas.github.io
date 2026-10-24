@@ -73,7 +73,7 @@
   const getLoginState = () => ({ ...loginState });
 
   const setAuthState = signedIn => {
-    document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out', 'auth-unavailable');
+    document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out', 'auth-unavailable', 'auth-validating');
     document.getElementById('runtime-auth-unavailable')?.remove();
     document.querySelector('.app-shell')?.removeAttribute('inert');
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
@@ -304,6 +304,14 @@
     .replace(/=+$/, '');
 
   async function initializeAuth() {
+    if(getStoredToken()){
+      document.body.classList.add('auth-validating');
+      document.querySelector('.app-shell')?.setAttribute('inert','');
+      const route=(location.hash.startsWith('#/')?location.hash.slice(2):location.pathname).replace(/^\//,'');
+      if(/^tarefas(?:\/|$)/.test(route) && !window.MBA_CURRENT_USER){
+        document.querySelectorAll('main .page').forEach(page=>page.classList.toggle('active',page.id==='tarefas'));
+      }
+    }
     sessionStorage.removeItem('mba_task_worker_token');
     sessionStorage.removeItem('mba_task_only_user');
     sessionStorage.removeItem('mba_google_verifier');
@@ -364,7 +372,7 @@
             : 'Sua sessão terminou. Entre novamente.',
         });
       } else if (hasToken) {
-        document.body.classList.remove('auth-loading', 'auth-signed-out', 'auth-signed-in');
+        document.body.classList.remove('auth-loading', 'auth-signed-out', 'auth-signed-in', 'auth-validating');
         document.body.classList.add('auth-unavailable');
         document.querySelector('.app-shell')?.setAttribute('inert', '');
         let notice = document.getElementById('runtime-auth-unavailable');

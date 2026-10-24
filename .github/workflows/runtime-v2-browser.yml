@@ -19,8 +19,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run build
       - run: PHASE=ci node tests/runtime-v2/browser.mjs
+      - run: node tests/processos-ui.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: runtime-v2-fixture-evidence
-          path: docs/runtime-v2/evidence/ci
+          path: |
+            docs/runtime-v2/evidence/ci
+            docs/ux-processos-evidence

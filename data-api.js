@@ -173,7 +173,7 @@
     const tokenBeforeRequest = getStoredToken();
     const portfolioBeforeRequest = getPortfolioId();
     const epochBeforeRequest=authorizationEpoch;
-    if (path !== '/api/me' && path.startsWith('/api/') && document.body.classList.contains('auth-unavailable')) throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
+    if (path !== '/api/me' && path.startsWith('/api/') && (document.body.classList.contains('auth-unavailable')||document.body.classList.contains('auth-validating'))) throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
     if (epochBeforeRequest!==authorizationEpoch || tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
@@ -200,7 +200,7 @@
   }
 
   async function request(path, options = {}) {
-    if(path.startsWith('/api/') && path!=='/api/me' && document.body.classList.contains('auth-unavailable'))throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
+    if(path.startsWith('/api/') && path!=='/api/me' && (document.body.classList.contains('auth-unavailable')||document.body.classList.contains('auth-validating')))throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
     const method = String(options.method || 'GET').toUpperCase();
 

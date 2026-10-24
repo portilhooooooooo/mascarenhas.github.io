@@ -442,7 +442,7 @@ export function TasksApp() {
   }, [taskRoute, pageVisible, user]);
 
   const refreshAssigneeTotals = useCallback(async () => {
-    if (!user?.permissions?.['tasks.view']) return;
+  if (!user?.permissions?.['tasks.view']) return;
     try {
       const rows = await apiRequest('/api/tasks/queue-assignees');
       if (mbaWindow.MBA_CURRENT_USER?.id !== user.id) return;
@@ -794,6 +794,10 @@ export function TasksApp() {
     }
   };
 
+    if(!user && currentTaskTab()==='results' && (document.body.classList.contains('auth-validating')||document.body.classList.contains('auth-unavailable')))return <div className="tasks-react-root">
+    <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas"><button disabled>Tarefas</button><button disabled>Atribuições</button><button disabled className="active">Produtividade</button></nav>
+    <TaskResults api={apiRequest} visible={false} canViewOthers={false}/>
+  </div>;
   if (!user?.permissions?.['tasks.view']) return <div className="tasks-react-state"><strong>Sem acesso ao módulo de tarefas</strong><span>Solicite a autorização tasks.view.</span></div>;
 
   const activeState = activeItem ? taskState(activeItem.task) : null;
