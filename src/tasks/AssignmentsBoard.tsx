@@ -67,8 +67,8 @@ const csvCell = (value: unknown) => {
   return '"' + safe.replace(/"/g, '""') + '"';
 };
 
-export function AssignmentsBoard({ tasks, api, canAssign }: {
-  tasks: Task[]; api: ApiRequest; canAssign: boolean;
+export function AssignmentsBoard({ tasks, api, canAssign, visible = true }: {
+  tasks: Task[]; api: ApiRequest; canAssign: boolean; visible?: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [assignees, setAssignees] = useState<Record<string, Assignee[]>>({});
@@ -101,6 +101,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
   // Exact, portfolio-scoped totals and case pages are served by PostgreSQL.
   // Keep the previous guarded loader as a fallback while older API images drain.
   useEffect(() => {
+    if (!visible) return;
     let cancelled = false;
     setRows([]);
     setSelected([]);
@@ -181,10 +182,10 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
       if (!cancelled) { setLoading(false); setLoadErrors(['Falha ao consultar atribuições']); }
     });
     return () => { cancelled = true; };
-  }, [api, taskKey, type, refresh]);
+  }, [api, taskKey, type, refresh, visible]);
 
   useEffect(() => {
-    if (!canAssign || !types.length) return;
+    if (!visible || !canAssign || !types.length) return;
     let cancelled = false;
     void Promise.allSettled(types.map(item => api('/api/task-assignees?module=' + encodeURIComponent(item))))
       .then(result => {
@@ -196,7 +197,7 @@ export function AssignmentsBoard({ tasks, api, canAssign }: {
         setAssignees(found);
       });
     return () => { cancelled = true; };
-  }, [api, typeKey, canAssign]);
+  }, [api, typeKey, canAssign, visible]);
 
   function nameOf(row: Row): string {
     const id = String(row.process.assignee_id || '');
