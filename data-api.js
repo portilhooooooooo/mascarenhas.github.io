@@ -146,7 +146,7 @@
 
     const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
     const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
-    const maxAttempts = bootstrapping ? 2 : 1;
+    const maxAttempts = 1; // Retry budget belongs to the calling flow.
     const requestUrl = baseUrl ? baseUrl + path : path;
     let lastError;
 
@@ -167,8 +167,11 @@
 
   async function performRequest(path, options, method) {
     const tokenBeforeRequest = getStoredToken();
+    const portfolioBeforeRequest = getPortfolioId();
+    if (path !== '/api/me' && path.startsWith('/api/') && document.body.classList.contains('auth-unavailable')) throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
+    if (tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
     if (!response.ok) {
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
@@ -202,15 +205,18 @@
 
     if (method !== 'GET') return performRequest(path, options, method);
 
-    if (inFlightGets.has(path)) return inFlightGets.get(path);
+    const requestKey = JSON.stringify([getStoredToken(),getPortfolioId(),path]);
+    if (!options.signal && inFlightGets.has(requestKey)) return inFlightGets.get(requestKey);
     const pending = performRequest(path, options, method);
-    inFlightGets.set(path, pending);
+    if (!options.signal) inFlightGets.set(requestKey, pending);
     try {
       return await pending;
     } finally {
-      if (inFlightGets.get(path) === pending) inFlightGets.delete(path);
+      if (inFlightGets.get(requestKey) === pending) inFlightGets.delete(requestKey);
     }
   }
+
+  for (const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed']) window.addEventListener(event, () => { userDetailCache.clear(); taskProcessCache.clear(); processToTask.clear(); inFlightGets.clear(); });
 
   async function createTaskWithImportedProcesses(payload, file) {
     if (!(file instanceof File) || !/\.(xlsx|csv)$/i.test(file.name)) throw new Error('Selecione uma planilha XLSX ou CSV.');
@@ -276,6 +282,7 @@
       method: 'GET', headers: { Accept: 'text/event-stream' },
       signal: controller.signal,
     });
+    if (tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
     if (!response.ok) {
       const problem = new Error('Realtime indisponível (' + response.status + ')');
       problem.status = response.status;

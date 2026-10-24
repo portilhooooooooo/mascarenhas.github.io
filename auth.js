@@ -8,7 +8,15 @@
   const moduleActivationAt = new Map();
   const MODULE_REVALIDATE_MS = 30000;
   let microsoftLoginInFlight = false;
-  let loginState = { busy: false, error: null };
+  let loginState = { busy: false, error: null, status: 'initializing' };
+  let bootstrapGeneration = 0;
+  const immutableCopy = value => {
+    const copy = JSON.parse(JSON.stringify(value));
+    const freeze = item => { if (item && typeof item === 'object') { Object.values(item).forEach(freeze); Object.freeze(item); } return item; };
+    return freeze(copy);
+  };
+  const generationKey = 'mba_runtime_generation';
+  if (!sessionStorage.getItem(generationKey)) sessionStorage.setItem(generationKey, crypto.randomUUID());
 
   const pagePermissionScopes = Object.freeze({
     dashboard: ['dashboard.view'],
@@ -42,6 +50,7 @@
   const setStoredToken = token => {
     localStorage.setItem(tokenKey, token);
     sessionStorage.removeItem(tokenKey);
+    sessionStorage.setItem(generationKey, crypto.randomUUID());
   };
 
   const clearStoredToken = () => {
@@ -63,7 +72,9 @@
   const getLoginState = () => ({ ...loginState });
 
   const setAuthState = signedIn => {
-    document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out');
+    document.body.classList.remove('auth-loading', 'auth-signed-in', 'auth-signed-out', 'auth-unavailable');
+    document.getElementById('runtime-auth-unavailable')?.remove();
+    document.querySelector('.app-shell')?.removeAttribute('inert');
     document.body.classList.add(signedIn ? 'auth-signed-in' : 'auth-signed-out');
   };
 
@@ -140,7 +151,7 @@
       throw new Error('O perfil autenticado retornado pela API é inválido.');
     }
 
-    window.MBA_CURRENT_USER = user;
+    window.MBA_CURRENT_USER = immutableCopy(user);
     const name = user.name || user.nome || user.email.split('@')[0];
     const firstName = name.trim().split(/\s+/)[0];
     const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'U';
@@ -197,22 +208,9 @@
     if (!force && now - last < MODULE_REVALIDATE_MS) return;
     moduleActivationAt.set(pageId, now);
 
-    const allowedDuringDispatch = new Set(pagePermissionScopes[pageId] || []);
-    const gate = { active: true };
-    const permissions = new Proxy(user.permissions, {
-      get(target, property, receiver) {
-        if (!gate.active || typeof property !== 'string') {
-          return Reflect.get(target, property, receiver);
-        }
-        if (Object.prototype.hasOwnProperty.call(target, property)) {
-          return allowedDuringDispatch.has(property) ? Reflect.get(target, property, receiver) : false;
-        }
-        return Reflect.get(target, property, receiver);
-      },
-    });
-    const detail = { ...user, permissions };
-    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail }));
-    gate.active = false;
+    window.dispatchEvent(new CustomEvent('mba:module-activated', {
+      detail: immutableCopy({ pageId, user }),
+    }));
   }
 
   function installModuleActivationHooks() {
@@ -246,32 +244,40 @@
 
   installModuleActivationHooks();
 
-  async function loadProfile() {
-    const profile = await window.MBA_API.request('/api/me');
+  async function loadProfile(options, generation) {
+    const token = getStoredToken();
+    const profile = await window.MBA_API.request('/api/me', options);
+    if (token !== getStoredToken() || generation !== bootstrapGeneration) throw Object.assign(new Error('Identidade alterada durante validação.'), {code:'STALE_IDENTITY'});
     window.MBA_API.configurePortfolios?.(
       profile.portfolios,
       profile.default_portfolio_id
     );
     applyUser(profile);
-    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: profile }));
+    window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: immutableCopy(profile) }));
     window.restorePageRoute?.();
+    window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: immutableCopy(profile) }));
     dispatchModuleAuthentication(activePageId(), true);
     setAuthState(true);
-    publishLoginState({ busy: false, error: null });
+    publishLoginState({ busy: false, error: null, status: 'authenticated' });
   }
 
   async function loadProfileWithRetry() {
+    const generation = ++bootstrapGeneration;
+    const deadline = performance.now() + 10000;
     let lastError;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        return await loadProfile();
-      } catch (error) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const controller = new AbortController();
+      const remaining = deadline - performance.now();
+      if (remaining <= 0) break;
+      const timer = setTimeout(() => controller.abort(), attempt === 0 ? Math.min(4750, remaining) : remaining);
+      try { return await loadProfile({signal:controller.signal}, generation); }
+      catch (error) {
         lastError = error;
-        if (error?.status === 401 || error?.status === 403) throw error;
-        if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 350 * (attempt + 1)));
-      }
+        if (generation !== bootstrapGeneration || error?.code === 'STALE_IDENTITY' || [401,403,429].includes(error?.status)) throw error;
+        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 200));
+      } finally { clearTimeout(timer); }
     }
-    throw lastError;
+    throw lastError || new Error('Orçamento de validação esgotado.');
   }
 
   async function exchangeOAuthHandoff(code, verifier) {
@@ -323,6 +329,7 @@
           const result = await exchangeOAuthHandoff(code, verifier);
           if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
           setStoredToken(result.access_token);
+          localStorage.removeItem('mba_oauth_lease');
           clearOAuthFlow();
         } catch (error) {
           if ([401, 403, 422].includes(error?.status)) clearOAuthFlow();
@@ -337,12 +344,15 @@
         publishLoginState({ busy: false, error: null });
       }
     } catch (error) {
+      if (error?.code === 'STALE_IDENTITY') return;
       const hasToken = Boolean(getStoredToken());
       const invalidSession = error?.status === 401
         && ['SESSION_INVALID', 'AUTH_REQUIRED'].includes(error?.code);
       const unauthorizedProfile = error?.status === 403 && error?.code === 'PROFILE_NOT_AUTHORIZED';
 
       if (invalidSession || unauthorizedProfile) {
+        publishLoginState({status:unauthorizedProfile ? 'forbidden' : 'expired_or_revoked'});
+        window.dispatchEvent(new Event('mba:logged-out'));
         clearStoredToken();
         window.MBA_CURRENT_USER = null;
         setAuthState(false);
@@ -353,7 +363,17 @@
             : 'Sua sessão terminou. Entre novamente.',
         });
       } else if (hasToken) {
-        setAuthState(false);
+        document.body.classList.remove('auth-loading', 'auth-signed-out', 'auth-signed-in');
+        document.body.classList.add('auth-unavailable');
+        document.querySelector('.app-shell')?.setAttribute('inert', '');
+        let notice = document.getElementById('runtime-auth-unavailable');
+        if (!notice) {
+          notice = document.createElement('div'); notice.id = 'runtime-auth-unavailable'; notice.setAttribute('role','alert');
+          const message = document.createElement('p'); message.textContent = 'Não foi possível validar seu acesso agora. Sua sessão foi preservada.';
+          const retry = document.createElement('button'); retry.textContent = 'Tentar novamente'; retry.onclick = () => { retry.disabled = true; void initializeAuth(); };
+          notice.append(message,retry); document.body.appendChild(notice);
+        } else notice.querySelector('button').disabled = false;
+        publishLoginState({status:'temporarily_unavailable'});
         publishLoginState({
           busy: false,
           error: 'Não foi possível validar sua sessão agora. A sessão foi preservada; atualize a página para tentar novamente.',
@@ -373,6 +393,19 @@
 
   async function startMicrosoftLogin() {
     if (microsoftLoginInFlight) return;
+    if (getStoredToken()) { await initializeAuth(); return; }
+    const leaseKey = 'mba_oauth_lease';
+    const start = async () => {
+      const lease = Number(localStorage.getItem(leaseKey) || 0);
+      if (Date.now() - lease < 60000) { publishLoginState({busy:false,error:'Outro acesso Microsoft está em andamento neste navegador.'}); return; }
+      localStorage.setItem(leaseKey,String(Date.now()));
+      return beginMicrosoftLogin();
+    };
+    if (navigator.locks) return navigator.locks.request('mba-oauth-start', start);
+    return start();
+  }
+
+  async function beginMicrosoftLogin() {
     microsoftLoginInFlight = true;
     publishLoginState({ busy: true, error: null });
 
@@ -398,6 +431,7 @@
       location.assign(target.href);
     } catch (error) {
       clearOAuthFlow();
+      localStorage.removeItem('mba_oauth_lease');
       microsoftLoginInFlight = false;
       publishLoginState({ busy: false, error: error?.message || 'Não foi possível iniciar o acesso com Microsoft.' });
     }
@@ -434,5 +468,13 @@
     publishLoginState({ busy: false, error: 'Sua sessão terminou. Entre novamente.' });
   });
 
+  window.addEventListener('storage', event => {
+    if (event.key !== tokenKey && event.key !== 'mba_portfolio_id') return;
+    bootstrapGeneration += 1;
+    window.MBA_CURRENT_USER = null;
+    window.dispatchEvent(new Event('mba:logged-out'));
+    sessionStorage.setItem(generationKey, crypto.randomUUID());
+    void initializeAuth();
+  });
   initializeAuth();
 })();

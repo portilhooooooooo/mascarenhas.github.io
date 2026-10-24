@@ -26,19 +26,7 @@
     };
   }
 
-  // app.js ainda escuta mba:authenticated para inicializar o lobby legado.
-  // No módulo React, retiramos tasks.view somente da cópia transitória do evento.
-  // A permissão real permanece intacta em window.MBA_CURRENT_USER e é lida pelo React.
-  window.addEventListener('mba:authenticated', event => {
-    if (!document.getElementById('tarefas')?.classList.contains('active')) return;
-    const detail = event.detail;
-    if (!detail?.permissions) return;
-    detail.permissions = {
-      ...detail.permissions,
-      'tasks.view': false,
-    };
-  }, true);
-
+  // React owns Tarefas; legacy loaders inspect MBA_REACT_TASKS explicitly.
   window.addEventListener('popstate', normalizeTaskRoute, true);
   window.addEventListener('hashchange', normalizeTaskRoute, true);
   normalizeTaskRoute();

@@ -1113,15 +1113,17 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
   try { const response = await window.MBA_AUTOMATION_API.fetch('/api/pagamentos/validacao/exportar', { method: 'POST', body: JSON.stringify({ rows: lastAcpRows }) }); if (!response.ok) throw new Error('Não foi possível exportar a validação.'); const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a'); link.href = url; link.download = 'validacao_acp.xlsx'; link.click(); URL.revokeObjectURL(url); } catch (error) { window.alert(error.message); }
 });
 
-window.addEventListener('mba:authenticated', (event) => {
-  authenticatedUser = event.detail;
-  // A gestão de usuários é carregada pelo módulo React somente quando a página é aberta.
-  if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
-  if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
-  if (event.detail.permissions?.['tutelas.view'] || event.detail.permissions?.['automations.view']) loadTutelaCases().catch(() => {});
-  if (event.detail.permissions?.['pagamentos.view']) loadPagamentos(true).catch(() => {});
-  if (event.detail.permissions?.['agreements.view']) window.loadAgreements?.(true);
-  if (event.detail.permissions?.['tasks.view']) loadTasks();
+window.addEventListener('mba:authenticated', event => { authenticatedUser = event.detail; });
+window.addEventListener('mba:module-activated', event => {
+  const { pageId, user } = event.detail;
+  authenticatedUser = user;
+  const grants = user.permissions || {};
+  if (pageId === 'automacoes' && grants['automations.view']) loadIntegrationHealth();
+  if (pageId === 'encerramentos' && grants['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
+  if (pageId === 'tutelas' && grants['tutelas.view']) loadTutelaCases().catch(() => {});
+  if (pageId === 'pagamentos' && grants['pagamentos.view']) loadPagamentos(true).catch(() => {});
+  if (pageId === 'acordos' && grants['agreements.view'] && !document.getElementById('acordos')?.dataset.reactMounted) window.loadAgreements?.(true);
+  if (pageId === 'tarefas' && grants['tasks.view'] && window.MBA_REACT_TASKS !== true) loadTasks();
 });
 
 document.addEventListener('keydown', (event) => {
