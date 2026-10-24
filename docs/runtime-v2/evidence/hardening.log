@@ -1,0 +1,31 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> mba-backoffice-frontend@1.0.0 test:hardening
+> node tests/hardening.test.mjs && node tests/portfolio-policy.test.mjs && node tests/routing.test.mjs && node tests/qa-workspace.test.mjs && node tests/session-race.test.mjs && node tests/frontend-stability.test.mjs
+
+hardening regression checks passed
+PASS: portfolio access, module visibility, selectors, and task badge regression checks
+✔ navbar muda a URL ao navegar para automações e analytics (4.800595ms)
+✔ aba de produção preserva a rota legada e exige autorização da carteira (3.618938ms)
+✔ links diretos e aliases antigos são restaurados sem recarregar (3.025039ms)
+✔ abas React atualizam a rota e restauram a página pai (2.217065ms)
+✔ links sem permissão não apagam deep links e se recuperam após autorização (2.077795ms)
+✔ atribuições exigem permissão gerencial (1.888809ms)
+✔ prévia local preserva navegação em hash (1.563582ms)
+✔ autenticação prioriza rota compartilhada (0.974553ms)
+✔ links de Operação abrem cada submódulo e restauram histórico (4.915855ms)
+✔ links legados de Operação são canônicos, preservando Controladoria (1.838529ms)
+✔ Operação sem Pagamentos abre o primeiro módulo autorizado (3.006692ms)
+✔ deep links sem permissão não mostram módulos indevidos (2.574326ms)
+✔ subabas de Operação sincronizam a rota em vez de alterar apenas o estado local (0.493875ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50.576504
+Q&A progressivo: atalhos, cache e gravação explícita verificados.
+PASS: uma resposta atrasada não remove a sessão mais recente.
+Shell, task shortcuts, grouping and indication-filter contracts passed.

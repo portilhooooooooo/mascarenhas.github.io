@@ -1,0 +1,19 @@
+e643f7b fix(runtime): keep unavailable timestamps neutral during filter changes
+58c5704 fix(runtime-v2): finish scope invalidation before portfolio revalidation
+9e2d825 fix(runtime-v2): purge operational drafts when authorization changes
+c965e37 fix(runtime-v2): keep credentials out of legacy request deduplication keys
+05a16e2 test(runtime-v2): expand storage faults scope races and HTTP error coverage
+b804003 fix(runtime-v2): invalidate scoped summaries after confirmed writes
+63e86e6 test(runtime-v2): align auxiliary client fixtures with scoped lifecycle
+0f3fbba fix(runtime-v2): restore visited routes and scroll from module navigation
+ad1ccca fix(runtime-v2): preserve assignment selection and validate KPI counters
+071dcef fix(runtime-v2): render an inert shell before identity validation
+812aea5 test(runtime-v2): measure navigation lifetimes quota and bootstrap deadline
+0fe5797 test(runtime-v2): cover authorized restoration and role portfolio combinations
+a1b3e27 fix(runtime-v2): revalidate portfolio transitions and isolate draft ownership
+1471a87 fix(runtime-v2): reserve refresh geometry and reject stale export context
+58b239b test(runtime-v2): exercise races revocation slow details and repeated navigation
+a2bb3d9 feat(runtime-v2): restore safe summaries and decouple dashboard sections
+524e389 fix(runtime-v2): retain task tabs and scope productivity queries
+7d8797b fix(runtime-v2): separate identity activation and bounded validation
+308845b docs(runtime-v2): establish contracts and browser baseline harness
