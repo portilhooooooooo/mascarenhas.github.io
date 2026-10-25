@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {chromium} from 'playwright';
+import {chromium,firefox} from 'playwright';
+const browserName=process.env.BROWSER||'chromium';
 import {spawn,execFileSync} from 'node:child_process';
 import {mkdir,writeFile} from 'node:fs/promises';
 const phase=process.env.PHASE||'baseline';
@@ -11,10 +12,11 @@ const base='http://127.0.0.1:'+port;
 const profile={id:'fixture-analyst',email:'runtime@fixture.invalid',name:'Runtime Fixture',role:'legal_leader',permissions:Object.fromEntries(['tasks.view','tasks.view_others','tasks.assign','tasks.manage','tasks.execute','dashboard.view','encerramentos.view'].map(p=>[p,true])),portfolios:[{id:'agibank_enter',display_name:'Agibank · Enter'},{id:'agibank_mba',display_name:'Agibank · Regular'},{id:'nubank_mba',display_name:'Nubank · MBA'}],default_portfolio_id:'agibank_enter'};
 const payload=(n=30)=>({period:'30',people:[{id:'fixture-analyst',name:'Pessoa Fixture',completed:n,analysis_samples:n,median_analysis_seconds:60,mean_analysis_seconds:70,step_samples:n,mean_step_seconds:70,by_type:{encerramento:n}}],summary:{completed:n,today_completed:3,pending:null,growth_percent:null,previous_completed:0,people:1,measured_analyses:n,measured_transitions:n,slowest:null},generated_at:new Date().toISOString(),methodology:'fixture',truncated:false});
 let browser;
+const consoleErrors=[];
 const results=[],calls=[],errors=[];
 try{
  for(let i=0;i<100;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
- browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
+ browser=await (browserName==='firefox'?firefox:chromium).launch({headless:true,...(browserName==='firefox'?{}:{args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH})});
  const context=await browser.newContext({viewport:{width:1440,height:900}});
  await context.tracing.start({screenshots:true,snapshots:true});
  await context.addInitScript(()=>{
@@ -47,7 +49,7 @@ try{
   if(url.pathname==='/api/operacao/encerramentos/casos')return route.fulfill({json:{total:0,rows:[]}});
   return route.fulfill({json:[]});
  });
- const page=await context.newPage();page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
+ const page=await context.newPage();page.on('console',message=>{if(message.type()==='error'&&!message.text().startsWith('Failed to load resource:'))consoleErrors.push(message.text());});page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
  const test=async(id,fn)=>{if(process.env.TEST_IDS && !process.env.TEST_IDS.split(',').includes(id))return;const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}console.log(JSON.stringify(results.at(-1)));delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
  await page.goto(base+'/tarefas/resultados');await page.locator('body.auth-signed-in').waitFor();
  await test('A01',async()=>{await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER})));assert.deepEqual(await page.evaluate(()=>window.MBA_CURRENT_USER.permissions),profile.permissions);await page.locator('.task-results-stat').first().waitFor({timeout:3000});});
@@ -152,7 +154,17 @@ try{
    return {statuses,mutationInvalidation:true};
   });
   await test('A18',async()=>{await navigate('analytics');await page.locator('.base-geral-page').waitFor();await page.waitForFunction(()=>!document.querySelector('.base-geral-actions button')?.disabled);await page.evaluate(()=>new Promise(requestAnimationFrame));await navigate('tarefas/resultados');await page.waitForTimeout(100);const before=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));const startCalls=calls.filter(c=>c.path==='/api/tasks/results').length;await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='fifty');const runs=[],checkpoints=[];for(let i=0;i<50;i++){const start=await page.evaluate(()=>performance.now());await navigate('analytics');await navigate('tarefas/resultados');runs.push(await page.evaluate(t=>performance.now()-t,start));if(i%10===9)checkpoints.push(await page.evaluate(()=>({listeners:window.__listenerStats(),intervals:window.__intervals.size,heap:performance.memory?.usedJSHeapSize})));}assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'fifty');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,startCalls);const after=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));assert.deepEqual(after.listeners,before.listeners,JSON.stringify({before,after,checkpoints}));assert.equal(after.intervals,before.intervals);return {roundTripsMs:runs,before,after,checkpoints,navigation:await page.evaluate(()=>window.MBA_RUNTIME_METRICS),coverage:'50 navegações, DOM, requests, listeners e intervals; heap observado sem certificação de leak'};});
-  await test('A19',async()=>{assert.equal(errors.length,0,JSON.stringify(errors));await navigate('tarefas/atribuicoes');assert.ok(await page.locator('.task-results-page').isHidden());assert.equal(await page.getByRole('heading',{name:'Produtividade',exact:true}).count(),0);await navigate('tarefas/resultados');});
+  await test('A02-stale',async()=>{
+  const old=await page.locator('.task-results-stat strong').first().textContent();
+  const before=calls.filter(c=>c.path==='/api/tasks/results').length;
+  await navigate('analytics');await page.waitForTimeout(46000);delay=1000;
+  await navigate('tarefas/resultados');assert.equal(await page.locator('.task-results-stat strong').first().textContent(),old);
+  await page.waitForTimeout(200);assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length-before,1);
+  await page.waitForFunction(()=>![...document.querySelectorAll('.task-results-page button')].find(b=>b.textContent.includes('Atualizar'))?.disabled);
+  assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length-before,1);
+  return {freshnessWaitMs:46000,revalidations:1,previousSnapshotVisible:true};
+ });
+ await test('A19',async()=>{assert.equal(errors.length,0,JSON.stringify(errors));await navigate('tarefas/atribuicoes');assert.ok(await page.locator('.task-results-page').isHidden());assert.equal(await page.getByRole('heading',{name:'Produtividade',exact:true}).count(),0);await navigate('tarefas/resultados');});
   await test('A12',async()=>{const states=[];for(const role of ['admin','legal_leader','analyst'])for(const portfolio of ['agibank_enter','agibank_mba','nubank_mba']){currentProfile={...profile,id:'fixture-'+role,role,is_master_admin:role==='admin',permissions:{...profile.permissions,'tasks.view_others':role!=='analyst','tasks.manage':role!=='analyst','tasks.assign':role!=='analyst'}};resultCount=10+states.length;await page.evaluate(id=>window.MBA_API.setPortfolioId(id),portfolio);await page.reload();await page.waitForFunction(n=>document.querySelector('.task-results-stat strong')?.textContent===String(n),resultCount);assert.equal(await page.evaluate(id=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).every(k=>k.includes(id)),currentProfile.id),true);states.push({role,portfolio,count:resultCount});}currentProfile=profile;resultCount=null;await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));await page.reload();await page.locator('body.auth-signed-in').waitFor();return {coverage:'9 combinações com autorização fixture; não comprova RLS/SQL',states};});
   await test('A20',async()=>{await page.evaluate(()=>sessionStorage.setItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture','{}'));await page.evaluate(()=>{window.MBA_CURRENT_USER={...window.MBA_CURRENT_USER,permissions:{...window.MBA_CURRENT_USER.permissions,'tasks.view':false}};window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER}));});await page.waitForTimeout(150);assert.equal(await page.locator('.task-results-page').count(),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba-qa-v2:')).length),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).length),0);await page.reload();await page.locator('body.auth-signed-in').waitFor();});
   await test('A20-policy',async()=>{
@@ -187,11 +199,21 @@ try{
    await context.unroute('**/api/runtime-fixture/write');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
   });
  }
+ await test('A09-guard-revoked',async()=>{
+  currentProfile={...profile,policy_epoch:'900'};await page.reload();await page.locator('body.auth-signed-in').waitFor();
+  await context.route('**/api/me/state',route=>route.fulfill({status:401,json:{code:'SESSION_INVALID',reason:'session_replaced',error:'Fixture revoked'}}));
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  await page.locator('body.auth-signed-out').waitFor();
+  assert.equal(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'expired_or_revoked');
+  assert.match(await page.evaluate(()=>window.MBA_AUTH.getLoginState().error),/novo login/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),null);assert.equal(await page.locator('.task-results-page').count(),0);
+  await context.unroute('**/api/me/state');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
+ });
  await test('A08',async()=>{meStatus=503;const start=performance.now();await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:10500});assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_runtime_fixture');assert.equal(await page.locator('body.auth-signed-out').count(),0);assert.equal(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'temporarily_unavailable');return {observedMs:performance.now()-start,auth:await page.evaluate(()=>window.__metrics.auth)};});
  if(!phase.startsWith('baseline') && phase!=='m1'){
   await test('A08-timeout',async()=>{meStatus=200;meDelay=20000;const count=calls.filter(c=>c.path==='/api/me').length;await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:11000});const states=await page.evaluate(()=>window.__metrics.auth);assert.ok(states.at(-1).t<11000);assert.equal(calls.filter(c=>c.path==='/api/me').length-count,2);assert.equal(await page.locator('body.auth-signed-out').count(),0);meDelay=0;return {states,attempts:2};});
   await test('A09',async()=>{for(const status of [401,403]){meStatus=status;meReason=status===401?'session_replaced':null;await page.reload();await page.locator('body.auth-signed-out').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),null);assert.equal(await page.locator('.task-results-page').count(),0);if(status===401)assert.match(await page.evaluate(()=>window.MBA_AUTH.getLoginState().error),/novo login/);}return {statuses:[401,403],replacementReason:true};});
  }
- await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,results,calls,errors,performance:await page.evaluate(()=>window.__metrics)},null,2));
- await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU'))process.exitCode=1;
+ await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,browser:browserName,results,calls,errors,consoleErrors,performance:await page.evaluate(()=>window.__metrics)},null,2));
+ await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU')||errors.length||consoleErrors.length)process.exitCode=1;
 }finally{await browser?.close();server.kill();}

@@ -501,7 +501,7 @@
     window.MBA_CURRENT_USER = null;
     microsoftLoginInFlight = false;
     setAuthState(false);
-    publishLoginState({ busy: false, error: sessionEndMessage(event.detail?.reason) });
+    publishLoginState({ busy: false, status:'expired_or_revoked', error: sessionEndMessage(event.detail?.reason) });
   });
 
   window.addEventListener('mba:authorization-invalidated',()=>{
