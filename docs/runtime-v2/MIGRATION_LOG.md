@@ -99,3 +99,10 @@ Referência de rollback: 01fe904. Ver git log para o histórico completo e a evi
 - CI 8bcc99d PASSOU. Variantes descartáveis obsoletas foram paradas após os ensaios para liberar recursos; imagens preservadas e container de produção inalterado.
 
 Browser de encerramento deste checkpoint: A02, A03, A04, A05 e A13 PASSOU em Chromium, build release ce569da, sem erros de console/lifecycle. Respostas são fixtures controladas; a prova separada do backend é a suíte HTTP/SQL de 102 testes. Metrics e screenshots em evidence/linked-followup-chromium; trace integral no workspace/CI.
+
+### Formulário ativo → API → PostgreSQL: prova adicional
+O teste híbrido de criação vinculada passou em Chromium e Firefox. O navegador enviou um único POST /api/tasks; a API 25bb6c1 retornou 201. Uma verificação SQL independente encontrou exatamente uma tarefa de Liminar, um processo atribuído na carteira selecionada e um evento task_created por execução; os registros sintéticos foram removidos. Sem erro JavaScript ou início de OAuth. O header de carteira enviado pelo browser é conferido antes do encaminhamento.
+
+**Limite:** identidade/apresentação e leituras de Processos usam fixtures; somente o comando atravessa a cadeia real do stage. A lista de tarefas mostrada no screenshot é fixture vazia e não prova atualização da leitura após criação. Não é login Microsoft nem integração de produção. O bearer sintético é usado apenas pelo encaminhador Node, não entra no storage/trace do navegador; arquivo temporário removido após limpeza. A prova não cobre ACK perdido/repetição de criação: a idempotência durável implementada cobre análises, e a cobertura de todos os outros writes continua pendente em A15.
+
+Build da aplicação permaneceu sem alterações. Teste reproduzível: frontend tests/runtime-v2/linked-command.mjs (437287f); seed/verificação backend scripts/runtime_v2_linked_browser_fixture.py (82842f6). Métricas, screenshots e verificação de contagens estão em evidence/linked-command-chromium e evidence/linked-command-firefox. A reconstrução do banco vazio runtime_v2_rebuild_linked_25bb6c1 também passou com os schemas e sete migrações do stage.

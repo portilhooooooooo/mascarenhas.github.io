@@ -32,3 +32,10 @@ Para o ensaio de orçamento: imagem mba-runtime-v2-release:analytical-budget, fo
 
 ## Adendo de 25/10/2026
 Suíte HTTP: RUNTIME_V2_TEST_DATABASE=1, banco runtime_v2_* e API HTTP interna explicitamente permitida; python -m pytest tests/test_runtime_v2_http.py tests/test_runtime_v2.py tests/test_runtime_v2_auth_budget.py -q. Fixture inclui upload-stage-schema.sql e linked-task-stage-schema.sql. Não apontar para produção; os scripts de imagem emitem credenciais sintéticas com TTL. Build reproduzível: PYTHONPATH=. python scripts/runtime_v2_build.py --commit 25bb6c1 --tag mba-runtime-v2-release:linked-creation.
+
+
+Teste híbrido de comando (opcional; stage Docker interno já iniciado):
+1. No checkout backend, executar dentro de runtime-v2-runner: python -m scripts.runtime_v2_linked_browser_fixture prepare. Redirecionar a saída para arquivo temporário com umask 077; contém somente sessão sintética, nunca anexar como evidência.
+2. No frontend com dist pronto: RUNTIME_V2_BROWSER_STATE=/tmp/runtime-v2-linked-browser-state.json BROWSER=chromium node tests/runtime-v2/linked-command.mjs. Repetir com fixture nova para Firefox.
+3. Sempre executar python -m scripts.runtime_v2_linked_browser_fixture verify dentro do runner, recebendo o mesmo JSON por stdin, para conferir e remover os dados; apagar o arquivo temporário em seguida. A verificação também limpa registros quando a contagem falha.
+A API aceita somente a instância runtime-v2-image-linked-creation identificada por label de fixture, rede interna e ausência de portas públicas. Leituras são simuladas e o resultado é registrado como teste híbrido.
