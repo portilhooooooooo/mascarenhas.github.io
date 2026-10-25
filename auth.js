@@ -10,6 +10,7 @@
   let microsoftLoginInFlight = false;
   let loginState = { busy: false, error: null, status: 'initializing' };
   let bootstrapGeneration = 0;
+  let bootstrapMeasurement=0;
   const sessionEndMessage = reason => reason === 'session_replaced'
     ? 'Sua sessão foi substituída por um novo login em outro navegador ou dispositivo. Entre novamente se desejar continuar aqui.'
     : reason === 'session_revoked' ? 'Sua sessão foi revogada. Entre novamente.'
@@ -328,6 +329,8 @@
     .replace(/=+$/, '');
 
   async function initializeAuth(deadline = performance.now() + 10000, maxAttempts = 2) {
+    const started=performance.now(),mark='mba:identity:'+ (++bootstrapMeasurement);
+    performance.mark?.(mark);
     if(getStoredToken()){
       document.body.classList.add('auth-validating');
       document.querySelector('.app-shell')?.setAttribute('inert','');
@@ -424,6 +427,12 @@
         setAuthState(false);
         publishLoginState({ busy: false, error: error?.message || 'Não foi possível realizar o acesso.' });
       }
+    } finally {
+      const ms=performance.now()-started;
+      const metrics=window.MBA_RUNTIME_AUTH_METRICS||(window.MBA_RUNTIME_AUTH_METRICS=[]);
+      metrics.push({kind:'identity',status:loginState.status,ms,budgetMs:Math.max(0,deadline-started)});
+      if(metrics.length>40)metrics.shift();
+      try{performance.clearMeasures?.('mba:identity-bootstrap');performance.measure?.('mba:identity-bootstrap',{start:started,duration:ms});performance.clearMarks?.(mark);}catch{}
     }
   }
 
