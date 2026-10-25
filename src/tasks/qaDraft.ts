@@ -54,13 +54,13 @@ export function clearQaDraft(key: string) {
 
 // Draft lifetime follows business access, rather than an API/schema version.
 function draftContext(){
- const env=window as Window & {MBA_CURRENT_USER?:{id?:string;role?:string;is_master_admin?:boolean;access_kind?:string;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
+ const env=window as Window & {MBA_CURRENT_USER?:{id?:string;role?:string;is_master_admin?:boolean;access_kind?:string;allowed_modules?:string[];permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
  return {user:env.MBA_CURRENT_USER,wallet:env.MBA_API?.getPortfolioId?.()};
 }
 function draftPrefix(){const {user,wallet}=draftContext();return user?.id&&wallet?'mba-qa-v2:'+user.id+':'+wallet+':':'';}
 function draftAccessScope(){
  const {user,wallet}=draftContext();
- return user?JSON.stringify([user.id,wallet,user.role,user.is_master_admin,user.access_kind,Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b))]):'';
+ return user?JSON.stringify([user.id,wallet,user.role,user.is_master_admin,user.access_kind,[...(user.allowed_modules||[])].sort(),Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b))]):'';
 }
 let draftScope=draftAccessScope();
 function reconcileDrafts(event:string){
