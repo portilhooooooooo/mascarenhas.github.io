@@ -17,11 +17,14 @@ const profile={id:'fixture-analyst',email:'runtime@fixture.invalid',name:'Runtim
 const payload=(n=30)=>({period:'30',people:[{id:'fixture-analyst',name:'Pessoa Fixture',completed:n,analysis_samples:n,median_analysis_seconds:60,mean_analysis_seconds:70,step_samples:n,mean_step_seconds:70,by_type:{encerramento:n}}],summary:{completed:n,today_completed:3,pending:null,growth_percent:null,previous_completed:0,people:1,measured_analyses:n,measured_transitions:n,slowest:null},generated_at:new Date().toISOString(),methodology:'fixture',truncated:false});
 let browser,context,page;
 const consoleErrors=[];
-const results=[],calls=[],errors=[];
+const browserLifecycle=[];let cleaningUp=false;
+const results=[],calls=[],errors=[],network=[];
 try{
  for(let i=0;i<100;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
  browser=await (browserName==='firefox'?firefox:chromium).launch({headless:true,...(browserName==='firefox'?{}:{args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH})});
+ browser.on('disconnected',()=>{if(!cleaningUp)browserLifecycle.push({event:'browser_disconnected',t:Date.now()});});
  context=await browser.newContext({viewport:{width:1440,height:900}});
+ context.on('requestfinished',async request=>{try{const response=await request.response(),url=new URL(request.url());network.push({path:url.pathname,method:request.method(),status:response?.status(),timing:request.timing(),sizes:await request.sizes().catch(()=>null)});}catch{}});
  await context.tracing.start({screenshots:true,snapshots:true});
  await context.addInitScript(()=>{
   localStorage.setItem('mba_session_token','ba_runtime_fixture');
@@ -63,9 +66,10 @@ try{
   if(url.pathname==='/api/operacao/encerramentos/casos')return route.fulfill({json:{total:0,rows:[]}});
   return route.fulfill({json:[]});
  });
- page=await context.newPage();page.on('console',message=>{if(message.type()==='error'&&!message.text().startsWith('Failed to load resource:'))consoleErrors.push(message.text());});page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
+ page=await context.newPage();page.on('crash',()=>browserLifecycle.push({event:'page_crashed',t:Date.now()}));page.on('close',()=>{if(!cleaningUp)browserLifecycle.push({event:'page_closed',t:Date.now()});});page.on('console',message=>{if(message.type()==='error'&&!message.text().startsWith('Failed to load resource:'))consoleErrors.push(message.text());});page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
  const test=async(id,fn)=>{if(process.env.TEST_IDS && !process.env.TEST_IDS.split(',').includes(id))return;const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}console.log(JSON.stringify(results.at(-1)));delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
  await page.goto(base+'/tarefas/resultados');await page.locator('body.auth-signed-in').waitFor();
+ if(process.env.BROWSER_TERMINATION_PROBE==='1')await test('PROBE-browser-close',async()=>{await browser.close();await page.evaluate(()=>true);});
  await test('A01',async()=>{await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER})));assert.deepEqual(await page.evaluate(()=>window.MBA_CURRENT_USER.permissions),profile.permissions);await page.locator('.task-results-stat').first().waitFor({timeout:3000});});
  if(phase.startsWith('baseline')){
   // Counterfactual isolation only: original interceptor masks lifecycle defects.
@@ -307,11 +311,11 @@ try{
   await test('A09',async()=>{for(const status of [401,403]){meStatus=status;meReason=status===401?'session_replaced':null;await page.reload();await page.locator('body.auth-signed-out').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),null);assert.equal(await page.locator('.task-results-page').count(),0);if(status===401)assert.match(await page.evaluate(()=>window.MBA_AUTH.getLoginState().error),/novo login/);}return {statuses:[401,403],replacementReason:true};});
  }
  await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,browser:browserName,results,calls,errors,consoleErrors,performance:await page.evaluate(()=>window.__metrics)},null,2));
- await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU')||errors.length||consoleErrors.length)process.exitCode=1;
+ await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU')||errors.length||consoleErrors.length||browserLifecycle.length)process.exitCode=1;
 }catch(error){
  const fatal=error instanceof Error?error.message:String(error);
- await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,browser:browserName,results,calls,errors,consoleErrors,network,fatal},null,2));
+ await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,browser:browserName,results,calls,errors,consoleErrors,browserLifecycle,network,fatal},null,2));
  await page?.screenshot({path:out+'/fatal.png',fullPage:true}).catch(()=>{});
  await context?.tracing.stop({path:out+'/trace.zip'}).catch(()=>{});
  console.error(fatal);process.exitCode=1;
-}finally{await browser?.close();server.kill();await rm(serveDir,{recursive:true,force:true});}
+}finally{cleaningUp=true;await browser?.close();server.kill();await rm(serveDir,{recursive:true,force:true});}
