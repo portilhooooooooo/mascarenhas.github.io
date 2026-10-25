@@ -100,15 +100,19 @@ A autorização para prosseguir já foi dada. Não é necessária outra confirma
 ## Último gate de CI
 Frontend dec1b42: [CI executado com sucesso](https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556). Backend 65a7e92: [CI executado com sucesso](https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776). O último ajuste compartilha uma única repetição entre handoff e perfil; oito retestes selecionados passaram em cada navegador, incluindo handoff 503 seguido de /me 503 sem retry adicional. Nenhum desses resultados equivale a integração Microsoft publicada.
 
-## Bloqueio observado na validação publicada
-Em 25/10, o botão Entrar do runtime publicado exibiu “Failed to fetch”, antes de apresentar Microsoft. A tentativa não autenticou. A sondagem OPTIONS recebeu HTTP 403 e não houve registro correspondente de auth/start no aplicativo nos últimos 15 minutos. Isso não prova erro de CORS nem indisponibilidade global: o bloqueio pode anteceder o backend. Não foi contornado por sessão fabricada ou alteração de proteção. Integração autenticada permanece NÃO EXECUTADA.
+## Correção do diagnóstico de acesso
+O usuário confirmou que o login funcionou normalmente. A ocorrência “Failed to fetch” limitou-se à tentativa do agente de iniciar o fluxo na página pública da main, sem credenciais; não houve login nem sessão autenticada. Ela NÃO comprova falha do login da plataforma, de CORS, da Cloudflare ou da Microsoft. Retirada a classificação dessa ocorrência como bloqueio geral da integração.
+
+O agente não dispõe de conta autorizada. Integração autenticada permanece NÃO EXECUTADA pelo agente por falta desse acesso, e não porque se tenha demonstrado indisponibilidade do serviço. A autorização de caminho não fornece credenciais nem permite fabricar sessão.
+
+Login é permitido somente pelo fluxo de testes via executável .bat em local.portilhobackoffice.site, ou pela main publicada no Cloudflare. Não iniciar login diretamente na API nem usar origens alternativas. Não houve nova tentativa após a correção do usuário.
 
 ## Ampliação posterior de evidência controlada
 Em 50a3cde, 59 testes HTTP/runtime/orçamento passaram em 22,26 s. Incluem três cenários de Pagamentos v2, Defesa, quatro decisões finais de Liminares modernas e seis legadas, replay após revogação e auditoria somente leitura. Contratos/triggers foram capturados por leitura e o inicializador foi executado em banco novo. Nenhuma regra de classificação foi substituída por mock SQL. As projeções de evidências e a FK nullable de upload têm limites explícitos nas fixtures. Não certificam upload, consulta externa ou fila de monitoramento.
 
 A auditoria de recibos mostra apenas agregados e não libera comandos; todos os recibos são retidos nesta versão. Um evento de conclusão isolado não prova que todos os efeitos da intenção ocorreram. Ver WRITE-RECOVERY.md.
 
-A sondagem CLI observou Cloudflare HTTP 403 com código 1010. Consulta somente leitura em 25/10/2026 18:10:22 UTC confirmou browser_check=on. Essa observação não comprova que o mesmo mecanismo causou o “Failed to fetch” do navegador. A origem publicada consta da configuração efetiva de frontend do container. Não houve retry de login nem alteração/bypass das proteções. A10 real e integração autenticada publicada continuam NÃO EXECUTADAS.
+A sondagem CLI observou Cloudflare HTTP 403 com código 1010. Consulta somente leitura em 25/10/2026 18:10:22 UTC confirmou browser_check=on. Essa observação de CLI não comprova falha de acesso pelo navegador autorizado; o usuário confirmou login normal. A hipótese de bloqueio geral foi retirada. A origem publicada consta da configuração efetiva de frontend do container. Não houve retry de login nem alteração/bypass das proteções. A10 real e integração autenticada publicada continuam NÃO EXECUTADAS.
 
 ## Gate consolidado desta execução
 - Backend 65a7e92: 65 casos HTTP/runtime/orçamento PASSOU em 25,25 s (JUnit: 25,247 s; início 25/10/2026 18:16:42 UTC). O XML registra duração por caso; final-65-execution.json associa teste, timestamp, commit e digest. CI remoto completo também PASSOU.
@@ -127,3 +131,6 @@ A sondagem CLI observou Cloudflare HTTP 403 com código 1010. Consulta somente l
 | M6 | NÃO EXECUTADO | Gate de promoção e monitoramento posterior de duas horas |
 
 As sete falhas envolvem helper de projeção ausente no runtime capturado, expectativas de importação de Encerramentos, prazos de Defesa v4 e aceitação automática de indício insuficiente de Liminar. São divergências observadas entre testes existentes e runtime efetivo. Não há autorização técnica para trocar regras de negócio só para alinhá-los à main. O parecer permanece NO-GO.
+
+## Encerramento diferido — cobertura adicional A15
+Teste HTTP/SQL real na rede descartável: trânsito de 12 dias mantém processo waiting, análise nao_apto/prazo_pendente e reabertura em trânsito + 60 dias; seis chamadas concorrentes e replay produzem uma análise e um evento analysis_deferred, sem analysis_completed. Ver deferral.log/xml na evidência privada. Não altera regra de negócio nem apaga a falha do teste antigo que depende de helper ausente.

@@ -63,3 +63,5 @@ A08-shared-retry: PASSOU em Chromium/Firefox no commit dec1b42: duas tentativas 
 Backend 65a7e92: suite ampliada 65/65 PASSOU em 25,25 s; seis casos de Pagamentos legado PASSOU. JUnit e final-65-execution.json registram os casos individualmente, sem logs de conteúdo. CI completo: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776.
 
 Regressão de domínio adicional: 97 testes + 90 subtests PASSOU; sete FALHOU, tanto na candidata quanto na referência efetiva 01fe904, com os mesmos casos/resultados. A comparação executada e os hashes das regras estão em domain-comparison.json no backend privado. Isso é evidência de divergência pré-existente, não autorização para ignorá-la nem prova de paridade de todas as áreas. A15/A16 integrais permanecem abertos.
+
+Correção de acesso: usuário confirmou login normal. A10 real segue NÃO EXECUTADO pelo agente sem credenciais autorizadas, não por indisponibilidade comprovada. A15 adicional: Encerramento diferido com trânsito recente, concorrência/replay e estado waiting verificado no HTTP/SQL; um evento diferido e nenhuma conclusão artificial.

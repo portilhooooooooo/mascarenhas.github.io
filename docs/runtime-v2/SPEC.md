@@ -26,3 +26,6 @@ React/TypeScript/Vite e Python permanecem. Layout, navegação, tipografia, core
 
 ## Limites explícitos
 Persistência de rascunho operacional é política distinta do resumo analítico. O armazenamento de credencial legado não é usado como cache de consulta. Recibos de escrita contêm resultado operacional no servidor, nunca no cache persistente analítico do navegador. Resultado incerto exige conciliação, sem replay automático.
+
+## Limite de autenticação autorizado
+Login somente via executável de testes .bat em local.portilhobackoffice.site ou main publicada no Cloudflare. O agente não possui conta autorizada e não deve fabricar sessão. Login normal confirmado pelo usuário; nenhuma falha geral de login foi demonstrada.
