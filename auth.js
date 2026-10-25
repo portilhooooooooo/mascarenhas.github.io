@@ -53,9 +53,14 @@
   };
 
   const setStoredToken = token => {
+    const changed=token!==getStoredToken();
     localStorage.setItem(tokenKey, token);
     sessionStorage.removeItem(tokenKey);
-    setGeneration(crypto.randomUUID());
+    if(changed){
+      setGeneration(crypto.randomUUID());
+      window.MBA_CURRENT_USER=null;
+      window.dispatchEvent(new Event('mba:logged-out'));
+    }
   };
 
   const clearStoredToken = () => {
@@ -496,7 +501,7 @@
     window.MBA_CURRENT_USER = null;
     microsoftLoginInFlight = false;
     setAuthState(false);
-    publishLoginState({ busy: false, error: sessionEndMessage(event.detail?.reason) });
+    publishLoginState({ busy: false, status:'expired_or_revoked', error: sessionEndMessage(event.detail?.reason) });
   });
 
   window.addEventListener('mba:authorization-invalidated',()=>{

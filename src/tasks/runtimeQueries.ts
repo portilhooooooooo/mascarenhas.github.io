@@ -58,7 +58,7 @@ for(const event of ['mba:server-data-changed','mba:realtime-invalidate'])window.
  const w=window as Window & {MBA_API?:{getPortfolioId?:()=>string}};
  if(detail?.portfolio_id && detail.portfolio_id!==w.MBA_API?.getPortfolioId?.())return;
  const names=detail?.module==='tarefas'?['tasks-results','task-assignees','encerramentos']:
-   detail?.module==='encerramentos'?['tasks-results','encerramentos','base-geral']:
+   detail?.module==='encerramentos'?['tasks-results','encerramentos','base-geral','ranking']:
    detail?.module==='pagamentos'?['base-geral']:[];
  if(names.length)void runtimeQueries.invalidateQueries({predicate:query=>query.queryKey[0]==='runtime-v2' && query.queryKey[1]===runtimeScope() && names.includes(String(query.queryKey[2]))});
 });

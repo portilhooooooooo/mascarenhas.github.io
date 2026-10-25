@@ -6,7 +6,11 @@ on:
 permissions:
   contents: read
 jobs:
-  chromium:
+  browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -16,14 +20,15 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run build
-      - run: PHASE=ci node tests/runtime-v2/browser.mjs
+      - run: BROWSER=${{ matrix.browser }} PHASE=ci-${{ matrix.browser }} node tests/runtime-v2/browser.mjs
       - run: node tests/processos-ui.mjs
+        if: matrix.browser == 'chromium'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: runtime-v2-fixture-evidence
+          name: runtime-v2-fixture-evidence-${{ matrix.browser }}
           path: |
-            docs/runtime-v2/evidence/ci
+            docs/runtime-v2/evidence/ci-${{ matrix.browser }}
             docs/ux-processos-evidence

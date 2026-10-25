@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import {chromium} from 'playwright';
+import {chromium,firefox} from 'playwright';
+const browserName=process.env.BROWSER||'chromium';
 import {spawn,execFileSync} from 'node:child_process';
 import {mkdir,writeFile} from 'node:fs/promises';
 const phase=process.env.PHASE||'baseline';
@@ -11,11 +12,13 @@ const base='http://127.0.0.1:'+port;
 const profile={id:'fixture-analyst',email:'runtime@fixture.invalid',name:'Runtime Fixture',role:'legal_leader',permissions:Object.fromEntries(['tasks.view','tasks.view_others','tasks.assign','tasks.manage','tasks.execute','dashboard.view','encerramentos.view'].map(p=>[p,true])),portfolios:[{id:'agibank_enter',display_name:'Agibank · Enter'},{id:'agibank_mba',display_name:'Agibank · Regular'},{id:'nubank_mba',display_name:'Nubank · MBA'}],default_portfolio_id:'agibank_enter'};
 const payload=(n=30)=>({period:'30',people:[{id:'fixture-analyst',name:'Pessoa Fixture',completed:n,analysis_samples:n,median_analysis_seconds:60,mean_analysis_seconds:70,step_samples:n,mean_step_seconds:70,by_type:{encerramento:n}}],summary:{completed:n,today_completed:3,pending:null,growth_percent:null,previous_completed:0,people:1,measured_analyses:n,measured_transitions:n,slowest:null},generated_at:new Date().toISOString(),methodology:'fixture',truncated:false});
 let browser;
-const results=[],calls=[],errors=[];
+const consoleErrors=[];
+const results=[],calls=[],errors=[],network=[];
 try{
  for(let i=0;i<100;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
- browser=await chromium.launch({headless:true,args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH});
+ browser=await (browserName==='firefox'?firefox:chromium).launch({headless:true,...(browserName==='firefox'?{}:{args:['--no-sandbox'],executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH})});
  const context=await browser.newContext({viewport:{width:1440,height:900}});
+ context.on('requestfinished',async request=>{try{const response=await request.response(),url=new URL(request.url());network.push({path:url.pathname,method:request.method(),status:response?.status(),timing:request.timing(),sizes:await request.sizes()});}catch{}});
  await context.tracing.start({screenshots:true,snapshots:true});
  await context.addInitScript(()=>{
   localStorage.setItem('mba_session_token','ba_runtime_fixture');
@@ -32,23 +35,25 @@ try{
   if(localStorage.getItem('fixture_quota')==='1'){const set=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(this===sessionStorage)throw new DOMException('fixture full','QuotaExceededError');return set.call(this,k,v);};}
 
   window.addEventListener('mba:auth-state',e=>window.__metrics.auth.push({t:performance.now(),status:e.detail.status}));
-  for(const type of ['layout-shift','longtask'])try{new PerformanceObserver(list=>{for(const e of list.getEntries())window.__metrics[type==='longtask'?'long':'shifts'].push({t:e.startTime,value:e.value,duration:e.duration});}).observe({type,buffered:true});}catch{}
+  for(const type of ['layout-shift','longtask'])try{new PerformanceObserver(list=>{for(const e of list.getEntries())window.__metrics[type==='longtask'?'long':'shifts'].push({t:e.startTime,value:e.value,duration:e.duration,hadRecentInput:e.hadRecentInput});}).observe({type,buffered:true});}catch{}
  });
+ let overviewDelay=0;
  let delay=0,meStatus=200,meReason=null,meDelay=0,detailDelay=0,currentProfile=profile,resultStatus=200,resultCount=null;
  await context.route('https://api.portilhobackoffice.site/**',async route=>{
   const url=new URL(route.request().url());calls.push({t:Date.now(),path:url.pathname,query:url.search});
   if(url.pathname==='/api/me'){if(meDelay)await new Promise(r=>setTimeout(r,meDelay));return route.fulfill({status:meStatus,json:meStatus===200?currentProfile:{error:'Fixture indisponível',reason:meReason,code:meStatus===401?'SESSION_INVALID':meStatus===403?'PROFILE_NOT_AUTHORIZED':'AUTH_DEPENDENCY_UNAVAILABLE'}});}
+  if(url.pathname==='/api/events/stream')return route.fulfill({status:403,json:{code:'REALTIME_PAUSED',error:'Fixture stream paused'}});
   if(url.pathname==='/api/me/state')return route.fulfill({json:{id:currentProfile.id,policy_epoch:currentProfile.policy_epoch||'legacy'}});
   if(url.pathname==='/api/tasks/results'){if(delay)await new Promise(r=>setTimeout(r,delay));return route.fulfill({status:resultStatus,json:resultStatus===200?payload(resultCount ?? (url.searchParams.get('period')==='7'?7:30)):{error:'Falha fixture',code:'DEPENDENCY_UNAVAILABLE'}});}
-  if(url.pathname==='/api/carteira-processual')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},movement:{entries:10,closures:0,balance:10},charts:{timeline:[],por_uf:[],por_produto:[],aging:[]},filters:{states:[],products:[],resolutions:[]},updated_at:new Date().toISOString()}});
+  if(url.pathname==='/api/carteira-processual'){if(overviewDelay)await new Promise(r=>setTimeout(r,overviewDelay));return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},movement:{entries:10,closures:0,balance:10},charts:{timeline:[],por_uf:[],por_produto:[],aging:[]},filters:{states:[],products:[],resolutions:[]},updated_at:new Date().toISOString()}});}
   if(url.pathname==='/api/base-geral/summary')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},charts:{por_produto:[]},filters:{states:[],products:[],resolutions:[]}}});
   if(url.pathname==='/api/operacao/encerramentos/dashboard')return route.fulfill({json:{carteira:'Agibank Enter',tipo:null,indicadores:{consultados:19,encontrados:19,analisados:19,ticket_medio:null,ticket_amostra:0,aging_medio:null},aging:[],estados:[],analistas:[],classificacoes:[],distribuicao_tipos:[],etapas:{etapa:'validados',total:19,tipos:[],aging:[],matriz:[],fonte:'fixture',mensagem:''}}});
   if(url.pathname==='/api/operacao/encerramentos/analises'){if(detailDelay)await new Promise(r=>setTimeout(r,detailDelay));return route.fulfill({json:{total:23,rows:[],analistas:[],limit:20,offset:0}});}
   if(url.pathname==='/api/operacao/encerramentos/casos')return route.fulfill({json:{total:0,rows:[]}});
   return route.fulfill({json:[]});
  });
- const page=await context.newPage();page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
- const test=async(id,fn)=>{if(process.env.TEST_IDS && !process.env.TEST_IDS.split(',').includes(id))return;const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}console.log(JSON.stringify(results.at(-1)));delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
+ const page=await context.newPage();page.on('console',message=>{if(message.type()==='error'&&!message.text().startsWith('Failed to load resource:'))consoleErrors.push(message.text());});page.on('pageerror',e=>{errors.push(e.message);console.log('PAGEERROR',e.message);});
+ const test=async(id,fn)=>{if(process.env.TEST_IDS && !process.env.TEST_IDS.split(',').includes(id))return;const start=performance.now();try{const detail=await fn();results.push({id,status:'PASSOU',ms:performance.now()-start,detail});}catch(e){results.push({id,status:'FALHOU',ms:performance.now()-start,error:e.message});}results.at(-1).measurement=await page.evaluate(()=>({paint:performance.getEntriesByType('paint').map(e=>({name:e.name,startTime:e.startTime})),navigation:performance.getEntriesByType('navigation').map(e=>({domContentLoaded:e.domContentLoadedEventEnd,load:e.loadEventEnd,type:e.type})),shifts:window.__metrics.shifts,longTasks:window.__metrics.long,route:location.pathname}));console.log(JSON.stringify(results.at(-1)));delay=0;await page.screenshot({path:`${out}/${id}.png`,fullPage:true});};
  await page.goto(base+'/tarefas/resultados');await page.locator('body.auth-signed-in').waitFor();
  await test('A01',async()=>{await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER})));assert.deepEqual(await page.evaluate(()=>window.MBA_CURRENT_USER.permissions),profile.permissions);await page.locator('.task-results-stat').first().waitFor({timeout:3000});});
  if(phase.startsWith('baseline')){
@@ -110,7 +115,50 @@ try{
   await test('A13',async()=>{detailDelay=15000;const started=performance.now();await navigate('analytics/encerramentos');await page.getByRole('button',{name:/Aptidões: 19/}).waitFor({timeout:4000});const kpiMs=performance.now()-started;assert.ok(kpiMs<4000);assert.ok(calls.some(c=>c.path.endsWith('/analises')));await page.waitForTimeout(15000);detailDelay=0;return {kpiMs,detailDelayMs:15000};});
   await navigate('tarefas/resultados');
   await test('A14',async()=>{const fresh=await context.newPage();const before=calls.length;await fresh.goto(base+'/tarefas/resultados');await fresh.locator('body.auth-signed-in').waitFor();await fresh.waitForTimeout(250);const journey=calls.slice(before);await fresh.close();assert.equal(journey.filter(c=>c.path==='/api/tasks'||c.path.startsWith('/api/base-geral')||c.path.startsWith('/api/operacao/encerramentos/')).length,0);return journey;});
-  await test('A17',async()=>{
+  await test('A05-Entradas',async()=>{
+  await navigate('analytics');await page.waitForFunction(()=>document.querySelector('.overview-metric strong')?.textContent==='10');
+  const before=await page.locator('.overview-kpis').boundingBox();overviewDelay=15000;
+  await page.locator('.overview-refresh').click();await page.waitForTimeout(250);
+  assert.equal(await page.locator('.overview-metric strong').first().textContent(),'10');
+  assert.deepEqual(await page.locator('.overview-kpis').boundingBox(),before);
+  await page.waitForFunction(()=>!document.querySelector('.overview-refresh')?.disabled,{},{timeout:17000});
+  await page.locator('.overview-filters select').first().selectOption('90');await page.waitForTimeout(200);
+  assert.equal(await page.locator('.overview-metric strong').first().textContent(),'—');
+  assert.equal((await page.locator('.overview-kpis').boundingBox()).height,before.height);
+  await page.waitForFunction(()=>document.querySelector('.overview-metric strong')?.textContent==='10',{},{timeout:17000});
+  overviewDelay=0;await navigate('tarefas/resultados');return {sameKeyDelayMs:15000,newKeyDelayMs:15000};
+ });
+ await test('A14-realtime-paused',async()=>{await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForTimeout(200);const count=calls.filter(c=>c.path==='/api/events/stream').length;await page.waitForTimeout(2200);assert.equal(calls.filter(c=>c.path==='/api/events/stream').length,count,'Realtime pausado não deve reconectar em avalanche');});
+ await test('A15-write-intent',async()=>{
+  const path='/api/task-processes/12345678-1234-4234-8234-123456789abc/encerramento-analysis';let status=503;const sent=[];
+  await context.route('**'+path,async route=>{sent.push(route.request().headers()['idempotency-key']);await new Promise(r=>setTimeout(r,250));return route.fulfill({status,json:status===201?{saved:true}:{code:'WRITE_DEPENDENCY_UNAVAILABLE',error:'Fixture write unavailable'}});});
+  const body=JSON.stringify({decision:'inapto',notes:'Private draft fixture'});
+  const first=await page.evaluate(async({path,body})=>Promise.allSettled([window.MBA_API.request(path,{method:'POST',body}),window.MBA_API.request(path,{method:'POST',body})]).then(rows=>rows.map(r=>r.status)),{path,body});
+  assert.deepEqual(first,['rejected','rejected']);assert.equal(sent.length,1);assert.match(sent[0],/^[0-9a-f-]{36}$/);
+  const stored=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith('mba_write_intent:')));
+  assert.equal(stored.length,1);assert.ok(!JSON.stringify(stored).includes('Private draft fixture'));
+  assert.deepEqual(Object.keys(JSON.parse(stored[0][1])).sort(),['at','id','version']);
+  await page.reload();await page.locator('body.auth-signed-in').waitFor();assert.equal(sent.length,1,'No automatic write on F5');
+  status=201;assert.deepEqual(await page.evaluate(({path,body})=>window.MBA_API.request(path,{method:'POST',body}),{path,body}),{saved:true});
+  assert.equal(sent.length,2);assert.equal(sent[1],sent[0],'Same operation ID recovered after F5');
+  assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith('mba_write_intent:')).length),0);
+  await context.unroute('**'+path);return {networkCommands:2,concurrentCalls:2,automaticRetries:0,recoveredIntent:true};
+ });
+ await test('A11-handoff-same-user',async()=>{
+  await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='old-session-node');
+  const generation=await page.evaluate(()=>window.MBA_SESSION_GENERATION);
+  await context.route('**/auth/session/exchange',route=>route.fulfill({json:{access_token:'ba_fixture_new_intentional_session'}}));
+  await page.evaluate(()=>{sessionStorage.setItem('mba_oauth_handoff','fixture-handoff');sessionStorage.setItem('mba_oauth_verifier','fixture-verifier');window.dispatchEvent(new Event('mba:authorization-invalidated'));});
+  await page.waitForFunction(()=>localStorage.getItem('mba_session_token')==='ba_fixture_new_intentional_session'&&window.MBA_AUTH.getLoginState().status==='authenticated');
+  assert.notEqual(await page.evaluate(()=>window.MBA_SESSION_GENERATION),generation);
+  await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+  assert.notEqual(await page.locator('.task-results-page').getAttribute('data-instance'),'old-session-node');
+  assert.equal(calls.filter(c=>c.path==='/auth/microsoft/start').length,0);
+  await context.unroute('**/auth/session/exchange');
+  await page.evaluate(()=>{localStorage.setItem('mba_session_token','ba_runtime_fixture');window.dispatchEvent(new StorageEvent('storage',{key:'mba_session_token'}));});
+  await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='authenticated');return {scopePurgedForSameUserNewSession:true,oauthStarts:0};
+ });
+ await test('A17',async()=>{
    await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
    const statuses=[];
    for(const status of [429,502,503,504]){
@@ -122,7 +170,17 @@ try{
    return {statuses,mutationInvalidation:true};
   });
   await test('A18',async()=>{await navigate('analytics');await page.locator('.overview-page').waitFor();await page.waitForFunction(()=>!document.querySelector('.overview-refresh')?.disabled);await page.evaluate(()=>new Promise(requestAnimationFrame));await navigate('tarefas/resultados');await page.waitForTimeout(100);const before=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));const startCalls=calls.filter(c=>c.path==='/api/tasks/results').length;await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='fifty');const runs=[],checkpoints=[];for(let i=0;i<50;i++){const start=await page.evaluate(()=>performance.now());await navigate('analytics');await navigate('tarefas/resultados');runs.push(await page.evaluate(t=>performance.now()-t,start));if(i%10===9)checkpoints.push(await page.evaluate(()=>({listeners:window.__listenerStats(),intervals:window.__intervals.size,heap:performance.memory?.usedJSHeapSize})));}assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'fifty');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,startCalls);const after=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));assert.deepEqual(after.listeners,before.listeners,JSON.stringify({before,after,checkpoints}));assert.equal(after.intervals,before.intervals);return {roundTripsMs:runs,before,after,checkpoints,navigation:await page.evaluate(()=>window.MBA_RUNTIME_METRICS),coverage:'50 navegações, DOM, requests, listeners e intervals; heap observado sem certificação de leak'};});
-  await test('A19',async()=>{assert.equal(errors.length,0,JSON.stringify(errors));await navigate('tarefas/atribuicoes');assert.ok(await page.locator('.task-results-page').isHidden());assert.equal(await page.getByRole('heading',{name:'Produtividade',exact:true}).count(),0);await navigate('tarefas/resultados');});
+  await test('A02-stale',async()=>{
+  const old=await page.locator('.task-results-stat strong').first().textContent();
+  const before=calls.filter(c=>c.path==='/api/tasks/results').length;
+  await navigate('analytics');await page.waitForTimeout(46000);delay=1000;
+  await navigate('tarefas/resultados');assert.equal(await page.locator('.task-results-stat strong').first().textContent(),old);
+  await page.waitForTimeout(200);assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length-before,1);
+  await page.waitForFunction(()=>![...document.querySelectorAll('.task-results-page button')].find(b=>b.textContent.includes('Atualizar'))?.disabled);
+  assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length-before,1);
+  return {freshnessWaitMs:46000,revalidations:1,previousSnapshotVisible:true};
+ });
+ await test('A19',async()=>{assert.equal(errors.length,0,JSON.stringify(errors));await navigate('tarefas/atribuicoes');assert.ok(await page.locator('.task-results-page').isHidden());assert.equal(await page.getByRole('heading',{name:'Produtividade',exact:true}).count(),0);await navigate('tarefas/resultados');});
   await test('A12',async()=>{const states=[];for(const role of ['admin','legal_leader','analyst'])for(const portfolio of ['agibank_enter','agibank_mba','nubank_mba']){currentProfile={...profile,id:'fixture-'+role,role,is_master_admin:role==='admin',permissions:{...profile.permissions,'tasks.view_others':role!=='analyst','tasks.manage':role!=='analyst','tasks.assign':role!=='analyst'}};resultCount=10+states.length;await page.evaluate(id=>window.MBA_API.setPortfolioId(id),portfolio);await page.reload();await page.waitForFunction(n=>document.querySelector('.task-results-stat strong')?.textContent===String(n),resultCount);assert.equal(await page.evaluate(id=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).every(k=>k.includes(id)),currentProfile.id),true);states.push({role,portfolio,count:resultCount});}currentProfile=profile;resultCount=null;await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));await page.reload();await page.locator('body.auth-signed-in').waitFor();return {coverage:'9 combinações com autorização fixture; não comprova RLS/SQL',states};});
   await test('A20',async()=>{await page.evaluate(()=>sessionStorage.setItem('mba-qa-v2:fixture-analyst:agibank_enter:fixture:fixture','{}'));await page.evaluate(()=>{window.MBA_CURRENT_USER={...window.MBA_CURRENT_USER,permissions:{...window.MBA_CURRENT_USER.permissions,'tasks.view':false}};window.dispatchEvent(new CustomEvent('mba:authenticated',{detail:window.MBA_CURRENT_USER}));});await page.waitForTimeout(150);assert.equal(await page.locator('.task-results-page').count(),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba-qa-v2:')).length),0);assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(k=>k.startsWith('mba_runtime_summary:')).length),0);await page.reload();await page.locator('body.auth-signed-in').waitFor();});
   await test('A20-policy',async()=>{
@@ -157,11 +215,21 @@ try{
    await context.unroute('**/api/runtime-fixture/write');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
   });
  }
+ await test('A09-guard-revoked',async()=>{
+  currentProfile={...profile,policy_epoch:'900'};await page.reload();await page.locator('body.auth-signed-in').waitFor();
+  await context.route('**/api/me/state',route=>route.fulfill({status:401,json:{code:'SESSION_INVALID',reason:'session_replaced',error:'Fixture revoked'}}));
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  await page.locator('body.auth-signed-out').waitFor();
+  assert.equal(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'expired_or_revoked');
+  assert.match(await page.evaluate(()=>window.MBA_AUTH.getLoginState().error),/novo login/);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),null);assert.equal(await page.locator('.task-results-page').count(),0);
+  await context.unroute('**/api/me/state');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
+ });
  await test('A08',async()=>{meStatus=503;const start=performance.now();await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:10500});assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_runtime_fixture');assert.equal(await page.locator('body.auth-signed-out').count(),0);assert.equal(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'temporarily_unavailable');return {observedMs:performance.now()-start,auth:await page.evaluate(()=>window.__metrics.auth)};});
  if(!phase.startsWith('baseline') && phase!=='m1'){
   await test('A08-timeout',async()=>{meStatus=200;meDelay=20000;const count=calls.filter(c=>c.path==='/api/me').length;await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable',{},{timeout:11000});const states=await page.evaluate(()=>window.__metrics.auth);assert.ok(states.at(-1).t<11000);assert.equal(calls.filter(c=>c.path==='/api/me').length-count,2);assert.equal(await page.locator('body.auth-signed-out').count(),0);meDelay=0;return {states,attempts:2};});
   await test('A09',async()=>{for(const status of [401,403]){meStatus=status;meReason=status===401?'session_replaced':null;await page.reload();await page.locator('body.auth-signed-out').waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),null);assert.equal(await page.locator('.task-results-page').count(),0);if(status===401)assert.match(await page.evaluate(()=>window.MBA_AUTH.getLoginState().error),/novo login/);}return {statuses:[401,403],replacementReason:true};});
  }
- await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,results,calls,errors,performance:await page.evaluate(()=>window.__metrics)},null,2));
- await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU'))process.exitCode=1;
+ await writeFile(out+'/metrics.json',JSON.stringify({timestamp:new Date().toISOString(),commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),fixture:true,browser:browserName,results,calls,errors,consoleErrors,network,performance:await page.evaluate(()=>window.__metrics)},null,2));
+ await context.tracing.stop({path:out+'/trace.zip'});console.log(JSON.stringify(results,null,2));if(results.some(r=>r.status==='FALHOU')||errors.length||consoleErrors.length)process.exitCode=1;
 }finally{await browser?.close();server.kill();}
