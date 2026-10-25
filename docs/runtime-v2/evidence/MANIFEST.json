@@ -7,8 +7,8 @@
   "files": [
     {
       "path": "RUN_LOCAL.md",
-      "bytes": 2832,
-      "sha256": "6544392ce786ad5c193fd3b6a89b58e90ff31f9e6bd9336df12890bcfbdbd095"
+      "bytes": 3229,
+      "sha256": "f45e04c73c91deb5341ab9ffc092b5b8961804a6cce3d42ccfc72ac3acd04d0d"
     },
     {
       "path": "SPEC.md",
@@ -17,8 +17,8 @@
     },
     {
       "path": "ROLLBACK.md",
-      "bytes": 2959,
-      "sha256": "69d7ce44c67a5fcbd9b4be7aa6761b81916a5d8d31ec56cf2b49f589c84bb5d5"
+      "bytes": 3385,
+      "sha256": "392460d20ea6e7e8581b0ee739e5de070016a81b547244eba28b7abd91bc0c87"
     },
     {
       "path": "PARIDADE.md",
@@ -27,28 +27,28 @@
     },
     {
       "path": "ARCHITECTURE.md",
-      "bytes": 2262,
-      "sha256": "2b9fcee2e9a7d2449c20f62825f6949c7ec60a519bd5fd3210b71921c3cf430c"
+      "bytes": 2615,
+      "sha256": "96c4ee51421c6a63d29a0aadd3eb5a09cd3cb91447130c378b39467ceb1d850d"
     },
     {
       "path": "DIAGNOSTICO_FINAL.md",
-      "bytes": 17870,
-      "sha256": "8af57cc710d551ae434e471ffc4a74ecbd7ccb9117533d51a2dd9b1081a82d5f"
+      "bytes": 22482,
+      "sha256": "ce4319a3c011b5ff16e9e8133146548e79438613dd3d97ba9bf018347ad8fce8"
     },
     {
       "path": "BASELINE.md",
-      "bytes": 5180,
-      "sha256": "0482ce6f69cc7629fc38375dc5a6af44d32b9c234071c00da7fce99a0181529d"
+      "bytes": 9792,
+      "sha256": "27964849c7333c5a48d16bde1a6bb6d5d82cc82711ddcec7d1263fcfaf5632ed"
     },
     {
       "path": "TEST-MATRIX.md",
-      "bytes": 11579,
-      "sha256": "fd0a7a74c901ff60c08b82d4b5d1649733a26072db6b10a77242586c8022e7c9"
+      "bytes": 12356,
+      "sha256": "b043c1b936979622328909dd99bfab64e8d8b3acf23dc0c0dd62db10b14f3d8f"
     },
     {
       "path": "MIGRATION_LOG.md",
-      "bytes": 7455,
-      "sha256": "ca7f7bfffdbc08acf3e0a6fa981521a1cddba4f4d2848bea54eecce67c4f0d94"
+      "bytes": 8324,
+      "sha256": "8023a21a6bfb2fda5be7450a5f2007c5b0a7d48f69dbf58a9a15d9cd79ae510d"
     },
     {
       "path": "evidence/final-chromium/A08.png",
@@ -716,8 +716,10 @@
       "sha256": "a4dc854be7263254c4faee5e2de8c5b038e2ac56664ba1f6b5b62378a87ef977"
     }
   ],
-  "updated_at": "2026-10-25T18:44:28.836951+00:00",
+  "updated_at": "2026-10-25T19:02:13.291784+00:00",
   "backend_test_commit": "65a7e92",
   "backend_runtime_commit": "289f9be",
-  "backend_ci_run": "https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776"
+  "backend_ci_run": "https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776",
+  "additional_runtime_commit": "8bcc99d",
+  "additional_runtime_ci": "https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40223094336"
 }
