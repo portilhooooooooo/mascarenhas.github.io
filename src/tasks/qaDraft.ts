@@ -63,7 +63,7 @@ function draftAccessScope(){
  return user?JSON.stringify([user.id,wallet,user.role,user.is_master_admin,user.access_kind,Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b))]):'';
 }
 let draftScope=draftAccessScope();
-for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready','mba:authenticated'])window.addEventListener(event,()=>{
+function reconcileDrafts(event:string){
  const next=draftAccessScope();
  const {user}=draftContext();
  const purgeAll=['mba:logged-out','mba:session-expired','mba:portfolio-changed'].includes(event) || (!!draftScope && next!==draftScope) || (!!user && user.permissions?.['tasks.view']!==true);
@@ -74,4 +74,7 @@ for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-change
    if(purgeAll || (prefix && !(key.startsWith(prefix)||key.startsWith(legacyPrefix))))sessionStorage.removeItem(key);
  }}catch{/* Storage unavailable. */}
  draftScope=next;
-});
+}
+for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready','mba:authenticated'])window.addEventListener(event,()=>reconcileDrafts(event));
+// The module may load after auth emitted its first profile event.
+reconcileDrafts('bootstrap');

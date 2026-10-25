@@ -17,6 +17,7 @@ try {
  for(let i=0;i<120;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
  browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:1440,height:900}});
+ if(process.env.DELAY_DRAFT_MODULE==='1')await context.route('**/assets/react-dashboard/dashboard-react.js*',async route=>{await new Promise(r=>setTimeout(r,500));await route.continue();});
  await context.addInitScript(()=>{if(!localStorage.getItem('fixture_logged_out'))localStorage.setItem('mba_session_token','ba_test_fixture');if(!localStorage.getItem('mba_portfolio_id'))localStorage.setItem('mba_portfolio_id','agibank_enter');});
  let noPermission=false, flag=true, empty=false, datajudOffline=false, apiOffline=false;
  const calls=[],writes=[],errors=[],measurements=[];
