@@ -257,6 +257,20 @@ try{
   currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
   return {facets:facets.map(([key])=>key),constantLegacyVersion:true,queryInvalidations:4};
  });
+ await test('A08-shared-retry',async()=>{
+  let exchanges=0;meStatus=503;
+  await context.route('**/auth/session/exchange',route=>{exchanges++;return route.fulfill({status:exchanges===1?503:200,json:exchanges===1?{code:'AUTH_DEPENDENCY_UNAVAILABLE'}:{access_token:'ba_fixture_shared_retry'}});});
+  const before=calls.filter(c=>c.path==='/api/me').length;
+  try{
+   await page.evaluate(()=>{sessionStorage.setItem('mba_oauth_handoff','fixture-combined-handoff');sessionStorage.setItem('mba_oauth_verifier','fixture-combined-verifier');});
+   await page.reload();await page.waitForFunction(()=>window.MBA_AUTH.getLoginState().status==='temporarily_unavailable');
+   assert.equal(exchanges,2);assert.equal(calls.filter(c=>c.path==='/api/me').length-before,1,'The retry already used by handoff cannot be repeated by /me');
+   assert.equal(await page.evaluate(()=>localStorage.getItem('mba_session_token')),'ba_fixture_shared_retry');
+   assert.equal(await page.locator('body.auth-signed-out').count(),0);
+   assert.equal(await page.evaluate(()=>window.MBA_RUNTIME_AUTH_METRICS.at(-1).retries),1);
+   return {handoffAttempts:2,profileAttempts:1,totalRetries:1};
+  }finally{await context.unroute('**/auth/session/exchange');meStatus=200;await page.reload();await page.locator('body.auth-signed-in').waitFor();}
+ });
  await test('A08-active-recovery',async()=>{
   currentProfile={...profile,policy_epoch:'501'};await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
   await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='active-transient');resultStatus=503;
