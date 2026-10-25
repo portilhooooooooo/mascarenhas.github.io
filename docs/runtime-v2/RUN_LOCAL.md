@@ -39,3 +39,6 @@ Teste híbrido de comando (opcional; stage Docker interno já iniciado):
 2. No frontend com dist pronto: RUNTIME_V2_BROWSER_STATE=/tmp/runtime-v2-linked-browser-state.json BROWSER=chromium node tests/runtime-v2/linked-command.mjs. Repetir com fixture nova para Firefox.
 3. Sempre executar python -m scripts.runtime_v2_linked_browser_fixture verify dentro do runner, recebendo o mesmo JSON por stdin, para conferir e remover os dados; apagar o arquivo temporário em seguida. A verificação também limpa registros quando a contagem falha.
 A API aceita somente a instância runtime-v2-image-linked-creation identificada por label de fixture, rede interna e ausência de portas públicas. Leituras são simuladas e o resultado é registrado como teste híbrido.
+
+## Atomicidade de Encerramentos — 25/10/2026
+Para validar o novo caminho, aplicar as OITO migrações no banco descartável via scripts/runtime_v2_test_database.py e usar RUNTIME_V2_CLOSING_ATOMIC=1. Imagem de aplicação 14503a1: mba-runtime-v2-release:closing-atomic; SQL final 581b8e1. Testes de falha: -k closing_event_failure. Benchmark e rollback aceitam somente os nomes internos explicitamente adicionados para essa variante.

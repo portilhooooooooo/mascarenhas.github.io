@@ -26,3 +26,6 @@ A seleção ampliada de 14 arquivos de domínio foi executada contra a candidata
 
 ## Adendo de 25/10/2026
 Checkpoint 25/10: classificações CSV/XLSX preservadas em RPC atômica; somente duas falhas de domínio mudaram de FALHOU para PASSOU. Os demais 102 registros de teste de domínio mantiveram o mesmo resultado. O conjunto atual de 104 tem 99 PASSOU e cinco FALHOU; 90 subtests PASSOU. Criação vinculada não altera indicadores nem critérios. Paridade analítica de todas as áreas segue pendente.
+
+## Atomicidade de Encerramentos — 25/10/2026
+Nova matriz HTTP de Encerramentos: 18 combinações Admin/Legal Leader/Analista × Enter/Regular/Nubank × conclusão/adiamento, com mesma classificação, prazo de reabertura e um evento após replay. Paridade de dados analíticos de outras áreas continua pendente. Correção de mock de módulo inexistente permite executar os asserts originais do adiamento; não é mudança de regra de negócio.
