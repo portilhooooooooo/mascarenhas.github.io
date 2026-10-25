@@ -1,6 +1,6 @@
 # Diagnóstico técnico — Backoffice Runtime V2
 ## Parecer
-**NO-GO para promoção neste checkpoint.** A implementação controlada corrigiu os defeitos reproduzidos de permissão, remontagem, geometria e bootstrap; houve 30 casos PASSOU em Chromium e 30 em Firefox. Paridade de Produtividade, salvamento final concorrente, imagem reproduzível e rollback foram executados. Isso não encerra a migração publicada: integração Microsoft real, validação autenticada do runtime publicado, configuração efetiva do pool, cobertura integral das demais operações e monitoramento após promoção permanecem sem evidência suficiente.
+**NO-GO para promoção neste checkpoint.** A implementação controlada corrigiu os defeitos reproduzidos de permissão, remontagem, geometria e bootstrap; houve 30 casos PASSOU em Chromium e 30 em Firefox. Paridade de Produtividade, escritas concorrentes de Encerramentos/Defesa/Pagamentos/Liminares, imagem reproduzível e rollback foram executados. A regressão de domínio ampliada mantém sete falhas também reproduzidas na referência efetiva; não se declara o repositório inteiro verde. Isso não encerra a migração publicada: integração Microsoft real, validação autenticada do runtime publicado, configuração efetiva do pool, cobertura integral das demais operações e monitoramento após promoção permanecem sem evidência suficiente.
 
 Nenhum deploy, parada, alteração do checkout vivo ou DDL de produção foi realizado. A autorização para interromper produção não substitui o gate técnico. O container publicado permaneceu c1c1645c…f16cc, iniciado em 22/10/2026; a revisão somente leitura de 25/10/2026 às 13h12 de Campo Grande encontrou **zero diferenças nos 166 paths comparados**. Assets publicados foram identificados como f0851b3.
 
@@ -91,14 +91,39 @@ O primeiro empacotamento com builder legado foi rejeitado por incluir metadados.
 ## Pendências que impedem encerramento
 1. Validar identidade Microsoft e navegação/API publicadas com sessão legítima, sem fabricar sessão ou grants.
 2. Fechar o diagnóstico de transporte/pool e discriminar fila real; a falha local não induzida permanece registrada.
-3. Completar a certificação integral A15/A16 das demais gravações e indicadores, além do escopo de Produtividade/Encerramentos testado.
-4. Finalizar procedimento de conciliação/retenção dos recibos. Inventário somente leitura confirmou o bind de arquivos e ausência de handles abertos para o SQLite conhecido.
+3. Completar A15/A16: uploads, monitoramento assíncrono de Liminares e demais operações/indicadores ainda não certificados. Os fluxos finais de Encerramentos, Defesa, Pagamentos v2 e Liminares já têm integração HTTP/SQL controlada.
+4. Validar operacionalmente o procedimento de [conciliação/retenção](WRITE-RECOVERY.md): ferramenta somente leitura testada, sem expiração ou limpeza automática nesta versão. Conciliação de incidente real não executada. Inventário confirmou o bind de arquivos e ausência de handles abertos para o SQLite conhecido.
 5. Promover somente com gate aprovado e acompanhar por pelo menos duas horas. Esse monitoramento não ocorreu.
 
 A autorização para prosseguir já foi dada. Não é necessária outra confirmação genérica para continuar trabalho local; autenticação segura do usuário e evidência dos gates são as dependências concretas restantes. Até lá, o parecer é **NO-GO**, e não “migração concluída”.
 
 ## Último gate de CI
-Frontend dec1b42: [CI executado com sucesso](https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556). Backend f940cae: [CI executado com sucesso](https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40215951745). O último ajuste compartilha uma única repetição entre handoff e perfil; oito retestes selecionados passaram em cada navegador, incluindo handoff 503 seguido de /me 503 sem retry adicional. Nenhum desses resultados equivale a integração Microsoft publicada.
+Frontend dec1b42: [CI executado com sucesso](https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556). Backend 65a7e92: [CI executado com sucesso](https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776). O último ajuste compartilha uma única repetição entre handoff e perfil; oito retestes selecionados passaram em cada navegador, incluindo handoff 503 seguido de /me 503 sem retry adicional. Nenhum desses resultados equivale a integração Microsoft publicada.
 
 ## Bloqueio observado na validação publicada
 Em 25/10, o botão Entrar do runtime publicado exibiu “Failed to fetch”, antes de apresentar Microsoft. A tentativa não autenticou. A sondagem OPTIONS recebeu HTTP 403 e não houve registro correspondente de auth/start no aplicativo nos últimos 15 minutos. Isso não prova erro de CORS nem indisponibilidade global: o bloqueio pode anteceder o backend. Não foi contornado por sessão fabricada ou alteração de proteção. Integração autenticada permanece NÃO EXECUTADA.
+
+## Ampliação posterior de evidência controlada
+Em 50a3cde, 59 testes HTTP/runtime/orçamento passaram em 22,26 s. Incluem três cenários de Pagamentos v2, Defesa, quatro decisões finais de Liminares modernas e seis legadas, replay após revogação e auditoria somente leitura. Contratos/triggers foram capturados por leitura e o inicializador foi executado em banco novo. Nenhuma regra de classificação foi substituída por mock SQL. As projeções de evidências e a FK nullable de upload têm limites explícitos nas fixtures. Não certificam upload, consulta externa ou fila de monitoramento.
+
+A auditoria de recibos mostra apenas agregados e não libera comandos; todos os recibos são retidos nesta versão. Um evento de conclusão isolado não prova que todos os efeitos da intenção ocorreram. Ver WRITE-RECOVERY.md.
+
+A sondagem CLI observou Cloudflare HTTP 403 com código 1010. Consulta somente leitura em 25/10/2026 18:10:22 UTC confirmou browser_check=on. Essa observação não comprova que o mesmo mecanismo causou o “Failed to fetch” do navegador. A origem publicada consta da configuração efetiva de frontend do container. Não houve retry de login nem alteração/bypass das proteções. A10 real e integração autenticada publicada continuam NÃO EXECUTADAS.
+
+## Gate consolidado desta execução
+- Backend 65a7e92: 65 casos HTTP/runtime/orçamento PASSOU em 25,25 s (JUnit: 25,247 s; início 25/10/2026 18:16:42 UTC). O XML registra duração por caso; final-65-execution.json associa teste, timestamp, commit e digest. CI remoto completo também PASSOU.
+- Pagamentos legado: seis resultados autoritativos, com concorrência/replay, PASSOU em 3,58 s. Não houve duplicação de análise/evento.
+- Dev/tasks-workspace: CI de browser e verificação React PASSOU em bf54945, incluindo o código final bd64022; não certificar somente a branch de promoção.
+- Regressão adicional: 14 arquivos de domínio existentes, 97 testes e 90 subtests PASSOU, sete FALHOU. A mesma seleção contra a referência efetiva 01fe904 reproduziu exatamente os sete casos, sem diferença de resultados. Os cinco arquivos de regras comparados têm SHA-256 idêntico. Falhas e comparação permanecem em domain-candidate.log/xml, domain-reference.log/xml e domain-comparison.json no backend privado. Não foram corrigidas por mudança de regra ou por exclusão do relatório.
+
+| Marco | Situação comprovada | O que impede fechamento integral |
+|---|---|---|
+| M0 | Reprodução e baseline controlados executados; código publicado inventariado | Baseline HTTP autenticado real não obtido |
+| M1 | Segurança/auth controlados e sessões SQL testados | Microsoft real em dois navegadores não validado |
+| M2 | DOM/estado/geometria e identidade visual testados em browsers | Não equivale a todas as jornadas publicadas |
+| M3 | Query/TTL/snapshot/F5 autorizados testados | Hidratação autenticada publicada não validada |
+| M4 | SQL de Produtividade, escritas adotadas, admissão e desacoplamento testados | Pool/transporte publicado; demais operações/indicadores e serviços externos |
+| M5 | CI, browsers, SQL, carga controlada, imagem e rollback executados | Gate integral A15/A16 aberto; sete falhas pré-existentes registradas |
+| M6 | NÃO EXECUTADO | Gate de promoção e monitoramento posterior de duas horas |
+
+As sete falhas envolvem helper de projeção ausente no runtime capturado, expectativas de importação de Encerramentos, prazos de Defesa v4 e aceitação automática de indício insuficiente de Liminar. São divergências observadas entre testes existentes e runtime efetivo. Não há autorização técnica para trocar regras de negócio só para alinhá-los à main. O parecer permanece NO-GO.

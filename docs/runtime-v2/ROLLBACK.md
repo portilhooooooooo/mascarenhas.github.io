@@ -22,4 +22,4 @@ Antes de voltar a código sem recibos, bloquear temporariamente novas escritas f
 Desativar flags SQL/admissão para retornar aos caminhos anteriores preservados. Não dropar colunas/tabelas aditivas durante incidente. Restaurar função antiga somente após verificar dependências e compatibilidade. O epoch global pode continuar aditivo. OAuth/sessão única não deve ser relaxado no rollback.
 
 ## Riscos
-Recibos precisam de política de retenção e procedimento operacional de conciliação antes da promoção; limpeza automática sem tombstone poderia permitir replay. Estado fora do código/mounts precisa de inventário final. Ensaios internos não comprovam restauração do banco ou do tráfego publicado.
+A política desta versão é reter todos os recibos sem expiração/limpeza automática. WRITE-RECOVERY.md define inventário e conciliação; a ferramenta foi testada em transação read only. Conciliação administrativa real continua não executada. Limpeza sem prova durável poderia permitir replay. Estado fora do código/mounts precisa de inventário final. Ensaios internos não comprovam restauração do banco ou do tráfego publicado.

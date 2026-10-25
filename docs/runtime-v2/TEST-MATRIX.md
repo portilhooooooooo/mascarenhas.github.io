@@ -20,7 +20,7 @@ PASSOU nesta matriz significa o escopo controlado descrito, não validação em 
 | A12 — Matriz de acesso | PASSOU | 3 papéis × 3 carteiras no browser e no HTTP/SQL; escopos não se misturam | chromium: 14259.2 ms; a0a284dc; firefox: 23275.8 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
 | A13 — Encerramentos independente | PASSOU | Resumo imediato, detalhe atrasado 15 s; KPI não espera a barreira global | chromium: 15402.5 ms; a0a284dc; firefox: 15301.5 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
 | A14 — Módulos ocultos | PASSOU | Produtividade não hidrata fila/analytics; realtime pausado sem reconexão em avalanche | chromium: 5764.1 ms; a0a284dc; firefox: 7439.8 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
-| A15 — Rascunhos e escritas | NÃO EXECUTADO | Rascunho legado/F5/seleção, migração após auth e comando durável de Encerramentos PASSOU; todas as gravações de outros módulos não certificadas | chromium: 2132.5 ms; a0a284dc; firefox: 2712.2 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A15 — Rascunhos e escritas | NÃO EXECUTADO | Rascunho legado/F5/seleção, migração após auth e comandos duráveis de Encerramentos, Defesa, Pagamentos v2 e Liminares (legado e quatro decisões finais) PASSOU; uploads, monitoramento assíncrono e demais operações não certificados | chromium: 2132.5 ms; a0a284dc; firefox: 2712.2 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
 | A16 — Integridade integral | NÃO EXECUTADO | Produtividade: 5.025 combinações, mediana, CSV/XLSX PASSOU; conjunto integral de indicadores das demais áreas não certificado | Ver logs SQL/HTTP e Processos | PARIDADE.md; evidência privada backend |
 | A17 — Erros e orçamento | PASSOU | 429/502/503/504 controlados, sem avalanche e sem perder snapshot válido; backend HTTP inclui SQL lenta | chromium: 2107.0 ms; a0a284dc; firefox: 2520.7 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
 | A18 — 50 alternâncias | PASSOU | DOM/listeners/intervals/requests estáveis; heap pós-GC em Chromium e amostra temporal | chromium: 21231.7 ms; a0a284dc; firefox: 17428.5 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
@@ -35,7 +35,7 @@ PASSOU nesta matriz significa o escopo controlado descrito, não validação em 
 | B02 | PASSOU | Total, página, ordem determinística, autorização, CSV e ACL RPC no PostgreSQL/PostgREST | Escopo: Produtividade; não certificar paginações não migradas |
 | B03 | NÃO EXECUTADO | Correlação cliente/API/gateway/PostgREST/SQL executada no stage; tempo de SQL separado de transporte | Fila real de proxy/worker, pool e causa dos timeouts publicados não comprovados |
 | B04 | PASSOU | 30 colaboradores + 10 analytics; 90 salvamentos finais verificados; auth e escrita preservadas | Rede interna; não é teste de carga de produção; refusas 429 discriminadas |
-| B05 | PASSOU | Concorrência de sessão/Admin/revogação, phase save e 10 final saves concorrentes; perda de ACK e resultado incerto não duplicam | Escrita final integrada certificada em Encerramentos; demais writes pendentes em A15 |
+| B05 | PASSOU | Concorrência de sessão/Admin/revogação, phase save e 10 final saves concorrentes; perda de ACK e resultado incerto não duplicam | Escritas integradas em Encerramentos, Defesa, Pagamentos v2 e Liminares; cobertura integral permanece pendente em A15 |
 | B06 | PASSOU | Imagens por git archive, rebuild de digest idêntico, HTTP real na imagem limpa e candidato→referência→candidato | Ensaio interno; não houve cutover nem restauração de produção |
 
 ## Regressões preservadas no histórico
@@ -51,3 +51,15 @@ RUN_LOCAL.md contém comandos. Cada metrics.json guarda timestamp, commit, dura�
 
 ## Complemento do orçamento global
 A08-shared-retry: PASSOU em Chromium/Firefox no commit dec1b42: duas tentativas de handoff e uma de perfil, total de uma repetição. Oito casos de auth foram reexecutados por navegador; métricas em evidence/shared-budget-chromium e evidence/shared-budget-firefox. CI completo: https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556 (sucesso).
+
+## Ampliação de escritas e recuperação — 25/10
+- Backend 2980a0a: Defesa, 10 chamadas concorrentes e replay; uma análise e um evento, sem demo.
+- Backend 3d5ed8a: três cenários Pagamentos v2, seis chamadas concorrentes por cenário e replay; respostas e carteira exatas. Suite HTTP de 22 casos PASSOU em 17,33 s. A referência nullable de upload é um stub de FK, não uma integração de upload.
+- Backend 5579fd4: quatro decisões finais no fluxo moderno de Liminares, evidência contraditória em outra carteira ignorada, concorrência/replay únicos; seis decisões legadas também passaram. Banco novo reconstruído com contratos SQL efetivos.
+- Backend 50a3cde: replay recusado após revogação e em carteira incorreta; auditoria read only, sem identidade/outcome na saída e incapaz de DELETE. Dois casos PASSOU em 1,13 s. Suite ampliada HTTP/runtime/orçamento: 59/59 PASSOU em 22,26 s.
+- Runtime da imagem permanece 289f9be: alterações acima são fixtures, testes e ferramenta operacional externa à imagem. Logs/JUnit e manifesto no repositório privado; não são integração publicada.
+
+## Fechamento dos testes adicionais
+Backend 65a7e92: suite ampliada 65/65 PASSOU em 25,25 s; seis casos de Pagamentos legado PASSOU. JUnit e final-65-execution.json registram os casos individualmente, sem logs de conteúdo. CI completo: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776.
+
+Regressão de domínio adicional: 97 testes + 90 subtests PASSOU; sete FALHOU, tanto na candidata quanto na referência efetiva 01fe904, com os mesmos casos/resultados. A comparação executada e os hashes das regras estão em domain-comparison.json no backend privado. Isso é evidência de divergência pré-existente, não autorização para ignorá-la nem prova de paridade de todas as áreas. A15/A16 integrais permanecem abertos.

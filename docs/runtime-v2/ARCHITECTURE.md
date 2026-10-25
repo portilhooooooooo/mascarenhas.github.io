@@ -27,3 +27,6 @@ Queries remotas, estado visual e autenticação têm ciclos separados. Reentrada
 HTTP analytics usa semáforo por processo. Os novos RPCs usam quatro locks transacionais não bloqueantes, que só se liberam ao término real da transação. Analytics legado ainda depende da admissão HTTP; configuração real de pool/pre-request não foi obtida. Não se atribui a causa dos incidentes a Supabase, VPS ou índices sem correlação.
 
 Escritas finais adotadas têm ID de intenção no cliente, fingerprint e recibo no banco. Repetição confirmada retorna recibo; concorrência e resultado incerto bloqueiam nova execução. Nenhuma falha de transporte confirma uma operação.
+
+## Operação dos recibos
+Ferramenta de auditoria fora da imagem do aplicativo: transação somente leitura, timeout 2 s, até 1.001 ativos para amostra máxima de 1.000, saída agregada sem identidades/conteúdo. Não tem modo de liberação. Todos os recibos são retidos nesta versão; qualquer futura compactação depende de preservar a prova de idempotência e passar testes de replay. Ver WRITE-RECOVERY.md.

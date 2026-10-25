@@ -17,4 +17,9 @@ O contrato legado preserva seus critérios de transição, duplicatas, contagens
 Detalhe compara total, ordenação determinística e páginas ao modelo anterior. Exportação CSV preserva as células e apresenta erro explícito no limite, sem truncamento silencioso. RPCs não são executáveis por anon/authenticated. Autorização de carteira e equipe ocorre antes da agregação. A fila pendente real não foi exportada: seus casos de atribuição, ausência de responsável e datas têm fixture sintética separada.
 
 ## Limites
-Paridade sobre dados desidentificados não equivale a login real, RLS de um colaborador publicado ou validação end-to-end de todas as telas. XLSX e todos os fluxos de outras áreas não receberam certificação de paridade completa nesta fase. Integração publicada e Nubank com amostra representativa permanecem pendentes.
+Paridade sobre dados desidentificados não equivale a login real, RLS de um colaborador publicado ou validação end-to-end de todas as telas. XLSX de Produtividade recebeu três testes de células/formatação e conferência pelo HTTP real. Indicadores e exportações de todas as outras áreas não receberam certificação integral. Integração publicada e Nubank com amostra representativa permanecem pendentes.
+
+## Escritas adicionais
+Encerramentos, Defesa, três cenários Pagamentos v2 e decisões finais de Liminares foram gravados pelo SDK/PostgREST e funções/triggers efetivos. Foram verificados decisão/resposta, carteira e evento único após concorrência/replay. Isso é integridade de escrita em fixture sintética; não amplia a representatividade do corpus analítico nem certifica os dashboards das demais áreas.
+
+A seleção ampliada de 14 arquivos de domínio foi executada contra a candidata e a referência efetiva 01fe904: mesmos 97 testes e 90 subtests passaram e mesmos sete falharam. Cinco arquivos de regras têm SHA-256 idêntico. A paridade de resultado dessa seleção não transforma as falhas em sucesso e não certifica integrações externas. Pagamentos legado recebeu seis cenários HTTP/SQL adicionais, com uma análise/evento por recurso.
