@@ -11,6 +11,8 @@
   let loginState = { busy: false, error: null, status: 'initializing' };
   let bootstrapGeneration = 0;
   let bootstrapMeasurement=0;
+  // Reserve time inside the same 10 s flow for abort propagation and protected UI settlement.
+  const AUTH_SETTLE_BUDGET_MS = 500;
   const sessionEndMessage = reason => reason === 'session_replaced'
     ? 'Sua sessão foi substituída por um novo login em outro navegador ou dispositivo. Entre novamente se desejar continuar aqui.'
     : reason === 'session_revoked' ? 'Sua sessão foi revogada. Entre novamente.'
@@ -288,7 +290,7 @@
     let lastError;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const controller = new AbortController();
-      const remaining = deadline - performance.now();
+      const remaining = deadline - performance.now() - AUTH_SETTLE_BUDGET_MS;
       if (remaining <= 0) break;
       const timer = setTimeout(() => controller.abort(), attempt === 0 ? Math.min(4750, remaining) : remaining);
       try { return await loadProfile({signal:controller.signal}, generation); }
@@ -304,7 +306,7 @@
   async function exchangeOAuthHandoff(code, verifier, deadline) {
     let lastError;
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const remaining = deadline - performance.now();
+      const remaining = deadline - performance.now() - AUTH_SETTLE_BUDGET_MS;
       if (remaining <= 0) break;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), attempt === 0 ? Math.min(4750, remaining) : remaining);
