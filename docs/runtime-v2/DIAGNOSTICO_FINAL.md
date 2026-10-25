@@ -99,3 +99,6 @@ A autorização para prosseguir já foi dada. Não é necessária outra confirma
 
 ## Último gate de CI
 Frontend dec1b42: [CI executado com sucesso](https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556). Backend f940cae: [CI executado com sucesso](https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40215951745). O último ajuste compartilha uma única repetição entre handoff e perfil; oito retestes selecionados passaram em cada navegador, incluindo handoff 503 seguido de /me 503 sem retry adicional. Nenhum desses resultados equivale a integração Microsoft publicada.
+
+## Bloqueio observado na validação publicada
+Em 25/10, o botão Entrar do runtime publicado exibiu “Failed to fetch”, antes de apresentar Microsoft. A tentativa não autenticou. A sondagem OPTIONS recebeu HTTP 403 e não houve registro correspondente de auth/start no aplicativo nos últimos 15 minutos. Isso não prova erro de CORS nem indisponibilidade global: o bloqueio pode anteceder o backend. Não foi contornado por sessão fabricada ou alteração de proteção. Integração autenticada permanece NÃO EXECUTADA.
