@@ -7,48 +7,48 @@
   "files": [
     {
       "path": "ARCHITECTURE.md",
-      "bytes": 2923,
-      "sha256": "c009be2cd2bbb167e6663a3ee91859aee5d5e0ec445d70b8076168165f999d4b"
+      "bytes": 3280,
+      "sha256": "b3332efd172d973c3d4ab0a5c9a34b6b6531d97682ca518676c096c0737b2b6a"
     },
     {
       "path": "BASELINE.md",
-      "bytes": 15888,
-      "sha256": "91bbd4085d7c3d57c6d39e2ef8a5aa4c9b047c3cf69d25b6b1f2c3fc5f5ad42d"
+      "bytes": 20917,
+      "sha256": "680bde2611da2beb23adf5360a9ef499af75b1026cc4861d6cd291236dd5724f"
     },
     {
       "path": "DIAGNOSTICO_FINAL.md",
-      "bytes": 30550,
-      "sha256": "e00a8f46056e52ca7f2951d31fe7297cf5a51c5dd6fc27e52de570b4c5147ac9"
+      "bytes": 35579,
+      "sha256": "f69bd2ab8727f00ee08deca3014d4a608566d6aa5009e0667fb36b48b17b761c"
     },
     {
       "path": "MIGRATION_LOG.md",
-      "bytes": 16383,
-      "sha256": "5196019f6771289e4378dcec4a60c2a98de783793197e70d60c5d63d9bf05480"
+      "bytes": 21412,
+      "sha256": "603f50d97395cb54258e735b3522cefcb8fbde8490a99dc327fab5f9795fb256"
     },
     {
       "path": "PARIDADE.md",
-      "bytes": 3660,
-      "sha256": "e8b1e215880b708af2cc9a244cd0f93d44e09699bce4853ee6564abc1027137c"
+      "bytes": 4109,
+      "sha256": "9dc15c647652ca5d5977d4591a40b196807d8090f5e2df94f96811b1953631e6"
     },
     {
       "path": "ROLLBACK.md",
-      "bytes": 3893,
-      "sha256": "cfefd6622914c82a0bd500d0ec882c1e61cadbe2b385c0ebf4ef1129f453edaf"
+      "bytes": 4523,
+      "sha256": "4ddaaf89cf880aa24e0d7452cef57d77c9b1b50a2f5c43cd2741f6021776a305"
     },
     {
       "path": "RUN_LOCAL.md",
-      "bytes": 4780,
-      "sha256": "538e1a29e095fb90c4930679cd66ffee23f9d0705e56966dfbd2d3e99c1797d5"
+      "bytes": 5217,
+      "sha256": "dc8cda59fcb3a67835fa49e8bcb7d19be65d79b6f508b56a6e5506127c0b1dc4"
     },
     {
       "path": "SPEC.md",
-      "bytes": 4627,
-      "sha256": "3e96115f2e08b514a39e17ff2288b03cd9d98c9411ddb783145dcbc76df65656"
+      "bytes": 4942,
+      "sha256": "d7c03086b03c6a641ece01570d204391804756f8ee43f8aeac8d8ff55d1820e0"
     },
     {
       "path": "TEST-MATRIX.md",
-      "bytes": 20415,
-      "sha256": "cd2329e40833221eb7ab4f487419ca25611103285f5b294a6ff3281593791776"
+      "bytes": 25444,
+      "sha256": "388206e75be0aec16e1a971239524abd2c1cc7812561f1bd84392f9eea42dfd3"
     },
     {
       "path": "WRITE-RECOVERY.md",
@@ -159,6 +159,36 @@
       "path": "evidence/baseline-current-render/trace.zip",
       "bytes": 1662620,
       "sha256": "47470e4bf742ec695544c6a86d594ceadf4051cbc8881c3291001c4bd1de26c4"
+    },
+    {
+      "path": "evidence/closing-atomic-chromium/A13.png",
+      "bytes": 67114,
+      "sha256": "61e80713f7ad46f7c18acd75803fafa0ac2112060a2bfdc83108ae78c43fc530"
+    },
+    {
+      "path": "evidence/closing-atomic-chromium/A15-write-intent.png",
+      "bytes": 111040,
+      "sha256": "ad3b7481058093455d0bce7468799922d1636dd14d49ab80311a58d9ba9a0082"
+    },
+    {
+      "path": "evidence/closing-atomic-chromium/metrics.json",
+      "bytes": 55730,
+      "sha256": "f176a050f7206ae5dbe9852879f66c3da11a84d033004af55c1a67a19a1403b2"
+    },
+    {
+      "path": "evidence/closing-atomic-firefox/A13.png",
+      "bytes": 91299,
+      "sha256": "ddb116d9b306874ad8f5f7c0556d1b588ea5a5e8de1fbf5bd9861a4feaffc498"
+    },
+    {
+      "path": "evidence/closing-atomic-firefox/A15-write-intent.png",
+      "bytes": 159110,
+      "sha256": "de752b43352e2d5ab306412ec0687bff8d0f86347b49a503b713c57eb3f71861"
+    },
+    {
+      "path": "evidence/closing-atomic-firefox/metrics.json",
+      "bytes": 56831,
+      "sha256": "b321bdb017f4b92b7c8a21a36933daf792d9d0d0744b8626b65c7ae201708604"
     },
     {
       "path": "evidence/final-chromium/A01.png",
@@ -796,7 +826,7 @@
       "sha256": "945258a871f1925a162b4f44a7f5226aab0915c783b9fd50e4456a1dc8246db5"
     }
   ],
-  "updated_at": "2026-10-25T23:06:16.031831+00:00",
+  "updated_at": "2026-10-25T23:39:42.247973+00:00",
   "backend_test_commit": "65a7e92",
   "backend_runtime_commit": "289f9be",
   "backend_ci_run": "https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776",
@@ -805,5 +835,7 @@
   "frontend_diagnostics_commits": [
     "ce569da",
     "4324990"
-  ]
+  ],
+  "atomic_closing_runtime_commit": "14503a1",
+  "atomic_closing_sql_commit": "581b8e1"
 }

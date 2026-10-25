@@ -32,3 +32,6 @@ Login somente via executável de testes .bat em local.portilhobackoffice.site ou
 
 ## Adendo de 25/10/2026
 Importação de Encerramentos deve persistir classificação junto com upload/processos/evento na transação existente. Criação vinculada pelo formulário de Processos aceita process_cnj, valida autorização/carteira/responsável e usa a RPC já existente, sem ampliar as regras de criação genérica.
+
+## Atomicidade de Encerramentos — 25/10/2026
+R06/R04: análise de Encerramentos, estado do processo, metadados e evento devem confirmar na mesma transação, tanto na conclusão quanto no adiamento. Regra dos 60 dias/classificações continuam na implementação existente; o novo SQL não recalcula critérios.

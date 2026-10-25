@@ -35,3 +35,6 @@ Os dois RPCs analíticos novos distribuem orçamento remanescente entre fases HT
 
 ## Adendo de 25/10/2026
 UploadService → auth_import_processes com classifier_classification dentro de p_rows; eliminado PATCH posterior. Processos → TaskService (CNJ/carteira/permissão/responsável) → processos_create_task atômica. Ambas as funções já existem; fixtures preservam ACL de backend.
+
+## Atomicidade de Encerramentos — 25/10/2026
+Caminho opcional RUNTIME_V2_CLOSING_ATOMIC: resolvedor atual → runtime_v2_save_closing (carteira/linha bloqueada) → análise+status+metadata+evento transacionais. Na conclusão, reutiliza auth_save_analysis. Recibo durável continua em fronteira própria e conserva uncertain em caso de ACK inconclusivo.

@@ -29,3 +29,6 @@ Imagem 8bcc99d / digest 3f28b9ee… substitui a candidata anterior para novos en
 
 ## Adendo de 25/10/2026
 Imagem candidata 25bb6c1: mba-runtime-v2-release:linked-creation, digest 726fbb1591fe505f8c8ae41c61151f4e65e98f35b0c4ed95978b55cfee7f05c9. Rebuild idêntico; helper aceita explicitamente runtime-v2-image-linked-creation. Ensaio candidato/referência/candidato incluiu save e upload. A referência perde a correção de classificação atômica e continua rejeitando process_cnj; rollback não corrige esses defeitos. Nenhum DDL de produção foi necessário para esses dois ajustes.
+
+## Atomicidade de Encerramentos — 25/10/2026
+Nova flag RUNTIME_V2_CLOSING_ATOMIC deve ficar 0 antes de voltar à aplicação anterior ou remover a função. Drenar e conciliar recibos processing/uncertain primeiro. A migração 20261025233600 é aditiva, sem alteração destrutiva de dados; preferir mantê-la no rollback. Se for necessário retirar, após todos os consumidores estarem desligados: DROP FUNCTION public.runtime_v2_save_closing(text,uuid,uuid,jsonb,jsonb,text,date,boolean). Isso não desfaz análises salvas e restaura o risco conhecido de escrita parcial do caminho antigo. Nada foi executado em produção.
