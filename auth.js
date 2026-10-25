@@ -268,7 +268,8 @@
     }
     if (token !== getStoredToken() || generation !== bootstrapGeneration) throw Object.assign(new Error('Identidade alterada durante validação.'), {code:'STALE_IDENTITY',revalidate:generation===bootstrapGeneration && token!==getStoredToken()});
     const accessKey = user => user && JSON.stringify([user.id,user.role,user.active_portfolio_id||user.default_portfolio_id,
-      Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),user.authorization_version]);
+      Object.entries(user.permissions||{}).sort(([a],[b])=>a.localeCompare(b)),user.authorization_version,
+      user.access_kind,user.is_master_admin,[...(user.allowed_modules||[])].sort(),Object.entries(user.capabilities||{}).sort(([a],[b])=>a.localeCompare(b))]);
     const accessChanged = accessKey(window.MBA_CURRENT_USER) !== accessKey(profile);
     window.MBA_API.configurePortfolios?.(
       profile.portfolios,

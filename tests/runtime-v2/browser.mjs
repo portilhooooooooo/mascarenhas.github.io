@@ -259,6 +259,20 @@ try{
   }
   return {cache:'warm assets; repeated document reload; identity response gated until geometry assertion',samples};
  });
+ await test('A20-scope-facets',async()=>{
+  const facets=[['allowed_modules',['liminar']],['access_kind','administrative'],['is_master_admin',true],['capabilities',{processos:false}]];
+  for(const [facet,value]of facets){
+   currentProfile={...profile,authorization_version:'fixture-legacy-version'};
+   await page.reload();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
+   await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='scope-before');
+   const before=calls.filter(c=>c.path==='/api/tasks/results').length;
+   currentProfile={...currentProfile,[facet]:value};await page.evaluate(()=>window.dispatchEvent(new Event('mba:authorization-invalidated')));
+   await page.waitForFunction(()=>document.querySelector('.task-results-page')?.dataset.instance!=='scope-before'&&document.querySelector('.task-results-stat strong')?.textContent==='30');
+   assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length-before,1,facet);
+  }
+  currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
+  return {facets:facets.map(([key])=>key),constantLegacyVersion:true,queryInvalidations:4};
+ });
  await test('A08-active-recovery',async()=>{
   currentProfile={...profile,policy_epoch:'501'};await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
   await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='active-transient');resultStatus=503;
