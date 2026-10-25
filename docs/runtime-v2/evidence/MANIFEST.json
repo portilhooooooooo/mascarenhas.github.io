@@ -12,8 +12,8 @@
     },
     {
       "path": "SPEC.md",
-      "bytes": 3991,
-      "sha256": "17631051b682d3b151b9724522cc7e548d0d57c36521d2dfad8a0963c225ce79"
+      "bytes": 4295,
+      "sha256": "31daa0b8c0c9c72afdbe095b5495177d4e98d354cb9c911a5930a38514e77109"
     },
     {
       "path": "ROLLBACK.md",
@@ -32,8 +32,8 @@
     },
     {
       "path": "DIAGNOSTICO_FINAL.md",
-      "bytes": 16882,
-      "sha256": "15ee27424262dca7da4078c5575bc34906f1f976e72d740e8bc67f4fe2ee59cc"
+      "bytes": 17870,
+      "sha256": "8af57cc710d551ae434e471ffc4a74ecbd7ccb9117533d51a2dd9b1081a82d5f"
     },
     {
       "path": "BASELINE.md",
@@ -42,13 +42,13 @@
     },
     {
       "path": "TEST-MATRIX.md",
-      "bytes": 11239,
-      "sha256": "13fffe740d70da9c9cd259e12efc5336f93ebb4fd1f7b9d6181f13231472ef67"
+      "bytes": 11579,
+      "sha256": "fd0a7a74c901ff60c08b82d4b5d1649733a26072db6b10a77242586c8022e7c9"
     },
     {
       "path": "MIGRATION_LOG.md",
-      "bytes": 7064,
-      "sha256": "e5176d115509a1012434153cd757ca24339102716b772b5a254d87b689f39f48"
+      "bytes": 7455,
+      "sha256": "ca7f7bfffdbc08acf3e0a6fa981521a1cddba4f4d2848bea54eecce67c4f0d94"
     },
     {
       "path": "evidence/final-chromium/A08.png",
@@ -716,7 +716,7 @@
       "sha256": "a4dc854be7263254c4faee5e2de8c5b038e2ac56664ba1f6b5b62378a87ef977"
     }
   ],
-  "updated_at": "2026-10-25T18:24:12.824411+00:00",
+  "updated_at": "2026-10-25T18:44:28.758690+00:00",
   "backend_test_commit": "65a7e92",
   "backend_runtime_commit": "289f9be",
   "backend_ci_run": "https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776"

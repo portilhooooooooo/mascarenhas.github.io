@@ -52,3 +52,6 @@ Referência de rollback: 01fe904. Ver git log para o histórico completo e a evi
 - 65a7e92: seis cenários de Pagamentos legado, contratos SQL efetivos e JUnit preservado no CI. Suite ampliada 65/65 em 25,25 s; CI remoto completo PASSOU.
 - Regressão de domínio adicional encontrou sete falhas/97 testes e 90 subtests aprovados. Mesma seleção executada na referência 01fe904 reproduziu os sete casos e todos os resultados. Regras comparadas têm hashes idênticos. Falhas mantidas na evidência; nenhuma mudança de negócio para alinhá-las à main.
 - Revisão de documentação: corrigida a limitação antiga que dizia XLSX não testado; células/formatação já haviam sido comparadas. Manifests atualizados após os relatórios, com verificação de todos os hashes.
+
+- Retirada atribuição do erro isolado de início de OAuth a falha geral da plataforma: login normal confirmado pelo usuário. Sem conta autorizada do agente, integração autenticada não executada. Caminhos autorizados registrados na SPEC.
+- A15 adicional: Encerramento diferido exercitado pelo HTTP/SQL real, seis chamadas e replay sem duplicação, preservando prazo e estado waiting.
