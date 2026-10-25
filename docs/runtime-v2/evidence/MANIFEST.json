@@ -7,33 +7,33 @@
   "files": [
     {
       "path": "RUN_LOCAL.md",
-      "bytes": 2003,
-      "sha256": "14a6e2b87a5e9315611537958605357fdb51b406a69a469c9d0e6a47884d47c2"
+      "bytes": 2832,
+      "sha256": "6544392ce786ad5c193fd3b6a89b58e90ff31f9e6bd9336df12890bcfbdbd095"
     },
     {
       "path": "SPEC.md",
-      "bytes": 3896,
-      "sha256": "2015b9a2e4e7f2ed72e8a79bd41b0caaf4aed5e5c8046818414c35aea7fcea3a"
+      "bytes": 3991,
+      "sha256": "17631051b682d3b151b9724522cc7e548d0d57c36521d2dfad8a0963c225ce79"
     },
     {
       "path": "ROLLBACK.md",
-      "bytes": 2822,
-      "sha256": "ea465075a6c4a816cfe1063fe79664a436d9901c53f27fb3691e9b338d39b224"
+      "bytes": 2959,
+      "sha256": "69d7ce44c67a5fcbd9b4be7aa6761b81916a5d8d31ec56cf2b49f589c84bb5d5"
     },
     {
       "path": "PARIDADE.md",
-      "bytes": 2281,
-      "sha256": "274491e8e2a08ea9e25d48c49ab7cbb842bda0fed089baad68fc85e26ce87778"
+      "bytes": 3235,
+      "sha256": "e9cbb0af27b8fa1bbd9d8fb7329c85c6a404dccd7283db5e877512f7537b03f9"
     },
     {
       "path": "ARCHITECTURE.md",
-      "bytes": 1846,
-      "sha256": "0d4705694542aa18d498894865b3fd33a6f181196b7f5807faed38c2a7eaf5fe"
+      "bytes": 2262,
+      "sha256": "2b9fcee2e9a7d2449c20f62825f6949c7ec60a519bd5fd3210b71921c3cf430c"
     },
     {
       "path": "DIAGNOSTICO_FINAL.md",
-      "bytes": 12185,
-      "sha256": "44f842d50898618cc41862a04ecde11f4870193be9b9748741bb545e33a5ccd5"
+      "bytes": 16882,
+      "sha256": "15ee27424262dca7da4078c5575bc34906f1f976e72d740e8bc67f4fe2ee59cc"
     },
     {
       "path": "BASELINE.md",
@@ -42,13 +42,13 @@
     },
     {
       "path": "TEST-MATRIX.md",
-      "bytes": 9246,
-      "sha256": "f03896a8ccdbba037c573327e8561aa79e30406276ac77c71004d6b7d255050f"
+      "bytes": 11239,
+      "sha256": "13fffe740d70da9c9cd259e12efc5336f93ebb4fd1f7b9d6181f13231472ef67"
     },
     {
       "path": "MIGRATION_LOG.md",
-      "bytes": 5256,
-      "sha256": "3d8fa0bfe4b197c914827e0d3a94c65c38f54aeb9a9fc9ac04297c5ac8f158e9"
+      "bytes": 7064,
+      "sha256": "e5176d115509a1012434153cd757ca24339102716b772b5a254d87b689f39f48"
     },
     {
       "path": "evidence/final-chromium/A08.png",
@@ -709,6 +709,15 @@
       "path": "evidence/processos-final/processo-historico.png",
       "bytes": 58725,
       "sha256": "ff342eab897de332269479620009efd3acd63a227d9a14ed259d4f36f41e023f"
+    },
+    {
+      "path": "WRITE-RECOVERY.md",
+      "bytes": 3748,
+      "sha256": "a4dc854be7263254c4faee5e2de8c5b038e2ac56664ba1f6b5b62378a87ef977"
     }
-  ]
+  ],
+  "updated_at": "2026-10-25T18:24:12.824411+00:00",
+  "backend_test_commit": "65a7e92",
+  "backend_runtime_commit": "289f9be",
+  "backend_ci_run": "https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40220349776"
 }

@@ -41,3 +41,14 @@ Referência de rollback: 01fe904. Ver git log para o histórico completo e a evi
 
 - dec1b42/bd64022: retry único compartilhado entre handoff e perfil; falha combinada testada em Chromium/Firefox, oito casos por navegador PASSOU. CI do candidato verde.
 - Branch dev/tasks-workspace: 29 casos locais Chromium PASSOU antes do ajuste final de retry; builds/hardening passaram. O candidato de promoção mantém a main e suas diferenças funcionais.
+
+- Ampliação A15: schema/triggers/helpers de Defesa capturados somente por leitura. Teste HTTP real com 10 chamadas concorrentes + replay confirmou uma análise e um evento, is_demo=false, carteira correta. Primeiro carregamento da fixture revelou dependência SQL ausente; a função efetiva foi incluída, sem alterar regra de negócio.
+- Diagnóstico de borda: OPTIONS da API devolveu Cloudflare 403/1010 e a configuração browser_check está on. Nenhuma configuração de segurança foi alterada; a correlação com o erro genérico do navegador ainda não foi comprovada.
+
+- 3d5ed8a: três cenários de Pagamentos v2 e replay concorrente passaram no HTTP/SQL; suite ampliada 22/22.
+- 5579fd4: Liminares modernas (quatro decisões finais) e legadas (seis decisões), isolamento de evidência por carteira e replay; banco descartável novo reconstruído. Monitoramento externo não certificado.
+- 50a3cde: auditoria somente leitura e runbook de conciliação/retenção; bloqueio de replay após perda de acesso testado. Suite ampliada 59/59 em 22,26 s. Sem mudança de código runtime da imagem 289f9be.
+
+- 65a7e92: seis cenários de Pagamentos legado, contratos SQL efetivos e JUnit preservado no CI. Suite ampliada 65/65 em 25,25 s; CI remoto completo PASSOU.
+- Regressão de domínio adicional encontrou sete falhas/97 testes e 90 subtests aprovados. Mesma seleção executada na referência 01fe904 reproduziu os sete casos e todos os resultados. Regras comparadas têm hashes idênticos. Falhas mantidas na evidência; nenhuma mudança de negócio para alinhá-las à main.
+- Revisão de documentação: corrigida a limitação antiga que dizia XLSX não testado; células/formatação já haviam sido comparadas. Manifests atualizados após os relatórios, com verificação de todos os hashes.
