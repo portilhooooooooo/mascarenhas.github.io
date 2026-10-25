@@ -119,8 +119,18 @@ try {
  await page.evaluate(()=>window.MBA_NAVIGATE('analytics'));
  await page.evaluate(route=>window.MBA_NAVIGATE(route),executionRoute);
  assert.equal(await page.locator('.closing-disagreement-field textarea').inputValue(),draftBefore,'Rascunho permanece ao navegar');
+ // Simulate an existing production v1 draft before upgrading/F5.
+ const migratedKeys=await page.evaluate(()=>{
+  const scoped=Object.keys(sessionStorage).find(k=>k.startsWith('mba-qa-v2:'));
+  if(!scoped)throw new Error('Scoped draft missing');
+  const parts=scoped.split(':'),legacy='mba-qa-v1:'+parts[1]+':'+parts[3]+':'+parts[4];
+  sessionStorage.setItem(legacy,sessionStorage.getItem(scoped));sessionStorage.removeItem(scoped);
+  sessionStorage.setItem('mba-qa-v1:other-user:task:process',JSON.stringify({secret:'must not hydrate'}));
+  return {scoped,legacy};
+ });
  await page.reload();
  await page.locator('.closing-disagreement-field textarea').waitFor();
+ assert.deepEqual(await page.evaluate(({scoped,legacy})=>({old:sessionStorage.getItem(legacy),new:!!sessionStorage.getItem(scoped),foreign:sessionStorage.getItem('mba-qa-v1:other-user:task:process')}),migratedKeys),{old:null,new:true,foreign:null},'Authorized legacy draft migrates once; foreign draft is purged');
  assert.equal(await page.locator('.closing-disagreement-field textarea').inputValue(),draftBefore,'Rascunho isolado por usuário/carteira recupera após F5');
  assert.equal(writes.filter(w=>w.path.endsWith('/encerramento-analysis')).length,0,'Navegação e F5 não salvam a análise');
  await page.screenshot({path:out+'/runtime-v2-rascunho-f5.png',fullPage:true});
