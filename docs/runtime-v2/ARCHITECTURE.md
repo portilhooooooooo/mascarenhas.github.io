@@ -32,3 +32,6 @@ Escritas finais adotadas têm ID de intenção no cliente, fingerprint e recibo 
 Ferramenta de auditoria fora da imagem do aplicativo: transação somente leitura, timeout 2 s, até 1.001 ativos para amostra máxima de 1.000, saída agregada sem identidades/conteúdo. Não tem modo de liberação. Todos os recibos são retidos nesta versão; qualquer futura compactação depende de preservar a prova de idempotência e passar testes de replay. Ver WRITE-RECOVERY.md.
 
 Os dois RPCs analíticos novos distribuem orçamento remanescente entre fases HTTP, com leitura até 4 s e soma das fases dentro do restante dos 8 s. Isso corrige corte prematuro da candidata demonstrado em fixture SQL de 2,3 s. Não muda autenticação, escrita, retry ou a capacidade admitida. A origem dos timeouts publicados segue não comprovada.
+
+## Adendo de 25/10/2026
+UploadService → auth_import_processes com classifier_classification dentro de p_rows; eliminado PATCH posterior. Processos → TaskService (CNJ/carteira/permissão/responsável) → processos_create_task atômica. Ambas as funções já existem; fixtures preservam ACL de backend.
