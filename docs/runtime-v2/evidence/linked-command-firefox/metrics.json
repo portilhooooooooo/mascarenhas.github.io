@@ -1,0 +1,31 @@
+{
+  "status": "PASSOU",
+  "timestamp": "2026-10-25T23:12:19.292Z",
+  "frontend_commit": "437287fb718fc7948720573af2e061ae2c1f9b8b",
+  "browser": "firefox",
+  "fixture": "read fixtures; real internal stage command and separate PostgreSQL verification",
+  "production_changed": false,
+  "oauth_starts": 0,
+  "commands": [
+    {
+      "path": "/api/tasks",
+      "status": 201,
+      "duration_ms": 152.73333900000034,
+      "payload_keys": [
+        "deadline_at",
+        "priority",
+        "process_cnj",
+        "responsible_id",
+        "source",
+        "title",
+        "type"
+      ],
+      "type": "liminar",
+      "source": "api",
+      "cnj_matches": true,
+      "server_timing": "app;dur=130.53, http_headers;dur=116.14, postgrest_jwt;dur=0.00, postgrest_parse;dur=0.00, postgrest_plan;dur=0.00, postgrest_transaction;dur=57.60, postgrest_response;dur=0.00, auth_sql;dur=8.54, auth_dependency;dur=62.67",
+      "backend_commit": "25bb6c11c592f50a63d3de0eab0b1d27814f4ec3"
+    }
+  ],
+  "errors": []
+}

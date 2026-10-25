@@ -17,13 +17,13 @@
     },
     {
       "path": "DIAGNOSTICO_FINAL.md",
-      "bytes": 28923,
-      "sha256": "1d282bfe21e1828544bb70fc96f09ac37ea3ab5795ca5746d844f167e1e47322"
+      "bytes": 30550,
+      "sha256": "e00a8f46056e52ca7f2951d31fe7297cf5a51c5dd6fc27e52de570b4c5147ac9"
     },
     {
       "path": "MIGRATION_LOG.md",
-      "bytes": 14756,
-      "sha256": "8186092dc6327ff3ee0cf6491e98bc34dc0033e34df10aaaf8be1942a5d15f56"
+      "bytes": 16383,
+      "sha256": "5196019f6771289e4378dcec4a60c2a98de783793197e70d60c5d63d9bf05480"
     },
     {
       "path": "PARIDADE.md",
@@ -37,8 +37,8 @@
     },
     {
       "path": "RUN_LOCAL.md",
-      "bytes": 3766,
-      "sha256": "afe731cbb59526a6f59c0f5668e4dc2440d9b3a3538a8334c4e071e489d2083d"
+      "bytes": 4780,
+      "sha256": "538e1a29e095fb90c4930679cd66ffee23f9d0705e56966dfbd2d3e99c1797d5"
     },
     {
       "path": "SPEC.md",
@@ -47,8 +47,8 @@
     },
     {
       "path": "TEST-MATRIX.md",
-      "bytes": 18788,
-      "sha256": "0a9970f69dddd51b399842b9b830ad5a097c09f3301146abc376cd2b38caaf35"
+      "bytes": 20415,
+      "sha256": "cd2329e40833221eb7ab4f487419ca25611103285f5b294a6ff3281593791776"
     },
     {
       "path": "WRITE-RECOVERY.md",
@@ -479,6 +479,46 @@
       "path": "evidence/http-cache-performance/stable-f5.png",
       "bytes": 100624,
       "sha256": "dd0f6e70259b19ae3059d58d34a13c0a7fb697b53150a47806bb3f160a005aca"
+    },
+    {
+      "path": "evidence/linked-command-chromium/after.png",
+      "bytes": 44106,
+      "sha256": "5e01d85fcbb0853e98876d942d9bc6ccd26a4bcd07ac1c485deaaa9f7b76155e"
+    },
+    {
+      "path": "evidence/linked-command-chromium/before.png",
+      "bytes": 64546,
+      "sha256": "50b6a4a4f880ee9f3647e361f7d3399d519819b803b13d50188ae92f840d58a6"
+    },
+    {
+      "path": "evidence/linked-command-chromium/database-verification.json",
+      "bytes": 159,
+      "sha256": "39e30ebe891eaa7a6920aab7c5e057785f62a264e189b8887cd726df88bc7bed"
+    },
+    {
+      "path": "evidence/linked-command-chromium/metrics.json",
+      "bytes": 1009,
+      "sha256": "e896a3bd1a0b9aca0de7951f907b55950d5bc9ccafeb92e1efc0f19428c57357"
+    },
+    {
+      "path": "evidence/linked-command-firefox/after.png",
+      "bytes": 63877,
+      "sha256": "4849f48a6bc7b82cc6f0d7f72c599d99ed3205b67ab3b4932a0f7b10a0040762"
+    },
+    {
+      "path": "evidence/linked-command-firefox/before.png",
+      "bytes": 95103,
+      "sha256": "3e6d83e6a34634820d473de925864bd800c6894c573b0351ea9a43eac03d6dda"
+    },
+    {
+      "path": "evidence/linked-command-firefox/database-verification.json",
+      "bytes": 159,
+      "sha256": "39e30ebe891eaa7a6920aab7c5e057785f62a264e189b8887cd726df88bc7bed"
+    },
+    {
+      "path": "evidence/linked-command-firefox/metrics.json",
+      "bytes": 1009,
+      "sha256": "030eca561fe29086407d5615cc95634e1679d05b3514b2212ebc28e3782ffc62"
     },
     {
       "path": "evidence/linked-followup-chromium/A02.png",
