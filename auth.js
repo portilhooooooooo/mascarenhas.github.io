@@ -286,7 +286,7 @@
     publishLoginState({ busy: false, error: null, status: 'authenticated' });
   }
 
-  async function loadProfileWithRetry(deadline = performance.now() + 10000, maxAttempts = 2) {
+  async function loadProfileWithRetry(deadline = performance.now() + 10000, maxAttempts = 2, retryBudget = { remaining: maxAttempts - 1 }) {
     const generation = ++bootstrapGeneration;
     let lastError;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
@@ -298,13 +298,15 @@
       catch (error) {
         lastError = error;
         if (generation !== bootstrapGeneration || error?.code === 'STALE_IDENTITY' || (error?.status && ![502,503,504].includes(error.status))) throw error;
-        if (attempt + 1 < maxAttempts) await new Promise(resolve => setTimeout(resolve, 200));
+        if (attempt + 1 >= maxAttempts || retryBudget.remaining <= 0) throw error;
+        retryBudget.remaining -= 1;
+        await new Promise(resolve => setTimeout(resolve, 200));
       } finally { clearTimeout(timer); }
     }
     throw lastError || new Error('Orçamento de validação esgotado.');
   }
 
-  async function exchangeOAuthHandoff(code, verifier, deadline) {
+  async function exchangeOAuthHandoff(code, verifier, deadline, retryBudget) {
     let lastError;
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const remaining = deadline - performance.now() - AUTH_SETTLE_BUDGET_MS;
@@ -320,7 +322,9 @@
       } catch (error) {
         lastError = error;
         if (error?.status && ![409,502,503,504].includes(error.status)) throw error;
-        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 200));
+        if (attempt > 0 || retryBudget.remaining <= 0) throw error;
+        retryBudget.remaining -= 1;
+        await new Promise(resolve => setTimeout(resolve, 200));
       } finally { clearTimeout(timer); }
     }
     throw lastError || new Error('Orçamento de acesso esgotado.');
@@ -333,6 +337,7 @@
 
   async function initializeAuth(deadline = performance.now() + 10000, maxAttempts = 2) {
     const started=performance.now(),mark='mba:identity:'+ (++bootstrapMeasurement);
+    const retryBudget={remaining:Math.max(0,maxAttempts-1)};
     performance.mark?.(mark);
     if(getStoredToken()){
       document.body.classList.add('auth-validating');
@@ -365,7 +370,7 @@
           throw new Error('Não foi possível concluir o acesso. Inicie o login novamente.');
         }
         try {
-          const result = await exchangeOAuthHandoff(code, verifier, deadline);
+          const result = await exchangeOAuthHandoff(code, verifier, deadline, retryBudget);
           if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
           setStoredToken(result.access_token);
           localStorage.removeItem('mba_oauth_lease');
@@ -377,7 +382,7 @@
       }
 
       if (getStoredToken()) {
-        await loadProfileWithRetry(deadline, maxAttempts);
+        await loadProfileWithRetry(deadline, maxAttempts, retryBudget);
       } else {
         setAuthState(false);
         publishLoginState({ busy: false, error: null });
@@ -433,7 +438,7 @@
     } finally {
       const ms=performance.now()-started;
       const metrics=window.MBA_RUNTIME_AUTH_METRICS||(window.MBA_RUNTIME_AUTH_METRICS=[]);
-      metrics.push({kind:'identity',status:loginState.status,ms,budgetMs:Math.max(0,deadline-started)});
+      metrics.push({kind:'identity',status:loginState.status,ms,budgetMs:Math.max(0,deadline-started),retries:Math.max(0,maxAttempts-1)-retryBudget.remaining});
       if(metrics.length>40)metrics.shift();
       try{performance.clearMeasures?.('mba:identity-bootstrap');performance.measure?.('mba:identity-bootstrap',{start:started,duration:ms});performance.clearMarks?.(mark);}catch{}
     }
