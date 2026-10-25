@@ -23,6 +23,8 @@ jobs:
       - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: npm run build
       - run: BROWSER=${{ matrix.browser }} PHASE=ci-${{ matrix.browser }} node tests/runtime-v2/browser.mjs
+      - run: node tests/runtime-v2/upload-controls.mjs
+        if: matrix.browser == 'chromium'
       - run: DELAY_DRAFT_MODULE=1 node tests/processos-ui.mjs
         if: matrix.browser == 'chromium'
       - uses: actions/upload-artifact@v4
@@ -32,3 +34,4 @@ jobs:
           path: |
             docs/runtime-v2/evidence/ci-${{ matrix.browser }}
             docs/ux-processos-evidence
+            docs/runtime-v2/evidence/upload-controls
