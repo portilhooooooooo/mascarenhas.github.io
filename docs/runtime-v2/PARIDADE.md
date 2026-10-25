@@ -1,13 +1,20 @@
 # Paridade dos indicadores
+## Evidência executada
+PostgreSQL 17.11 descartável, contra o Python efetivo capturado do runtime; produção é PostgreSQL 17.6/PostgREST 14.5. A captura foi somente leitura, com chave de corte temporal fixa e paginação limitada.
 
-Não foram alteradas funções SQL, critérios de vitória/DV, coortes, política de carteira, papéis, mediana/média, limiar de medição ou regra de aging. A Produtividade continua exibindo o payload autoritativo; dados de filtro anterior não são reapresentados sob um filtro novo. O resumo persistido copia somente completed/today_completed e os mesmos contadores de pessoas/cobertura que a tela anterior calculava. Erro de contrato não é convertido em zero.
+| Amostra | Eventos | Cobertura |
+|---|---:|---|
+| Inicial desidentificada | 139 | Três carteiras |
+| Empates e limites desidentificados | 13 | Ordenação e arredondamento |
+| Corpus ampliado | 19.367 | 180 dias; 32 tarefas; 21 perfis |
+O corpus ampliado contém 12.159 eventos Regular, 7.207 Enter e apenas 1 Nubank. Não há suporte para afirmar representatividade estatística de Nubank. Não foram copiados documentos, CNJs, emails, notas ou identificadores originais. Metadados têm whitelist; manifesto e SHA-256 estão no backend privado.
 
-Os testes de backend de produtividade, escopo de papel, Base Geral e acurácia originária passaram no conjunto de 59 testes, incluindo três casos novos para paginação mutável. Nenhum novo agregado SQL foi implementado/promovido.
+A suíte SQL executou 30 testes em 709,98 s: PASSOU. Foram comparadas 2.625 combinações do contrato legado e 2.400 do contrato novo de resumo, totalizando 5.025 combinações, além de testes de borda e permissões.
 
-Foi executado replay offline de uma amostra real desidentificada: 139 eventos, 21 tarefas e 13 perfis de Enter, Regular e Nubank, capturados em 2026-10-24T03:03:33.959577Z. Foram selecionados até oito pares usuário/processo por carteira e estrato de presença de etapas/conclusões, com todos os seus eventos no recorte de 180 dias. Não houve truncamento do recorte selecionado (139/139). Não contém documentos, e-mails, notas ou números processuais; nomes e IDs foram substituídos e stages preservam equivalência por hash.
+O contrato legado preserva seus critérios de transição, duplicatas, contagens diárias, limite humano de 0,25 a 1.800 s e cálculo existente de médias e medianas. O contrato de overview possui semântica distinta e foi comparado separadamente: primeiro índice zero até conclusão, lookback de 30 minutos, eventos humanos, aptidão somente nos tipos existentes e mediana exata com round de Python. Não foi trocada mediana por média.
 
-O script scripts/runtime_v2_parity.py compara o fonte efetivo do container (SHA-256 6f9f8c73504b42f3d970de2084ac025cab93edca2aa563cc60d9bf4b0b584abe) à branch, com relógio fixo, cinco períodos, cinco filtros de prazo, cinco faixas de duração e três papéis nas três carteiras: 1.125 combinações. Não houve divergência nos campos numéricos compartilhados, incluindo contagens, médias, medianas e cobertura. Foram explicitamente excluídos da comparação o texto de methodology e o campo aditivo timing_by_type, ausente no fonte efetivo; essas diferenças de contrato já existiam e permanecem registradas. Referência, fixture, hashes e resultados completos estão na branch privada backend.
+## Paginação e exportação
+Detalhe compara total, ordenação determinística e páginas ao modelo anterior. Exportação CSV preserva as células e apresenta erro explícito no limite, sem truncamento silencioso. RPCs não são executáveis por anon/authenticated. Autorização de carteira e equipe ocorre antes da agregação. A fila pendente real não foi exportada: seus casos de atribuição, ausência de responsável e datas têm fixture sintética separada.
 
-B01 e A16 permanecem NÃO EXECUTADOS em sua definição completa: o replay não executa HTTP/PostgREST/RLS, pendências, novos agregados SQL, base completa, coortes de Encerramentos ou exportações XLSX/CSV. A ordem de empates temporais do runtime não está certificada. Uma amostra sem divergência não certifica a base inteira. Os testes de browser verificam números sintéticos conhecidos apenas para observar cache/escopo/estado visual.
-
-Resultado: nenhuma alteração de regra de negócio foi intencionalmente introduzida; paridade integral NÃO CERTIFICADA. Este item impede promoção.
+## Limites
+Paridade sobre dados desidentificados não equivale a login real, RLS de um colaborador publicado ou validação end-to-end de todas as telas. XLSX e todos os fluxos de outras áreas não receberam certificação de paridade completa nesta fase. Integração publicada e Nubank com amostra representativa permanecem pendentes.

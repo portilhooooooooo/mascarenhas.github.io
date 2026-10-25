@@ -1,21 +1,25 @@
-# Reproduzir o candidato
-
-Frontend: Node 24, npm e browser Playwright compatível com o lockfile.
+# Execução reproduzível
+## Frontend
+Branch de trabalho dev/tasks-workspace; candidato de promoção release/runtime-v2-20261024 baseado na main efetivamente publicada, preservando funcionalidades mais novas.
 
 ```sh
-npm ci --ignore-scripts
+npm ci
 npm run build
-npx playwright install chromium
-npm run test:runtime-v2
-node tests/processos-ui.mjs
 npm run test:hardening
-node --test tests/api-client.test.mjs tests/base-geral-ui.test.mjs tests/task-access.test.mjs
+PHASE=acceptance-chromium BROWSER=chromium PORT=5191 node tests/runtime-v2/browser.mjs
+PHASE=acceptance-firefox BROWSER=firefox PORT=5192 node tests/runtime-v2/browser.mjs
+npm run test:processos
+npm run test:ux
 ```
+Instalar browsers do Playwright conforme CI. As rotas de API destes testes são fixtures explícitas; não são integração Microsoft nem prova de latência publicada. A suíte inclui espera real de 15 s e expiração real do TTL. Metrics JSON, trace ZIP e screenshots ficam em docs/runtime-v2/evidence/PHASE. Nunca publicar fixtures de teste no Cloudflare.
 
-A suíte Runtime V2 usa o dist e localhost:5186; a operacional usa localhost:5175. PHASE escolhe a pasta de evidência e PORT permite isolar o servidor da primeira suíte. TEST_IDS=A06,A07 executa um recorte da primeira suíte e deve ser identificado como recorte, nunca como execução completa. Os scripts interceptam o domínio API configurado neste repositório; antes de mudar configuração de endpoints, adapte os interceptores para continuar sem chamadas reais.
+## Backend
+Branch migration/runtime-v2-reconciled-20261024. Usar Python 3.12, PostgreSQL 17 e PostgREST 14.5 conforme workflow. Banco deve se chamar runtime_v2_* e ter opt-in explícito; scripts recusam outros destinos. Não reutilizar credenciais de produção.
 
-`npm run dev:local` serve o build em localhost:5173. Ele aponta para a API configurada e requer sessão autorizada para integração real; não use o modo preview/demo como prova de integração.
+```sh
+python -m pip install -r requirements.txt
+RUNTIME_V2_TEST_DATABASE=1 RUNTIME_V2_TEST_DSN="host=127.0.0.1 user=postgres dbname=runtime_v2_test" PYTHONPATH=. python scripts/runtime_v2_test_database.py
+```
+A workflow runtime-v2-reconciled.yml contém os comandos completos de suites, gateway prefixado, Gunicorn 2×4, Redis e serviço PostgREST. Testes HTTP usam o SDK real e SQL real; identidades são sintéticas. O benchmark scripts/runtime_v2_http_load.py aceita somente APIs internas runtime-v2-api* e banco descartável. Ele compara três rodadas de 30 colaboradores + 10 analytics e verifica 90 salvamentos finais duráveis.
 
-Backend: ver migration/runtime-v2-20261023, docs/runtime-v2/VALIDATION.md. Os testes registrados rodaram em container descartável sem rede/credenciais/portas e com limites de CPU/RAM. O Dockerfile.validation não é um release aprovado. Não copiar .env da produção para o ambiente de testes.
-
-Os arquivos metrics.json contêm commit, timestamp, fixture=true, resultados, rede e medidas. Screenshots são dados fictícios. Traces abrem com `npx playwright show-trace CAMINHO`. Tempos de duração dos testes incluem waits e controle browser; só os campos navigation.ms representam a medida in-page até o próximo animation frame. Não comparar duração de jornada com latência da API real.
+Fixtures reais desidentificadas ficam apenas no repositório privado do backend. Não exportar documentos ou bases integrais. O corpus ampliado possui manifesto e SHA-256. Inicializador carrega tarefas antes dos eventos para respeitar o trigger efetivo de carteira.

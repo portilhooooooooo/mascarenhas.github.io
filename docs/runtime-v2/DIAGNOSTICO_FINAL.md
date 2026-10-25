@@ -1,136 +1,101 @@
-# Diagnóstico técnico Runtime V2 — candidato, NO-GO
+# Diagnóstico técnico — Backoffice Runtime V2
+## Parecer
+**NO-GO para promoção neste checkpoint.** A implementação controlada corrigiu os defeitos reproduzidos de permissão, remontagem, geometria e bootstrap; houve 30 casos PASSOU em Chromium e 30 em Firefox. Paridade de Produtividade, salvamento final concorrente, imagem reproduzível e rollback foram executados. Isso não encerra a migração publicada: integração Microsoft real, validação autenticada do runtime publicado, configuração efetiva do pool, cobertura integral das demais operações e monitoramento após promoção permanecem sem evidência suficiente.
 
-Data local: 23/10/2026 (America/Campo_Grande). Evidências em UTC: 24/10/2026. Este relatório fecha o checkpoint executado, não declara concluída a migração nem resolvido o incidente em produção.
+Nenhum deploy, parada, alteração do checkout vivo ou DDL de produção foi realizado. A autorização para interromper produção não substitui o gate técnico. O container publicado permaneceu c1c1645c…f16cc, iniciado em 22/10/2026; a revisão somente leitura de 25/10/2026 às 13h12 de Campo Grande encontrou **zero diferenças nos 166 paths comparados**. Assets publicados foram identificados como f0851b3.
 
-## Sumário executivo
-
-O candidato corrige a mutação de permissões na ponte legada, separa navegação de autenticação, conserva subabas visitadas, mantém geometria durante consultas e restaura apenas agregados pequenos depois da autorização. Encerramentos publica suas dependências separadamente. O backend candidato tipa indisponibilidade transitória, acrescenta tempos/request_id, reduz repetição de validação e oferece admissão analítica opt-in. React/TypeScript/Vite, Python, visual e regras de negócio foram preservados.
-
-Resultado executado: 20 subcasos Chromium passaram no build frontend e a suíte operacional do build real passou em quatro viewports. Backend: 59 testes passaram; os mesmos 59 passaram novamente na imagem reconstruída sem bind de código. Uma amostra real desidentificada passou em 1.125 comparações offline contra o fonte efetivo do container, sem divergência numérica compartilhada. Isso NÃO certifica integração real, novos agregados SQL, autorização no banco ou capacidade de produção.
-
-Parecer: **NO-GO para promoção**. M0–M3 têm candidato e provas controladas; M4/M5 permanecem parciais; M6 não executado. Faltam reconciliação do runtime, SQL/paginação novos, paridade integral/exportações, tracing de fila/rede/SQL, carga equivalente com escrita durável, sessão real entre navegadores, idempotência completa, revisão de segurança e rollback operacional. Uma suíte legada de preview também falhou por contrato de payload desatualizado; o log foi conservado.
-
-## Proveniência e ambientes
-
-| Item | Revisão/ambiente |
-|---|---|
-| Frontend inicial | dev/tasks-workspace, 11a17cf58d2afcacbd90f2c92c7cd11591386793 |
-| Frontend qualificado | e643f7bd747573de093f599ad367c8a56b0f6b6c |
-| Frontend publicado investigado | auth.js com SHA igual ao main f0851b3; não promovido nesta execução |
-| Backend live | container mba-backoffice-backend; imagem 64b00348da255b782262d780052a8339c704f18d0b1681c2b81cfc021c20225b |
-| Label live | 89003b56662e0dcadc1dc7c6eebedcfeb7f7bc10; não representa integralmente o fonte em execução |
-| Checkout operacional backend | main c2cb57d, alterações locais preservadas |
-| Branch isolada backend | migration/runtime-v2-20261023; ac1f3f4 paginação, b7ba52b replay, 0d78860 evidências |
-| Imagem de validação final | 4d536c772ead27270a656b032d08b240d77288704e415c9ffaf2eca50ce73343, fonte b7ba52b |
-| Browser | Chromium Playwright, localhost no dispositivo autorizado; API interceptada |
-| Backend tests | Container novo, rede desabilitada, 1 CPU/512 MiB, sem credenciais/env/portas de produção |
-| Amostra real | SELECT limitado e somente leitura; replay offline, sem login de colaborador ou escrita |
-
-Foram encontrados 43 caminhos Python de aplicação divergentes em relação à revisão declarada: 34 modificados e nove ausentes. São diferenças de proveniência, não 43 vulnerabilidades. O inventário de 275 caminhos rastreados não cobre todos os extras do runtime. Não foi misturado o checkout sujo à migração. Nenhum deploy, DDL ou edição do container vivo ocorreu.
-
-## Causas confirmadas e hipóteses abertas
-
-| Classificação | Evidência | Implicação |
+## Causas confirmadas
+| Achado | Evidência | Correção |
 |---|---|---|
-| CONFIRMADA | react-compat escreve tasks.view no objeto detail compartilhado; A01 falha no replay | Navegação/loaders dependiam de mutação indevida de grant |
-| CONFIRMADA | Rota externa redefine tab para execution e results era condicional | Produtividade desmontava apesar de conservar a raiz React |
-| CONFIRMADA | shown dependia de chave/revisão e controlava existência das seções | Refresh/filtro retirava cards e tabelas |
-| CONFIRMADA | Promise.all aguardava quatro endpoints em Encerramentos | Endpoint lento bloqueava publicação do resumo pronto |
-| CONFIRMADA | Bootstrap transitório podia mostrar login com token ainda presente | 503 era apresentado como aparente encerramento |
-| CONFIRMADA NA MIGRAÇÃO, CORRIGIDA | Evento de carteira iniciava /me antes da invalidação de época | A própria revalidação era descartada; 58c5704 corrige ordem; A11 passou |
-| CONFIRMADA | Builder PostgREST mutável acumula offset/limit na implementação da branch | Três testes falharam antes, passaram após ac1f3f4; comportamento já existia no fonte efetivo |
-| CONFIRMADA | 2 workers × 4 threads compartilhados e chamadas síncronas | Trabalho lento ocupa slots; ainda falta quantificar fila no tráfego real |
-| ABERTA | Timeouts de REST/transporte/pool/gateway | Não há trace completo que atribua causa a Supabase, rede, VPS ou Python |
-| ABERTA | Causa de cada logout histórico | Login novo pode substituir sessão; auditoria não prova o motivo de toda queda |
-| ABERTA | Ganho real de SQL novo e isolamento de capacidade | Não há novo agregado SQL implementado nem teste equivalente de produção |
-| ABERTA | Paridade integral e ordem de eventos empatados | Amostra offline pequena não certifica base completa nem ordenação live |
+| Evento de auth compartilhava objeto e interceptor modificava tasks.view | A01 baseline falhou; perfil retornado divergiu de MBA_CURRENT_USER | Removida escrita em grants; ownership explícito e cópias imutáveis |
+| Navegação externa redefinia subaba e desmontava conteúdo | A02 baseline falhou, DOM desapareceu | Guard de rota e keep-alive seletivo |
+| Gate loadedKey/shown retirava cards durante consulta | A04/A05 baseline: zero slots, screenshots | Estrutura permanente; mesma chave mantém snapshot; chave diferente fica neutra |
+| Encerramentos aguardava dependências lentas em conjunto | A13 com detalhe atrasado 15 s | Respostas independentes, estados locais de atualização/erro |
+| Timeout transitório podia virar falsa tela de sessão encerrada | Fixtures 503/timeout e inspeção de bootstrap | Estado temporarily_unavailable, shell inerte, token preservado e orçamento único |
+| Respostas antigas podiam atingir nova identidade | A11 e teste VM de 401 atrasado | Geração/token/escopo conferidos também na rejeição |
+| Analytics ocupava capacidade crítica compartilhada | Benchmark de admissão com 30 pessoas + 10 analytics | Limite HTTP por worker e locks transacionais dos novos RPCs |
+| Repetição de escrita após ACK perdido podia duplicar trabalho | Testes concorrentes e ACK perdido no HTTP/SQL | Intenção no cliente e recibo durável, sem retry cego |
+| Evento de perfil podia anteceder o módulo de rascunhos | Falha real do CI em Processos | Reconciliação na carga e teste com bundle atrasado |
+| Versão de acesso não cobria todas as restrições | Revisão de allowed_modules/access_kind/capabilities e testes de facetas | Versão/chave completas; nenhum grant ou critério de negócio alterado |
 
-O bootstrap dev original usa cópia/proxy em parte do caminho e pode passar inicialmente. O ensaio A01 emite explicitamente o perfil compartilhado, contrato observado no auth.js publicado. Depois de A01, o baseline remove somente o interceptor na fixture para isolar ciclo de vida e renderização. Não se apresenta esse contrafactual como integração real.
+## Hipóteses e limites ainda abertos
+- Não foi comprovada a origem dos timeouts publicados: fila no proxy/Gunicorn, pool/transporte e tempo de SQL não são intercambiáveis.
+- Em uma rodada local da imagem 7aadb17, Regular/Admin recebeu 503 no resumo após 2.009 ms. A rodada terminou com 29 PASSOU/1 FALHOU. O reteste passou, com SQL em aproximadamente 116 ms; isso não explica a falha original. Gateway passou a registrar recebimento e conclusão upstream antes da entrega, e a API registra classe/tempo da tentativa falha, sem conteúdo sensível. O timeout não foi aumentado e não se declarou a causa resolvida.
+- O máximo efetivo do pool PostgREST e eventual pre-request publicado não foram obtidos. Não foi sobrescrito um hook de segurança desconhecido. A admissão transacional protege os novos RPCs; analytics legado ainda tem limites HTTP.
+- A amostra Nubank contém um evento. Nove combinações de papel/carteira foram testadas com identidades sintéticas; isso não certifica representatividade dos indicadores de Nubank.
+- Não houve validação Microsoft em dois navegadores reais nem medição de autenticação/escrita publicada. Não foram criadas sessões por impersonação para contornar esse bloqueio.
 
-## Arquitetura e alterações
-
-Antes: identidade disparava loaders por grants alterados; rota externa redefinia subaba; dados controlavam existência da geometria; quatro dependências formavam uma barreira global.
-
+## Arquitetura antes e depois
 ```mermaid
 flowchart TD
-  A["Identidade validada e evento imutável"] --> B["Escopo: usuário, geração, carteira, papel, grants"]
-  A --> C["Rota com ownership explícito"]
-  C --> D["Subabas visitadas preservadas"]
-  B --> E["Query client por chave autorizada"]
-  E --> F["Slots estáveis; mesma chave revalida"]
-  B --> G["Snapshot pequeno somente após autorização"]
-  G --> F
-  H["Resumo / detalhe / Benner / aging"] --> I["Estados independentes"]
+ A["Auth e navegação misturadas"] --> B["Subaba condicional e fetch local"]
+ B --> C["REST e agregação ampla"]
+ D["Identidade canônica por geração"] --> E["Shell persistente e UI por rota"]
+ E --> F["Query por escopo autorizado"]
+ F --> G["Admissão, SQL paginado e recibos"]
 ```
+O estado visual pertence ao módulo; o servidor continua autoritativo para acesso e escrita. Cache não concede autorização. F5 reconstrói a UI e só hidrata resumo após validar identidade/carteira/grants. Mudança real de escopo invalida imediatamente; epoch de outro usuário não apaga o trabalho corrente.
 
-A identidade tem initializing/authenticated/temporarily_unavailable/expired_or_revoked/forbidden. O shell com token fica inert enquanto valida; erro transitório conserva credencial sem conceder operação. Respostas antigas não revogam geração nova. Eventos entregam cópias congeladas; ativação de módulo usa evento próprio. Coordenação OAuth entre abas é inicial e não altera a política server-side de sessão única.
+## Implementação rastreável
+Frontend: branch de trabalho dev/tasks-workspace; promoção isolada release/runtime-v2-20261024 baseada em f0851b3, sem levar alterações alheias do desenvolvimento. Código de facetas: a0a284d; orçamento global de retry: dec1b42; correções anteriores relevantes: dfad4c1, 96edb86, 257eb19.
 
-Keep-alive é seletivo em Execução/Atribuições/Produtividade; ocultos deixam de consultar. Filtro/ordenação/seleção/scroll sobrevivem às reentradas. Query keys contêm usuário não secreto, geração, carteira, papel, grants, filtros e contrato. Frescor de Produtividade: 45 s; resumos: 60 s. O servidor ainda não fornece versão explícita de política, uma limitação a resolver.
+Backend: migration/runtime-v2-reconciled-20261024. Código efetivo capturado na referência privada; commits e74657b (queries/recibos), bd32064 (corpus), 3ca2041 (contexto de build), 0eb988a (logs seguros), f8615e9 (facetas de acesso), b528a39 (falhas de transporte). Imagem final identifica o commit pelo label e por X-Runtime-Version; manifests e digests ficam na evidência privada. Referência de rollback: 01fe904.
 
-Snapshot em sessionStorage contém quatro agregados numéricos, schema/checksum/TTL 120 s/limite 4 KiB. Não contém listas, pessoas, tokens, documentos ou hashes de sessão. Quota/corrupção cai para busca. Só restaura após /me válido; mudança de escopo purga. Preferências de UI e rascunhos operacionais têm responsabilidade separada. Rascunhos v2 são isolados por usuário/carteira/tarefa/processo; v1 não é migrado automaticamente e exige revisão antes de promoção.
+| Área | Paths principais |
+|---|---|
+| Identidade/legado | auth.js, data-api.js, react-compat.js, config.js |
+| Navegação/estado | src/tasks/TasksApp.tsx, qaDraft.ts, runtimeQueries.ts |
+| Dados/geometry | src/tasks/TaskResults.tsx; src/dashboard/EncerramentosPage.tsx; dashboards adotados |
+| Backend | routes/api/me.py, task_results.py; services/productivity_queries.py, runtime_v2.py, http_transport.py, write_intents.py |
+| Banco | sete migrações geradas por CLI em supabase/migrations, apenas aplicadas no stage |
+| Evidência/CI | tests/runtime-v2, tests/test_runtime_v2*, workflows de browser e backend |
 
-Mudanças de dados confirmadas invalidam queries relevantes; ocultas ficam stale. Não foi introduzido retry automático de writes nem confirmação fictícia. Caches legados e hidratação de várias páginas em Atribuições ainda existem: a camada única é incremental, não integral.
+## Testes executados e métricas
+A matriz A01–A20 e B01–B06, com durações, commits e caminhos de evidência, está em [TEST-MATRIX.md](TEST-MATRIX.md). A01/A02/A04/A05 falharam no baseline atual; os registros dessas falhas permanecem.
 
-Backend mede app dentro de Flask e auth_dependency (RPC+transporte). Não chama esse tempo de SQL nem fila. O semáforo por processo é desativado por padrão; só reserva capacidade quando configurado abaixo das threads e validado. Não prova isolamento contra todos os endpoints concorrentes.
+- Browser final: 30/30 Chromium e 30/30 Firefox, sem erros de console/página. Regressão operacional de Processos em quatro viewports passou, inclusive F5 de rascunho legado e módulo carregado após auth.
+- Paridade: 30 testes SQL, 5.025 combinações entre Python efetivo e SQL; três casos adicionais compararam células e formatação XLSX. Medianas, arredondamento, contagens, períodos, ordenação, CSV e ACL foram exercitados no escopo de Produtividade.
+- Rodada final da imagem congelada: 43/43 testes HTTP/observabilidade/orçamento PASSOU em 21,79 s. Isso não apaga o 503 não induzido da rodada anterior.
+- A suíte HTTP usa Gunicorn→SDK Supabase→gateway→PostgREST 14.5→PostgreSQL 17.11 reais. Identidades são sintéticas. Há testes de 10 salvamentos concorrentes, ACK perdido, finalização incerta, revogação e matriz de acesso.
+- Reentrada selecionada: mediana 26,0 ms/P95 51,6 ms, sem fetch fresco. Após 46 s: exatamente uma revalidação com snapshot anterior visível.
+- F5 com HTTP cache habilitado, n=8 quentes: shell até 266,1 ms; geometria até 327,2 ms; KPI após autorização até 445,6 ms. Fixture local; não é P95 de produção.
+- Heap após GC: 12.036.864→12.459.836 bytes na amostra de 50 alternâncias; DOM/listeners/intervals estáveis. Não é certificação geral de ausência de leak.
+- Benchmark final na mesma imagem congelada, com/sem admissão: 90 salvamentos finais; auth P95 3.105→196 ms; escrita P95 3.561→760 ms. São variantes da candidata com/sem admissão, não comparação completa com produção. 429 são reportados separadamente.
+- O orçamento de identidade que chegou a 10,299 s em Firefox foi corrigido e retestado em 9,501/9,502 s. O teste não teve tolerância relaxada.
 
-Commits e paths: [COMMITS.txt](COMMITS.txt), [CHANGED-PATHS.txt](CHANGED-PATHS.txt), [MIGRATION_LOG.md](MIGRATION_LOG.md). Contratos e responsabilidades: [SPEC.md](SPEC.md), [ARCHITECTURE.md](ARCHITECTURE.md).
+[BASELINE.md](BASELINE.md) define ambiente, denominadores, mediana/P95 e limitações. Os JSONs brutos preservam requests, cache hit/miss, payload bytes, shifts com/sem interação, long tasks e chamadas redundantes. Não se usou regex/build como prova principal.
 
-## Medições antes/depois
+## Evidência visual
+Imagens abaixo contêm somente fixtures, sem documentos ou identidades reais.
 
-Baseline: UTC 2026-10-24T01:46:35.468Z, 11a17cf. Qualificação: UTC 2026-10-24T03:05:07.783Z, e643f7b. Mesmo build real/browser e API controlada; a matriz final é mais ampla, por isso não se comparam totais globais de chamadas entre execuções.
+Antes, durante atualização:
+![Baseline: cards removidos](evidence/baseline-current-render/A04.png)
 
-| Medida/jornada | Antes | Depois | Limite da conclusão |
-|---|---|---|---|
-| A01 grants compartilhados | FALHOU | PASSOU | Evento reproduzido na fixture |
-| A02/A03 conservar instância/estado | FALHOU | PASSOU | Retorno por menu/subaba real do build |
-| A04/A05 quatro slots com atraso 15 s | Zero cards; FALHOU | Quatro cards; bounding box preservado no refetch | Trace/assert durante espera |
-| A06 F5 filtro 7 | Voltava a 30; FALHOU | Mantém 7/ordem e resumo após autorização | Sem certificar SLO frio/quente |
-| A08 503 sem falso login | FALHOU | PASSOU | Token conservado; ações bloqueadas |
-| Retorno visitado, 50 medidas in-page | Não medido quantitativamente | Mediana 31,75 ms; P95 51,90 ms | Até animation frame, não latência API |
-| Consultas repetidas dentro do frescor | Reentrada reconstruía e buscava | Zero novas consultas idênticas nos asserts | TTL controlado, não todos os módulos |
-| KPI Encerramentos/detalhe 15 s | Barreira estática confirmada; tempo baseline não instrumentado | 381,84 ms | Fixture; não comparar à medição histórica |
-| Heap observado, A18 | Não medido | 24,5 MB → 24,5 MB | Valor agregado do Chromium, sem GC controlado |
-| Listeners A18 | Não medido | window 122→122; document 16→16; DOM conectado 702→702 | Após aquecimento |
-| Timers/DOM A18 | Não medido | intervals 2→2; nós 2160→2160 | 50 reentradas, não prova de longa duração |
-| Bootstrap com timeout | Sem orçamento unificado | Duas tentativas; estado indisponível observado ~10,89 s após início do documento | Deadline de 10 s inicia dentro da rotina; overhead do boot não separado |
-| /me, gravação, analytics reais: mediana/P95 | Sem baseline equivalente atual | NÃO MEDIDO | Metas de produção PENDENTES |
-| Shell ≤500 ms; FMP; payload bytes; CLS por jornada | Não medidos comparáveis | NÃO CERTIFICADOS | Telemetria atual é parcial |
+Depois, mesma chave com atualização lenta:
+![Candidato: estrutura preservada](evidence/final-chromium/A04.png)
 
-PerformanceObserver captura long tasks e layout shifts, mas o relatório global final corresponde ao último documento/fluxo; não é um agregado comparável de toda a navegação. Não se afirma CLS zero. A04 verifica geometria durante refresh; não substitui análise de todos os shifts e telas. Tempos históricos misturavam sucesso/erro e não foram reutilizados como baseline.
+Traces completos são disponibilizados como artefatos do CI; screenshots e métricas selecionados estão versionados. Evidência autenticada real não é publicada no repositório público do frontend.
 
-## Testes e evidências
+## Segurança e consistência
+Foram revisados os caminhos de identidade/401, grants, escopo de query, snapshots, SQL/RPC, recibos e logs. Testes verificam bloqueio de RPC a anon/authenticated, carteira/papel, falhas de dependência, purga e respostas antigas. Nenhuma política de sessão única foi relaxada. Não se alteraram critérios de aptidão nem mediana por média.
 
-A tabela completa A01–A20 e B01–B06, com resultado integral/recorte, ações, duração e limites, está em [TEST-MATRIX.md](TEST-MATRIX.md). Resultados máquina: [qualified/metrics.json](evidence/qualified/metrics.json). A01–A20 não significa vinte critérios integrais certificados: há 20 subcasos e itens com integração faltante.
+Snapshot analítico contém somente quatro contagens, com TTL/esquema/checksum, e só aparece após autorização. Rascunhos operacionais têm política separada por usuário/carteira/recurso; não são usados como dados de servidor. Logs não contêm bearer, token_hash, nomes ou documentos. A revisão manual e testes focados não equivalem a uma certificação externa de segurança; o scanner formal não estava disponível.
 
-- Browser: 20/20 subcasos PASSARAM. Traces e screenshots têm timestamp/commit associado no JSON.
-- Operacional: build real, quatro viewports (1366/1440/1920/390), Processos, paginação, timeline, criação explícita, Encerramento, permissão/erro/login e rascunho na navegação/F5: PASSOU.
-- Backend: 59 PASSARAM em 4,39 s; imagem reconstruída sem bind: 59 PASSARAM em 3,36 s.
-- Paridade real offline: 1.125 casos, zero diferenças numéricas compartilhadas; replay reconstruído em 1,311 s.
-- Smoke/unit frontend: test:hardening e dez testes API/Base Geral/acesso PASSARAM; auxiliares de sessão/papel/encerramentos/Metabase passaram na execução registrada.
-- Preview legado test:ux: FALHOU, pois espera {decision,notes} e o renderer atual envia {agree,answers}; o renderer não foi modificado pela migração. Não é prova de integração nem falha silenciosamente descartada.
-- CI hospedado: Runtime V2 frontend (20 subcasos + operacional), React Migration, Base Geral e backend (59 testes + benchmark + replay) PASSARAM. Execuções 40057583540/40057583475/40057583409 e 40057335445; commits e steps em [CI_RESULTS.json](evidence/CI_RESULTS.json). Backend CI: 59 em 2,27 s.
-- Firefox, integração autenticada real, carga completa, revisão formal de segurança e duas horas de produção: NÃO EXECUTADOS/certificados.
+## Regressões e recuperação
+O CI encontrou problemas reais e problemas da fixture; cada um foi separado no MIGRATION_LOG. Não se restauraram funcionalidades antigas ausentes do runtime só para fazer pytest discovery passar. Não se publicou teste no Cloudflare.
 
-[Antes A04](evidence/baseline-repeat/A04.png) e [depois A04](evidence/qualified/A04.png) foram inspecionados visualmente. Layout, sidebar, tipografia, cor e ordem permanecem; slots/status neutros são as mudanças permitidas. Os screenshots ilustram estados; os asserts e o trace registram a espera, pois o screenshot final de um teste pode ocorrer após a resposta.
+O primeiro empacotamento com builder legado foi rejeitado por incluir metadados. O contexto final vem somente de git archive com allowlist; .git/.env/docs/tests/scripts foram conferidos como ausentes. Duas reconstruções produziram o mesmo digest. O rollback interno executou leitura/auth/escrita no candidato, na referência e novamente no candidato, com uma análise e um evento por operação.
 
-## Carga, perfis e paridade
+[ROLLBACK.md](ROLLBACK.md) contém ordem de promoção, retenção do container/mounts, desativação de flags e conciliação de intenções processing/uncertain antes de voltar a código sem recibos. Não dropar journal nem repetir escrita incerta.
 
-O benchmark sintético em dois executores de quatro threads, dez analytics de 150 ms e trinta operações críticas teve mediana/P95 críticos 247,54/256,24 ms antes e 12,28/21,95 ms depois. Quatro analytics 200 e seis 429; trinta críticos 200. Isso demonstra admissão no modelo, não B04 completo: não há proxy, rede HTTP, banco, sessão ou escrita durável.
+## Pendências que impedem encerramento
+1. Validar identidade Microsoft e navegação/API publicadas com sessão legítima, sem fabricar sessão ou grants.
+2. Fechar o diagnóstico de transporte/pool e discriminar fila real; a falha local não induzida permanece registrada.
+3. Completar a certificação integral A15/A16 das demais gravações e indicadores, além do escopo de Produtividade/Encerramentos testado.
+4. Finalizar procedimento de conciliação/retenção dos recibos. Inventário somente leitura confirmou o bind de arquivos e ausência de handles abertos para o SQLite conhecido.
+5. Promover somente com gate aprovado e acompanhar por pelo menos duas horas. Esse monitoramento não ocorreu.
 
-A amostra real offline abrange Admin/Legal Leader/Analista e Enter/Regular/Nubank, cinco períodos/prazos/faixas de duração: 375 casos por carteira. Enter teve 66 casos com amostras temporais e Regular 40; Nubank não tinha medição temporal no recorte, portanto sua mediana não foi validada com valor não nulo. Pendências, exports, coortes de Encerramentos e novos SQL permanecem pendentes. [PARIDADE.md](PARIDADE.md) detalha método/exclusões; dados completos permanecem na branch privada backend.
+A autorização para prosseguir já foi dada. Não é necessária outra confirmação genérica para continuar trabalho local; autenticação segura do usuário e evidência dos gates são as dependências concretas restantes. Até lá, o parecer é **NO-GO**, e não “migração concluída”.
 
-## Riscos residuais e próximo gate
-
-1. Reconciliar a imagem, os 43 caminhos divergentes e extras do container com um commit reproduzível; não substituir a árvore operacional pelo baseline da branch.
-2. Criar e validar endpoints separados de resumo/detalhe/export, com agregação/paginação autorizada no banco e mediana exata; comparar bases/coortes/exports e planos antes de índices.
-3. Provisionar ambiente equivalente e identidade técnica de teste, sem reutilizar sessões de colaboradores, para B01–B06, acesso real e carga 30+10 com gravações idempotentes.
-4. Correlacionar proxy/fila/Gunicorn/auth/transporte/PostgREST/SQL; resolver orçamento server-side, repetir medições separando sucesso/erro e frio/quente.
-5. Completar coordenação OAuth/Admin entre navegadores, auditoria de revogação, revisão dos rascunhos v1 e caches/polling ainda legados; revisar retry de handoff herdado.
-6. Alinhar a suíte legada ao contrato vigente, manter os checks CI aprovados e executar revisão formal de segurança. A skill de scan não pôde executar: preflight referenciado indisponível e ferramentas de scan ausentes.
-7. Só então solicitar promoção expressa, realizar rollback ensaiado e observar por duas horas.
-
-Rollback e comandos locais: [ROLLBACK.md](ROLLBACK.md), [RUN_LOCAL.md](RUN_LOCAL.md). Não houve migração de schema nem dados a reverter nesta fase. Os candidatos estão em branches de teste; produção não foi promovida.
-
-## Continuação em 24/10/2026 — reconciliação de fontes
-
-A referência 34c48c7 preserva os 161 arquivos de código/build do escopo da aplicação efetiva. A branch migration/runtime-v2-reconciled-20261024 (b8088ae) reaplica as correções de autenticação sobre essa base, em commits separados. Passaram 59 testes reconciliados em 3,34 s e novamente na imagem reconstruída em 3,37 s; o conjunto difere do anterior porque dois testes de timing_by_type não correspondem ao runtime e foram substituídos por dois testes de proveniência. A primeira coleta incompatível foi preservada como evidência. Replay offline: 1.125 casos sem diferença numérica, 1,219 s. Inventário ampliado identifica arquivos extras, backups e 13 fontes da aplicação não encontrados no histórico. Código reconciliado não significa release integral: dependências/assets/configuração, SQL, integração/carga e rollback seguem pendentes. Produção intacta. Ver [RECONCILIATION.md](RECONCILIATION.md). NO-GO mantido.
+## Último gate de CI
+Frontend dec1b42: [CI executado com sucesso](https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556). Backend f940cae: [CI executado com sucesso](https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40215951745). O último ajuste compartilha uma única repetição entre handoff e perfil; oito retestes selecionados passaram em cada navegador, incluindo handoff 503 seguido de /me 503 sem retry adicional. Nenhum desses resultados equivale a integração Microsoft publicada.

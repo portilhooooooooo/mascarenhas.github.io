@@ -1,41 +1,53 @@
-# Matriz de testes e evidências
+# Matriz de testes — execução e limites
 
-Frontend qualificado: e643f7bd747573de093f599ad367c8a56b0f6b6c, UTC 2026-10-24T03:05:07.783Z. API fixture, Chromium, build real em localhost. Vinte subcasos PASSARAM. PASSOU abaixo refere-se ao recorte controlado; não certifica integração. Os critérios integrais incompletos ficam NÃO EXECUTADO.
+PASSOU nesta matriz significa o escopo controlado descrito, não validação em produção. NÃO EXECUTADO identifica o cenário integral ainda sem evidência, mesmo quando subcasos passaram. Nenhum resultado de regex/build é usado como prova principal.
 
-Fixture, ações e asserções: tests/runtime-v2/browser.mjs. Resultados, commit, timestamp, chamadas e duração: evidence/qualified/metrics.json. Cada ID tem screenshot e há trace.zip/browser.log. Duração do teste inclui waits deliberados e não é latência da API.
+## Browser
 
-| ID | Resultado | Duração fixture (s) | Ações/asserções | Limite |
-|---|---|---:|---|---|
-| A01 | PASSOU | 0.13 | Perfil/evento imutável; painel abre. | Fixture; não integração. |
-| A02 | PASSOU | 1.52 | Menu → Analytics → menu; instância, filtro 90, ordem e scroll; zero nova consulta fresca. | Fixture; não integração. |
-| A03 | PASSOU | 0.94 | Atribuições realmente visível; volta conserva subaba, filtro, ordem e scroll. | Fixture; não integração. |
-| A04 | PASSOU | 15.63 | Refetch da mesma chave com 15 s: quatro cards e bounding box preservados. | Fixture; não integração. |
-| A05 | PASSOU | 15.52 | 30 → 7 com 15 s: slots ficam, valores anteriores não são atribuídos ao novo filtro. | Fixture; não integração. |
-| A06 | PASSOU | 17.95 | F5 profundo: shell/slots, preferências e resumo somente após /me válido. | SLO de shell frio/quente não certificado. |
-| A07 | PASSOU | 4.38 | Checksum/schema/TTL inválidos e quota esgotada: fallback sem crash. | Inclui A07-quota. |
-| A08 | PASSOU | 2.18 | 503 e timeout: credencial preservada, shell inert, duas tentativas no máximo. | Inclui A08-timeout; latência real /me não certificada. |
-| A09 | PASSOU | 2.71 | 401 SESSION_INVALID e 403 PROFILE_NOT_AUTHORIZED purgam acesso/cache. | Fixture; não integração. |
-| A10 | NÃO EXECUTADO | 1.55 | Subteste de duas abas PASSOU. | Substituição em navegador distinto, OAuth concorrente real e exceção Admin não executados. |
-| A11 | PASSOU | 0.93 | 401 antigo não revoga token novo; payload atrasado não cruza troca real de carteira na fixture. | Fixture; não integração. |
-| A12 | NÃO EXECUTADO | 14.49 | Nove combinações de papel/carteira PASSARAM no browser. | Permissões/RLS/SQL reais não certificados. |
-| A13 | PASSOU | 15.44 | Resumo de Encerramentos aparece antes do detalhe atrasado 15 s. | API inteiramente interceptada. |
-| A14 | PASSOU | 1.82 | Produtividade gera /me, SSE e results; sem hidratação das filas ocultas. | Badges globais completos exigem cobertura de integração. |
-| A15 | NÃO EXECUTADO | — | Suite operacional PASSOU: rascunho na navegação/F5 sem POST automático e confirmação explícita. | Não cobre todos os formulários, escrita durável concorrente nem idempotência real. |
-| A16 | NÃO EXECUTADO | — | 1.125 replays offline de amostra real sem diferença numérica compartilhada. | Novos agregados SQL, base completa, XLSX/CSV e demais dashboards pendentes. |
-| A17 | NÃO EXECUTADO | 1.96 | Subtestes 429/502/503/504 e invalidação após write confirmado PASSARAM. | Orçamento e backoff no transporte/backend real não certificados. |
-| A18 | PASSOU | 22.05 | 50 reentradas: listeners/timers/DOM estáveis e sem nova consulta fresca. | Heap observado sem GC controlado; não certifica ausência absoluta de leak. |
-| A19 | PASSOU | 0.38 | Sem pageerror; ocultos fora da árvore acessível; screenshots revisados. | Chromium; Firefox não executado; sem comparação pixel a pixel de todas as telas. |
-| A20 | PASSOU | 1.81 | Perda de tasks.view limpa queries, resumo e rascunho do escopo. | Fixture; não integração. |
+| ID | Resultado do cenário | Fixture, ações e asserções | Duração real e commit | Evidência |
+|---|---|---|---|---|
+| A01 — Permissões imutáveis | PASSOU | Perfil tasks.view=true; emitir authenticated; comparar perfil e abrir painel | chromium: 158.8 ms; a0a284dc; firefox: 315.9 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A02 — Módulos e frescor | PASSOU | Produtividade→Analytics→volta; DOM/filtro/ordem/scroll; zero fetch fresco; uma revalidação após 46 s | chromium: 48794.3 ms; a0a284dc; firefox: 48890.9 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A03 — Subabas | PASSOU | Produtividade→Atribuições→volta e rota externa; mesma instância e estado | chromium: 935.7 ms; a0a284dc; firefox: 1171.8 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A04 — Refetch lento | PASSOU | Mesma chave, atraso real 15 s; quatro cards e tabela permanecem | chromium: 15612.3 ms; a0a284dc; firefox: 15738.2 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A05 — Filtro lento | PASSOU | 30→7 dias; quatro slots neutros, sem números da chave anterior; Entradas separadamente | chromium: 46300.9 ms; a0a284dc; firefox: 46267.7 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A06 — F5 profundo | PASSOU | Barreira de /me; geometria antes da identidade; snapshot apenas autorizado; filtros/ordem restaurados | chromium: 16946.8 ms; a0a284dc; firefox: 17640.5 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A07 — Storage inválido | PASSOU | JSON corrompido, TTL vencido, schema desconhecido e quota; busca correta sem crash | chromium: 7236.3 ms; a0a284dc; firefox: 10411.9 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A08 — Auth transitória | PASSOU | 503 e timeout de 20 s; no máximo duas tentativas; token preservado; shell inerte; recuperação da query | chromium: 13590.6 ms; a0a284dc; firefox: 16631.6 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A09 — Revogação/403 | PASSOU | 401 SESSION_INVALID e 403; purge de dados/token; guard informa substituição por novo login | chromium: 5392.2 ms; a0a284dc; firefox: 7941.7 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A10 — Abas e OAuth real | NÃO EXECUTADO | Duas abas sem novo OAuth PASSOU; dedup/revogação/Admin em SQL PASSOU; Microsoft e dois navegadores reais não exercitados | chromium: 1712.9 ms; a0a284dc; firefox: 2600.1 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A11 — Corridas | PASSOU | 401 antigo, payload de carteira anterior e novo handoff do mesmo usuário; nunca substituem novo contexto | chromium: 1803.2 ms; a0a284dc; firefox: 1918.6 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A12 — Matriz de acesso | PASSOU | 3 papéis × 3 carteiras no browser e no HTTP/SQL; escopos não se misturam | chromium: 14259.2 ms; a0a284dc; firefox: 23275.8 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A13 — Encerramentos independente | PASSOU | Resumo imediato, detalhe atrasado 15 s; KPI não espera a barreira global | chromium: 15402.5 ms; a0a284dc; firefox: 15301.5 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A14 — Módulos ocultos | PASSOU | Produtividade não hidrata fila/analytics; realtime pausado sem reconexão em avalanche | chromium: 5764.1 ms; a0a284dc; firefox: 7439.8 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A15 — Rascunhos e escritas | NÃO EXECUTADO | Rascunho legado/F5/seleção, migração após auth e comando durável de Encerramentos PASSOU; todas as gravações de outros módulos não certificadas | chromium: 2132.5 ms; a0a284dc; firefox: 2712.2 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A16 — Integridade integral | NÃO EXECUTADO | Produtividade: 5.025 combinações, mediana, CSV/XLSX PASSOU; conjunto integral de indicadores das demais áreas não certificado | Ver logs SQL/HTTP e Processos | PARIDADE.md; evidência privada backend |
+| A17 — Erros e orçamento | PASSOU | 429/502/503/504 controlados, sem avalanche e sem perder snapshot válido; backend HTTP inclui SQL lenta | chromium: 2107.0 ms; a0a284dc; firefox: 2520.7 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A18 — 50 alternâncias | PASSOU | DOM/listeners/intervals/requests estáveis; heap pós-GC em Chromium e amostra temporal | chromium: 21231.7 ms; a0a284dc; firefox: 17428.5 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A19 — Acessibilidade/visual | PASSOU | Nenhum pageerror/console error; heading oculto fora da árvore acessível; screenshots e regressão operacional em 4 viewports | chromium: 392.6 ms; a0a284dc; firefox: 350.2 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
+| A20 — Mudança de acesso | PASSOU | Revogar tasks.view, mudar papel/carteira; epoch próprio versus alheio; allowed_modules/master/access_kind/capabilities | chromium: 14731.5 ms; a0a284dc; firefox: 23323.1 ms; a0a284dc | [chromium](evidence/final-chromium/metrics.json) / [firefox](evidence/final-firefox/metrics.json) |
 
-A07 inclui quota e A08 inclui timeout. A15 usa tests/processos-ui.mjs e evidence/operations, sem duração individual instrumentada. A16 usa scripts/runtime_v2_parity.py na branch backend. A10/A12/A17 têm subtestes PASSOU no JSON, mas não satisfazem o critério integral.
+## Backend e integração
 
-| ID backend | Resultado integral | Evidência parcial executada | O que falta |
+| ID | Resultado | Execução e asserções | Limite |
 |---|---|---|---|
-| B01 | NÃO EXECUTADO | 1.125 replays de 139 eventos reais desidentificados/21 tarefas/13 perfis, sem desvio numérico compartilhado | Novos agregados SQL, base completa, coortes e exports |
-| B02 | NÃO EXECUTADO | Builder mutável: 3 falhas antes, 3 testes passam após corrigir parâmetros; escopo preservado | Endpoint paginado no banco, total/ordem e plano reais |
-| B03 | NÃO EXECUTADO | Request ID, versão, app e auth_dependency testados | Fila/rede/pool/PostgREST/SQL na mesma requisição |
-| B04 | NÃO EXECUTADO | Modelo 30 críticos + 10 analytics; todos críticos 200 | HTTP/Gunicorn/banco/sessões/writes duráveis equivalentes |
-| B05 | NÃO EXECUTADO | 59 testes unitários/regressão; regra de sessão preservada | Revogação e idempotência concorrente reais |
-| B06 | NÃO EXECUTADO | Imagem derivada imutável b7ba52b, 59 testes e 1.125 replays sem bind de fonte | Runtime reconciliado e rollback operacional completo |
+| B01 | PASSOU | 30 testes SQL; 5.025 combinações Python↔SQL; 3 testes de células/formatação XLSX | Corpus desidentificado; Nubank tem 1 evento; fila pendente em fixture sintética |
+| B02 | PASSOU | Total, página, ordem determinística, autorização, CSV e ACL RPC no PostgreSQL/PostgREST | Escopo: Produtividade; não certificar paginações não migradas |
+| B03 | NÃO EXECUTADO | Correlação cliente/API/gateway/PostgREST/SQL executada no stage; tempo de SQL separado de transporte | Fila real de proxy/worker, pool e causa dos timeouts publicados não comprovados |
+| B04 | PASSOU | 30 colaboradores + 10 analytics; 90 salvamentos finais verificados; auth e escrita preservadas | Rede interna; não é teste de carga de produção; refusas 429 discriminadas |
+| B05 | PASSOU | Concorrência de sessão/Admin/revogação, phase save e 10 final saves concorrentes; perda de ACK e resultado incerto não duplicam | Escrita final integrada certificada em Encerramentos; demais writes pendentes em A15 |
+| B06 | PASSOU | Imagens por git archive, rebuild de digest idêntico, HTTP real na imagem limpa e candidato→referência→candidato | Ensaio interno; não houve cutover nem restauração de produção |
 
-Backend: migration/runtime-v2-20261023, correção ac1f3f4, replay b7ba52b, documentação 0d78860. Fonte read-only: 59 PASSARAM em 4,39 s; imagem reconstruída: 59 em 3,36 s e 1.125 replays em 1,311 s. evidence/backend contém logs e sumário da amostra; dataset e referência completos ficam no repositório privado backend. Sem SQL/DDL ou deploy em produção. CI hospedado frontend/backend PASSOU nos commits registrados em evidence/CI_RESULTS.json, incluindo 20 subcasos/operacional e 59 testes/replay/benchmark. Revisão formal Codex Security e monitoramento de duas horas não certificados.
+## Regressões preservadas no histórico
+
+- Baseline f0851b3: A01/A02/A04/A05 FALHOU com trace; A02 interrompeu continuidade e foi registrado como fatal.
+- Rodada inicial Firefox: timeout 10,299 s FALHOU. Reserva de 500 ms no fluxo; retestes Chromium 9,501 s e Firefox 9,502 s PASSOU.
+- CI de Processos: rascunho alheio persistia se o módulo carregasse depois do perfil. Reconciliação na inicialização corrigida; reteste com módulo atrasado PASSOU.
+- O discovery indiscriminado do pytest encontrou quatro imports de funcionalidades antigas ausentes no runtime capturado. A suite selecionada e o CI são listados explicitamente; não se declara o repositório inteiro verde.
+
+## Onde executar e encontrar detalhes
+
+RUN_LOCAL.md contém comandos. Cada metrics.json guarda timestamp, commit, duração por caso, requisições, cache, paints, shifts e erros. PNG por caso e trace ZIP ficam junto da execução; artefatos do CI são a cópia durável dos traces completos. Evidências backend e corpus permanecem no repositório privado. O manifesto de evidências registra hashes.
+
+## Complemento do orçamento global
+A08-shared-retry: PASSOU em Chromium/Firefox no commit dec1b42: duas tentativas de handoff e uma de perfil, total de uma repetição. Oito casos de auth foram reexecutados por navegador; métricas em evidence/shared-budget-chromium e evidence/shared-budget-firefox. CI completo: https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40217373556 (sucesso).

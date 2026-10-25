@@ -1,0 +1,3222 @@
+{
+  "at": "2026-10-25T17:30:41.797Z",
+  "commit": "a0a284dc5758f57f27c95701de10428cc0a0b801",
+  "fixture": true,
+  "routing": false,
+  "configOverride": "API base only, on a temporary dist copy; same identity/query runtime",
+  "assetPolicy": "Revalidate paths match _headers; remaining assets max-age=3600 in local benchmark, not proof of deployed CDN cache policy",
+  "samples": [
+    {
+      "cache": "cold",
+      "frameMs": 494.2000002861023,
+      "geometryMs": 611.5999999046326,
+      "kpiMs": 912.8000001907349,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 414.7999997138977,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "cold",
+      "frameMs": 378.40000009536743,
+      "geometryMs": 465.09999990463257,
+      "kpiMs": 583.9000000953674,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 213.19999980926514,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 244.40000009536743,
+      "geometryMs": 327.19999980926514,
+      "kpiMs": 445.59999990463257,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 178.39999961853027,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 266.09999990463257,
+      "geometryMs": 323.09999990463257,
+      "kpiMs": 428.69999980926514,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 165.90000009536743,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 191.5,
+      "geometryMs": 273.7000002861023,
+      "kpiMs": 356,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 167.2000002861023,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 178.59999990463257,
+      "geometryMs": 238.09999990463257,
+      "kpiMs": 350.09999990463257,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 176,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 195.80000019073486,
+      "geometryMs": 266.80000019073486,
+      "kpiMs": 373.5,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 159.2999997138977,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 190.69999980926514,
+      "geometryMs": 236.40000009536743,
+      "kpiMs": 362.40000009536743,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 159.7000002861023,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 204.59999990463257,
+      "geometryMs": 264.3999996185303,
+      "kpiMs": 375.2999997138977,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 150.60000038146973,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    },
+    {
+      "cache": "warm",
+      "frameMs": 186.30000019073486,
+      "geometryMs": 243,
+      "kpiMs": 344.6000003814697,
+      "auth": {
+        "kind": "identity",
+        "status": "authenticated",
+        "ms": 161,
+        "budgetMs": 10000
+      },
+      "responses": [
+        {
+          "url": "/tarefas/resultados",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-theme.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/css2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/styles.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-identity.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/brand-themes.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/design-system-v2.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/reimagined-workspace.css",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/lucide.min.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/config.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/react-compat.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/user-access-manager.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/agreements.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/payment-receipt.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/protocolo.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/vendor/qrcode.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/login-react.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-1.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/data-api.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/portfolio-policy.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/app.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/auth.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/dashboard-react.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/page-init-2.js",
+          "status": 304,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/react-dashboard/client-CKaQoZDw.js",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/favicon-white.svg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login-poster.jpg",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/assets/mascarenhas-login.mp4",
+          "status": 206,
+          "fromDiskCache": true,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/me",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/events/stream",
+          "status": 403,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        },
+        {
+          "url": "/api/tasks/results",
+          "status": 200,
+          "fromDiskCache": false,
+          "fromServiceWorker": false
+        }
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949436548
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "at": 1792949436578
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "at": 1792949436615
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "at": 1792949436617
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "at": 1792949436619
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "at": 1792949436620
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "at": 1792949436621
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "at": 1792949436621
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "at": 1792949436646
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "at": 1792949436648
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "at": 1792949436670
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949436674
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "at": 1792949436674
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "at": 1792949436674
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949436675
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949436675
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949436689
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "at": 1792949436694
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "at": 1792949436696
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949436704
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "at": 1792949436704
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "at": 1792949436724
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "at": 1792949436729
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949436731
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949436752
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "at": 1792949436761
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "at": 1792949436763
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "at": 1792949436980
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949436981
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "at": 1792949437054
+    },
+    {
+      "path": "/assets/mascarenhas-login-poster.jpg",
+      "method": "GET",
+      "at": 1792949437200
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "at": 1792949437201
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "at": 1792949437209
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949437375
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949437429
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949437479
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "at": 1792949437528
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "at": 1792949437530
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "at": 1792949437532
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "at": 1792949437534
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "at": 1792949437536
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "at": 1792949437539
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "at": 1792949437558
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "at": 1792949437560
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "at": 1792949437561
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "at": 1792949437561
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949437563
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "at": 1792949437563
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "at": 1792949437593
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949437599
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949437605
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949437607
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "at": 1792949437611
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "at": 1792949437653
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949437653
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "at": 1792949437656
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "at": 1792949437657
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "at": 1792949437657
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949437660
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949437710
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "at": 1792949437711
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "at": 1792949437713
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949437843
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "at": 1792949437845
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "at": 1792949437879
+    },
+    {
+      "path": "/assets/mascarenhas-login-poster.jpg",
+      "method": "GET",
+      "at": 1792949437954
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "at": 1792949437955
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "at": 1792949437981
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949438037
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949438083
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949438115
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949438155
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949438183
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949438183
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949438184
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949438184
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949438184
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949438184
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949438338
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949438499
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949438565
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949438588
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949438657
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949438662
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949438682
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949438682
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949438683
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949438683
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949438683
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949438841
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949438995
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949439014
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949439046
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949439086
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949439103
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949439103
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949439103
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949439114
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949439114
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949439133
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949439225
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949439376
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949439418
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949439440
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949439487
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949439498
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949439498
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949439498
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949439499
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949439499
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949439517
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949439605
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949439764
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949439787
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949439834
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949439864
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949439892
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949439894
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949439894
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949439894
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949439895
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949439895
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949440018
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949440162
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949440213
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949440229
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949440266
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949440284
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949440284
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949440288
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949440289
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949440294
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949440294
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949440409
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949440557
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949440598
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949440634
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949440666
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949440667
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949440667
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949440668
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949440668
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949440691
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949440692
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949440823
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949440957
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949441012
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "at": 1792949441046
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "at": 1792949441079
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "at": 1792949441084
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "at": 1792949441084
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "at": 1792949441096
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "at": 1792949441096
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "at": 1792949441097
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "at": 1792949441106
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "at": 1792949441221
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "at": 1792949441366
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "at": 1792949441384
+    }
+  ]
+}

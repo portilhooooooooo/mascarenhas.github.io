@@ -1,19 +1,42 @@
-# Baseline
+# Baseline e medições
+## Ambientes separados
+| Ambiente | Versão | Uso |
+|---|---|---|
+| Frontend publicado, somente leitura | assets f0851b3 verificados no navegador | identificação do runtime; tela de login, sem integração autenticada |
+| Baseline frontend local | f0851b3 | reprodução Chromium com fixture |
+| Frontend candidato | release/runtime-v2-20261024; consultar commit em cada metrics.json | testes de comportamento/UX |
+| Backend publicado, somente leitura | container c1c1645c…f16cc; código capturado na referência privada | inventário; não foi implantado nem interrompido |
+| Banco publicado, somente leitura | PostgreSQL 17.6, PostgREST 14.5 | captura limitada desidentificada; não é carga/integracão de colaborador |
+| Stage interno descartável | PostgreSQL 17.11, PostgREST 14.5, Redis, Gunicorn 2×4 | SDK/HTTP/SQL reais com identidades sintéticas |
 
-Frontend investigado: dev/tasks-workspace em 11a17cf58d2afcacbd90f2c92c7cd11591386793. Build original executado com sucesso. Backend: container mba-backoffice-backend, imagem 64b00348da25, label commit 89003b56662e0dcadc1dc7c6eebedcfeb7f7bc10; 2 workers × 4 threads. Checkout operacional main c2cb57d contém dezenas de alterações, preservadas.
+A imagem publicada tinha rótulo que não correspondia integralmente ao código ativo. A main não foi presumida como runtime. As medidas históricas de /api/me e dashboards fornecidas no diagnóstico NÃO são baseline atual.
 
-Comparação SHA-256 container/release: auth/supabase_auth.py, security/sessions.py, routes/api/me.py e routes/api/encerramentos_analises.py coincidem com 89003b5; routes/api/task_results.py diverge (container 6f9f8c7; commit 88a23f9). Portanto label não prova paridade integral.
+## Defeitos reproduzidos no baseline atual
+A01 falhou: o listener alterou tasks.view no objeto canônico. A02 falhou: o painel sumiu na volta de outro módulo; a continuação da jornada não era possível e o trace/fatal foram preservados. A04 e A05 falharam: os quatro slots passaram a zero durante refresh/filtro pendente.
 
-Defeitos estáticos reencontrados: mutação de grants em react-compat; currentTaskTab fora de Tarefas retorna execution; shown depende da revisão; Encerramentos aguarda Promise.all; retries empilhados no bootstrap. Reprodução browser: evidence/baseline-repeat. Fixture controlada, sem integração ou carga real. Contrafactual explicitamente remove só react-compat para isolar os demais defeitos.
+A04/A05 foram isolados após desabilitar somente o interceptor react-compat na fixture, para que a mutação de grants não mascarasse os defeitos internos de renderização. Isso é um contrafactual declarado de diagnóstico, não uma alteração de produção. Screenshots e metrics têm timestamp e commit.
 
-Valores do diagnóstico anterior são históricos, misturam sucesso/erro e NÃO constituem baseline atual. Mediana/P95 real e fila/rede/SQL da mesma requisição permanecem pendentes.
+## Concorrência — comparação de admissão
+Três rodadas por variante; 30 colaboradores sintéticos e 10 aberturas analíticas simultâneas; 15 validações + 15 salvamentos finais por rodada; SQL atrasada em 1,5 s. Mesma imagem congelada (commit 289f9be, digest 2be3050c…), mesmos contratos e Gunicorn 2×4. A variante anterior remove somente admissão HTTP/transacional da candidata: NÃO representa benchmark completo do backend publicado anterior.
 
-## Verificação ampliada
+| Fluxo | Sem admissão mediana/P95 (ms) | Com admissão mediana/P95 (ms) |
+|---|---:|---:|
+| Autenticação | 1833,7 / 3105,2 | 85,0 / 196,1 |
+| Salvamento final | 3195,8 / 3561,1 | 490,9 / 759,7 |
+| Analytics, somente respostas 200 | 1797,0 / 4621,8 | 1569,8 / 1598,4 |
 
-O frontend main remoto está em f0851b3. SHA-256 do auth.js publicado: 76ec1bdb26ec0c1435ccb94e6b4f9d6b9beb6b9ea3fc641645d7ad97e32aa996, idêntico ao arquivo desse commit. Nesse arquivo, loadProfile emite mba:authenticated com detail: profile; react-compat.js tem o mesmo SHA no main e no baseline dev (2cbbf11f...). Portanto, a emissão explícita do evento com referência compartilhada no ensaio corresponde ao contrato do auth publicado. O bootstrap original da branch dev usa uma cópia/proxy e pode passar na abertura inicial; não confundir esse resultado com imutabilidade dos listeners.
+Foram verificados 90 salvamentos finais duráveis, 90 análises e seus eventos/recibos nas rodadas, sem duplicações observadas. Após admissão, 12 analytics tiveram sucesso e 18 receberam 429/Retry-After. Recusas rápidas não são sucesso nem são misturadas à latência de analytics bem-sucedidos. Auth: 90 respostas 200; escrita: 90 respostas 201, somando variantes.
 
-A comparação ampliada dos caminhos Python rastreados encontrou 43 diferenças fora de tests/ contra a revisão declarada 89003b5: 34 arquivos diferentes e 9 ausentes no container. O inventário completo e hashes estão na branch backend em docs/runtime-v2/RUNTIME_DRIFT.json. Arquivos extras do runtime não são integralmente inventariados. Não são 43 defeitos; são 43 divergências de proveniência que exigem reconciliação.
+Uma tentativa anterior foi abortada por RemoteProtocolError entre cliente de benchmark e Gunicorn; não produziu resultado válido. Keepalive do cliente foi alinhado a 1 s, abaixo dos 2 s do servidor; novo ensaio não repetiu a falha. Isso NÃO comprova a causa dos incidentes de transporte publicados. Nenhuma gravação foi repetida automaticamente para esconder a falha. Evidência e erro original foram preservados.
 
-O replay baseline-repeat mantém o build original 11a17cf e falha em A01/A02/A03/A04/A05/A06/A08. Depois de A01, o replay remove APENAS o interceptor dentro da fixture, para alcançar os demais defeitos; esse contrafactual é identificado no script. Não foi alterado o frontend publicado.
+## Navegador
+Reentrada em 50 alternâncias: mediana 26,0 ms, P95 51,6 ms, máximo 84,1 ms na rodada selecionada. Sem fetch idêntico durante frescor; após 46 s, exatamente uma revalidação com snapshot anterior visível. DOM/listeners/intervals permaneceram estáveis. Heap Chromium após GC: 12.036.864 → 12.459.836 bytes; acréscimo de aproximadamente 0,40 MiB, sem certificação geral de ausência de leak.
 
-O Chromium local deste executor não pôde ser instalado: o download retornou ZIP truncado. Os browsers foram executados em localhost no dispositivo autorizado, com a API integralmente interceptada e sem tráfego de teste autenticado para produção. Dois processos de build/browser na mesma VPS podem influenciar tempos; este ambiente não certifica SLOs de produção.
+Playwright routing desabilita cache HTTP. Portanto, medições de assets quentes usam benchmark separado, sem routing e com servidor HTTP da fixture. Na repetição congelada: shell quente até 266,1 ms; geometria dos quatro slots até 327,2 ms; primeiro KPI autorizado até 445,6 ms, n=8. Cache frio, n=2: shell 494,2/378,4 ms; geometria 611,6/465,1 ms. API local controlada, não latência do serviço publicado. A política dos assets restantes é declarada no metrics.json; não equivale a medir a política efetiva do CDN.
+
+A04/A05 mantiveram geometria por 15 s. Encerramentos exibiu KPI em 728 ms em rodada sob outros testes enquanto detalhe aguardava 15 s; não é P95 do endpoint publicado. O orçamento de identidade excedeu 10 s em uma rodada Firefox (10,299 s), foi corrigido com reserva de 500 ms dentro do fluxo e retestado em 9,501/9,502 s.
+
+## Pendente
+P95 de autenticação e salvamento publicados, resumos frios/quentes reais, fila no proxy/Gunicorn, pool efetivo PostgREST e causa dos timeouts de produção. CLS global de boot e mudanças provocadas por interação são registrados separadamente; não declarar CLS zero com base apenas em cards estáveis. Ver os JSONs brutos, matriz e diagnóstico final.
+
+Na rodada final a0a284d, Firefox teve reentrada mediana 11/P95 34 ms (máximo 38 ms). Timeout final: Chromium 9500,2 ms e Firefox 9958 ms, ambos dentro de 10 s. Os retestes de 9501/9502 ms acima pertencem à correção anterior e permanecem históricos.
