@@ -40,3 +40,40 @@ A04/A05 mantiveram geometria por 15 s. Encerramentos exibiu KPI em 728 ms em rod
 P95 de autenticação e salvamento publicados, resumos frios/quentes reais, fila no proxy/Gunicorn, pool efetivo PostgREST e causa dos timeouts de produção. CLS global de boot e mudanças provocadas por interação são registrados separadamente; não declarar CLS zero com base apenas em cards estáveis. Ver os JSONs brutos, matriz e diagnóstico final.
 
 Na rodada final a0a284d, Firefox teve reentrada mediana 11/P95 34 ms (máximo 38 ms). Timeout final: Chromium 9500,2 ms e Firefox 9958 ms, ambos dentro de 10 s. Os retestes de 9501/9502 ms acima pertencem à correção anterior e permanecem históricos.
+
+## Correção do orçamento analítico — 25/10
+Foi reproduzido um defeito da candidata: a divisão igual do orçamento de 8 s impunha read timeout de 2 s aos dois novos RPCs analíticos. Com SQL controlada de 2,3 s, a imagem 289f9be devolveu 503 em 2.022,609 ms. Não é prova da causa dos timeouts publicados nem da falha histórica de 2.009 ms.
+
+8bcc99d distribui as fases dos RPCs de Produtividade dentro do mesmo orçamento remanescente: conexão até 1 s, pool/escrita do pedido até 0,5 s cada, leitura até 4 s; a soma nunca supera o restante e limites menores já configurados são preservados. Autenticação e gravações de negócio não mudam. Não há novo retry, espera artificial no aplicativo ou aumento do orçamento total. Outros endpoints não são declarados corrigidos por este ajuste.
+
+Na imagem nova, a mesma SQL de 2,3 s retornou 200 em 2.325,663 ms (um caso controlado, não P95). Suite HTTP/runtime/orçamento: 68 PASSOU em 28,62 s. A falha anterior e ambos os resultados permanecem no JUnit/logs privados. Helper c8ab5f3 registra tempo/status; falha de transporte status 0 foi explicitamente excluída da população de sucessos do benchmark. Populações e percentis foram conferidos contra todos os requests brutos.
+
+Carga repetida na MESMA imagem 8bcc99d com/sem admissão, três rodadas de 30 colaboradores + 10 analytics: 90 salvamentos duráveis, sem duplicação. Valores abaixo não representam baseline de produção.
+
+| Fluxo | Sem admissão mediana/P95 (ms) | Com admissão mediana/P95 (ms) |
+|---|---:|---:|
+| Auth (45 sucessos por variante) | 1555,5 / 1638,7 | 83,5 / 132,1 |
+| Salvamento (45 sucessos por variante) | 1819,5 / 2182,7 | 470,6 / 719,4 |
+| Analytics, somente 200 | 1637,9 / 3166,7 (n=30) | 1572,1 / 1583,8 (n=12) |
+
+Na variante protegida houve 18 recusas 429/Retry-After. Não foram misturadas aos sucessos analíticos. Nenhuma autenticação/salvamento falhou nesse ensaio.
+
+Imagem 8bcc99d: sha256:3f28b9eef63d4ed7d10b6ae1c0bc19216925d0af393aa293c5989f33d98acef3; duas reconstruções deram digest idêntico. A imagem histórica 289f9be permanece preservada. Ensaio 28385ca: candidata nova → referência efetiva 01fe904 → candidata nova, com auth/leitura 200 e escrita 201, uma análise e um evento por operação. Sem cutover de produção.
+
+Login real continua não executado pelo agente sem conta autorizada; o usuário confirmou login normal. Diagnóstico de transporte/pool publicado, A15/A16 integrais e M6 permanecem abertos. NO-GO para promoção.
+
+## Metadados reais somente leitura — limite da observação
+Janela fixa 25/10/2026 13h57–14h57 de Campo Grande (17h57–18h57 UTC). Sem login do agente e sem teste de carga/gravação em produção. Foram retornadas 19 respostas do gateway Supabase: 18 com 200 e uma com 206. Os logs PostgREST têm seis registros com os termos error/timeout; não foi estabelecida correlação com esses requests, rota, fila, SQL ou causa. Não há prova de indisponibilidade geral.
+
+| Chamada downstream real | n | Status | Mediana (ms) | Máximo (ms) |
+|---|---:|---|---:|---:|
+| auth_session_profile | 6 | 200 | 8 | 304 |
+| auth_oauth_session | 1 | 200 | 90 | 90 |
+| protocolo_v2_sync_talisman | 2 | 200 | 3172,5 | 3452 |
+| carteira_processual_dashboard_v2 | 1 | 200 | 1004 | 1004 |
+
+Tempo informado pelo header x-envoy-upstream-service-time: processamento upstream mais rede entre Envoy/upstream, conforme [documentação oficial](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-upstream-service-time). NÃO é tempo SQL isolado, fila Gunicorn ou latência completa de /api/me. A mediana foi recalculada em Python a partir dos tempos numéricos, usando ponto médio dos dois centrais para n par; quantileExact(0.5) superior não foi apresentado como essa mediana. P95 nearest-rank e contagens estão no JSON privado; n é pequeno e não comprova metas de produção.
+
+A extração reteve somente nome de tabela/RPC normalizado, status, números e contagens. Não foram coletados mensagens brutas, query strings, documentos, CNJ, IP, JWT, assinatura ou perfil. O tamanho do pool permanece desconhecido. Leituras iniciais de campos de diagnóstico não expostos retornaram erro; não foram usadas como métricas. Nenhuma configuração do Supabase foi modificada.
+
+CI de 8bcc99d: [PASSOU](https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40223094336). Produção permanece sem deploy desta migração. A hipótese de falha geral de login continua retirada; autenticação real não foi executada pelo agente sem conta autorizada.

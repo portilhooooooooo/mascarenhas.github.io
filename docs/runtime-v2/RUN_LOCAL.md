@@ -27,3 +27,5 @@ Fixtures reais desidentificadas ficam apenas no repositório privado do backend.
 Para evidência por caso: executar pytest com --junitxml=runtime-v2-cases.xml -o junit_logging=no. O XML registra duração individual e timestamp de execução. Para investigar recibos sem alterá-los, consultar WRITE-RECOVERY.md; a ferramenta operacional não é incluída na imagem do aplicativo.
 
 CI remoto da branch dev também foi executado após o último código frontend: bf54945 passou nos workflows React e browser. A branch release preserva a base main efetivamente publicada; não promover dev inteira. Registros de domínio adicional mantêm falhas pré-existentes explicitamente e não integram uma afirmação de discovery global verde.
+
+Para o ensaio de orçamento: imagem mba-runtime-v2-release:analytical-budget, fonte 8bcc99d, API interna runtime-v2-image-analytical-budget:5000. Variantes before/rollback anteriores foram paradas após os testes; credenciais sintéticas têm TTL e devem ser renovadas pelo helper isolado antes de nova rodada. Não confundir esse ambiente com login autorizado via .bat/local ou main Cloudflare.

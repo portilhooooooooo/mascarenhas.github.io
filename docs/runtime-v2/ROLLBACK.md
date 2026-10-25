@@ -23,3 +23,6 @@ Desativar flags SQL/admissão para retornar aos caminhos anteriores preservados.
 
 ## Riscos
 A política desta versão é reter todos os recibos sem expiração/limpeza automática. WRITE-RECOVERY.md define inventário e conciliação; a ferramenta foi testada em transação read only. Conciliação administrativa real continua não executada. Limpeza sem prova durável poderia permitir replay. Estado fora do código/mounts precisa de inventário final. Ensaios internos não comprovam restauração do banco ou do tráfego publicado.
+
+## Candidata posterior de orçamento
+Imagem 8bcc99d / digest 3f28b9ee… substitui a candidata anterior para novos ensaios; nenhuma imagem foi promovida. Rebuild e candidata nova→referência 01fe904→candidata nova executados. Imagens anteriores preservadas. Seleção dos alvos do script é limitada a URLs internas explícitas. A reversão de produção segue condicionada ao procedimento de conciliação já descrito.

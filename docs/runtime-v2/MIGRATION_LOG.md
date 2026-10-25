@@ -55,3 +55,8 @@ Referência de rollback: 01fe904. Ver git log para o histórico completo e a evi
 
 - Retirada atribuição do erro isolado de início de OAuth a falha geral da plataforma: login normal confirmado pelo usuário. Sem conta autorizada do agente, integração autenticada não executada. Caminhos autorizados registrados na SPEC.
 - A15 adicional: Encerramento diferido exercitado pelo HTTP/SQL real, seis chamadas e replay sem duplicação, preservando prazo e estado waiting.
+
+- 8bcc99d: corrigida distribuição prematura de orçamento dos dois RPCs analíticos; reprodução HTTP/SQL antes falhou, depois passou. Limite total, auth e writes preservados. 68 testes passaram; carga/rollback/rebuild repetidos. c8ab5f3 preserva latência por caso e separa falhas de transporte; 28385ca permite somente os novos alvos internos explícitos no ensaio de rollback.
+
+- Consulta somente leitura dos metadados reais de 25/10 13h57–14h57 CG: 19 respostas, sem 5xx observado nessa amostra; não é prova geral de disponibilidade. Auth sessão/OAuth tiveram sucesso. Seis mensagens com termos error/timeout seguem sem correlação. Nenhum login do agente, segredo ou documento coletado.
+- CI 8bcc99d PASSOU. Variantes descartáveis obsoletas foram paradas após os ensaios para liberar recursos; imagens preservadas e container de produção inalterado.

@@ -65,3 +65,8 @@ Backend 65a7e92: suite ampliada 65/65 PASSOU em 25,25 s; seis casos de Pagamento
 Regressão de domínio adicional: 97 testes + 90 subtests PASSOU; sete FALHOU, tanto na candidata quanto na referência efetiva 01fe904, com os mesmos casos/resultados. A comparação executada e os hashes das regras estão em domain-comparison.json no backend privado. Isso é evidência de divergência pré-existente, não autorização para ignorá-la nem prova de paridade de todas as áreas. A15/A16 integrais permanecem abertos.
 
 Correção de acesso: usuário confirmou login normal. A10 real segue NÃO EXECUTADO pelo agente sem credenciais autorizadas, não por indisponibilidade comprovada. A15 adicional: Encerramento diferido com trânsito recente, concorrência/replay e estado waiting verificado no HTTP/SQL; um evento diferido e nenhuma conclusão artificial.
+
+## R07 — corte prematuro da candidata
+Reprodução na imagem 289f9be: FALHOU, SQL controlada 2,3 s recebeu 503 em 2,023 s. Em 8bcc99d: PASSOU, 200 em 2,326 s, dentro do mesmo orçamento total. Suite ampliada: 68/68 em 28,62 s. B04 repetido: 90 saves verificados; B06: rebuild idêntico e rollback na nova imagem passaram. B03 de produção continua NÃO EXECUTADO. Ver seção correspondente do diagnóstico e budget-* no backend privado.
+
+B03 parcial: metadados reais de 19 respostas Supabase coletados somente por leitura; 6 validações de sessão 200 e 1 OAuth 200. Tempo upstream não equivale a /api/me nem SQL isolado. Seis registros com termos error/timeout não foram correlacionados. B03 integral e pool real continuam abertos. CI 8bcc99d PASSOU: run 40223094336.
