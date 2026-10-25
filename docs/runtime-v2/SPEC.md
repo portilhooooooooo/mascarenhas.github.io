@@ -29,3 +29,6 @@ Persistência de rascunho operacional é política distinta do resumo analítico
 
 ## Limite de autenticação autorizado
 Login somente via executável de testes .bat em local.portilhobackoffice.site ou main publicada no Cloudflare. O agente não possui conta autorizada e não deve fabricar sessão. Login normal confirmado pelo usuário; nenhuma falha geral de login foi demonstrada.
+
+## Adendo de 25/10/2026
+Importação de Encerramentos deve persistir classificação junto com upload/processos/evento na transação existente. Criação vinculada pelo formulário de Processos aceita process_cnj, valida autorização/carteira/responsável e usa a RPC já existente, sem ampliar as regras de criação genérica.

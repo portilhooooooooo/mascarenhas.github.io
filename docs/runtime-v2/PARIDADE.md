@@ -23,3 +23,6 @@ Paridade sobre dados desidentificados não equivale a login real, RLS de um cola
 Encerramentos, Defesa, três cenários Pagamentos v2 e decisões finais de Liminares foram gravados pelo SDK/PostgREST e funções/triggers efetivos. Foram verificados decisão/resposta, carteira e evento único após concorrência/replay. Isso é integridade de escrita em fixture sintética; não amplia a representatividade do corpus analítico nem certifica os dashboards das demais áreas.
 
 A seleção ampliada de 14 arquivos de domínio foi executada contra a candidata e a referência efetiva 01fe904: mesmos 97 testes e 90 subtests passaram e mesmos sete falharam. Cinco arquivos de regras têm SHA-256 idêntico. A paridade de resultado dessa seleção não transforma as falhas em sucesso e não certifica integrações externas. Pagamentos legado recebeu seis cenários HTTP/SQL adicionais, com uma análise/evento por recurso.
+
+## Adendo de 25/10/2026
+Checkpoint 25/10: classificações CSV/XLSX preservadas em RPC atômica; somente duas falhas de domínio mudaram de FALHOU para PASSOU. Os demais 102 registros de teste de domínio mantiveram o mesmo resultado. O conjunto atual de 104 tem 99 PASSOU e cinco FALHOU; 90 subtests PASSOU. Criação vinculada não altera indicadores nem critérios. Paridade analítica de todas as áreas segue pendente.

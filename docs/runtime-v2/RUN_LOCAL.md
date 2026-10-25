@@ -29,3 +29,6 @@ Para evidência por caso: executar pytest com --junitxml=runtime-v2-cases.xml -o
 CI remoto da branch dev também foi executado após o último código frontend: bf54945 passou nos workflows React e browser. A branch release preserva a base main efetivamente publicada; não promover dev inteira. Registros de domínio adicional mantêm falhas pré-existentes explicitamente e não integram uma afirmação de discovery global verde.
 
 Para o ensaio de orçamento: imagem mba-runtime-v2-release:analytical-budget, fonte 8bcc99d, API interna runtime-v2-image-analytical-budget:5000. Variantes before/rollback anteriores foram paradas após os testes; credenciais sintéticas têm TTL e devem ser renovadas pelo helper isolado antes de nova rodada. Não confundir esse ambiente com login autorizado via .bat/local ou main Cloudflare.
+
+## Adendo de 25/10/2026
+Suíte HTTP: RUNTIME_V2_TEST_DATABASE=1, banco runtime_v2_* e API HTTP interna explicitamente permitida; python -m pytest tests/test_runtime_v2_http.py tests/test_runtime_v2.py tests/test_runtime_v2_auth_budget.py -q. Fixture inclui upload-stage-schema.sql e linked-task-stage-schema.sql. Não apontar para produção; os scripts de imagem emitem credenciais sintéticas com TTL. Build reproduzível: PYTHONPATH=. python scripts/runtime_v2_build.py --commit 25bb6c1 --tag mba-runtime-v2-release:linked-creation.

@@ -26,3 +26,6 @@ A política desta versão é reter todos os recibos sem expiração/limpeza auto
 
 ## Candidata posterior de orçamento
 Imagem 8bcc99d / digest 3f28b9ee… substitui a candidata anterior para novos ensaios; nenhuma imagem foi promovida. Rebuild e candidata nova→referência 01fe904→candidata nova executados. Imagens anteriores preservadas. Seleção dos alvos do script é limitada a URLs internas explícitas. A reversão de produção segue condicionada ao procedimento de conciliação já descrito.
+
+## Adendo de 25/10/2026
+Imagem candidata 25bb6c1: mba-runtime-v2-release:linked-creation, digest 726fbb1591fe505f8c8ae41c61151f4e65e98f35b0c4ed95978b55cfee7f05c9. Rebuild idêntico; helper aceita explicitamente runtime-v2-image-linked-creation. Ensaio candidato/referência/candidato incluiu save e upload. A referência perde a correção de classificação atômica e continua rejeitando process_cnj; rollback não corrige esses defeitos. Nenhum DDL de produção foi necessário para esses dois ajustes.
