@@ -27,6 +27,15 @@ try{
  await context.addInitScript(()=>{
   localStorage.setItem('mba_session_token','ba_runtime_fixture');
   window.__metrics={shifts:[],long:[],marks:[],auth:[]};
+  const geometry=()=>{
+   const shell=document.querySelector('.app-shell'),slots=document.querySelectorAll('.task-results-stat');
+   if(!window.__shellGeometryMs && shell && slots.length===4 && shell.getBoundingClientRect().width>0 && [...slots].every(el=>el.getBoundingClientRect().height>0))window.__shellGeometryMs=performance.now();
+   if(!window.__firstKpiMs && slots[0]?.querySelector('strong')?.textContent==='30')window.__firstKpiMs=performance.now();
+   if(window.__shellGeometryMs&&window.__firstKpiMs)geometryObserver.disconnect();
+  };
+  const geometryObserver=new MutationObserver(()=>requestAnimationFrame(geometry));
+  geometryObserver.observe(document,{subtree:true,childList:true,attributes:true,characterData:true});
+  document.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(geometry),{once:true});
   window.__listenerCount=0;
   const registry=new WeakMap(),add=EventTarget.prototype.addEventListener,remove=EventTarget.prototype.removeEventListener;
   const capture=o=>typeof o==='boolean'?o:!!o?.capture;
@@ -186,7 +195,10 @@ try{
    const before=calls.filter(c=>c.path==='/api/tasks/results').length;await page.evaluate(()=>window.MBA_API.request('/api/task-processes/fixture/activity',{method:'POST',body:'{}'}));await page.waitForTimeout(150);assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,before+1);
    return {statuses,mutationInvalidation:true};
   });
-  await test('A18',async()=>{await navigate('analytics');await page.locator('.overview-page').waitFor();await page.waitForFunction(()=>!document.querySelector('.overview-refresh')?.disabled);await page.evaluate(()=>new Promise(requestAnimationFrame));await navigate('tarefas/resultados');await page.waitForTimeout(100);const before=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));const startCalls=calls.filter(c=>c.path==='/api/tasks/results').length;await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='fifty');const runs=[],checkpoints=[];for(let i=0;i<50;i++){const start=await page.evaluate(()=>performance.now());await navigate('analytics');await navigate('tarefas/resultados');runs.push(await page.evaluate(t=>performance.now()-t,start));if(i%10===9)checkpoints.push(await page.evaluate(()=>({listeners:window.__listenerStats(),intervals:window.__intervals.size,heap:performance.memory?.usedJSHeapSize})));}assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'fifty');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,startCalls);const after=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));assert.deepEqual(after.listeners,before.listeners,JSON.stringify({before,after,checkpoints}));assert.equal(after.intervals,before.intervals);return {roundTripsMs:runs,before,after,checkpoints,navigation:await page.evaluate(()=>window.MBA_RUNTIME_METRICS),coverage:'50 navegações, DOM, requests, listeners e intervals; heap observado sem certificação de leak'};});
+  await test('A18',async()=>{
+  const memorySession=browserName==='chromium'?await context.newCDPSession(page):null;
+  const preciseHeap=async()=>{if(!memorySession)return null;await memorySession.send('HeapProfiler.collectGarbage');return memorySession.send('Runtime.getHeapUsage');};
+  await navigate('analytics');await page.locator('.overview-page').waitFor();await page.waitForFunction(()=>!document.querySelector('.overview-refresh')?.disabled);await page.evaluate(()=>new Promise(requestAnimationFrame));await navigate('tarefas/resultados');await page.waitForTimeout(100);const preciseBefore=await preciseHeap();const before=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));const startCalls=calls.filter(c=>c.path==='/api/tasks/results').length;await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='fifty');const runs=[],checkpoints=[];for(let i=0;i<50;i++){const start=await page.evaluate(()=>performance.now());await navigate('analytics');await navigate('tarefas/resultados');runs.push(await page.evaluate(t=>performance.now()-t,start));if(i%10===9)checkpoints.push(await page.evaluate(()=>({listeners:window.__listenerStats(),intervals:window.__intervals.size,heap:performance.memory?.usedJSHeapSize})));}assert.equal(await page.locator('.task-results-page').getAttribute('data-instance'),'fifty');assert.equal(calls.filter(c=>c.path==='/api/tasks/results').length,startCalls);const after=await page.evaluate(()=>({heap:performance.memory?.usedJSHeapSize,listeners:window.__listenerStats(),intervals:window.__intervals.size,dom:document.querySelectorAll('*').length}));assert.deepEqual(after.listeners,before.listeners,JSON.stringify({before,after,checkpoints}));assert.equal(after.intervals,before.intervals);return {roundTripsMs:runs,before,after,checkpoints,navigation:await page.evaluate(()=>window.MBA_RUNTIME_METRICS),preciseHeap:{before:preciseBefore,after:await preciseHeap()},coverage:'50 navegações, DOM, requests, listeners e intervals; heap pós-GC em Chromium, sem certificação geral de ausência de leak'};});
   await test('A02-stale',async()=>{
   const old=await page.locator('.task-results-stat strong').first().textContent();
   const before=calls.filter(c=>c.path==='/api/tasks/results').length;
@@ -232,6 +244,21 @@ try{
    await context.unroute('**/api/runtime-fixture/write');currentProfile=profile;await page.reload();await page.locator('body.auth-signed-in').waitFor();
   });
  }
+ if(process.env.PERFORMANCE_PROBE==='1')await test('A06-shell',async()=>{
+  const samples=[];
+  for(let i=0;i<8;i++){
+   let release;meGate=new Promise(resolve=>release=resolve);
+   try{
+    await page.reload();await page.waitForFunction(()=>window.__shellGeometryMs>0);
+    assert.notEqual(await page.evaluate(()=>window.MBA_AUTH.getLoginState().status),'authenticated');
+    assert.equal(await page.locator('.task-results-stat strong').allTextContents().then(v=>v.some(x=>x!=='—')),false);
+    release();meGate=null;await page.locator('body.auth-signed-in').waitFor();
+    await page.waitForFunction(()=>window.__firstKpiMs>0);
+    samples.push(await page.evaluate(()=>({shellMs:window.__shellGeometryMs,kpiMs:window.__firstKpiMs,auth:window.MBA_RUNTIME_AUTH_METRICS.at(-1)})));
+   }finally{release();meGate=null;}
+  }
+  return {cache:'warm assets; repeated document reload; identity response gated until geometry assertion',samples};
+ });
  await test('A08-active-recovery',async()=>{
   currentProfile={...profile,policy_epoch:'501'};await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='30');
   await page.locator('.task-results-page').evaluate(el=>el.dataset.instance='active-transient');resultStatus=503;
