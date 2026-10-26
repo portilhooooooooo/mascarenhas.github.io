@@ -235,10 +235,10 @@
 /* Encerramentos: painel de meta semicircular e fila de andamentos. */
 .closing-kpis-main{grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
 .closing-kpi-button{min-height:98px}
-.closing-goal-kpi{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:9px 11px 4px;gap:0;--closing-gauge-track:#fff0dc;--closing-gauge-fill:#d59a54}
-.closing-goal-kpi-title{align-self:flex-start;font-size:11px;color:var(--mba-text-2);font-weight:550}
-.closing-gauge{width:104px;height:55px;max-width:98%;margin-top:0;overflow:visible}
-.closing-goal-kpi .closing-gauge-value{font-size:17px;font-weight:700;line-height:1;position:absolute;left:50%;bottom:14px;transform:translateX(-50%);white-space:nowrap}
+.closing-goal-kpi{display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;padding:12px 13px;gap:7px}
+.closing-goal-kpi .closing-kpi-top{width:100%}
+.closing-goal-kpi .closing-goal-kpi-score{font-size:23px;line-height:1.05;font-weight:700;letter-spacing:-.025em;font-variant-numeric:tabular-nums}
+.closing-goal-kpi-foot{font-size:10px;color:var(--closing-muted);line-height:1.2}
 .closing-aging{padding:13px 15px;margin-bottom:10px}
 .closing-goal-head{margin-bottom:10px}
 .closing-goal-head h2{font-size:12.5px;font-weight:650}
@@ -377,3 +377,15 @@
 /* Meta consolidada por CNJ: outubro recebe pendencias anteriores sem baixa. */
 .closing-aging-month{font-size:10px;font-weight:500;color:var(--closing-muted)}
 .closing-goal-context{display:block;margin-top:10px;font-size:10px;color:var(--closing-muted);line-height:1.4}
+
+/* Ranking de encerramentos: Aging sempre aberto, com pontuação separada da meta quantitativa. */
+.closing-goal-gap{font-size:10px;font-weight:500;color:var(--closing-muted)}
+.closing-aging-card-gap{font-size:10px;line-height:1.25;color:var(--closing-muted)}
+.closing-aging-card-gap.is-complete{color:#26765e;font-weight:600}
+.closing-goal-footer{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;margin-top:9px}
+.closing-goal-footer .closing-goal-context{margin:0}
+.closing-goal-footer>strong{font-size:10px;font-weight:600;color:var(--closing-muted);white-space:nowrap}
+@media(max-width:750px){
+  .closing-goal-kpi .closing-goal-kpi-score{font-size:21px}
+  .closing-goal-summary{flex-wrap:wrap;justify-content:flex-end;gap:5px 10px}
+}
