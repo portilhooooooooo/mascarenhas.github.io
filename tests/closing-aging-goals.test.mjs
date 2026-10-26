@@ -47,12 +47,12 @@ assert.equal(regularAgingSummary(unknown).gap, 869);
 assert.equal(Math.round(unknown[0].composicaoPercent * 10) / 10, 13.9);
 
 const ui = readFileSync(new URL('../src/dashboard/EncerramentosPage.tsx', import.meta.url), 'utf8');
-assert.ok(ui.includes('regularAgingGoals(ages, total)'));
+assert.ok(ui.includes('regularAgingGoals(counts,total)'));
 assert.ok(ui.includes('const regular = dados?.carteira ==='));
-assert.ok(ui.includes('closing-matrix-gap'));
-assert.ok(ui.includes('Composição atual'));
-assert.ok(ui.includes('Faltam (%)'));
-assert.ok(ui.includes('GAP total do Regular'));
+assert.ok(ui.includes('regularAgingRanking(goals)'));
+assert.ok(ui.includes('closing-aging-target'));
+assert.ok(ui.includes('closing-aging-cards'));
+assert.ok(ui.includes('Faltam {num(summary.gap)}'));
 assert.ok(ui.includes('Pontuação Aging'));
 assert.ok(ui.includes('closing-aging-card-gap'));
 assert.ok(ui.includes('closing-goal-footer'));
