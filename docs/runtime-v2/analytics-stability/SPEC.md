@@ -1,5 +1,5 @@
 # SPEC — Estabilização analítica Runtime V2
-Data: 26/10/2026. Estado: diagnóstico e candidata isolada; não autorizado novo deploy de produção por esta especificação.
+Data: 26/10/2026. Estado: candidata implementada e testada, isolada; não autorizado novo deploy de produção por esta especificação.
 
 ## Fontes verificadas
 Frontend público 25d654c; backend vivo e113eed/imagem ac23cc157170, container 96c3507b...; origin/main FE 25d654c e BE bc139ff.
@@ -28,7 +28,7 @@ Base Geral refaz normalização/deduplicação Benner/carteira e joins por reque
 ## Solução proposta, sujeita a evidência
 1. Scheduler somente para leituras analíticas opt-in, concorrência limitada (sem afetar auth/write), prioridade de resumo, abort de fila obsoleta e orçamento de retry único. Transportar Retry-After; retry elegível limitado, backoff com jitter. 401/403/erros de identidade/validação não repetem.
 2. Uma RPC SQL para análises com resumo e detalhe paginado, eliminando fetch-all e joins em Python. Ordem created_at desc,id desc para empates. Caminho anterior preservado por flag; paridade testada contra referência congelada.
-3. Base Geral: avaliar plano no stage, fonte canônica normalizada com refresh/invalidação rastreável ou alternativa equivalente; não ativar projeção silenciosamente stale. Decisão final depende do plano e comparação.
+3. Base Geral: lookups LATERAL com gate interno sobre índices normalizados existentes; decisão validada por plano/paridade no stage. Sem projeção adicional nem novo contrato de refresh.
 4. Auditar aging/Benner sem alterar coorte/semântica; reduzir duplicação comprovada. Não desativar admissão nem ampliar timeouts indiscriminadamente.
 
 ## Evidência exigida
@@ -42,3 +42,6 @@ Flags independentes e caminhos anteriores mantidos; candidata não toca produç�
 
 ## Registro
 baseline-production.json é observacional, sem bearer/query strings/documentos. Referências SQL têm apenas código e hashes. Novos commits e resultados serão acrescentados em MIGRATION_LOG.md.
+
+## Decisão implementada
+Ver ARCHITECTURE.md, PARIDADE.md, RUN_LOCAL.md e ROLLBACK.md. Não houve novo deploy. Resultados e limites no relatório final do backend.
