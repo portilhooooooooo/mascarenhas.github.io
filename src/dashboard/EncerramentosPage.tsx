@@ -241,13 +241,13 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   </div>;
 }
 
-function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
-  dados: Dados | null; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
+function Metrics({ dados, carteira, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
+  dados: Dados | null; carteira:string; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
-  const goals=agingMensal && dados?.carteira==='Agibank Regular'
+  const goals=agingMensal && carteira==='Agibank Regular'
     ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
@@ -502,10 +502,10 @@ function ClosingQueueDialog({carteira,onClose,onSent,posicao}: {carteira:string;
   </div>;
 }
 
-function AgingPanel({ dados, agingMensal }: {
-  dados: Dados | null; agingMensal:MonthlyAging|null;
+function AgingPanel({ dados, carteira, agingMensal }: {
+  dados: Dados | null; carteira:string; agingMensal:MonthlyAging|null;
 }) {
-  const regular = dados?.carteira === 'Agibank Regular';
+  const regular = carteira === 'Agibank Regular';
   const counts=regular ? agingMensal?.aging || [] : dados?.etapas?.aging || [];
   const total=regular ? valueOrZero(agingMensal?.total_elegivel) : valueOrZero(dados?.etapas?.total);
   const available=regular ? Boolean(agingMensal) : Boolean(dados?.etapas);
@@ -688,7 +688,6 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const invalidRange = Boolean(inicio && fim && inicio > fim);
   const filterKey = [carteira,tipo,inicio,fim,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
-  const loadedKeyRef=useRef(loadedKey);loadedKeyRef.current=loadedKey;
   const filterKeyRef=useRef(filterKey);filterKeyRef.current=filterKey;
   const refresh = useCallback(async (force=false) => {
     if(!visibleRef.current || invalidRange || activeRequest.current?.key===filterKey)return;
@@ -697,7 +696,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     const valid=()=>sequence===refreshSequence.current && scope===runtimeScope() && visibleRef.current && filterKeyRef.current===filterKey;
     activeRequest.current={key:filterKey,sequence};
     setPending(true);setError('');setBlockErrors({});
-    if(loadedKeyRef.current!==filterKey){setDados(null);setAnalises(null);setPosicaoBenner(null);setAgingMensal(null);}
+    // Each block renders only its matching key; a failed summary must not clear valid siblings.
     const run=<T,>(name:string,load:(signal:AbortSignal)=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
       queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],
       queryFn:({signal})=>analyticalRead(load,{signal,priority:name==='resumo'?0:name==='analises'?1:2,isCurrent:()=>scope===runtimeScope()&&visibleRef.current&&filterKeyRef.current===filterKey}),staleTime:force?0:60000,
@@ -788,10 +787,10 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} agingMensal={blockKeys.aging===filterKey?agingMensal:null} analises={blockKeys.analises===filterKey?analises:null}
+    <Metrics dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null} analises={blockKeys.analises===filterKey?analises:null}
       posicaoBenner={blockKeys.benner===filterKey?posicaoBenner:null}
       motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
-    {!isNubank && <AgingPanel dados={shown} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
+    {!isNubank && <AgingPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} isNubank={isNubank} onOpenTipo={t=>{setTipoRecorte(t);setActiveCard("aptidoes");}}/>
       <AnalystsPanel analysts={analysts} unavailable={!analises || blockKeys.analises!==filterKey}/>
@@ -802,7 +801,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     </section>
     {activeCard==='benner'
       ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira}
-          posicao={loadedKey===filterKey?posicaoBenner:null}
+          posicao={blockKeys.benner===filterKey?posicaoBenner:null}
           onClose={()=>setActiveCard(null)}
           onSent={()=>{void refresh(true);setSnapshotRevision(x=>x+1);}}/>
       : activeCard && <ClosingDetailsDialog key={activeCard+filterKey+(tipoRecorte||"")} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} tipoRecorte={tipoRecorte} onClose={()=>{setActiveCard(null);setTipoRecorte(null);}}/>}

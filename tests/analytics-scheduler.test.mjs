@@ -57,3 +57,17 @@ test('a result from a superseded scope is rejected without replay',async()=>{
    error=>error.code==='STALE_ANALYTICS_SCOPE');
  assert.equal(calls,1);
 });
+test('429 cooldown is applied before queued reads acquire the released slot',async()=>{
+ let rejectBusy,releaseSecond,queuedAt=0;
+ const firstGate=new Promise((_,reject)=>rejectBusy=reject);
+ const secondGate=new Promise(resolve=>releaseSecond=resolve);
+ const first=analyticalRead(()=>firstGate,{budgetMs:500});
+ const firstRejection=assert.rejects(first,error=>error.status===429);
+ const second=analyticalRead(()=>secondGate);
+ await sleep(5);
+ const queued=analyticalRead(async()=>{queuedAt=Date.now();return 1;});
+ const busyAt=Date.now();
+ rejectBusy(Object.assign(new Error('busy'),{status:429,retryAfter:'1'}));
+ await firstRejection;releaseSecond();await Promise.all([second,queued]);
+ assert.ok(queuedAt-busyAt>=1000,`queued read escaped cooldown after ${queuedAt-busyAt}ms`);
+});

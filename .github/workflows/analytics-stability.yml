@@ -24,7 +24,7 @@ jobs:
       - run: npx playwright install --with-deps ${{ matrix.browser }}
       - run: node --test tests/analytics-scheduler.test.mjs
       - run: npm run build
-      - run: BROWSER=${{ matrix.browser }} TEST_IDS=AS01-recover-429,AS02-independent-kpi,AS03-cancel-reentry,AS04-recover-503 PHASE=analytics-ci-${{ matrix.browser }} node tests/runtime-v2/browser.mjs
+      - run: BROWSER=${{ matrix.browser }} TEST_IDS=AS01-recover-429,AS02-independent-kpi,AS03-cancel-reentry,AS04-recover-503,AS05-preserve-partial-refresh,AS06-independent-aging-benner,AS07-hidden-overview-abort PHASE=analytics-ci-${{ matrix.browser }} node tests/runtime-v2/browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

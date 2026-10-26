@@ -58,6 +58,9 @@ function pause(ms:number,signal:AbortSignal):Promise<void>{
     signal.addEventListener('abort',abort,{once:true});
   });
 }
+function recoveryDelay(error:ApiError,attempt:number):number{
+  return Math.max(retryAfterMs(error.retryAfter),Math.max(error.status===429?1000:0,Math.min(2000,400*2**attempt)))+Math.floor(Math.random()*200);
+}
 type ReadOptions={priority?:number;signal?:AbortSignal;isCurrent?:()=>boolean;budgetMs?:number};
 /** One retry owner: at most 3 attempts, including capacity waiting/backoff in the total budget. */
 export async function analyticalRead<T>(load:(signal:AbortSignal)=>Promise<T>,options:ReadOptions={}):Promise<T>{
@@ -75,14 +78,18 @@ export async function analyticalRead<T>(load:(signal:AbortSignal)=>Promise<T>,op
     for(let attempt=0;;attempt++){
       current();
       const release=await lane.acquire(options.priority??1,controller.signal);
-      let failure:unknown;
+      let failure:unknown;let retryDelay=0;
       try{current();const value=await load(controller.signal);current();return value;}
-      catch(error){failure=error;}
+      catch(error){
+        failure=error;
+        // Reserve the cooldown before release pumps the next queued read, even
+        // when this caller has exhausted its own attempt/latency budget.
+        if(retryable(error)&&error.status===429){retryDelay=recoveryDelay(error,attempt);lane.defer(Date.now()+retryDelay);}
+      }
       finally{release();}
       if(attempt>=2||!retryable(failure))throw failure;
-      const delay=Math.max(retryAfterMs(failure.retryAfter),Math.max(failure.status===429?1000:0,Math.min(2000,400*2**attempt)))+Math.floor(Math.random()*200);
+      const delay=retryDelay||recoveryDelay(failure,attempt);
       if(Date.now()+delay>=deadline)throw failure;
-      if(failure.status===429)lane.defer(Date.now()+delay);
       await pause(delay,controller.signal);
     }
   }finally{
