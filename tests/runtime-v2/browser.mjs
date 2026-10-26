@@ -143,6 +143,26 @@ try{
   await navigate('tarefas/resultados');
   await test('A14',async()=>{const fresh=await context.newPage();const before=calls.length;await fresh.goto(base+'/tarefas/resultados');await fresh.locator('body.auth-signed-in').waitFor();await fresh.waitForTimeout(250);const journey=calls.slice(before);await fresh.close();assert.equal(journey.filter(c=>c.path==='/api/tasks'||c.path.startsWith('/api/base-geral')||c.path.startsWith('/api/operacao/encerramentos/')).length,0);return journey;});
   await test('A14-realtime-paused',async()=>{await page.reload();await page.locator('body.auth-signed-in').waitFor();await page.waitForTimeout(200);const count=calls.filter(c=>c.path==='/api/events/stream').length;await page.waitForTimeout(2200);assert.equal(calls.filter(c=>c.path==='/api/events/stream').length,count,'Realtime pausado não deve reconectar em avalanche');});
+ await test('A15-skip-intent',async()=>{
+  const path='/api/task-processes/12345678-1234-4234-8234-123456789abc/skip';let status=503;const sent=[];
+  await context.route('**'+path,async route=>{
+   sent.push({id:route.request().headers()['idempotency-key'],body:route.request().postDataJSON()});
+   await new Promise(r=>setTimeout(r,150));
+   return route.fulfill({status,json:status===200?{id:'fixture-process',status:'pending'}:{code:'WRITE_OUTCOME_UNKNOWN',error:'Fixture skip unavailable'}});
+  });
+  const call=at=>page.evaluate(({path,at})=>window.MBA_API.request(path,{method:'POST',body:JSON.stringify({client_action_at:at})}).then(()=>true,()=>false),{path,at});
+  assert.deepEqual(await Promise.all([call('2026-10-25T23:00:00Z'),call('2026-10-25T23:00:01Z')]),[false,false]);
+  assert.equal(sent.length,1);assert.match(sent[0].id,/^[0-9a-f-]{36}$/);
+  const pending=await page.evaluate(()=>Object.entries(sessionStorage).filter(([key])=>key.startsWith('mba_write_intent:')));
+  assert.equal(pending.length,1);assert.ok(!JSON.stringify(pending).includes('2026-10-25'));
+  await page.reload();await page.locator('body.auth-signed-in').waitFor();assert.equal(sent.length,1);
+  status=200;assert.equal(await call('2026-10-25T23:00:02Z'),true);
+  assert.equal(sent.length,2);assert.equal(sent[1].id,sent[0].id);
+  assert.notEqual(sent[1].body.client_action_at,sent[0].body.client_action_at);
+  assert.equal(await page.evaluate(()=>Object.keys(sessionStorage).filter(key=>key.startsWith('mba_write_intent:')).length),0);
+  await context.unroute('**'+path);
+  return {concurrentCalls:2,commands:2,automaticRetries:0,sameIntentAfterF5:true,telemetryTimestampNotBusinessPayload:true};
+ });
  await test('A15-write-intent',async()=>{
   const path='/api/task-processes/12345678-1234-4234-8234-123456789abc/encerramento-analysis';let status=503;const sent=[];
   await context.route('**'+path,async route=>{sent.push(route.request().headers()['idempotency-key']);await new Promise(r=>setTimeout(r,250));return route.fulfill({status,json:status===201?{saved:true}:{code:'WRITE_DEPENDENCY_UNAVAILABLE',error:'Fixture write unavailable'}});});
