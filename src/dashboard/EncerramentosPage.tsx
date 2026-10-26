@@ -1,3 +1,4 @@
+import { analyticalRead } from '../analytics/readScheduler';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
@@ -43,10 +44,10 @@ type MonthlyAging = {
   origens:{validacoes_do_mes:number;historico_adicional:number;do_mes_adicionais:number;herdados_adicionais:number;
     sobreposicoes_deduplicadas:number;movimentos_excluidos_por_tipo:number};
 };
-async function loadMonthlyAging():Promise<MonthlyAging> {
+async function loadMonthlyAging(signal?:AbortSignal):Promise<MonthlyAging> {
   const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
   if(!api)throw new Error('API indisponível.');
-  return api.request('/api/operacao/encerramentos/meta-aging-mensal');
+  return api.request('/api/operacao/encerramentos/meta-aging-mensal',{signal});
 }
 type MonthlyBennerPosition = {
   periodo:string; unidade:'andamentos'; fonte:string;
@@ -56,7 +57,7 @@ type MonthlyBennerPosition = {
   total_em_acompanhamento:number; total_sem_baixa:number; total_com_baixa_no_mes_vigente:number;
 };
 
-async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,offset=0,q='',concordancia:'todos'|'sim'|'nao'|'nao_avaliados'='todos'):Promise<AnalysisResult> {
+async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,offset=0,q='',concordancia:'todos'|'sim'|'nao'|'nao_avaliados'='todos',signal?:AbortSignal):Promise<AnalysisResult> {
   const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
   if(!api)throw new Error('API indisponível.');
   const params=new URLSearchParams({tipo,limit:String(limit),offset:String(offset)});
@@ -64,12 +65,12 @@ async function loadClosingAnalyses(inicio:string,fim:string,tipo:Tipo,limit=20,o
   if(fim)params.set('fim',fim);
   if(q)params.set('q',q);
   if(concordancia!=='todos')params.set('concordancia',concordancia);
-  return api.request('/api/operacao/encerramentos/analises?'+params);
+  return api.request('/api/operacao/encerramentos/analises?'+params,{signal});
 }
-async function loadMonthlyBennerPosition():Promise<MonthlyBennerPosition> {
+async function loadMonthlyBennerPosition(signal?:AbortSignal):Promise<MonthlyBennerPosition> {
   const api=(window as Window & {MBA_AUTOMATION_API?:BackofficeApi}).MBA_AUTOMATION_API;
   if(!api)throw new Error('API indisponível.');
-  return api.request('/api/operacao/encerramentos/consolidado-mensal');
+  return api.request('/api/operacao/encerramentos/consolidado-mensal',{signal});
 }
 
 const TIPOS: { value: Tipo; label: string }[] = [
@@ -98,7 +99,7 @@ function localISO(daysBack: number): string {
   return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
 }
 
-async function loadDashboard(carteira: string, tipo: Tipo, inicio: string, fim: string, analista: string, etapa: Etapa): Promise<Dados> {
+async function loadDashboard(carteira: string, tipo: Tipo, inicio: string, fim: string, analista: string, etapa: Etapa, signal?:AbortSignal): Promise<Dados> {
   const api = (window as Window & { MBA_AUTOMATION_API?: BackofficeApi }).MBA_AUTOMATION_API;
   if (!api) throw new Error('Conexão com a API indisponível.');
   const query = new URLSearchParams({ carteira, tipo, etapa });
@@ -107,13 +108,14 @@ async function loadDashboard(carteira: string, tipo: Tipo, inicio: string, fim: 
   if (analista !== 'todos') query.set('analista', analista);
   const path = '/api/operacao/encerramentos/dashboard?' + query.toString();
   const controller=new AbortController();
+  const abort=()=>controller.abort();signal?.addEventListener('abort',abort,{once:true});if(signal?.aborted)controller.abort();
   const timer=window.setTimeout(()=>controller.abort(),10000);
-  try{return await api.request<Dados>(path,{signal:controller.signal});}finally{window.clearTimeout(timer);}
+  try{return await api.request<Dados>(path,{signal:controller.signal});}finally{window.clearTimeout(timer);signal?.removeEventListener('abort',abort);}
 }
 
 // Contador e modal compartilham a mesma relação de processos, não a soma de tarefas.
-async function loadMotivosDerrotaPendentes(): Promise<number> {
-  const result=await getClosingCases('DERROTA',1,0,'','nao','todos','todos','DERROTA');
+async function loadMotivosDerrotaPendentes(signal?:AbortSignal): Promise<number> {
+  const result=await getClosingCases('DERROTA',1,0,'','nao','todos','todos','DERROTA',signal);
   return result.total;
 }
 
@@ -155,11 +157,11 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   const pageSize=20;
   useEffect(()=>{
     if(!hasDetails)return;
-    let active=true;
+    let active=true;const controller=new AbortController();const owner=runtimeScope();
     setBusy(true);setError('');
     const request: Promise<{rows:ClosingCase[];total:number}> =
       (kind==='analisados'||kind==='acuracia')
-      ? loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search,kind==='acuracia'?concordancia:'todos').then(data=>({
+      ? analyticalRead(signal=>loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search,kind==='acuracia'?concordancia:'todos',signal),{priority:0,signal:controller.signal,isCurrent:()=>owner===runtimeScope()}).then(data=>({
         total:data.total,
         rows:data.rows.map(row=>({
           portfolio_id:'',cnj:row.cnj,analista_id:row.analista,
@@ -174,7 +176,7 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
       .then(data=>{if(active){setItems(data.rows || []);setTotal(data.total);}})
       .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:'Consulta indisponível.');setItems([]);setTotal(null);}})
       .finally(()=>{if(active)setBusy(false);});
-    return()=>{active=false};
+    return()=>{active=false;controller.abort()};
   },[listStatus,hasDetails,page,search,concordancia,kind,inicio,fim,tipo,tipoRecorte]);
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
@@ -239,13 +241,13 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   </div>;
 }
 
-function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
-  dados: Dados | null; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
+function Metrics({ dados, carteira, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
+  dados: Dados | null; carteira:string; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
-  const goals=agingMensal && dados?.carteira==='Agibank Regular'
+  const goals=agingMensal && carteira==='Agibank Regular'
     ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
@@ -500,10 +502,10 @@ function ClosingQueueDialog({carteira,onClose,onSent,posicao}: {carteira:string;
   </div>;
 }
 
-function AgingPanel({ dados, agingMensal }: {
-  dados: Dados | null; agingMensal:MonthlyAging|null;
+function AgingPanel({ dados, carteira, agingMensal }: {
+  dados: Dados | null; carteira:string; agingMensal:MonthlyAging|null;
 }) {
-  const regular = dados?.carteira === 'Agibank Regular';
+  const regular = carteira === 'Agibank Regular';
   const counts=regular ? agingMensal?.aging || [] : dados?.etapas?.aging || [];
   const total=regular ? valueOrZero(agingMensal?.total_elegivel) : valueOrZero(dados?.etapas?.total);
   const available=regular ? Boolean(agingMensal) : Boolean(dados?.etapas);
@@ -654,6 +656,8 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const [pending,setPending] = useState(false);
   const [error,setError] = useState('');
   const [blockErrors,setBlockErrors]=useState<Record<string,string>>({});
+  const [blockKeys,setBlockKeys]=useState<Record<string,string>>({});
+  const blockKeysRef=useRef(blockKeys);blockKeysRef.current=blockKeys;
   const refreshSequence = useRef(0);
   const activeRequest = useRef<{ key: string; sequence: number } | null>(null);
   // The page can remain mounted while the authenticated portfolio changes.
@@ -684,20 +688,22 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const invalidRange = Boolean(inicio && fim && inicio > fim);
   const filterKey = [carteira,tipo,inicio,fim,analista,etapa,portfolioRevision].join('|');
   const [loadedKey,setLoadedKey] = useState('');
+  const filterKeyRef=useRef(filterKey);filterKeyRef.current=filterKey;
   const refresh = useCallback(async (force=false) => {
     if(!visibleRef.current || invalidRange || activeRequest.current?.key===filterKey)return;
     const sequence=++refreshSequence.current;
     const scope=runtimeScope();
-    const valid=()=>sequence===refreshSequence.current && scope===runtimeScope();
+    const valid=()=>sequence===refreshSequence.current && scope===runtimeScope() && visibleRef.current && filterKeyRef.current===filterKey;
     activeRequest.current={key:filterKey,sequence};
     setPending(true);setError('');setBlockErrors({});
-    if(loadedKey!==filterKey){setDados(null);setAnalises(null);setPosicaoBenner(null);setAgingMensal(null);}
-    const run=<T,>(name:string,load:()=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
-      queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],queryFn:load,staleTime:force?0:60000,
-    }).then(value=>{if(valid())apply(value);}).catch(cause=>{if(valid())setBlockErrors(previous=>({...previous,[name]:cause instanceof Error?cause.message:'Consulta indisponível'}));});
+    // Each block renders only its matching key; a failed summary must not clear valid siblings.
+    const run=<T,>(name:string,load:(signal:AbortSignal)=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
+      queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],
+      queryFn:({signal})=>analyticalRead(load,{signal,priority:name==='resumo'?0:name==='analises'?1:2,isCurrent:()=>scope===runtimeScope()&&visibleRef.current&&filterKeyRef.current===filterKey}),staleTime:force?0:60000,
+    }).then(value=>{if(valid()){apply(value);setBlockKeys(previous=>({...previous,[name]:filterKey}));}}).catch(cause=>{if(valid())setBlockErrors(previous=>({...previous,[name]:(cause instanceof Error?cause.message:'Consulta indisponível')+(blockKeysRef.current[name]===filterKey?' Exibindo o último resultado deste filtro.':'')}));});
     await Promise.allSettled([
-      run('resumo',()=>loadDashboard(carteira,tipo,inicio,fim,analista,etapa),painel=>{setDados(painel);setLoadedKey(filterKey);}),
-      run('analises',()=>loadClosingAnalyses(inicio,fim,tipo),setAnalises),
+      run('resumo',signal=>loadDashboard(carteira,tipo,inicio,fim,analista,etapa,signal),painel=>{setDados(painel);setLoadedKey(filterKey);}),
+      run('analises',signal=>loadClosingAnalyses(inicio,fim,tipo,20,0,'','todos',signal),setAnalises),
       run('benner',loadMonthlyBennerPosition,setPosicaoBenner),
       ...(carteira==='Agibank Regular'?[run('aging',loadMonthlyAging,setAgingMensal)]:[]),
     ]);
@@ -705,7 +711,15 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     if(valid())setPending(false);
   },[carteira,tipo,inicio,fim,analista,etapa,invalidRange,filterKey]);
 
-  useEffect(() => {if(visible)void refresh();},[refresh,visible]);
+  useEffect(() => {
+    if(visible)void refresh();
+    const owner=runtimeScope();
+    return()=>{
+      // Release the lease synchronously: a new visible effect must not reuse a cancelled request.
+      refreshSequence.current++;activeRequest.current=null;
+      void runtimeQueries.cancelQueries({predicate:query=>query.queryKey[0]==='runtime-v2'&&query.queryKey[1]===owner&&query.queryKey[2]==='encerramentos'&&query.queryKey[3]===filterKey});
+    };
+  },[refresh,visible,filterKey]);
   useEffect(() => () => {
     // React StrictMode runs effect cleanup/setup twice. Clearing the request
     // lease allows the second setup to load rather than showing blank KPIs.
@@ -716,11 +730,11 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   // Benner reflects the previous calendar month; pending reasons reflect
   // the current task queue. Reload independently, without zeroing missing data.
   useEffect(() => {
-    let active = true;
-    if (visible && !isNubank) void loadMotivosDerrotaPendentes()
+    let active = true;const controller=new AbortController();const owner=runtimeScope();
+    if (visible && !isNubank) void analyticalRead(loadMotivosDerrotaPendentes,{priority:3,signal:controller.signal,isCurrent:()=>owner===runtimeScope()&&visibleRef.current})
       .then(value => { if (active) setMotivosPendentes(value); })
-      .catch(() => { if (active) setMotivosPendentes(null); });
-    return () => { active = false; };
+      .catch(cause => { if (active){setMotivosPendentes(null);setBlockErrors(previous=>({...previous,motivos:cause instanceof Error?cause.message:'Consulta indisponível.'}));} });
+    return () => { active = false;controller.abort(); };
   },[carteira,portfolioRevision,snapshotRevision,isNubank,visible]);
 
   // Events drive normal updates. The 5-minute check recovers missed events.
@@ -751,11 +765,11 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     };
   },[refresh]);
   const shown = loadedKey === filterKey ? dados : null;
-  const analysts = loadedKey===filterKey && analises ? analises.analistas : [];
+  const analysts = blockKeys.analises===filterKey && analises ? analises.analistas : [];
 
-  return <div className="closing-page-v2">
+  return <div className="closing-page-v2" aria-busy={pending}>
     {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
-    <div className="closing-heading"><h1>Encerramentos</h1></div>
+    <div className="closing-heading"><h1>Encerramentos</h1><span role="status" style={{fontSize:12}}>{pending?'Atualizando…':''}</span></div>
     <div className="closing-filter-row">
       <label><span>Carteira</span><select value={carteira} disabled aria-label="Carteira atual autorizada">
         <option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option>
@@ -773,13 +787,13 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} agingMensal={loadedKey===filterKey?agingMensal:null} analises={loadedKey===filterKey?analises:null}
-      posicaoBenner={loadedKey===filterKey?posicaoBenner:null}
+    <Metrics dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null} analises={blockKeys.analises===filterKey?analises:null}
+      posicaoBenner={blockKeys.benner===filterKey?posicaoBenner:null}
       motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
-    {!isNubank && <AgingPanel dados={shown} agingMensal={loadedKey===filterKey?agingMensal:null}/>}
+    {!isNubank && <AgingPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} isNubank={isNubank} onOpenTipo={t=>{setTipoRecorte(t);setActiveCard("aptidoes");}}/>
-      <AnalystsPanel analysts={analysts} unavailable={!analises || loadedKey!==filterKey}/>
+      <AnalystsPanel analysts={analysts} unavailable={!analises || blockKeys.analises!==filterKey}/>
     </div>
     <section className="closing-territory" aria-label="Detalhamento territorial">
       <header className="closing-territory-heading">Detalhamento territorial</header>
@@ -787,7 +801,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     </section>
     {activeCard==='benner'
       ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira}
-          posicao={loadedKey===filterKey?posicaoBenner:null}
+          posicao={blockKeys.benner===filterKey?posicaoBenner:null}
           onClose={()=>setActiveCard(null)}
           onSent={()=>{void refresh(true);setSnapshotRevision(x=>x+1);}}/>
       : activeCard && <ClosingDetailsDialog key={activeCard+filterKey+(tipoRecorte||"")} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} tipoRecorte={tipoRecorte} onClose={()=>{setActiveCard(null);setTipoRecorte(null);}}/>}

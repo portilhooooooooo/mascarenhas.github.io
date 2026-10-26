@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import {analyticalRead} from '../analytics/readScheduler';
+import { useEffect, useMemo, useState } from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { ArrowUpRight, CheckCircle2, Clock3, FileCheck2, FolderOpen, Layers3, RefreshCw, Scale, SearchCheck, ShieldAlert } from 'lucide-react';
@@ -127,11 +128,15 @@ export function VisaoGeralPage({visible=true}:{visible?:boolean}) {
     queryFn:async({signal})=>{
       const api=(window as Environment).MBA_AUTOMATION_API || (window as Environment).MBA_API;
       if(!api)throw new Error('Conexão com a API indisponível.');
-      const answer=await api.request<unknown>('/api/carteira-processual'+(query?'?'+query:''),{signal});
+      const answer=await analyticalRead(activeSignal=>api.request<unknown>('/api/carteira-processual'+(query?'?'+query:''),{signal:activeSignal}),{signal,priority:0,isCurrent:()=>scope===runtimeScope()});
       if(scope!==runtimeScope())throw new Error('Resposta de escopo anterior descartada.');
       if(!isDashboard(answer))throw new Error('A API retornou uma estrutura de indicadores inválida.');
       return answer;
     }},runtimeQueries);
+  useEffect(()=>()=>{
+    // Disabled observers stop polling; explicitly cancel already queued/in-flight reads on hide.
+    void runtimeQueries.cancelQueries({queryKey:['runtime-v2',scope,'base-geral','entradas',query],exact:true});
+  },[scope,query,visible]);
   const shown=result.data || null;
   const data=shown;
   const pending=result.isFetching;

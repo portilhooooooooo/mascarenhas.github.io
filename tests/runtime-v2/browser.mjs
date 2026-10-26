@@ -52,6 +52,7 @@ try{
   window.addEventListener('mba:auth-state',e=>window.__metrics.auth.push({t:performance.now(),status:e.detail.status}));
   for(const type of ['layout-shift','longtask'])try{new PerformanceObserver(list=>{for(const e of list.getEntries())window.__metrics[type==='longtask'?'long':'shifts'].push({t:e.startTime,value:e.value,duration:e.duration,hadRecentInput:e.hadRecentInput});}).observe({type,buffered:true});}catch{}
  });
+ let closingSummaryFails=false;let analysisBusyOnce=false;let analysisUnavailableOnce=false;let analysisBusyCalls=0;let analysisFirstBusyAt=0;let analysisRecoveryAt=0;
  let overviewDelay=0;
  let meGate=null;
  let delay=0,meStatus=200,meReason=null,meDelay=0,detailDelay=0,currentProfile=profile,resultStatus=200,resultCount=null;
@@ -63,8 +64,11 @@ try{
   if(url.pathname==='/api/tasks/results'){if(delay)await new Promise(r=>setTimeout(r,delay));return route.fulfill({status:resultStatus,json:resultStatus===200?payload(resultCount ?? (url.searchParams.get('period')==='7'?7:30)):{error:'Falha fixture',code:'DEPENDENCY_UNAVAILABLE'}});}
   if(url.pathname==='/api/carteira-processual'){if(overviewDelay)await new Promise(r=>setTimeout(r,overviewDelay));return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},movement:{entries:10,closures:0,balance:10},charts:{timeline:[],por_uf:[],por_produto:[],aging:[]},filters:{states:[],products:[],resolutions:[]},updated_at:new Date().toISOString()}});}
   if(url.pathname==='/api/base-geral/summary')return route.fulfill({json:{summary:{total:10,active:10,closed:0,unknown:0},charts:{por_produto:[]},filters:{states:[],products:[],resolutions:[]}}});
+  if(url.pathname==='/api/operacao/encerramentos/dashboard'&&closingSummaryFails)return route.fulfill({status:503,json:{code:'DEPENDENCY_UNAVAILABLE',error:'Resumo indisponível fixture'}});
   if(url.pathname==='/api/operacao/encerramentos/dashboard')return route.fulfill({json:{carteira:'Agibank Enter',tipo:null,indicadores:{consultados:19,encontrados:19,analisados:19,ticket_medio:null,ticket_amostra:0,aging_medio:null},aging:[],estados:[],analistas:[],classificacoes:[],distribuicao_tipos:[],etapas:{etapa:'validados',total:19,tipos:[],aging:[],matriz:[],fonte:'fixture',mensagem:''}}});
-  if(url.pathname==='/api/operacao/encerramentos/analises'){if(detailDelay)await new Promise(r=>setTimeout(r,detailDelay));return route.fulfill({json:{total:23,rows:[],analistas:[],limit:20,offset:0}});}
+  if(url.pathname==='/api/operacao/encerramentos/analises'){if(analysisUnavailableOnce){analysisUnavailableOnce=false;return route.fulfill({status:503,json:{code:'DEPENDENCY_UNAVAILABLE',error:'Fixture transiente'}});}if(analysisBusyOnce){analysisBusyCalls++;if(analysisBusyCalls===1){analysisFirstBusyAt=Date.now();return route.fulfill({status:429,headers:{'Retry-After':'2','Access-Control-Expose-Headers':'Retry-After'},json:{code:'ANALYTICS_BUSY',error:'Capacidade analítica ocupada.'}});}analysisRecoveryAt=Date.now();}if(detailDelay)await new Promise(r=>setTimeout(r,detailDelay));return route.fulfill({json:{total:23,rows:[],analistas:[],limit:20,offset:0}});}
+  if(url.pathname==='/api/operacao/encerramentos/consolidado-mensal')return route.fulfill({json:{periodo:'2026-10',unidade:'andamentos',fonte:'fixture',mes_vigente:{enviados:25,sem_baixa:20,com_baixa:5},saldo_mes_anterior:{periodo:'2026-09',pendentes:5},total_em_acompanhamento:30,total_sem_baixa:25,total_com_baixa_no_mes_vigente:5}});
+  if(url.pathname==='/api/operacao/encerramentos/meta-aging-mensal')return route.fulfill({json:{periodo:'2026-10',carteira:'Agibank Regular',total_elegivel:10,total_com_faixa:10,sem_tag:0,aging:[{faixa:'0–12 meses',quantidade:3},{faixa:'12–24 meses',quantidade:3},{faixa:'>24 meses',quantidade:4}],origens:{validacoes_do_mes:10,historico_adicional:0,do_mes_adicionais:0,herdados_adicionais:0,sobreposicoes_deduplicadas:0,movimentos_excluidos_por_tipo:0}}});
   if(url.pathname==='/api/operacao/encerramentos/casos')return route.fulfill({json:{total:0,rows:[]}});
   return route.fulfill({json:[]});
  });
@@ -140,6 +144,89 @@ try{
    payloadRelease();assert.equal(await page.evaluate(()=>window.__payloadRace),'STALE_IDENTITY');assert.equal(await page.evaluate(()=>window.MBA_API.getPortfolioId()),'nubank_mba');
    await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));await page.waitForFunction(()=>window.MBA_CURRENT_USER&&!document.body.classList.contains('auth-validating'));
    await page.locator('.task-results-filters select').first().selectOption('7');await page.waitForFunction(()=>document.querySelector('.task-results-stat strong')?.textContent==='7');
+  });
+  await test('AS01-recover-429',async()=>{
+    analysisBusyOnce=true;analysisBusyCalls=0;
+    await navigate('analytics/encerramentos');
+    await page.getByRole('button',{name:/Aptidões: 19/}).waitFor({timeout:4000});
+    await page.waitForFunction(()=>document.querySelector('.closing-kpis')?.textContent?.includes('23'),{},{timeout:6000});
+    assert.equal(analysisBusyCalls,2);assert.ok(analysisRecoveryAt-analysisFirstBusyAt>=2000);
+    return {requests:analysisBusyCalls,retryAfterMs:analysisRecoveryAt-analysisFirstBusyAt};
+  });
+  await test('AS02-independent-kpi',async()=>{
+    await navigate('tarefas/resultados');closingSummaryFails=true;
+    await page.evaluate(()=>window.dispatchEvent(new Event('mba:portfolio-changed')));
+    await navigate('analytics/encerramentos');
+    await page.waitForFunction(()=>document.querySelector('.closing-kpis')?.textContent?.includes('23'),{},{timeout:4000});
+    const before=await page.locator('.closing-kpis').boundingBox();
+    await page.waitForTimeout(2500);
+    const after=await page.locator('.closing-kpis').boundingBox();assert.equal(before.height,after.height);
+    closingSummaryFails=false;return {independentAnalyses:true,kpiHeight:after.height};
+  });
+  await test('AS03-cancel-reentry',async()=>{
+    await navigate('tarefas/resultados');
+    for(let i=0;i<3;i++){await navigate('analytics/encerramentos');await page.waitForTimeout(30);await navigate('tarefas/resultados');}
+    await navigate('analytics/encerramentos');
+    await page.getByRole('button',{name:/Aptidões: 19/}).waitFor({timeout:4000});
+    return {rapidReentries:3,summaryVisible:true};
+  });
+  await test('AS04-recover-503',async()=>{
+    await navigate('tarefas/resultados');analysisBusyOnce=false;analysisUnavailableOnce=true;
+    await page.evaluate(()=>window.dispatchEvent(new Event('mba:portfolio-changed')));
+    const count=calls.filter(c=>c.path.endsWith('/analises')).length;
+    await navigate('analytics/encerramentos');
+    await page.waitForFunction(()=>document.querySelector('.closing-kpis')?.textContent?.includes('23'),{},{timeout:4000});
+    assert.equal(calls.filter(c=>c.path.endsWith('/analises')).length-count,2);
+    return {requests:2,recovered503:true};
+  });
+  await test('AS05-preserve-partial-refresh',async()=>{
+    await navigate('tarefas/resultados');closingSummaryFails=true;analysisBusyOnce=false;
+    await page.evaluate(()=>window.dispatchEvent(new Event('mba:portfolio-changed')));
+    await navigate('analytics/encerramentos');
+    await page.waitForFunction(()=>document.querySelector('.closing-kpis')?.textContent?.includes('23'),{},{timeout:4000});
+    await page.waitForFunction(()=>document.querySelector('.closing-page-v2')?.getAttribute('aria-busy')==='false',{},{timeout:5000});
+    detailDelay=1500;
+    const count=calls.filter(c=>c.path.endsWith('/analises')).length;
+    await page.evaluate(()=>window.dispatchEvent(new Event('mba:closing-analysis-saved')));
+    await page.waitForFunction(()=>document.querySelector('.closing-page-v2')?.getAttribute('aria-busy')==='true');
+    await page.waitForTimeout(100);
+    assert.ok((await page.locator('.closing-kpis').innerText()).includes('23'),'same-key analyses disappeared after failed summary');
+    await page.waitForFunction(()=>document.querySelector('.closing-page-v2')?.getAttribute('aria-busy')==='false',{},{timeout:6000});
+    assert.ok(calls.filter(c=>c.path.endsWith('/analises')).length>count);
+    detailDelay=0;closingSummaryFails=false;
+    return {partialSnapshotPreserved:true};
+  });
+  await test('AS06-independent-aging-benner',async()=>{
+    await navigate('tarefas/resultados');closingSummaryFails=true;analysisBusyOnce=false;
+    await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_mba'));
+    await navigate('analytics/encerramentos');
+    await page.waitForFunction(()=>document.querySelector('.closing-kpis')?.textContent?.includes('30'),{},{timeout:4000});
+    await page.waitForFunction(()=>document.querySelector('.closing-page-v2')?.getAttribute('aria-busy')==='false',{},{timeout:5000});
+    assert.equal(await page.locator('.closing-aging-cards article').count(),3,'Regular aging must not depend on summary success');
+    await page.getByRole('button',{name:/Andamentos Benner: 30/}).click();
+    assert.equal(await page.locator('.closing-monthly-total strong').innerText(),'30');
+    await page.getByRole('button',{name:'Fechar andamentos Benner'}).click();
+    closingSummaryFails=false;await navigate('tarefas/resultados');await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));
+    return {regularAgingIndependent:true,bennerDialogIndependent:true};
+  });
+  await test('AS07-hidden-overview-abort',async()=>{
+    await navigate('tarefas/resultados');overviewDelay=1500;
+    await page.evaluate(()=>{
+      window.__overviewAbortCount=0;window.__reviewOriginalFetch=window.fetch;
+      window.fetch=function(input,init){
+        if(String(input).includes('/api/carteira-processual'))init?.signal?.addEventListener('abort',()=>window.__overviewAbortCount++,{once:true});
+        return window.__reviewOriginalFetch.call(this,input,init);
+      };
+      window.dispatchEvent(new Event('mba:portfolio-changed'));
+    });
+    const count=calls.filter(c=>c.path==='/api/carteira-processual').length;
+    await navigate('analytics');
+    await page.waitForFunction(()=>document.querySelector('.overview-refresh')?.disabled);
+    await page.waitForTimeout(100);await navigate('tarefas/resultados');await page.waitForTimeout(100);
+    assert.ok(await page.evaluate(()=>window.__overviewAbortCount>0),'hidden overview kept its in-flight analytical request');
+    assert.equal(calls.filter(c=>c.path==='/api/carteira-processual').length,count+1);
+    await page.evaluate(()=>{window.fetch=window.__reviewOriginalFetch;delete window.__reviewOriginalFetch;});overviewDelay=0;
+    return {cancelledOnModuleHide:true};
   });
   await test('A13',async()=>{detailDelay=15000;const started=performance.now();await navigate('analytics/encerramentos');await page.getByRole('button',{name:/Aptidões: 19/}).waitFor({timeout:4000});const kpiMs=performance.now()-started;assert.ok(kpiMs<4000);assert.ok(calls.some(c=>c.path.endsWith('/analises')));await page.waitForTimeout(15000);detailDelay=0;return {kpiMs,detailDelayMs:15000};});
   await navigate('tarefas/resultados');
