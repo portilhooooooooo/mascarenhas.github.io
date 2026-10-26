@@ -41,3 +41,14 @@ export const regularAgingSummary = (rows: readonly RegularAgingGoal[]) => {
   const atual = rows.reduce((sum, row) => sum + row.atual, 0);
   return { meta, gap, atual, faltaPercent: meta > 0 ? gap / meta * 100 : 0 };
 };
+
+// Cada faixa atingida vale 0,2 ponto no ranking de encerramentos.
+export const regularAgingRanking = (rows: readonly RegularAgingGoal[]) => {
+  const faixasAtingidas = rows.filter(row => row.atual >= row.meta).length;
+  return {
+    faixasAtingidas,
+    totalFaixas: REGULAR_AGING_GOALS.length,
+    pontos: faixasAtingidas * 0.2,
+    pontosPossiveis: REGULAR_AGING_GOALS.length * 0.2,
+  };
+};
