@@ -1,5 +1,28 @@
 # Matriz de testes — execução e limites
 
+## Revisão final do candidato — 25/10/2026, Campo Grande
+**Parecer global: NO-GO para produção.** Build e rollback específicos da última imagem foram agora concluídos; o limite restante não é uma nova bateria de testes sintéticos. Aplicação backend 40d77ab; frontend 99ec81d; imagem sha256:528d196b02881621ca41f692ef36532f69a44dd23f88d53b3a1dd8334bfd222f.
+
+- Rebuild do MESMO commit produziu exatamente o mesmo digest.
+- Ensaio final candidata → referência efetiva 01fe904 → candidata passou em nove etapas: três gravações de Encerramentos, três uploads e três comandos de pular. Contagens/eventos únicos conferidos; replay de skip também conferido na candidata antes/depois. O código antigo continua tendo a limitação de replay já documentada; não foi declarado idempotente.
+- Quatro verificações focadas compararam os contratos contestados com código capturado, preservado e conferido por hash também nos arquivos do container publicado. Todas passaram em 0,38 s. Defesa e Liminar continuam com arquivos idênticos à referência; a criação genérica mantém o mesmo resultado antes/depois.
+- As quatro expectativas históricas que falham NÃO foram modificadas, apagadas, puladas ou marcadas como PASSOU. A nova evidência mostra que são divergências com o baseline preservado, não mudanças introduzidas pela migração. Qualquer alteração dessas regras é decisão de produto separada.
+- Nenhum novo teste de carga ou rodada ampla foi realizado. Não houve autenticação do agente nem alteração de produção.
+
+| Caso contestado | Comportamento efetivo preservado |
+|---|---|
+| Criação genérica sem responsável | A tarefa pode ser criada sem atribuição; o caminho vinculado por Processos continua exigindo responsável. O teste de paridade valida a criação genérica, não certifica todo o fluxo de importação. |
+| Fatal de tribunal em 07/10 versus Enter em 05/10 | Guardrail vigente de cinco dias úteis conserva a data operacional de 05/10, mantendo a data do tribunal na evidência. |
+| Audiência em 11/10, sem fatal manual | Regra vigente deriva 10/10, um dia antes da audiência. |
+| Liminar com evidência inicial insuficiente | Concordância automática é recusada; respostas humanas completas permitem classificar sem_decisao e monitorar. |
+
+A referência de fonte é 01fe904, não a suposição de que main seja o runtime. Conferir arquivos no container é evidência de fonte em disco, não inspeção de cada objeto Python já carregado. Os testes usam somente dados sintéticos. A comparação de paridade não dá aprovação para mudar regras nem encerra a revisão das expectativas históricas.
+
+**Dependências para ir até produção:** validação autenticada legítima pelo launcher .bat/local.portilhobackoffice.site ou main; cobertura operacional e indicadores ainda não certificados; correlação real dos timeouts/pool; revisão técnica/promoção e monitoramento de duas horas. O agente não dispõe de conta autorizada e não contornou o login. Não há trabalho em background prometido para suprir essas dependências.
+
+Evidências: contract-baseline.log/xml, release-review-execution.json, skip-final-rebuild.log e final-rollback.json no manifesto privado. O documento RELEASE_REVIEW.md organiza os gates restantes e o procedimento de promoção. Os checkpoints antigos abaixo ficam como histórico e não substituem este estado atual.
+
+
 ## Fechamento do escopo implementado — 25/10/2026, Campo Grande
 **Migração ainda NO-GO para promoção.** Implementação deste checkpoint encerrada, sem abrir novas frentes de desenvolvimento ou repetir testes amplos. Aplicação backend: 40d77ab; frontend release: 99ec81d; dev: ceb55c3. Casos adicionais já executados foram commitados em 1fbd5ad. Produção não foi alterada.
 

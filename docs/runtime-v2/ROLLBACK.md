@@ -35,3 +35,7 @@ Nova flag RUNTIME_V2_CLOSING_ATOMIC deve ficar 0 antes de voltar à aplicação 
 
 ## Fechamento — 25/10/2026
 Para a nona migração, desabilitar RUNTIME_V2_SKIP_ATOMIC antes de retirar a função e conciliar recibos processing/uncertain antes de voltar a consumidores sem idempotência. Preferir manter a função aditiva no rollback. Retirada eventual, só após desligar consumidores: DROP FUNCTION public.runtime_v2_skip_process(text,uuid,uuid,boolean,text). Não desfaz movimentos já concluídos nem remove dados. A captura skip-stage-schema.sql é fixture, não migração para sobrescrever a função de produção. Ensaios anteriores de rollback não certificam automaticamente a imagem final 40d77ab.
+
+
+## Ensaio final concluído
+A imagem 40d77ab foi reconstruída com o mesmo digest 528d196b02881621ca41f692ef36532f69a44dd23f88d53b3a1dd8334bfd222f. O helper final admite somente os novos alvos internos explícitos runtime-v2-image-skip-rollback-candidate e runtime-v2-image-skip-rollback-reference. As nove etapas de gravação/upload/skip passaram, com migrações aditivas mantidas. A referência não foi declarada idempotente: os asserts de replay são da candidata. Isso fecha o ensaio controlado da imagem final, não substitui rollback de um deploy publicado nem a conciliação de incidente real.

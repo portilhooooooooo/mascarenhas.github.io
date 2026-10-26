@@ -17,23 +17,28 @@
     },
     {
       "path": "DIAGNOSTICO_FINAL.md",
-      "bytes": 40818,
-      "sha256": "be56b2f81c8d8e49bd294e1ac3c8af3a58ecc40391bbbbd32e9dec3d54b643be"
+      "bytes": 44246,
+      "sha256": "0a8c74d447cc6b87348866b98618b312ea1dd7405498ecc02c175c05b4c75a03"
     },
     {
       "path": "MIGRATION_LOG.md",
-      "bytes": 26651,
-      "sha256": "dc57fc4d878a13c6b5bb553c2950b674c91c51154d96a09693a3040f06d1b6ce"
+      "bytes": 30079,
+      "sha256": "40649f9eefe4c458f56d44985abde39da774954f537440d7499b1f9fb53a0d29"
     },
     {
       "path": "PARIDADE.md",
-      "bytes": 4536,
-      "sha256": "3517c86e3278ebcf2d6b9c83f92cfc302b9fd6da0cebb33089b630ceec53990e"
+      "bytes": 7964,
+      "sha256": "eafa2f12ee79c73982117b8b1fe07a53e7327234d3bd27d2f7e1ac66d77d4d03"
+    },
+    {
+      "path": "RELEASE_REVIEW.md",
+      "bytes": 4303,
+      "sha256": "de4207e02862fa5ced991dd4ac9fd2a2b709b938197a1c2a8e7e4f9f840f6ab7"
     },
     {
       "path": "ROLLBACK.md",
-      "bytes": 5154,
-      "sha256": "37ddcfb569304342ca2907fc57e0dc67109d2b8c06b8d69cb46ed57fbaa4ed37"
+      "bytes": 5760,
+      "sha256": "a4811d200de624a1000c8ee997bb02dfd28462c662629b4cb8d2f7ba52aec37f"
     },
     {
       "path": "RUN_LOCAL.md",
@@ -47,8 +52,8 @@
     },
     {
       "path": "TEST-MATRIX.md",
-      "bytes": 30683,
-      "sha256": "62993a000113ba89bd4f1a0f818c8544c1df4ec9d89764d522fe85417ef98e0e"
+      "bytes": 34111,
+      "sha256": "de43f9c8fb6e8668547f7ce605a40cce7f529b648bb4b4109a6fddc915bd6773"
     },
     {
       "path": "WRITE-RECOVERY.md",
@@ -889,5 +894,8 @@
   "final_ci": {
     "backend": 40246991661,
     "frontend": 40247238570
-  }
+  },
+  "final_rebuild_verified": true,
+  "final_rollback_verified": true,
+  "historical_contract_parity_cases": 4
 }
