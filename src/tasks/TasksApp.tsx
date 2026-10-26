@@ -808,7 +808,7 @@ export function TasksApp() {
       <button type="button" disabled={!(manager || canViewOtherTasks)} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
       <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Produtividade</button>
     </nav>
-    {visitedTabs.has('results') ? <div hidden={tab !== 'results'}><TaskResults key={runtimeScope()} api={apiRequest} visible={pageVisible && tab === 'results'} canViewOthers={canViewOtherTasks} userId={user?.id} /></div> : null}
+    {visitedTabs.has('results') ? <div hidden={tab !== 'results'}><TaskResults key={runtimeScope()} api={apiRequest} visible={pageVisible && tab === 'results'} canViewOthers={isMaster || (user?.role === "legal_leader" && canViewOtherTasks)} userId={user?.id} userName={(user as MbaUser & {name?:string;nome?:string}|undefined)?.name || (user as MbaUser & {nome?:string}|undefined)?.nome} /></div> : null}
 
     {visitedTabs.has('management') && (manager || canViewOtherTasks) ? <div hidden={tab !== 'management'}><AssignmentsBoard key={runtimeScope()} tasks={allVisibleTasks} api={apiRequest} visible={pageVisible && tab === 'management'} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /></div> : null}
 

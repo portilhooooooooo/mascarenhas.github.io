@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { runtimeQueries, runtimeScope, readSummary, saveSummary } from './runtimeQueries';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDownUp, CheckCircle2, Clock3, Download, ListTodo } from 'lucide-react';
+import { ArrowDownUp, CheckCircle2, Clock3, Download, ListTodo, X } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
 import { createDemoTaskResults, isDemoTaskResultsHost } from './demoTaskResults';
@@ -44,11 +44,20 @@ export type ResultPayload = {
   truncated: boolean;
 };
 type Filters = {
-  period: 'today' | '7' | '30' | '90' | 'all';
+  period: 'custom';
+  inicio: string;
+  fim: string;
   deadline: 'all' | 'overdue' | 'today' | 'future' | 'none';
   person: string;
 };
-const DEFAULT_FILTERS: Filters = { period: 'today', deadline: 'all', person: 'all' };
+const todayISO = () => {
+  const now = new Date();
+  return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+};
+const defaultFilters = (): Filters => ({ period:'custom',inicio:todayISO(),fim:todayISO(),deadline:'all',person:'all' });
+type DetailKind = 'pending' | 'analyses' | 'time';
+type DetailRow = {id:string;cnj:string;type:string;person:string;at?:string|null;status?:string|null;seconds?:number|null;result?:string};
+type DetailData = {rows:DetailRow[];total:number;page:number;limit:number;has_more:boolean};
 const formatInt = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 const percent = (part: number, total: number) => total > 0 ? (part / total * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : '—';
 const time = (seconds: number | null | undefined) => {
@@ -80,11 +89,12 @@ function SelectFilter({ title, value, options, onChange }: {
   </label>;
 }
 
-function stat(title: string, value: string, Icon: typeof Clock3) {
-  return <div className="task-results-stat" key={title}>
-    <div className="task-results-stat-top"><span>{title}</span><Icon size={16} strokeWidth={1.7}/></div>
+function stat(title: string, value: string, Icon: typeof Clock3, onOpen: () => void) {
+  return <button type="button" className="task-results-stat task-results-stat-clickable"
+    key={title} onClick={onOpen} aria-label={title + ': ' + value + '. Ver relação'}>
+    <span className="task-results-stat-top"><span>{title}</span><Icon size={16} strokeWidth={1.7}/></span>
     <strong>{value}</strong>
-  </div>;
+  </button>;
 }
 
 function downloadXlsx(encoded: string, filename: string) {
@@ -99,29 +109,38 @@ function downloadXlsx(encoded: string, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function TaskResults({ api, visible, canViewOthers, userId }: {
-  api: ApiRequest; visible: boolean; canViewOthers: boolean; userId?: string;
+export function TaskResults({ api, visible, canViewOthers, userId, userName }: {
+  api: ApiRequest; visible: boolean; canViewOthers: boolean; userId?: string; userName?: string;
 }) {
   const pageRef=useRef<HTMLElement>(null);
   const blockHeights=useRef(new Map<number,number>());
   const demoMode = canViewOthers && isDemoTaskResultsHost();
-  const [filters, setFilters] = useState<Filters>(()=>{try {
-    const saved=JSON.parse(sessionStorage.getItem('mba_runtime_filters:'+runtimeScope())||'null');
-    const v=saved?.filters;
-    return saved?.layoutVersion===2 && v && ['today','7','30','90','all'].includes(v.period)
-      && ['all','overdue','today','future','none'].includes(v.deadline) && typeof v.person==='string'
-      ? v : DEFAULT_FILTERS;
-  } catch {return DEFAULT_FILTERS;} });
+  const [filters, setFilters] = useState<Filters>(() => {
+    try {
+      const saved=JSON.parse(sessionStorage.getItem('mba_runtime_filters:'+runtimeScope())||'null');
+      const v=saved?.filters;
+      if (saved?.layoutVersion===3 && v?.period==='custom' && /^\d{4}-\d{2}-\d{2}$/.test(v.inicio)
+        && /^\d{4}-\d{2}-\d{2}$/.test(v.fim) && v.inicio<=v.fim && v.fim<=todayISO()
+        && v.deadline && typeof v.person==='string') return v;
+    } catch { /* Use defaults. */ }
+    return defaultFilters();
+  });
   const scope=runtimeScope();
   const preferenceKey='mba_runtime_filters:'+scope;
   const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
   const [sortBy, setSortBy] = useState<'most' | 'least' | 'name'>(()=>{try{const v=JSON.parse(sessionStorage.getItem(preferenceKey)||'null')?.sortBy;return ['most','least','name'].includes(v)?v:'most';}catch{return 'most';}});
+  const [activeCard,setActiveCard] = useState<DetailKind|null>(null);
+  const [detailPage,setDetailPage] = useState(1);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
-  const query = useQuery({queryKey:['runtime-v2',scope,'tasks-results',filters],enabled:visible && !!userId && !!scope,
+  const effectiveFilters={...filters,person:canViewOthers?filters.person:(userId || 'all')};
+  const rangeDays=(Date.parse(filters.fim)-Date.parse(filters.inicio))/86400000;
+  const invalidRange=!filters.inicio || !filters.fim || filters.inicio>filters.fim || filters.fim>todayISO() || !Number.isFinite(rangeDays) || rangeDays>180;
+  const query = useQuery({queryKey:['runtime-v2',scope,'tasks-results',effectiveFilters],
+    enabled:visible && !!userId && !!scope && !invalidRange,
     queryFn:async ({signal})=>{
-      const params=new URLSearchParams({...filters,person:canViewOthers?filters.person:'all',duration:'all',include_pending:'1',include_growth:'0'});
-      const answer:ResultPayload=demoMode ? createDemoTaskResults({...filters,duration:'all'}) : await api('/api/tasks/results?'+params,{signal});
+      const params=new URLSearchParams({...effectiveFilters,duration:'all',include_pending:'1',include_growth:'0'});
+      const answer:ResultPayload=demoMode ? createDemoTaskResults({period:'today',deadline:filters.deadline,person:filters.person,duration:'all'}) : await api('/api/tasks/results?'+params,{signal});
       if(scope!==runtimeScope()) throw new Error('Resposta de escopo anterior descartada.');
       // Defesa adicional: um analista nunca recebe dados de terceiros, mesmo em API legada.
       if(!canViewOthers && answer.people?.some(person=>person.id!==userId))
@@ -132,23 +151,23 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const data=query.data || null;
   const pending=query.isFetching;
   const error=exportError || (query.error ? 'Não foi possível atualizar. '+query.error.message : '');
-  const key=JSON.stringify([scope,filters]);
+  const key=JSON.stringify([scope,effectiveFilters]);
   const loadedKey=data ? key : '';
   const setError=setExportError;
   const refresh=()=>{void query.refetch();};
   useEffect(()=>{
-    if(filters.person==='all' && data) setOptions(previous=>{const values=new Map(previous.map(row=>[row.id,row]));data.people.forEach(row=>values.set(row.id,{id:row.id,name:row.name}));return [...values.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));});
-  },[data,filters.person]);
+    if(canViewOthers && filters.person==='all' && data) setOptions(previous=>{const values=new Map(previous.map(row=>[row.id,row]));data.people.forEach(row=>values.set(row.id,{id:row.id,name:row.name}));return [...values.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));});
+  },[data,filters.person,canViewOthers]);
   useEffect(()=>{
-    try { sessionStorage.setItem(preferenceKey,JSON.stringify({layoutVersion:2,filters,sortBy})); } catch { /* Quota only disables preferences. */ }
+    try { sessionStorage.setItem(preferenceKey,JSON.stringify({layoutVersion:3,filters,sortBy})); } catch { /* Quota only disables preferences. */ }
   },[preferenceKey,filters,sortBy]);
 
   const exportResults = async () => {
     if (demoMode || exporting || !data || loadedKey !== key) return;
     setExporting(true); setError('');
     try {
-      const params = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all', include_pending: '0', include_growth: '0' });
-      const legacyParams = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all' });
+      const params = new URLSearchParams({ ...effectiveFilters, duration: 'all', include_pending: '0', include_growth: '0' });
+      const legacyParams = new URLSearchParams({ ...effectiveFilters, duration: 'all' });
       const result = await withOldApiFallback(api, '/api/tasks/results/export?' + params,
         '/api/tasks/results/export?' + legacyParams);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');
@@ -173,7 +192,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     return [...totals].sort((a, b) => b[1] - a[1]);
   }, [people]);
   const maxType = Math.max(1, ...byType.map(([, count]) => count));
-  const snapshotKey=JSON.stringify([scope,filters]);
+  const snapshotKey=JSON.stringify([scope,effectiveFilters]);
   const snapshot=useMemo(()=>readSummary(snapshotKey),[snapshotKey]);
   const total = shown?.summary.completed || 0;
   const recorded = people.reduce((sum, p) => sum + p.analysis_samples, 0);
@@ -186,6 +205,25 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     ? people.reduce((sum,person)=>sum+(person.mean_analysis_seconds ?? 0)*person.analysis_samples,0)/timingSamples
     : null;
   const pendingCount = shown?.summary.pending;
+  const nameOfUser=userName || (typeof window!=='undefined'
+    ? (window as Window & {MBA_CURRENT_USER?:{name?:string}}).MBA_CURRENT_USER?.name : undefined) || 'Meu usuário';
+  const detailQuery = useQuery({queryKey:['runtime-v2',scope,'tasks-results-details',effectiveFilters,activeCard,detailPage],
+    enabled:visible && !!scope && !!userId && !!activeCard && !invalidRange,
+    queryFn:async({signal}):Promise<DetailData>=>{
+      const params=new URLSearchParams({...effectiveFilters,kind:activeCard!,page:String(detailPage),limit:'50'});
+      const answer:DetailData=await api('/api/tasks/results/details?'+params,{signal});
+      if(scope!==runtimeScope())throw new Error('Sessão alterada.');
+      if(!answer||!Array.isArray(answer.rows)||!Number.isInteger(answer.total))throw new Error('Detalhamento inválido.');
+      return answer;
+    }},runtimeQueries);
+  const openCard=(kind:DetailKind)=>{setDetailPage(1);setActiveCard(kind);};
+  useEffect(()=>{setActiveCard(null);setDetailPage(1);},[filters.inicio,filters.fim,filters.person,filters.deadline,scope]);
+  useEffect(()=>{
+    if(!activeCard)return;
+    const close=(event:KeyboardEvent)=>{if(event.key==='Escape')setActiveCard(null);};
+    window.addEventListener('keydown',close);
+    return ()=>window.removeEventListener('keydown',close);
+  },[activeCard]);
 
   return <section ref={pageRef} className="task-results-page" aria-label="Produtividade das tarefas">
     <div className="task-results-heading">
@@ -200,13 +238,16 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     </div>
     {demoMode && <div className="task-results-notice" role="status">Dados de demonstração</div>}
     <div className="task-results-filters">
-      <SelectFilter title="Período" value={filters.period}
-        onChange={value=>setFilters(current=>({...current,period:value as Filters['period']}))}
-        options={[
-          {value:'today',label:'Hoje'}, {value:'7',label:'Últimos 7 dias'},
-          {value:'30',label:'Últimos 30 dias'}, {value:'90',label:'Últimos 90 dias'},
-          {value:'all',label:'Últimos 180 dias'},
-        ]}/>
+      <label className="task-results-filter"><span>Período inicial</span>
+        <input type="date" aria-label="Data inicial" value={filters.inicio} min="2020-01-01" max={todayISO()}
+          onChange={event=>setFilters(current=>({
+            ...current,inicio:event.target.value,fim:event.target.value>current.fim?event.target.value:current.fim
+          }))}/>
+      </label>
+      <label className="task-results-filter"><span>Período final</span>
+        <input type="date" aria-label="Data final" value={filters.fim} min={filters.inicio} max={todayISO()}
+          onChange={event=>setFilters(current=>({...current,fim:event.target.value}))}/>
+      </label>
       <SelectFilter title="Prazo" value={filters.deadline}
         onChange={value=>setFilters(current=>({...current,deadline:value as Filters['deadline']}))}
         options={[
@@ -214,10 +255,14 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
           {value:'today',label:'Vence hoje'}, {value:'future',label:'A vencer'},
           {value:'none',label:'Sem prazo'},
         ]}/>
-      {canViewOthers && <SelectFilter title="Colaborador" value={filters.person}
+      {canViewOthers ? <SelectFilter title="Colaborador" value={filters.person}
         onChange={value=>setFilters(current=>({...current,person:value}))}
-        options={[{value:'all',label:'Todos'},...options.map(person=>({value:person.id,label:person.name}))]}/>}
+        options={[{value:'all',label:'Todos'},...options.map(person=>({value:person.id,label:person.name}))]}/>
+        : <label className="task-results-filter"><span>Colaborador</span>
+          <select aria-label="Colaborador fixo" value="self" disabled><option value="self">{nameOfUser}</option></select>
+        </label>}
     </div>
+    {invalidRange && <div role="alert" className="task-results-notice task-results-error">Intervalo inválido.</div>}
     {error && <div role="alert" className="task-results-notice task-results-error">
       {error}<button type="button" onClick={refresh}>Tentar novamente</button>
     </div>}
@@ -228,9 +273,9 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
       Consulta incompleta. Reduza o período.
     </div>}
     <div className="task-results-stats">
-      {stat('Pendentes', typeof pendingCount === 'number' ? formatInt(pendingCount) : '—', ListTodo)}
-      {stat('Concluídos', cardSummary ? formatInt(cardSummary.completed) : '—', CheckCircle2)}
-      {stat('Tempo médio', shown ? time(meanSeconds) : '—', Clock3)}
+      {stat('Pendentes', typeof pendingCount === 'number' ? formatInt(pendingCount) : '—', ListTodo,()=>openCard('pending'))}
+      {stat('Concluídos', cardSummary ? formatInt(cardSummary.completed) : '—', CheckCircle2,()=>openCard('analyses'))}
+      {stat('Tempo médio', shown ? time(meanSeconds) : '—', Clock3,()=>openCard('time'))}
     </div>
     <article className="task-results-card">
       <header><h2>Tarefas concluídas</h2></header>
@@ -268,5 +313,35 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
         </td></tr>}</tbody>
       </table></div>
     </article>
+    {activeCard && <div className="task-results-dialog-backdrop" onMouseDown={event=>{
+      if(event.target===event.currentTarget)setActiveCard(null);
+    }}>
+      <section className="task-results-dialog" role="dialog" aria-modal="true" aria-label={
+        activeCard==='pending'?'Pendentes':activeCard==='analyses'?'Concluídos':'Medições de tempo'
+      }>
+        <header className="task-results-dialog-heading">
+          <div><h2>{activeCard==='pending'?'Pendentes':activeCard==='analyses'?'Concluídos':'Medições de tempo'}</h2>
+            <span>{detailQuery.data?formatInt(detailQuery.data.total)+' registros':''}</span></div>
+          <button type="button" aria-label="Fechar detalhamento" onClick={()=>setActiveCard(null)}><X size={18}/></button>
+        </header>
+        {detailQuery.isLoading && <p className="task-results-empty">Carregando…</p>}
+        {detailQuery.isError && <p className="task-results-notice task-results-error">{String((detailQuery.error as Error)?.message||'Consulta indisponível.')}</p>}
+        {detailQuery.data && <div className="task-results-table-scroll"><table className="task-results-table">
+          <thead><tr><th>CNJ</th><th>Tipo</th><th>Colaborador</th><th>{activeCard==='pending'?'Situação':'Data'}</th></tr></thead>
+          <tbody>{detailQuery.data.rows.map(row=><tr key={row.id}>
+            <td>{row.cnj||'—'}</td>
+            <td>{taskTypeLabel(row.type)}</td>
+            <td>{row.person||'—'}</td>
+            <td>{activeCard==='pending'?(row.status||'Pendente'):(row.at ? new Date(row.at).toLocaleDateString('pt-BR',{timeZone:'America/Campo_Grande'}):'—')}</td>
+          </tr>)}
+          {!detailQuery.data.rows.length&&<tr><td colSpan={4}>Nenhum registro encontrado.</td></tr>}</tbody>
+        </table></div>}
+        {detailQuery.data && <footer className="task-results-dialog-pagination">
+          <button type="button" disabled={detailPage===1||detailQuery.isFetching} onClick={()=>setDetailPage(p=>p-1)}>Anterior</button>
+          <span>Página {detailPage}</span>
+          <button type="button" disabled={!detailQuery.data.has_more||detailQuery.isFetching} onClick={()=>setDetailPage(p=>p+1)}>Próxima</button>
+        </footer>}
+      </section>
+    </div>}
   </section>;
 }
