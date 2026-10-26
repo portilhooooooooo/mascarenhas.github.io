@@ -26,6 +26,7 @@ type Dashboard = {
   charts: { por_produto: Row[] };
   filters: { states: string[]; products: string[]; resolutions: string[] };
   updated_at?: string | null;
+  _read_status?: 'live' | 'fresh-cache' | 'stale';
 };
 type ProcessRow = { id: number | string; cnj: string; state?: string; situation?: string; pasta?: string | null; tipo_validado?: string | null; entry_date?: string | null; product?: string | null; resolution?: string | null; last_movement_at?: string | null };
 type Paged = { rows: ProcessRow[]; total: number; page: number; page_size: number };
@@ -159,14 +160,16 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const closingComparable = comparable && !uf && canSeeClosings;
 
   const visibleRef=useRef(visible); visibleRef.current=visible;
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
     if(!visibleRef.current)return;
     const sequence = ++requestSequence.current;
     const api = getApi();
+    const queryKey=['runtime-v2',runtimeScope(),'base-geral',filterQuery] as const;
     setPending(true);
     try {
       if (!api) throw new Error('API indisponível.');
-      const result = await runtimeQueries.fetchQuery({queryKey:['runtime-v2',runtimeScope(),'base-geral',filterQuery],staleTime:60000,queryFn:()=>api.request<unknown>('/api/base-geral/summary' + (filterQuery ? '?' + filterQuery : ''))});
+      if (force) await runtimeQueries.invalidateQueries({queryKey:[...queryKey],exact:true});
+      const result = await runtimeQueries.fetchQuery({queryKey:[...queryKey],staleTime:75000,queryFn:()=>api.request<unknown>('/api/base-geral/summary' + (filterQuery ? '?' + filterQuery : ''))});
       if (sequence !== requestSequence.current) return;
       if (!validDashboard(result)) throw new Error('Estrutura de indicadores inválida.');
       setData(result);
@@ -195,7 +198,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     return () => { window.removeEventListener('mba:portfolio-changed', changed); ++requestSequence.current; };
   }, []);
   useEffect(() => {
-    const tick = () => { if (visibleRef.current && !document.hidden) void refresh(); };
+    const tick = () => { if (visibleRef.current && !document.hidden) void refresh(true); };
     const interval = window.setInterval(tick, 300000);
     document.addEventListener('visibilitychange', tick);
     return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', tick); };
@@ -369,7 +372,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <div><h1>Base Geral</h1></div>
       <div className="base-geral-actions">
         <span>{portfolioName(portfolio)}</span>
-        <button type="button" onClick={() => void refresh()} disabled={pending} aria-label="Atualizar Base Geral" title="Atualizar Base Geral"><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
+        <button type="button" onClick={() => void refresh(true)} disabled={pending} aria-label="Atualizar Base Geral" title="Atualizar Base Geral"><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
       </div>
     </header>
     <div className="base-geral-filters">
@@ -385,7 +388,8 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <Select label="Produto" value={product} onChange={setProduct} options={fromValues(data?.filters.products || [])}/>
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
-    {error && <div className="base-geral-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
+    {error && <div className="base-geral-error" role="alert">{shown?'Atualização indisponível. Últimos dados preservados.':error} <button type="button" onClick={() => void refresh(true)}>Tentar novamente</button></div>}
+    {shown?._read_status==='stale' && <div className="base-geral-warning" role="status">Exibindo último consolidado disponível. A consulta ao banco será revalidada na próxima atualização.</div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
     <div className="base-geral-kpis">
       {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
