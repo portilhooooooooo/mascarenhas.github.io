@@ -66,3 +66,19 @@
 
 .runtime-query-status{display:block;height:16px;line-height:16px;font-size:11px;color:var(--mba-text-2,#64748b)}
 .task-results-stat{min-height:107px;box-sizing:border-box}
+
+/* Runtime V2 - produtividade simplificada: três KPIs e dois blocos. */
+.task-results-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.task-results-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+.task-results-stat{min-height:100px}
+.task-results-stat strong{font-size:28px}
+.task-results-table{min-width:420px}
+.task-results-table th:last-child,.task-results-table td:last-child{text-align:right}
+.task-results-card header h2{margin:0}
+.task-results-bars{gap:15px}
+@media(max-width:900px){
+  .task-results-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .task-results-stats,.task-results-filters{grid-template-columns:1fr}
+}
