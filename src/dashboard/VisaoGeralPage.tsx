@@ -1,3 +1,4 @@
+import {analyticalRead} from '../analytics/readScheduler';
 import { useMemo, useState } from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
@@ -127,7 +128,7 @@ export function VisaoGeralPage({visible=true}:{visible?:boolean}) {
     queryFn:async({signal})=>{
       const api=(window as Environment).MBA_AUTOMATION_API || (window as Environment).MBA_API;
       if(!api)throw new Error('Conexão com a API indisponível.');
-      const answer=await api.request<unknown>('/api/carteira-processual'+(query?'?'+query:''),{signal});
+      const answer=await analyticalRead(activeSignal=>api.request<unknown>('/api/carteira-processual'+(query?'?'+query:''),{signal:activeSignal}),{signal,priority:0,isCurrent:()=>scope===runtimeScope()});
       if(scope!==runtimeScope())throw new Error('Resposta de escopo anterior descartada.');
       if(!isDashboard(answer))throw new Error('A API retornou uma estrutura de indicadores inválida.');
       return answer;

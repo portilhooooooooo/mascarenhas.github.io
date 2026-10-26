@@ -182,6 +182,7 @@
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
       error.status = response.status;
+      error.retryAfter = response.headers.get('Retry-After');
       error.reason = ['session_replaced', 'session_revoked', 'session_expired'].includes(data?.reason) ? data.reason : 'invalid';
 
       const sessionInvalid = response.status === 401

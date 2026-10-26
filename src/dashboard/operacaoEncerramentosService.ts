@@ -48,7 +48,7 @@ function api(): ApiClient {
 export function getClosingSummary(): Promise<ClosingSummary> {
   return api().request('/api/operacao/encerramentos/summary');
 }
-export function getClosingCases(status: ClosingStatus, limit: number, offset: number, search = '', motivoDerrota: MotivoDerrotaFilter = 'todos', indicio: ClosingIndicioFilter = 'todos', enviadoBenner: EnviadoBennerFilter = 'todos', tipoValidado: ClosingValidatedFilter = 'todos'): Promise<ClosingList> {
+export function getClosingCases(status: ClosingStatus, limit: number, offset: number, search = '', motivoDerrota: MotivoDerrotaFilter = 'todos', indicio: ClosingIndicioFilter = 'todos', enviadoBenner: EnviadoBennerFilter = 'todos', tipoValidado: ClosingValidatedFilter = 'todos', signal?:AbortSignal): Promise<ClosingList> {
   const query = new URLSearchParams({status, limit: String(limit), offset: String(offset)});
   if (search.trim()) query.set('q', search.trim());
   if (motivoDerrota !== 'todos') query.set('motivo_derrota', motivoDerrota);
@@ -56,7 +56,7 @@ export function getClosingCases(status: ClosingStatus, limit: number, offset: nu
   if (indicio !== 'todos') query.set('indicio', indicio);
   if (enviadoBenner !== 'todos') query.set('enviado_benner', enviadoBenner);
   if (tipoValidado !== 'todos') query.set('tipo_validado', tipoValidado);
-  return api().request('/api/operacao/encerramentos/items?' + query);
+  return api().request('/api/operacao/encerramentos/items?' + query,{signal});
 }
 export function sendClosingsToBenner(items: {cnj: string; andamento: string}[]): Promise<ClosingSendResult> {
   return api().request('/api/operacao/encerramentos/enviar-benner', {
