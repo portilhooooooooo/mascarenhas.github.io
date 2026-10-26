@@ -14,3 +14,7 @@ Esta é uma candidata posterior à Runtime V2 publicada. Não altera o registro 
 - Documentação/evidências acrescentadas em commit posterior; código dos commits acima permanece o testado.
 
 Branches: fix/analytics-stability-20261026 e migration/analytics-stability-20261026. Nenhum merge em main, deploy, login do agente ou DDL de produção desta candidata.
+
+## Revisão posterior
+
+FE cbba140 e BE 7041476 corrigem cinco achados. Ver REVIEW.md para testes, CIs e o gate geral de segurança com duas falhas legadas de aliases. Nenhum deploy.

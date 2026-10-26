@@ -1,5 +1,6 @@
 # Matriz de testes executados
 
+> Atualização pós-revisão: ver [REVIEW.md](REVIEW.md). Código FE cbba140 / BE 7041476. CIs específicos aprovados; gate geral de segurança falhou em dois aliases preexistentes. NO-GO para promoção.
 Código FE 4c12e12; código BE 22c6c85; complemento reproduzível de testes BE 1bfc48f. Commits seguintes são documentação/evidência. Os primeiros ensaios da implementação ocorreram com worktree ainda não commitada e são descritos como ensaios, sem atribuir a eles um hash novo fictício.
 
 | ID / escopo | Resultado | Evidência |
