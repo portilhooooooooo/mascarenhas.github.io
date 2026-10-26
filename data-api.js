@@ -224,7 +224,9 @@
     if(!user?.id)throw Object.assign(new Error('Acesso aguardando validação.'),{status:503,code:'AUTH_TEMPORARILY_UNAVAILABLE'});
     const epoch=authorizationEpoch,portfolio=getPortfolioId();
     const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
-    const raw=JSON.stringify([path,canonical(JSON.parse(options.body||'{}'))]);
+    // A skip timestamp is telemetry; retain the same operation after F5/retry.
+    const payload=path.endsWith('/skip')?{}:JSON.parse(options.body||'{}');
+    const raw=JSON.stringify([path,canonical(payload)]);
     const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw));
     const checksum=[...new Uint8Array(bytes)].map(v=>v.toString(16).padStart(2,'0')).join('');
     if(epoch!==authorizationEpoch||portfolio!==getPortfolioId()||user.id!==window.MBA_CURRENT_USER?.id)throw Object.assign(new Error('Contexto alterado antes do salvamento.'),{code:'STALE_IDENTITY'});
@@ -254,7 +256,7 @@
     const processesCached = cachedTaskProcesses(path, method);
     if (processesCached) return processesCached;
 
-    if(method==='POST'&&/^\/api\/task-processes\/[0-9a-f-]{36}\/(?:liminar-validation|(?:liminar|defesa|encerramento|comprovante_pagamento)-analysis)$/.test(path))return operationalWrite(path,options,method);
+    if(method==='POST'&&/^\/api\/task-processes\/[0-9a-f-]{36}\/(?:skip|liminar-validation|(?:liminar|defesa|encerramento|comprovante_pagamento)-analysis)$/.test(path))return operationalWrite(path,options,method);
     if (method !== 'GET') return performRequest(path, options, method);
 
     const requestKey = JSON.stringify([window.MBA_CURRENT_USER?.id||'unvalidated',window.MBA_SESSION_GENERATION||'bootstrap',authorizationEpoch,getPortfolioId(),path]);
