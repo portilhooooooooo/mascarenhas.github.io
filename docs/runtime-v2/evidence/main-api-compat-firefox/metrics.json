@@ -1,0 +1,5001 @@
+{
+  "timestamp": "2026-10-26T03:51:20.058Z",
+  "commit": "f0851b3f35057c1f24d7c0b67c761dee921edf1f",
+  "fixture": true,
+  "browser": "firefox",
+  "results": [
+    {
+      "id": "A15-legacy-api",
+      "status": "PASSOU",
+      "ms": 4115.544911999999,
+      "detail": {
+        "oldBackendSupported": true,
+        "unsupportedHeaders": 0,
+        "permissionMutation": false
+      },
+      "measurement": {
+        "paint": [
+          {
+            "name": "first-contentful-paint",
+            "startTime": 1101
+          }
+        ],
+        "navigation": [
+          {
+            "domContentLoaded": 1755,
+            "load": 1782,
+            "type": "reload"
+          }
+        ],
+        "shifts": [],
+        "longTasks": [],
+        "route": "/tarefas/resultados",
+        "authFlows": [
+          {
+            "kind": "identity",
+            "status": "authenticated",
+            "ms": 536,
+            "budgetMs": 10000,
+            "retries": 0
+          }
+        ],
+        "queries": [
+          {
+            "module": "tasks-results",
+            "cache": "miss",
+            "ms": 201,
+            "result": "success",
+            "payloadBytes": 505
+          }
+        ]
+      }
+    },
+    {
+      "id": "A15-skip-intent",
+      "status": "PASSOU",
+      "ms": 2604.0854329999984,
+      "detail": {
+        "concurrentCalls": 2,
+        "commands": 2,
+        "automaticRetries": 0,
+        "sameIntentAfterF5": true,
+        "telemetryTimestampNotBusinessPayload": true
+      },
+      "measurement": {
+        "paint": [
+          {
+            "name": "first-contentful-paint",
+            "startTime": 1024
+          }
+        ],
+        "navigation": [
+          {
+            "domContentLoaded": 1614,
+            "load": 1638,
+            "type": "reload"
+          }
+        ],
+        "shifts": [],
+        "longTasks": [],
+        "route": "/tarefas/resultados",
+        "authFlows": [
+          {
+            "kind": "identity",
+            "status": "authenticated",
+            "ms": 482,
+            "budgetMs": 10000,
+            "retries": 0
+          }
+        ],
+        "queries": [
+          {
+            "module": "tasks-results",
+            "cache": "miss",
+            "ms": 131,
+            "result": "success",
+            "payloadBytes": 505
+          },
+          {
+            "module": "tasks-results",
+            "cache": "revalidate",
+            "ms": 34,
+            "result": "success",
+            "payloadBytes": 505
+          }
+        ]
+      }
+    },
+    {
+      "id": "A15-write-intent",
+      "status": "PASSOU",
+      "ms": 2565.6737049999974,
+      "detail": {
+        "networkCommands": 2,
+        "concurrentCalls": 2,
+        "automaticRetries": 0,
+        "recoveredIntent": true
+      },
+      "measurement": {
+        "paint": [
+          {
+            "name": "first-contentful-paint",
+            "startTime": 1111
+          }
+        ],
+        "navigation": [
+          {
+            "domContentLoaded": 1471,
+            "load": 1497,
+            "type": "reload"
+          }
+        ],
+        "shifts": [],
+        "longTasks": [],
+        "route": "/tarefas/resultados",
+        "authFlows": [
+          {
+            "kind": "identity",
+            "status": "authenticated",
+            "ms": 296,
+            "budgetMs": 10000,
+            "retries": 0
+          }
+        ],
+        "queries": [
+          {
+            "module": "tasks-results",
+            "cache": "miss",
+            "ms": 152,
+            "result": "success",
+            "payloadBytes": 505
+          },
+          {
+            "module": "tasks-results",
+            "cache": "revalidate",
+            "ms": 35,
+            "result": "success",
+            "payloadBytes": 505
+          }
+        ]
+      }
+    }
+  ],
+  "calls": [
+    {
+      "t": 1792986668426,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792986668601,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792986668812,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986671213,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792986671351,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792986671518,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986671959,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986673589,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792986673663,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792986673903,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986675973,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792986676165,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792986676387,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986676926,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986678907,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792986679078,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792986679197,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792986679779,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "browserLifecycle": [],
+  "network": [
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986665970.03,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": 258.236,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 258.531,
+        "responseStart": 561.473,
+        "responseEnd": 572.98095703125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 436,
+        "responseBodySize": 13114,
+        "responseHeadersSize": 270
+      }
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667069.141,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 222.05,
+        "responseStart": 260.812,
+        "responseEnd": 266.7919921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 1276,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667072.068,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": 241.185,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 241.409,
+        "responseStart": 260.921,
+        "responseEnd": 260.991943359375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 309,
+        "responseHeadersSize": 283
+      }
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667071.91,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": 239.078,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 239.315,
+        "responseStart": 261.961,
+        "responseEnd": 268.028076171875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 396,
+        "responseBodySize": 2347,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667071.776,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": 235.619,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 235.853,
+        "responseStart": 262.426,
+        "responseEnd": 265.758056640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 391,
+        "responseBodySize": 1805,
+        "responseHeadersSize": 315
+      }
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667071.652,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": 230.138,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 230.629,
+        "responseStart": 265.421,
+        "responseEnd": 275.923828125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 387,
+        "responseBodySize": 9610,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667072.485,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": 251.053,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 251.369,
+        "responseStart": 280.401,
+        "responseEnd": 323.830810546875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 419,
+        "responseBodySize": 36480,
+        "responseHeadersSize": 317
+      }
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667072.636,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 260.565,
+        "responseStart": 302.288,
+        "responseEnd": 305.3330078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 395,
+        "responseBodySize": 2948,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667072.888,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 264.764,
+        "responseStart": 304.993,
+        "responseEnd": 313.133056640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 2893,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667072.759,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 263.314,
+        "responseStart": 307.702,
+        "responseEnd": 314.22998046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 393,
+        "responseBodySize": 4990,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667072.996,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 267.06,
+        "responseStart": 307.576,
+        "responseEnd": 314.037841796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 3388,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667079.318,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 268.48,
+        "responseStart": 302.866,
+        "responseEnd": 309.601806640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 2266,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667079.486,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 299.684,
+        "responseStart": 317.499,
+        "responseEnd": 395.365966796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 82436,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667079.591,
+        "domainLookupStart": 261.016,
+        "domainLookupEnd": 261.119,
+        "connectStart": 261.147,
+        "secureConnectionStart": 261.147,
+        "connectEnd": 299.832,
+        "requestStart": 302.39,
+        "responseStart": 321.126,
+        "responseEnd": 348.634033203125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 414,
+        "responseBodySize": 294379,
+        "responseHeadersSize": 945
+      }
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667079.862,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 307.272,
+        "responseStart": 347.109,
+        "responseEnd": 347.19482421875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 374,
+        "responseBodySize": 6627,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667080.141,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 308.908,
+        "responseStart": 346.971,
+        "responseEnd": 347.013916015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 369,
+        "responseBodySize": 17858,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667079.717,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 306.538,
+        "responseStart": 347.461,
+        "responseEnd": 347.498046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 372,
+        "responseBodySize": 907,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667079.998,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 307.186,
+        "responseStart": 347.239,
+        "responseEnd": 347.27685546875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 382,
+        "responseBodySize": 1467,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667082.895,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 313.623,
+        "responseStart": 344.476,
+        "responseEnd": 344.52197265625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 378,
+        "responseBodySize": 1017,
+        "responseHeadersSize": 292
+      }
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667083.077,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 347.782,
+        "responseStart": 348.462,
+        "responseEnd": 349.820068359375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 385,
+        "responseBodySize": 1985,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667083.672,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 347.837,
+        "responseStart": 362.216,
+        "responseEnd": 362.285888671875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 375,
+        "responseBodySize": 225,
+        "responseHeadersSize": 290
+      }
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667083.383,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 347.995,
+        "responseStart": 371.035,
+        "responseEnd": 380.763916015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 376,
+        "responseBodySize": 5483,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667083.218,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 347.771,
+        "responseStart": 372.29,
+        "responseEnd": 420.541015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 164207,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/css2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667071.48,
+        "domainLookupStart": 230.03,
+        "domainLookupEnd": 230.199,
+        "connectStart": 230.564,
+        "secureConnectionStart": 234.72,
+        "connectEnd": 330.28,
+        "requestStart": 335.225,
+        "responseStart": 387.645,
+        "responseEnd": 387.783935546875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 400,
+        "responseBodySize": 742,
+        "responseHeadersSize": 738
+      }
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667083.52,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 347.937,
+        "responseStart": 375.828,
+        "responseEnd": 381.2060546875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 381,
+        "responseBodySize": 4140,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667083.813,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 349.22,
+        "responseStart": 378.304,
+        "responseEnd": 384.405029296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 370,
+        "responseBodySize": 7133,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667085.523,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 360.58,
+        "responseStart": 387.028,
+        "responseEnd": 392.6279296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 3098,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667085.683,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 378.603,
+        "responseStart": 392.355,
+        "responseEnd": 394.060791015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 386,
+        "responseBodySize": 11826,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986667085.816,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 379.011,
+        "responseStart": 393.078,
+        "responseEnd": 394.4130859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 1620,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668389.824,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 476,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668390.398,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 70.465,
+        "responseStart": 76.794,
+        "responseEnd": 80.469970703125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 439,
+        "responseBodySize": 2983,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668379.094,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 68.582,
+        "responseStart": 81.809,
+        "responseEnd": 109.462890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 430,
+        "responseBodySize": 52600,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668385.722,
+        "domainLookupStart": 62.004,
+        "domainLookupEnd": 62.126,
+        "connectStart": 62.151,
+        "secureConnectionStart": 62.151,
+        "connectEnd": 130.535,
+        "requestStart": 130.973,
+        "responseStart": 138.555,
+        "responseEnd": 143.20703125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668391.726,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 125.018,
+        "responseStart": 132.678,
+        "responseEnd": 137.1298828125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668391.993,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 124.786,
+        "responseStart": 135.185,
+        "responseEnd": 136.9169921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668392.223,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 124.59,
+        "responseStart": 135.088,
+        "responseEnd": 135.781005859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "status": 403,
+      "timing": {
+        "startTime": 1792986668462.112,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 184
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668377.893,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 392.324,
+        "responseStart": 399.41,
+        "responseEnd": 407.614990234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668777.855,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668854.63,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 51.613,
+        "responseStart": 53.111,
+        "responseEnd": 54.966064453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "status": 206,
+      "timing": {
+        "startTime": 1792986668868.679,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 67.907,
+        "responseStart": 71.59,
+        "responseEnd": 111.18505859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 484,
+        "responseBodySize": 998677,
+        "responseHeadersSize": 363
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986668879.414,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 150.491,
+        "responseStart": 161.853,
+        "responseEnd": 168.988037109375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670076.099,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 5.619,
+        "responseStart": 10.362,
+        "responseEnd": 10.4638671875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 436,
+        "responseBodySize": 13114,
+        "responseHeadersSize": 270
+      }
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670132.861,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 58.016,
+        "responseStart": 62.507,
+        "responseEnd": 62.5908203125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 1276,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.048,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 66.349,
+        "responseStart": 91.977,
+        "responseEnd": 92.044921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 309,
+        "responseHeadersSize": 283
+      }
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670133.74,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 65.943,
+        "responseStart": 92.392,
+        "responseEnd": 101.694091796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 387,
+        "responseBodySize": 9610,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670133.819,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 66.462,
+        "responseStart": 92.697,
+        "responseEnd": 100.75390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 391,
+        "responseBodySize": 1805,
+        "responseHeadersSize": 315
+      }
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670133.94,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 66.402,
+        "responseStart": 93.008,
+        "responseEnd": 100.699951171875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 396,
+        "responseBodySize": 2347,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.785,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 74.928,
+        "responseStart": 97.117,
+        "responseEnd": 105.18115234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 414,
+        "responseBodySize": 294379,
+        "responseHeadersSize": 945
+      }
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.189,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 69.285,
+        "responseStart": 105.413,
+        "responseEnd": 109.011962890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 395,
+        "responseBodySize": 2948,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.279,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 92.014,
+        "responseStart": 111.721,
+        "responseEnd": 115.885986328125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 393,
+        "responseBodySize": 4990,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/css2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670133.641,
+        "domainLookupStart": -2542.296,
+        "domainLookupEnd": -2542.215,
+        "connectStart": -2542.2,
+        "secureConnectionStart": -2542.2,
+        "connectEnd": -2477.501,
+        "requestStart": 59.502,
+        "responseStart": 121.639,
+        "responseEnd": 125.226806640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 400,
+        "responseBodySize": 742,
+        "responseHeadersSize": 739
+      }
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.373,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 101.194,
+        "responseStart": 124.72,
+        "responseEnd": 126.5859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 2893,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.468,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 101.171,
+        "responseStart": 124.697,
+        "responseEnd": 129.944091796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 3388,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.62,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 101.066,
+        "responseStart": 124.58,
+        "responseEnd": 127.458984375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 2266,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.117,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 68.687,
+        "responseStart": 105.577,
+        "responseEnd": 147.760009765625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 419,
+        "responseBodySize": 36480,
+        "responseHeadersSize": 317
+      }
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.902,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 115.422,
+        "responseStart": 135.116,
+        "responseEnd": 142.531005859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 372,
+        "responseBodySize": 907,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.012,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 126.078,
+        "responseStart": 146.918,
+        "responseEnd": 150.530029296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 374,
+        "responseBodySize": 6627,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.101,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 127.082,
+        "responseStart": 150.495,
+        "responseEnd": 154.722900390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 382,
+        "responseBodySize": 1467,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.18,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 129.362,
+        "responseStart": 154.533,
+        "responseEnd": 174.900146484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 369,
+        "responseBodySize": 17858,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.255,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 142.35,
+        "responseStart": 160.191,
+        "responseEnd": 160.26904296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 378,
+        "responseBodySize": 1017,
+        "responseHeadersSize": 292
+      }
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.332,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 146.757,
+        "responseStart": 167.281,
+        "responseEnd": 174.6708984375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 385,
+        "responseBodySize": 1985,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.555,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 150.199,
+        "responseStart": 181.508,
+        "responseEnd": 296.941162109375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 164207,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670135.662,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 154.31,
+        "responseStart": 181.477,
+        "responseEnd": 192.31689453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 376,
+        "responseBodySize": 5483,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670141.035,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 169.15,
+        "responseStart": 188.78,
+        "responseEnd": 188.864990234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 375,
+        "responseBodySize": 225,
+        "responseHeadersSize": 290
+      }
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670138.799,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 156.925,
+        "responseStart": 192.363,
+        "responseEnd": 197.19189453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 381,
+        "responseBodySize": 4140,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670141.165,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 169.07,
+        "responseStart": 199.246,
+        "responseEnd": 203.27392578125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 370,
+        "responseBodySize": 7133,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670141.262,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 186.879,
+        "responseStart": 205.302,
+        "responseEnd": 211.971923828125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 3098,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670134.706,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 108.66,
+        "responseStart": 135.728,
+        "responseEnd": 215.532958984375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 82436,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670141.347,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 188.668,
+        "responseStart": 211.07,
+        "responseEnd": 216.66796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 386,
+        "responseBodySize": 11826,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670141.441,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 194.695,
+        "responseStart": 216.445,
+        "responseEnd": 217.278076171875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 1620,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671204.159,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 476,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670816.09,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 403.409,
+        "responseStart": 405.582,
+        "responseEnd": 407.619873046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671204.414,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 23.705,
+        "responseStart": 27.142,
+        "responseEnd": 27.2900390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671204.56,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 23.606,
+        "responseStart": 27.201,
+        "responseEnd": 27.26904296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671203.818,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 22.126,
+        "responseStart": 32.462,
+        "responseEnd": 50.489990234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 434,
+        "responseBodySize": 52600,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671204.658,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 57.37,
+        "responseStart": 59.449,
+        "responseEnd": 59.550048828125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671204.252,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 61.749,
+        "responseStart": 66.688,
+        "responseEnd": 67.295166015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 439,
+        "responseBodySize": 2983,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "status": 403,
+      "timing": {
+        "startTime": 1792986671246.472,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 184
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986670811.695,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 640.554,
+        "responseStart": 646.297,
+        "responseEnd": 649.93994140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671502.054,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671475.715,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 45.985,
+        "responseStart": 51.397,
+        "responseEnd": 54.786865234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671528.278,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 21.329,
+        "responseStart": 27.859,
+        "responseEnd": 31.280029296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "status": 206,
+      "timing": {
+        "startTime": 1792986671683.117,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 46.85,
+        "responseStart": 48.178,
+        "responseEnd": 68.09912109375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 484,
+        "responseBodySize": 998677,
+        "responseHeadersSize": 363
+      }
+    },
+    {
+      "path": "/api/task-processes/12345678-1234-4234-8234-123456789abc/encerramento-analysis",
+      "method": "POST",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671936.857,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 2,
+        "requestHeadersSize": 599,
+        "responseBodySize": 0,
+        "responseHeadersSize": 177
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986671951.266,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672061.887,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 10.622,
+        "responseStart": 23.213,
+        "responseEnd": 24.666015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 436,
+        "responseBodySize": 13114,
+        "responseHeadersSize": 270
+      }
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672134.58,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 77.686,
+        "responseStart": 80.028,
+        "responseEnd": 80.71484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 1276,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672135.401,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 80.815,
+        "responseStart": 87.571,
+        "responseEnd": 92.841064453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 387,
+        "responseBodySize": 9610,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672135.528,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 81.446,
+        "responseStart": 92.53,
+        "responseEnd": 96.767822265625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 391,
+        "responseBodySize": 1805,
+        "responseHeadersSize": 315
+      }
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672135.8,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 81.947,
+        "responseStart": 96.377,
+        "responseEnd": 96.43603515625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 309,
+        "responseHeadersSize": 283
+      }
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672135.667,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 82.009,
+        "responseStart": 98.443,
+        "responseEnd": 116.14306640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 396,
+        "responseBodySize": 2347,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.25,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 83.31,
+        "responseStart": 96.552,
+        "responseEnd": 98.9619140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 414,
+        "responseBodySize": 294379,
+        "responseHeadersSize": 945
+      }
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672136.13,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 82.846,
+        "responseStart": 109.634,
+        "responseEnd": 115.6181640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 395,
+        "responseBodySize": 2948,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672135.944,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 82.263,
+        "responseStart": 113.925,
+        "responseEnd": 151.93701171875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 419,
+        "responseBodySize": 36480,
+        "responseHeadersSize": 317
+      }
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672139.604,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 92.836,
+        "responseStart": 122.171,
+        "responseEnd": 133.051025390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 2893,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672137.02,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 91.478,
+        "responseStart": 124.845,
+        "responseEnd": 128.111083984375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 393,
+        "responseBodySize": 4990,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672139.783,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 92.709,
+        "responseStart": 124.154,
+        "responseEnd": 132.949951171875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 3388,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/css2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672135.251,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 78.679,
+        "responseStart": 135.506,
+        "responseEnd": 135.635009765625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 400,
+        "responseBodySize": 742,
+        "responseHeadersSize": 739
+      }
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672139.956,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 111.983,
+        "responseStart": 135.05,
+        "responseEnd": 143.43896484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 2266,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.081,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 110.914,
+        "responseStart": 139.387,
+        "responseEnd": 221.7890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 82436,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.419,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 123.854,
+        "responseStart": 159.374,
+        "responseEnd": 173.924072265625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 372,
+        "responseBodySize": 907,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.518,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 131.343,
+        "responseStart": 175.833,
+        "responseEnd": 179.433837890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 374,
+        "responseBodySize": 6627,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.788,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 141.773,
+        "responseStart": 179.029,
+        "responseEnd": 193.7490234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 369,
+        "responseBodySize": 17858,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.707,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 131.217,
+        "responseStart": 179.291,
+        "responseEnd": 182.299072265625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 382,
+        "responseBodySize": 1467,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672141.949,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 146.11,
+        "responseStart": 180.733,
+        "responseEnd": 180.804931640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 378,
+        "responseBodySize": 1017,
+        "responseHeadersSize": 292
+      }
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.059,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 173.444,
+        "responseStart": 188.207,
+        "responseEnd": 196.125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 385,
+        "responseBodySize": 1985,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.138,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 179.01,
+        "responseStart": 197.103,
+        "responseEnd": 286.901123046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 164207,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.217,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 180.7,
+        "responseStart": 200.122,
+        "responseEnd": 204.5869140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 376,
+        "responseBodySize": 5483,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.34,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 181.837,
+        "responseStart": 201.842,
+        "responseEnd": 210.660888671875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 381,
+        "responseBodySize": 4140,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.428,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 193.377,
+        "responseStart": 212.679,
+        "responseEnd": 212.76708984375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 375,
+        "responseBodySize": 225,
+        "responseHeadersSize": 290
+      }
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.501,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 195.854,
+        "responseStart": 218.108,
+        "responseEnd": 223.614990234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 370,
+        "responseBodySize": 7133,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.59,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 204.42,
+        "responseStart": 223.419,
+        "responseEnd": 231.5458984375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 3098,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.66,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 210.585,
+        "responseStart": 231.58,
+        "responseEnd": 234.2041015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 386,
+        "responseBodySize": 11826,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986672142.73,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 212.63,
+        "responseStart": 233.999,
+        "responseEnd": 236.5830078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 1620,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673572.895,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 476,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673212.255,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 382.758,
+        "responseStart": 384.341,
+        "responseEnd": 384.43505859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673573.272,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 23.618,
+        "responseStart": 25.098,
+        "responseEnd": 26.97900390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673573.402,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 24.242,
+        "responseStart": 26.898,
+        "responseEnd": 30.02001953125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673573.541,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 24.147,
+        "responseStart": 26.852,
+        "responseEnd": 29.921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673573.056,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 55.162,
+        "responseStart": 64.559,
+        "responseEnd": 67.0380859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 439,
+        "responseBodySize": 2983,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673572.362,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 23.928,
+        "responseStart": 44.109,
+        "responseEnd": 74.265869140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 430,
+        "responseBodySize": 52600,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "status": 403,
+      "timing": {
+        "startTime": 1792986673621.049,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 184
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673576.525,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 239.602,
+        "responseStart": 242.507,
+        "responseEnd": 248.843994140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673852.804,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986673876.425,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 35.859,
+        "responseStart": 43.145,
+        "responseEnd": 49.721923828125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "status": 206,
+      "timing": {
+        "startTime": 1792986673885.425,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 26.931,
+        "responseStart": 30.545,
+        "responseEnd": 72.764892578125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 484,
+        "responseBodySize": 998677,
+        "responseHeadersSize": 363
+      }
+    },
+    {
+      "path": "/api/task-processes/12345678-1234-4234-8234-123456789abc/skip",
+      "method": "POST",
+      "status": 503,
+      "timing": {
+        "startTime": 1792986674440.869,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 43,
+        "requestHeadersSize": 638,
+        "responseBodySize": 0,
+        "responseHeadersSize": 194
+      }
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674672.355,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 5.535,
+        "responseStart": 12.712,
+        "responseEnd": 12.873046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 436,
+        "responseBodySize": 13114,
+        "responseHeadersSize": 270
+      }
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674739.885,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 65.966,
+        "responseStart": 68.603,
+        "responseEnd": 71.16796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 1276,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674740.594,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 67.688,
+        "responseStart": 74.172,
+        "responseEnd": 74.924072265625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 391,
+        "responseBodySize": 1805,
+        "responseHeadersSize": 315
+      }
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674740.518,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 67.014,
+        "responseStart": 74.565,
+        "responseEnd": 76.350830078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 387,
+        "responseBodySize": 9610,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674740.694,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 70.481,
+        "responseStart": 77.533,
+        "responseEnd": 82.239990234375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 396,
+        "responseBodySize": 2347,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674740.765,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 70.462,
+        "responseStart": 78.693,
+        "responseEnd": 78.7470703125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 309,
+        "responseHeadersSize": 283
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674741.407,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 69.864,
+        "responseStart": 81.421,
+        "responseEnd": 111.404052734375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 419,
+        "responseBodySize": 36480,
+        "responseHeadersSize": 317
+      }
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674741.532,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 71.611,
+        "responseStart": 83.51,
+        "responseEnd": 87.9169921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 395,
+        "responseBodySize": 2948,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674741.633,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 74.022,
+        "responseStart": 89.43,
+        "responseEnd": 91.287841796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 393,
+        "responseBodySize": 4990,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674741.752,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 75.287,
+        "responseStart": 93.302,
+        "responseEnd": 96.545166015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 2893,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674741.91,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 80.891,
+        "responseStart": 93.258,
+        "responseEnd": 97.39306640625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 3388,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674741.992,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 81.251,
+        "responseStart": 94.217,
+        "responseEnd": 98.135009765625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 2266,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.144,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 80.905,
+        "responseStart": 110.059,
+        "responseEnd": 110.384033203125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 414,
+        "responseBodySize": 294379,
+        "responseHeadersSize": 945
+      }
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.25,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 90.797,
+        "responseStart": 113.63,
+        "responseEnd": 113.73291015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 372,
+        "responseBodySize": 907,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.55,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 96.872,
+        "responseStart": 113.661,
+        "responseEnd": 119.134033203125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 382,
+        "responseBodySize": 1467,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.066,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 88.964,
+        "responseStart": 114.187,
+        "responseEnd": 169.84814453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 82436,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.364,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 96.07,
+        "responseStart": 113.921,
+        "responseEnd": 119.445068359375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 374,
+        "responseBodySize": 6627,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.635,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 97.587,
+        "responseStart": 119.09,
+        "responseEnd": 131.698974609375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 369,
+        "responseBodySize": 17858,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.706,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 113.417,
+        "responseStart": 126.191,
+        "responseEnd": 126.27001953125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 378,
+        "responseBodySize": 1017,
+        "responseHeadersSize": 292
+      }
+    },
+    {
+      "path": "/css2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674740.424,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 65.56,
+        "responseStart": 128.73,
+        "responseEnd": 128.81494140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 400,
+        "responseBodySize": 742,
+        "responseHeadersSize": 739
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.895,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 119.049,
+        "responseStart": 137.241,
+        "responseEnd": 194.02587890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 164207,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.776,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 113.411,
+        "responseStart": 137.433,
+        "responseEnd": 137.485107421875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 385,
+        "responseBodySize": 1985,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674742.998,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 118.995,
+        "responseStart": 141.884,
+        "responseEnd": 142.571044921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 376,
+        "responseBodySize": 5483,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674743.113,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 126.609,
+        "responseStart": 146.705,
+        "responseEnd": 153.97705078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 381,
+        "responseBodySize": 4140,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674743.189,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 136.906,
+        "responseStart": 147.669,
+        "responseEnd": 147.72705078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 375,
+        "responseBodySize": 225,
+        "responseHeadersSize": 290
+      }
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674743.259,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 137.107,
+        "responseStart": 153.985,
+        "responseEnd": 154.06005859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 370,
+        "responseBodySize": 7133,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674743.426,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 153.579,
+        "responseStart": 160.508,
+        "responseEnd": 162.531005859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 3098,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674743.595,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 269.203,
+        "responseStart": 278.181,
+        "responseEnd": 284.612060546875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 386,
+        "responseBodySize": 11826,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986674743.735,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 1149.312,
+        "responseStart": 1151.147,
+        "responseEnd": 1153.828857421875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 1620,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675920.656,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 58.382,
+        "responseStart": 60.017,
+        "responseEnd": 60.123046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675937.145,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 476,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675937.717,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 45.334,
+        "responseStart": 47.43,
+        "responseEnd": 47.56689453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675937.874,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 52.146,
+        "responseStart": 56.006,
+        "responseEnd": 56.114013671875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675938.145,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 61.959,
+        "responseStart": 64.103,
+        "responseEnd": 64.197021484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675937.475,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 80.392,
+        "responseStart": 90.032,
+        "responseEnd": 92.097900390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 439,
+        "responseBodySize": 2983,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675922.628,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 57.441,
+        "responseStart": 71.645,
+        "responseEnd": 114.30712890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 434,
+        "responseBodySize": 52600,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "status": 403,
+      "timing": {
+        "startTime": 1792986676056.139,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 184
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986676341.404,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 43.626,
+        "responseStart": 49.16,
+        "responseEnd": 49.932861328125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986676333.99,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986675939.174,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 489.836,
+        "responseStart": 496.691,
+        "responseEnd": 496.783935546875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "status": 206,
+      "timing": {
+        "startTime": 1792986676343.272,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 133.189,
+        "responseStart": 138.354,
+        "responseEnd": 163.10791015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 484,
+        "responseBodySize": 998677,
+        "responseHeadersSize": 363
+      }
+    },
+    {
+      "path": "/api/task-processes/12345678-1234-4234-8234-123456789abc/skip",
+      "method": "POST",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986676747.783,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 43,
+        "requestHeadersSize": 638,
+        "responseBodySize": 0,
+        "responseHeadersSize": 177
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986676916.223,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/api/task-processes/12345678-1234-4234-8234-123456789abc/encerramento-analysis",
+      "method": "POST",
+      "status": 503,
+      "timing": {
+        "startTime": 1792986677323.146,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 53,
+        "requestHeadersSize": 655,
+        "responseBodySize": 0,
+        "responseHeadersSize": 194
+      }
+    },
+    {
+      "path": "/tarefas/resultados",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677657.992,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 8.06,
+        "responseStart": 17.421,
+        "responseEnd": 17.494140625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 436,
+        "responseBodySize": 13114,
+        "responseHeadersSize": 270
+      }
+    },
+    {
+      "path": "/brand-theme.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677724.993,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 64.391,
+        "responseStart": 67.147,
+        "responseEnd": 67.217041015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 1276,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/protocolo.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.232,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 69.284,
+        "responseStart": 72.002,
+        "responseEnd": 72.093017578125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 309,
+        "responseHeadersSize": 283
+      }
+    },
+    {
+      "path": "/agreements.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.026,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 68.588,
+        "responseStart": 72.345,
+        "responseEnd": 73.043212890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 391,
+        "responseBodySize": 1805,
+        "responseHeadersSize": 315
+      }
+    },
+    {
+      "path": "/payment-receipt.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.152,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 68.872,
+        "responseStart": 72.819,
+        "responseEnd": 72.991943359375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 396,
+        "responseBodySize": 2347,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/styles.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677725.81,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 68.383,
+        "responseStart": 79.009,
+        "responseEnd": 82.260009765625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 387,
+        "responseBodySize": 9610,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/brand-identity.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.41,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 74.365,
+        "responseStart": 96.372,
+        "responseEnd": 121.93505859375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 395,
+        "responseBodySize": 2948,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/brand-themes.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.484,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 75.069,
+        "responseStart": 109.22,
+        "responseEnd": 122.05908203125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 393,
+        "responseBodySize": 4990,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/css2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677725.685,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 66.737,
+        "responseStart": 133.322,
+        "responseEnd": 133.44091796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 400,
+        "responseBodySize": 742,
+        "responseHeadersSize": 739
+      }
+    },
+    {
+      "path": "/design-system-v2.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.686,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 91.45,
+        "responseStart": 132.605,
+        "responseEnd": 155.6650390625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 2893,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/reimagined-workspace.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.823,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 91.387,
+        "responseStart": 132.536,
+        "responseEnd": 155.776123046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 3388,
+        "responseHeadersSize": 316
+      }
+    },
+    {
+      "path": "/page-init-1.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.955,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 96.921,
+        "responseStart": 151.916,
+        "responseEnd": 160.44580078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 2266,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/lucide.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677727.194,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 121.294,
+        "responseStart": 155.673,
+        "responseEnd": 208.31396484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 390,
+        "responseBodySize": 82436,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.css",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677726.307,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 73.483,
+        "responseStart": 96.588,
+        "responseEnd": 161.2890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 419,
+        "responseBodySize": 36480,
+        "responseHeadersSize": 317
+      }
+    },
+    {
+      "path": "/config.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677727.466,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 121.15,
+        "responseStart": 158.921,
+        "responseEnd": 164.200927734375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 372,
+        "responseBodySize": 907,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/data-api.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677727.542,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 154.946,
+        "responseStart": 171.983,
+        "responseEnd": 179.364013671875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 374,
+        "responseBodySize": 6627,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/react-compat.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.056,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 159.631,
+        "responseStart": 174.83,
+        "responseEnd": 174.9091796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 378,
+        "responseBodySize": 1017,
+        "responseHeadersSize": 292
+      }
+    },
+    {
+      "path": "/portfolio-policy.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677727.614,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 155.064,
+        "responseStart": 179.359,
+        "responseEnd": 182.638916015625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 382,
+        "responseBodySize": 1467,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/app.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677727.764,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 159.785,
+        "responseStart": 182.251,
+        "responseEnd": 195.175048828125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 369,
+        "responseBodySize": 17858,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/user-access-manager.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.18,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 163.646,
+        "responseStart": 184.137,
+        "responseEnd": 187.169189453125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 385,
+        "responseBodySize": 1985,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/agreements.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.372,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 178.764,
+        "responseStart": 198.349,
+        "responseEnd": 198.492919921875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 376,
+        "responseBodySize": 5483,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/protocolo.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.515,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 186.994,
+        "responseStart": 198.411,
+        "responseEnd": 198.530029296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 375,
+        "responseBodySize": 225,
+        "responseHeadersSize": 290
+      }
+    },
+    {
+      "path": "/payment-receipt.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.446,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 181.954,
+        "responseStart": 198.62,
+        "responseEnd": 198.682861328125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 381,
+        "responseBodySize": 4140,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/dashboard-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.299,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 174.818,
+        "responseStart": 199.709,
+        "responseEnd": 284.35498046875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 401,
+        "responseBodySize": 164207,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/auth.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.593,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 198.658,
+        "responseStart": 210.151,
+        "responseEnd": 211.3330078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 370,
+        "responseBodySize": 7133,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/page-init-2.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.701,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 198.601,
+        "responseStart": 210.166,
+        "responseEnd": 214.7021484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 377,
+        "responseBodySize": 3098,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/login-react.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.863,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 198.529,
+        "responseStart": 210.432,
+        "responseEnd": 214.697021484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 397,
+        "responseBodySize": 1620,
+        "responseHeadersSize": 322
+      }
+    },
+    {
+      "path": "/assets/vendor/qrcode.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677728.772,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 198.579,
+        "responseStart": 214.679,
+        "responseEnd": 214.757080078125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 386,
+        "responseBodySize": 11826,
+        "responseHeadersSize": 323
+      }
+    },
+    {
+      "path": "/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986677727.358,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 101.585,
+        "responseStart": 258.658,
+        "responseEnd": 259.01318359375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 414,
+        "responseBodySize": 294379,
+        "responseHeadersSize": 945
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678546.675,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 357.015,
+        "responseStart": 358.974,
+        "responseEnd": 359.287841796875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678884.945,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 21.306,
+        "responseStart": 22.358,
+        "responseEnd": 22.56884765625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678885.082,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 21.959,
+        "responseStart": 24.872,
+        "responseEnd": 24.98095703125
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678885.194,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 30.209,
+        "responseStart": 31.987,
+        "responseEnd": 32.087890625
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 482,
+        "responseBodySize": 48256,
+        "responseHeadersSize": 915
+      }
+    },
+    {
+      "path": "/assets/react-dashboard/client-CKaQoZDw.js",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678290.721,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 609.821,
+        "responseStart": 621.915,
+        "responseEnd": 640.48193359375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 430,
+        "responseBodySize": 52600,
+        "responseHeadersSize": 324
+      }
+    },
+    {
+      "path": "/api/me",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678884.356,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 476,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/favicon.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678884.599,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 49.424,
+        "responseStart": 54.888,
+        "responseEnd": 56.953857421875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 439,
+        "responseBodySize": 2983,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/events/stream",
+      "method": "GET",
+      "status": 403,
+      "timing": {
+        "startTime": 1792986679067.49,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 184
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986678886.18,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 234.575,
+        "responseStart": 238.72,
+        "responseEnd": 239.735107421875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/favicon-white.svg",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986679175.596,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 25.231,
+        "responseStart": 37.282,
+        "responseEnd": 37.733154296875
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 445,
+        "responseBodySize": 3288,
+        "responseHeadersSize": 320
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986679168.698,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    },
+    {
+      "path": "/assets/mascarenhas-login.mp4",
+      "method": "GET",
+      "status": 206,
+      "timing": {
+        "startTime": 1792986679180.345,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": 36.718,
+        "responseStart": 46.544,
+        "responseEnd": 70.81396484375
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 484,
+        "responseBodySize": 998677,
+        "responseHeadersSize": 363
+      }
+    },
+    {
+      "path": "/api/task-processes/12345678-1234-4234-8234-123456789abc/encerramento-analysis",
+      "method": "POST",
+      "status": 201,
+      "timing": {
+        "startTime": 1792986679499.394,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 53,
+        "requestHeadersSize": 655,
+        "responseBodySize": 0,
+        "responseHeadersSize": 182
+      }
+    },
+    {
+      "path": "/api/tasks/results",
+      "method": "GET",
+      "status": 200,
+      "timing": {
+        "startTime": 1792986679767.936,
+        "domainLookupStart": -1,
+        "domainLookupEnd": -1,
+        "connectStart": -1,
+        "secureConnectionStart": -1,
+        "connectEnd": -1,
+        "requestStart": -1,
+        "responseStart": -1,
+        "responseEnd": -1
+      },
+      "sizes": {
+        "requestBodySize": 0,
+        "requestHeadersSize": 487,
+        "responseBodySize": 0,
+        "responseHeadersSize": 178
+      }
+    }
+  ],
+  "performance": {
+    "shifts": [],
+    "long": [],
+    "marks": [],
+    "auth": [
+      {
+        "t": 1387,
+        "status": "authenticated"
+      }
+    ]
+  }
+}

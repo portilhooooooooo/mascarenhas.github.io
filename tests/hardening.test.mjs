@@ -54,7 +54,7 @@ assert.doesNotMatch(auth, /getElementById\('microsoft-login'\)/, 'auth must not 
 assert.doesNotMatch(auth, /getElementById\('login-error'\)/, 'auth must not own the visible login error box');
 assert.doesNotMatch(auth, /data-auth-provider="google"/, 'auth must not offer Google');
 assert.match(auth, /dispatchModuleActivation\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
-assert.match(auth, /new CustomEvent\('mba:authenticated', \{ detail: profile \}\)/, 'only a real sign-in may dispatch the authentication event');
+assert.match(auth, /new CustomEvent\('mba:authenticated', \{ detail: immutableCopy\(profile\) \}\)/, 'only a real sign-in may dispatch the authentication event');
 
 assert.match(pageInit, /window\.MBA_REACT_LOGIN = true;/, 'React login ownership must be declared before bootstrap');
 assert.match(pageInit, /window\.MBA_REACT_TASKS = true;/, 'React task ownership must be declared before bootstrap');
@@ -81,7 +81,7 @@ assert.match(loginCss, /\.react-login-corporate/, 'login must style the Microsof
 assert.match(loginCss, /\.login-brand[\s\S]*display:none!important/, 'legacy login chrome must remain visually suppressed');
 
 assert.match(api, /sessionInvalidCodes = new Set\(\['AUTH_REQUIRED', 'SESSION_INVALID'\]\)/, 'logout must require an explicit session-invalid code');
-assert.match(api, /inFlightGets\.has\(path\)/, 'duplicate GETs must share one request');
+assert.match(api, /inFlightGets\.has\(requestKey\)/, 'duplicate GETs must share one request');
 assert.match(api, /TASK_PROCESS_CACHE_MS = 15000/, 'task process queue must have a short-lived cache');
 assert.match(api, /comprovante_pagamento\|agreement\)-analysis/, 'agreement completion must invalidate the shared process cache');
 assert.match(api, /skip\|agreement-skip-next/, 'agreement skip must invalidate the shared process cache');
@@ -121,7 +121,7 @@ assert.match(dashboard, /function unmountProtocolosPage\(\)/, 'Protocolos must b
 assert.match(dashboard, /document\.addEventListener\('visibilitychange', syncProtocolosLifecycle\)/, 'Protocolos polling must stop while the tab is hidden');
 assert.doesNotMatch(dashboard, /\nmountProtocolosPage\(\);\s*$/, 'Protocolos must not mount unconditionally at bundle startup');
 
-assert.match(reactCompat, /'tasks\.view': false/, 'legacy task bootstrap must be suppressed without changing the real user permission');
+assert.doesNotMatch(reactCompat, /'tasks\.view': false/, 'ownership must never change grants');
 assert.match(reactCompat, /tarefas\/comprovante-pagamento/, 'legacy task deep links must be normalized to the React workspace');
 assert.match(tasksApp, /filteredItems\.slice\(windowStart, windowStart \+ queueSize\)/, 'the visible operator queue must stay bounded by the workspace capacity');
 assert.match(tasksApp, /processAssignedToUser\(task, process, user, manager\)/, 'operators must not receive another participant process from a shared task');

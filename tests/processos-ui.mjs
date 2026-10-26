@@ -1,6 +1,6 @@
 // Playwright exercises the built application; all API responses below are test fixtures.
 import assert from 'node:assert/strict';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium} from 'playwright';
 const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--outDir','dist','--host','127.0.0.1','--port','5175','--strictPort'],{stdio:'pipe'});
@@ -17,6 +17,7 @@ try {
  for(let i=0;i<120;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(r=>setTimeout(r,250));}
  browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox']});
  const context=await browser.newContext({viewport:{width:1440,height:900}});
+ if(process.env.DELAY_DRAFT_MODULE==='1')await context.route('**/assets/react-dashboard/dashboard-react.js*',async route=>{await new Promise(r=>setTimeout(r,500));await route.continue();});
  await context.addInitScript(()=>{if(!localStorage.getItem('fixture_logged_out'))localStorage.setItem('mba_session_token','ba_test_fixture');if(!localStorage.getItem('mba_portfolio_id'))localStorage.setItem('mba_portfolio_id','agibank_enter');});
  let noPermission=false, flag=true, empty=false, datajudOffline=false, apiOffline=false;
  const calls=[],writes=[],errors=[],measurements=[];
@@ -48,6 +49,7 @@ try {
   if(path.startsWith('/api/processos/'))return reply({error:'Processo não encontrado.'},404);
   return reply([]);
  });
+ await context.tracing.start({screenshots:true,snapshots:true});
  const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  const noOverflow=async label=>{const dims=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth}));if(dims.scroll>dims.width+2){console.log(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+2).map(e=>({tag:e.tagName,cls:e.className,right:e.getBoundingClientRect().right,width:e.getBoundingClientRect().width})).slice(-20)));await page.screenshot({path:out+'/overflow-debug.png',fullPage:true});}assert.ok(dims.scroll<=dims.width+2,label+JSON.stringify(dims));};
  await mkdir(out,{recursive:true});
@@ -113,6 +115,27 @@ try {
  await page.keyboard.press('Backspace'); // focused textarea edits text and must not navigate.
  assert.ok(await page.locator('.closing-disagreement-field textarea').isVisible());
  await page.screenshot({path:out+'/encerramento-revisao.png',fullPage:true});
+ const draftBefore=await page.locator('.closing-disagreement-field textarea').inputValue();
+ const executionRoute=await page.evaluate(()=>location.pathname);
+ await page.evaluate(()=>window.MBA_NAVIGATE('analytics'));
+ await page.evaluate(route=>window.MBA_NAVIGATE(route),executionRoute);
+ assert.equal(await page.locator('.closing-disagreement-field textarea').inputValue(),draftBefore,'Rascunho permanece ao navegar');
+ // Simulate an existing production v1 draft before upgrading/F5.
+ const migratedKeys=await page.evaluate(()=>{
+  const scoped=Object.keys(sessionStorage).find(k=>k.startsWith('mba-qa-v2:'));
+  if(!scoped)throw new Error('Scoped draft missing');
+  const parts=scoped.split(':'),legacy='mba-qa-v1:'+parts[1]+':'+parts[3]+':'+parts[4];
+  sessionStorage.setItem(legacy,sessionStorage.getItem(scoped));sessionStorage.removeItem(scoped);
+  sessionStorage.setItem('mba-qa-v1:other-user:task:process',JSON.stringify({secret:'must not hydrate'}));
+  return {scoped,legacy};
+ });
+ await page.reload();
+ await page.locator('.closing-disagreement-field textarea').waitFor();
+ assert.deepEqual(await page.evaluate(({scoped,legacy})=>({old:sessionStorage.getItem(legacy),new:!!sessionStorage.getItem(scoped),foreign:sessionStorage.getItem('mba-qa-v1:other-user:task:process')}),migratedKeys),{old:null,new:true,foreign:null},'Authorized legacy draft migrates once; foreign draft is purged');
+ assert.equal(await page.locator('.closing-disagreement-field textarea').inputValue(),draftBefore,'Rascunho isolado por usuário/carteira recupera após F5');
+ assert.equal(writes.filter(w=>w.path.endsWith('/encerramento-analysis')).length,0,'Navegação e F5 não salvam a análise');
+ await page.screenshot({path:out+'/runtime-v2-rascunho-f5.png',fullPage:true});
+
  // Enter na última pergunta de Encerramentos equivale a Salvar e próximo.
  await page.getByRole('radiogroup',{name:'closing-classification-agreement'}).getByRole('radio',{name:'Não',exact:true}).focus();
  await page.keyboard.press('Enter');
@@ -139,6 +162,7 @@ try {
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:auth-state',{detail:{busy:true,error:null}})));assert.ok(await page.getByRole('button',{name:'Redirecionando…'}).isDisabled());
  await page.evaluate(()=>window.dispatchEvent(new CustomEvent('mba:auth-state',{detail:{busy:false,error:'Falha de SSO de teste'}})));await page.getByRole('alert').getByText('Falha de SSO de teste').waitFor();
  assert.deepEqual(errors,[]);
- await writeFile(out+'/measurements.json',JSON.stringify({fixture:true,viewports:measurements,requests:calls.length,writes:writes.length,jsErrors:errors},null,2));
+ await writeFile(out+'/measurements.json',JSON.stringify({fixture:true,commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),timestamp:new Date().toISOString(),draftNavigationAndF5:true,viewports:measurements,requests:calls.length,writes:writes.length,jsErrors:errors},null,2));
+ await context.tracing.stop({path:out+'/runtime-v2-trace.zip'});
  console.log('Built UI: Processos, paginação, timeline, criação explícita, tarefa vinculada, Encerramento NA/revisão, 4 viewports, troca de carteira, erros, permissões e login validados.');
 }finally{if(browser)await browser.close();server.kill('SIGTERM');}

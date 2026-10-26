@@ -13,6 +13,7 @@
   const taskProcessCache = new Map();
   const processToTask = new Map();
   const inFlightGets = new Map();
+  let authorizationEpoch=0;
   const TASK_PROCESS_CACHE_MS = 15000;
 
   const getStoredToken = () => localStorage.getItem(tokenKey) || sessionStorage.getItem(tokenKey);
@@ -25,11 +26,15 @@
   const setPortfolioId = (portfolioId) => {
     const value = String(portfolioId || '').trim().toLowerCase();
     if (!/^[a-z0-9_]+$/.test(value)) throw new Error('Carteira inválida.');
+    if(value===getPortfolioId())return value;
     localStorage.setItem(portfolioKey, value);
+    window.MBA_CURRENT_USER=null;
     taskProcessCache.clear();
     processToTask.clear();
     inFlightGets.clear();
     window.dispatchEvent(new CustomEvent('mba:portfolio-changed', { detail: { portfolio_id: value } }));
+    // Complete every invalidation before starting the new identity request.
+    window.dispatchEvent(new CustomEvent('mba:authorization-invalidated'));
     return value;
   };
   const configurePortfolios = (portfolios, fallback = defaultPortfolioId) => {
@@ -146,7 +151,7 @@
 
     const requestOptions = { ...options, headers, credentials: 'omit', redirect: 'error' };
     const bootstrapping = Boolean(token) && document.body.classList.contains('auth-loading');
-    const maxAttempts = bootstrapping ? 2 : 1;
+    const maxAttempts = 1; // Retry budget belongs to the calling flow.
     const requestUrl = baseUrl ? baseUrl + path : path;
     let lastError;
 
@@ -167,12 +172,17 @@
 
   async function performRequest(path, options, method) {
     const tokenBeforeRequest = getStoredToken();
+    const portfolioBeforeRequest = getPortfolioId();
+    const epochBeforeRequest=authorizationEpoch;
+    if (path !== '/api/me' && path.startsWith('/api/') && (document.body.classList.contains('auth-unavailable')||document.body.classList.contains('auth-validating'))) throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     const response = await backendFetch(path, options);
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
+    if (epochBeforeRequest!==authorizationEpoch || tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
     if (!response.ok) {
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
       error.status = response.status;
+      error.reason = ['session_replaced', 'session_revoked', 'session_expired'].includes(data?.reason) ? data.reason : 'invalid';
 
       const sessionInvalid = response.status === 401
         && Boolean(tokenBeforeRequest)
@@ -181,17 +191,63 @@
       if (sessionInvalid && !document.body.classList.contains('auth-loading')) {
         clearStoredToken();
         window.dispatchEvent(new CustomEvent('mba:session-expired', {
-          detail: { code: data?.code },
+          detail: Object.freeze({ code: data?.code, reason: error.reason }),
         }));
+      }
+      if (response.status === 403 && path !== '/api/me' && tokenBeforeRequest
+        && ['PERMISSION_DENIED','PORTFOLIO_ACCESS_DENIED','PROFILE_NOT_AUTHORIZED'].includes(data?.code)) {
+        window.MBA_CURRENT_USER = null;
+        window.dispatchEvent(new Event('mba:logged-out'));
+        window.dispatchEvent(new Event('mba:authorization-invalidated'));
       }
       throw error;
     }
     updateUserCache(path, method, data);
     updateTaskProcessCache(path, method, data);
+    if(method!=='GET' && path.startsWith('/api/')){
+      const module=path.startsWith('/api/task')?'tarefas':path.includes('/encerramentos')?'encerramentos':path.includes('/pagamentos')?'pagamentos':null;
+      if(module)window.dispatchEvent(new CustomEvent('mba:server-data-changed',{detail:{module,portfolio_id:portfolioBeforeRequest}}));
+    }
     return data;
   }
 
+  const pendingWrites=new Map(),writeIntents=new Map();
+  const writeIntentPrefix='mba_write_intent:';
+  function clearWriteIntents(){
+    pendingWrites.clear();writeIntents.clear();
+    try{for(const key of Object.keys(sessionStorage))if(key.startsWith(writeIntentPrefix))sessionStorage.removeItem(key);}catch{}
+  }
+  // Only operation IDs and a payload checksum persist, alongside the separate
+  // operational draft policy. No token, response, document or answer is stored here.
+  async function operationalWrite(path,options,method){
+    const user=window.MBA_CURRENT_USER;
+    if(!user?.id)throw Object.assign(new Error('Acesso aguardando validação.'),{status:503,code:'AUTH_TEMPORARILY_UNAVAILABLE'});
+    const epoch=authorizationEpoch,portfolio=getPortfolioId();
+    const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
+    // A skip timestamp is telemetry; retain the same operation after F5/retry.
+    const payload=path.endsWith('/skip')?{}:JSON.parse(options.body||'{}');
+    const raw=JSON.stringify([path,canonical(payload)]);
+    const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(raw));
+    const checksum=[...new Uint8Array(bytes)].map(v=>v.toString(16).padStart(2,'0')).join('');
+    if(epoch!==authorizationEpoch||portfolio!==getPortfolioId()||user.id!==window.MBA_CURRENT_USER?.id)throw Object.assign(new Error('Contexto alterado antes do salvamento.'),{code:'STALE_IDENTITY'});
+    const storageKey=writeIntentPrefix+user.id+':'+portfolio+':'+checksum;
+    if(pendingWrites.has(storageKey))return pendingWrites.get(storageKey);
+    let intent=writeIntents.get(storageKey);
+    if(!intent)try{const saved=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(saved?.version===1&&/^[0-9a-f-]{36}$/.test(saved.id)&&Number.isFinite(saved.at)&&saved.at<=Date.now()+1000)intent=saved;}catch{}
+    if(!intent)intent={version:1,id:crypto.randomUUID(),at:Date.now()};
+    writeIntents.set(storageKey,intent);
+    try{sessionStorage.setItem(storageKey,JSON.stringify(intent));}catch{/* The in-memory intent survives navigation; server receipts guard uncertain repeats. */}
+    const headers=new Headers(options.headers||{});headers.set('Idempotency-Key',intent.id);
+    const pending=performRequest(path,{...options,headers},method);pendingWrites.set(storageKey,pending);
+    try{
+      const result=await pending;writeIntents.delete(storageKey);
+      try{sessionStorage.removeItem(storageKey);}catch{}
+      return result;
+    }finally{if(pendingWrites.get(storageKey)===pending)pendingWrites.delete(storageKey);}
+  }
+
   async function request(path, options = {}) {
+    if(path.startsWith('/api/') && path!=='/api/me' && (document.body.classList.contains('auth-unavailable')||document.body.classList.contains('auth-validating')))throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
     const method = String(options.method || 'GET').toUpperCase();
 
@@ -200,17 +256,32 @@
     const processesCached = cachedTaskProcesses(path, method);
     if (processesCached) return processesCached;
 
+    if(window.MBA_CURRENT_USER?.runtime_features?.write_intents===true&&method==='POST'&&/^\/api\/task-processes\/[0-9a-f-]{36}\/(?:skip|liminar-validation|(?:liminar|defesa|encerramento|comprovante_pagamento)-analysis)$/.test(path))return operationalWrite(path,options,method);
     if (method !== 'GET') return performRequest(path, options, method);
 
-    if (inFlightGets.has(path)) return inFlightGets.get(path);
+    const requestKey = JSON.stringify([window.MBA_CURRENT_USER?.id||'unvalidated',window.MBA_SESSION_GENERATION||'bootstrap',authorizationEpoch,getPortfolioId(),path]);
+    if (!options.signal && inFlightGets.has(requestKey)) return inFlightGets.get(requestKey);
     const pending = performRequest(path, options, method);
-    inFlightGets.set(path, pending);
+    if (!options.signal) inFlightGets.set(requestKey, pending);
     try {
       return await pending;
     } finally {
-      if (inFlightGets.get(path) === pending) inFlightGets.delete(path);
+      if (inFlightGets.get(requestKey) === pending) inFlightGets.delete(requestKey);
     }
   }
+
+  for (const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:profile-ready','mba:authenticated','mba:authorization-invalidated']) window.addEventListener(event, () => { authorizationEpoch+=1; userDetailCache.clear(); taskProcessCache.clear(); processToTask.clear(); inFlightGets.clear(); });
+
+  for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed'])window.addEventListener(event,clearWriteIntents);
+  let writeScope=null;
+  for(const event of ['mba:profile-ready','mba:authenticated'])window.addEventListener(event,()=>{
+    const user=window.MBA_CURRENT_USER;
+    const next=user?JSON.stringify([user.id,getPortfolioId(),user.role,user.authorization_version,Object.entries(user.permissions||{}).sort()]):null;
+    if((writeScope&&next!==writeScope)||user?.permissions?.['tasks.execute']!==true)clearWriteIntents();
+    const own=writeIntentPrefix+user?.id+':'+getPortfolioId()+':';
+    try{for(const key of Object.keys(sessionStorage))if(key.startsWith(writeIntentPrefix)&&!key.startsWith(own))sessionStorage.removeItem(key);}catch{}
+    writeScope=next;
+  });
 
   async function createTaskWithImportedProcesses(payload, file) {
     if (!(file instanceof File) || !/\.(xlsx|csv)$/i.test(file.name)) throw new Error('Selecione uma planilha XLSX ou CSV.');
@@ -276,6 +347,7 @@
       method: 'GET', headers: { Accept: 'text/event-stream' },
       signal: controller.signal,
     });
+    if (sequence !== eventSequence || controller.signal.aborted || portfolioId !== getPortfolioId()) return;
     if (!response.ok) {
       const problem = new Error('Realtime indisponível (' + response.status + ')');
       problem.status = response.status;

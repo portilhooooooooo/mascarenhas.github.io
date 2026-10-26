@@ -1,0 +1,39 @@
+name: Runtime V2 browser fixtures
+on:
+  push:
+    branches: [dev/tasks-workspace, release/runtime-v2-20261024]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npm run build
+      - run: DEBUG=pw:browser BROWSER=${{ matrix.browser }} PHASE=ci-${{ matrix.browser }} node tests/runtime-v2/browser.mjs
+      - run: BROWSER=${{ matrix.browser }} node tests/runtime-v2/verify-close-diagnostics.mjs
+      - run: node tests/runtime-v2/upload-controls.mjs
+        if: matrix.browser == 'chromium'
+      - run: DELAY_DRAFT_MODULE=1 node tests/processos-ui.mjs
+        if: matrix.browser == 'chromium'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-v2-fixture-evidence-${{ matrix.browser }}
+          path: |
+            docs/runtime-v2/evidence/ci-${{ matrix.browser }}
+            docs/ux-processos-evidence
+            docs/runtime-v2/evidence/upload-controls
+            docs/runtime-v2/evidence/ci-close-diagnostics-*

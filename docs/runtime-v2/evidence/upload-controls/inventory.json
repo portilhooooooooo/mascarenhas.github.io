@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-10-25T22:18:29.285Z",
+  "commit": "121a6e079f0cb5dc44aa0c96f801d5430932a35e",
+  "fixture": true,
+  "productionLogin": false,
+  "scope": "UI reachability inventory; not successful import certification",
+  "route": "/tarefas",
+  "legacyButtonVisible": false,
+  "modalVisible": false,
+  "legacyResponsibleFields": 1,
+  "visibleButtons": [
+    "",
+    "Tarefas",
+    "Resultados",
+    "Banco de Dados",
+    "Agibank <> MBA",
+    "Sair",
+    "Sol",
+    "\n            SU\n            Synthetic uploadLegal Leader\n            \n          UsuáriosSair",
+    "Tarefas",
+    "Atribuições",
+    "Produtividade",
+    "Todos",
+    "Meus prazos (0)",
+    "Todas",
+    "Anterior",
+    "Próximos"
+  ],
+  "errors": [],
+  "calls": [
+    {
+      "method": "GET",
+      "path": "/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/api/events/stream"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks/queue-assignees"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tasks/queue-assignees"
+    }
+  ]
+}

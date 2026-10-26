@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {useMemo} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { AlertCircle, ArrowRight, CheckCircle2, ChevronDown, Clock3, RefreshCw, Target } from 'lucide-react';
 import { AGING_BANDS, BASE_CRITERIA, BONUSES, PENALTIES } from './rules';
 import './ranking.css';
@@ -160,40 +162,20 @@ function Methodology({ portfolio }: {portfolio: Portfolio}) {
   </details>;
 }
 
-export function RankingPage() {
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(currentPortfolio);
-  const [data, setData] = useState<Projection | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const sequence = useRef(0);
-
-  const refresh = useCallback(async () => {
-    if (!portfolio) return;
-    const serial = ++sequence.current;
-    setLoading(true);
-    try {
-      const api = (window as RankingWindow).MBA_AUTOMATION_API || (window as RankingWindow).MBA_API;
-      if (!api?.request) throw new Error('API indisponível.');
-      const result = await api.request<Projection>('/api/ranking/projecao?portfolio_id=' + encodeURIComponent(portfolio));
-      if (serial !== sequence.current) return;
-      if (!result || result.portfolio_id !== portfolio || !Array.isArray(result.indicators) || !result.projection) throw new Error('Resposta inválida da projeção.');
-      setData(result); setError('');
-    } catch (cause) {
-      if (serial === sequence.current) {
-        setData(null);
-        setError(cause instanceof Error ? cause.message : 'Falha na consulta ao Benner.');
-      }
-    } finally {
-      if (serial === sequence.current) setLoading(false);
-    }
-  }, [portfolio]);
-
-  useEffect(() => { void refresh(); return () => { sequence.current++; }; }, [refresh]);
-  useEffect(() => {
-    const sync = () => { sequence.current++; setPortfolio(currentPortfolio()); setData(null); setError(''); };
-    for (const name of ['mba:portfolio-changed', 'mba:profile-ready']) window.addEventListener(name, sync);
-    return () => { for (const name of ['mba:portfolio-changed', 'mba:profile-ready']) window.removeEventListener(name, sync); };
-  }, []);
+export function RankingPage({visible=true}:{visible?:boolean}) {
+  const portfolio=currentPortfolio();const scope=runtimeScope();
+  const query=useQuery({queryKey:['runtime-v2',scope,'ranking',portfolio],enabled:visible && !!scope && !!portfolio,staleTime:60000,
+    queryFn:async({signal})=>{
+      const api=(window as RankingWindow).MBA_AUTOMATION_API || (window as RankingWindow).MBA_API;
+      if(!api?.request)throw new Error('API indisponível.');
+      const result=await api.request<Projection>('/api/ranking/projecao?portfolio_id='+encodeURIComponent(portfolio!),{signal});
+      if(scope!==runtimeScope())throw new Error('Resposta de escopo anterior descartada.');
+      if(!result || result.portfolio_id!==portfolio || !Array.isArray(result.indicators) || !result.projection)throw new Error('Resposta inválida da projeção.');
+      return result;
+    }},runtimeQueries);
+  const data=query.data||null;const loading=query.isFetching;
+  const error=query.error instanceof Error?query.error.message:'';
+  const refresh=()=>query.refetch();
   const gaps = useMemo(() => data?.indicators.filter(row => row.points != null && row.points < row.max).length || 0, [data]);
   if (!portfolio) return <section className="ranking-screen" role="status">O Ranking é restrito às carteiras Agibank.</section>;
   return <section className="ranking-screen" aria-label="Projeção gerencial do Ranking Agibank">
@@ -201,7 +183,7 @@ export function RankingPage() {
       <div><h1>Ranking</h1><p>Nota projetada, desvios de meta e pontos recuperáveis · Agibank {portfolio === 'agibank_enter' ? 'Enter' : 'MBA'}</p></div>
       <button className="ranking-refresh" type="button" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} className={loading ? 'ranking-spin' : ''}/> Atualizar</button>
     </div>
-    {error && <div className="ranking-error" role="alert"><AlertCircle size={16}/><span>Não foi possível carregar a projeção: {error}. O backend de testes precisa disponibilizar a API do Ranking.</span><button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
+    {error && <div className="ranking-error" role="alert"><AlertCircle size={16}/><span>Não foi possível carregar a projeção: {error}. {data ? 'Os últimos dados válidos foram mantidos.' : 'Tente novamente.'}</span><button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
     {loading && !data && <p className="ranking-pending" role="status">Conciliando indicadores do Benner…</p>}
     <div className="ranking-kpis">
       <Metric emphasize title="Nota final projetada" value={data?.projection.final == null ? '— / 10' : point(data.projection.final) + ' / 10'} caption={data?.projection.final == null ? 'Não apurável com as fontes disponíveis' : 'Projeção sujeita à homologação do Agibank'}/>

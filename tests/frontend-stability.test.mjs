@@ -48,9 +48,9 @@ assert.doesNotMatch(closePage, /rows\.filter\(row=>.*datajud_tipo/);
 // A tab switch activates lazy modules; it does not reauthenticate the user or
 // reset task state. Visited React modules remain mounted while hidden.
 const app = read('app.js');
-assert.match(auth, /new CustomEvent\('mba:module-activated', \{ detail \}\)/);
-assert.match(auth, /new CustomEvent\('mba:authenticated', \{ detail: profile \}\)/);
-assert.doesNotMatch(auth, /new CustomEvent\('mba:authenticated', \{ detail \}\)/);
+assert.match(auth, /new CustomEvent\('mba:module-activated', \{\s+detail: immutableCopy\(\{ pageId, user \}\)/);
+assert.match(auth, /new CustomEvent\('mba:authenticated', \{ detail: immutableCopy\(profile\) \}\)/);
+assert.doesNotMatch(auth, /new CustomEvent\('mba:authenticated', \{ detail: profile \}\)/);
 assert.match(app, /addEventListener\('mba:module-activated'/);
 const bancoDadosLifecycle = main.slice(main.indexOf('function syncBancoDadosLifecycle()'), main.indexOf('function configureBancoDadosLifecycle()'));
 assert.doesNotMatch(bancoDadosLifecycle, /document\.hidden|!visible/);

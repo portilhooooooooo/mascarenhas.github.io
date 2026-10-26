@@ -718,3 +718,10 @@ body.auth-signed-in .login-screen { display: none !important; }
 .access-portfolio-card.is-disabled .access-module-grid{opacity:.5}
 @media(max-width:1100px){.access-portfolio-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.access-module-grid{grid-template-columns:1fr}}
+
+body.auth-unavailable .login-screen{display:none!important}
+body.auth-unavailable .app-shell{pointer-events:none}
+#runtime-auth-unavailable{position:fixed;inset:64px 24px auto;z-index:10000;padding:16px;background:var(--bg-surface,#fff);border:1px solid var(--border,#e3eaf2);border-radius:7px}
+
+body.auth-validating .login-screen{display:none!important}
+body.auth-loading.auth-validating .app-shell{display:flex!important}

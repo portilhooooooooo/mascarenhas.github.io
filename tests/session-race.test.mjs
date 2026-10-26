@@ -49,7 +49,7 @@ async function exerciseSessionResponse(changeToken) {
     code: 'SESSION_INVALID',
     error: 'Sessão inválida',
   }), { status: 401, headers: { 'Content-Type': 'application/json' } }));
-  await assert.rejects(pending, /Sessão inválida/);
+  await assert.rejects(pending, changeToken ? /contexto anterior descartada/ : /Sessão inválida/);
   if (changeToken) {
     assert.equal(storage.getItem('mba_session_token'), 'ba_fresh_session');
     assert.ok(!events.includes('mba:session-expired'));

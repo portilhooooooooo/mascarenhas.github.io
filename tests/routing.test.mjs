@@ -26,6 +26,7 @@ function environment(initialPath = '/tarefas', options = {}) {
     dispatchEvent(event) { events.push(event); }, scrollTo() {},
   };
   const document = {
+    querySelector(selector) { return selector === 'main .page.active' ? pages.find(page=>active.get(page.id)) || null : null; },
     querySelectorAll(selector) { return selector === '.page' ? pages : []; },
     getElementById(id) { return pages.find(page => page.id === id) || null; },
   };
@@ -36,7 +37,7 @@ function environment(initialPath = '/tarefas', options = {}) {
   class CustomEvent {
     constructor(type, config) { this.type = type; this.detail = config.detail; }
   }
-  vm.runInNewContext(source, { window, location, history, document, CustomEvent });
+  vm.runInNewContext(source, { window, location, history, document, CustomEvent, performance, requestAnimationFrame:callback=>callback() });
   return { window, location, active, events, listeners, allowed, setUrl };
 }
 

@@ -1,0 +1,149 @@
+{
+  "timestamp": "2026-10-25T23:58:53.058Z",
+  "commit": "65fc8907883a30cd6a2fa768af06d34b35342fd9",
+  "fixture": true,
+  "browser": "chromium",
+  "results": [
+    {
+      "id": "A15-skip-intent",
+      "status": "PASSOU",
+      "ms": 2281.1340250000003,
+      "detail": {
+        "concurrentCalls": 2,
+        "commands": 2,
+        "automaticRetries": 0,
+        "sameIntentAfterF5": true,
+        "telemetryTimestampNotBusinessPayload": true
+      }
+    },
+    {
+      "id": "A15-write-intent",
+      "status": "PASSOU",
+      "ms": 2926.0690730000006,
+      "detail": {
+        "networkCommands": 2,
+        "concurrentCalls": 2,
+        "automaticRetries": 0,
+        "recoveredIntent": true
+      }
+    }
+  ],
+  "calls": [
+    {
+      "t": 1792972725499,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792972725614,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792972725914,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792972727692,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792972727891,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792972727924,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792972728686,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792972730779,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792972730877,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792972731331,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792972731944,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "performance": {
+    "shifts": [
+      {
+        "t": 1195,
+        "value": 0.01596827306341896,
+        "duration": 0
+      },
+      {
+        "t": 1372.1999998092651,
+        "value": 0.00015003429355281206,
+        "duration": 0
+      },
+      {
+        "t": 2053.800000190735,
+        "value": 0.004993195007073046,
+        "duration": 0
+      },
+      {
+        "t": 2716.300000190735,
+        "value": 0.9392692901234568,
+        "duration": 0
+      },
+      {
+        "t": 2732,
+        "value": 0.04856965653533307,
+        "duration": 0
+      },
+      {
+        "t": 2854.4000000953674,
+        "value": 0.0067697166160300935,
+        "duration": 0
+      }
+    ],
+    "long": [
+      {
+        "t": 767,
+        "duration": 113
+      },
+      {
+        "t": 1382.8000001907349,
+        "duration": 66
+      },
+      {
+        "t": 1462.8000001907349,
+        "duration": 81
+      },
+      {
+        "t": 1697.1999998092651,
+        "duration": 63
+      }
+    ],
+    "marks": [],
+    "auth": [
+      {
+        "t": 1155.8000001907349,
+        "status": "authenticated"
+      }
+    ]
+  }
+}
