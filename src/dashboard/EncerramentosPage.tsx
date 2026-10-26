@@ -2,7 +2,7 @@ import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
 import { getClosingCases, sendClosingsToBenner, type ClosingCase, type ClosingStatus, type ClosingValidatedFilter } from './operacaoEncerramentosService';
-import { regularAgingGoals, regularAgingSummary } from './closingAgingGoals';
+import { regularAgingGoals, regularAgingRanking, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
 
 type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
@@ -245,29 +245,26 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
-  const goals=agingMensal && dados?.carteira==='Agibank Regular'
-    ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
-  const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
+  const agingGoals=agingMensal && dados?.carteira==='Agibank Regular'
+    ? regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel):null;
+  const ranking=agingGoals?regularAgingRanking(agingGoals):null;
+  const points=(value:number)=>value.toFixed(1).replace('.',',');
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.total_em_acompanhamento):'—'},
-    {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
+    {key:'meta',icon:Target,value:ranking?points(ranking.pontos)+' / '+points(ranking.pontosPossiveis):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
     {cards.map(card=>card.key==='meta'
       ? <button className="closing-kpi closing-kpi-button closing-goal-kpi" type="button" key={card.key}
           onClick={()=>document.getElementById('closing-aging-target')?.scrollIntoView({behavior:'smooth',block:'center'})}
-          aria-label={'Meta: '+card.value+'. Ver metas por aging'}>
-          <span className="closing-goal-kpi-title">Meta</span>
-          <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
-            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
-            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
-              strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
-          </svg>
-          <strong className="closing-gauge-value">{card.value}</strong>
+          aria-label={'Pontuação de aging: '+card.value+' pontos. Ir ao detalhamento expandido'}>
+          <div className="closing-kpi-top"><span>Pontuação Aging</span><Target size={15} strokeWidth={1.7}/></div>
+          <strong className="closing-goal-kpi-score">{card.value}</strong>
+          {ranking&&<span className="closing-goal-kpi-foot">{ranking.faixasAtingidas} de {ranking.totalFaixas} faixas atingidas</span>}
         </button>
       : <button className="closing-kpi closing-kpi-button" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
@@ -280,7 +277,6 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
         </button>)}
   </section>;
 }
-
 
 
 type QueueView = 'enviados' | 'pendentes';
@@ -509,12 +505,13 @@ function AgingPanel({ dados, agingMensal }: {
   const available=regular ? Boolean(agingMensal) : Boolean(dados?.etapas);
   const goals=regular?regularAgingGoals(counts,total):[];
   const summary=regularAgingSummary(goals);
+  const ranking=regular?regularAgingRanking(goals):null;
   const enterBands=['0–3 meses','4–10 meses','>10 meses'];
   const rows=regular?goals.map(goal=>({label:goal.label,atual:goal.atual,
-    meta:goal.meta,achieved:goal.atingidoPercent})):
+    meta:goal.meta,gap:goal.gap,achieved:goal.atingidoPercent})):
     enterBands.map(faixa=>{
       const atual=valueOrZero(counts.find(row=>row.faixa===faixa)?.quantidade);
-      return {label:faixa,atual,meta:0,achieved:total?atual/total*100:0};
+      return {label:faixa,atual,meta:0,gap:0,achieved:total?atual/total*100:0};
     });
   const achievement=summary.meta>0?summary.atual/summary.meta*100:0;
   return <section id="closing-aging-target" className="closing-surface closing-aging" aria-label="Meta de aging">
@@ -523,7 +520,7 @@ function AgingPanel({ dados, agingMensal }: {
       {regular && available && <div className="closing-goal-summary" aria-label="Cumprimento da meta">
         <strong>{num(summary.atual)} <span>/ {num(summary.meta)}</span></strong>
         <b>{percent(achievement)}</b>
-
+        <span className="closing-goal-gap">Faltam {num(summary.gap)}</span>
       </div>}
     </header>
     {!available?<p className="closing-nodata">{regular?'Meta mensal consolidada temporariamente indisponível.':'Dados indisponíveis.'}</p>:
@@ -532,11 +529,17 @@ function AgingPanel({ dados, agingMensal }: {
         <div className="closing-aging-card-value"><strong>{num(row.atual)}</strong>
           {regular&&<span>/ {num(row.meta)}</span>}</div>
         <div className="closing-rail closing-progress"><i style={{width:Math.max(0,Math.min(100,row.achieved))+'%'}}/></div>
+        {regular&&<span className={'closing-aging-card-gap'+(row.gap===0?' is-complete':'')}>
+          {row.gap===0?'Faixa atingida':'Faltam '+num(row.gap)}
+        </span>}
       </article>)}</div>}
-    {regular && agingMensal && <span className="closing-goal-context"
-      title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' outros registros do mês; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
-      {num(agingMensal.total_elegivel)} encerramentos únicos no mês · {num(agingMensal.sem_tag)} sem faixa de aging
-    </span>}
+    {regular && agingMensal && <div className="closing-goal-footer">
+      <span className="closing-goal-context"
+        title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' outros registros do mês; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
+        {num(agingMensal.total_elegivel)} encerramentos únicos no mês · {num(agingMensal.sem_tag)} sem faixa de aging
+      </span>
+      {ranking&&<strong>{ranking.faixasAtingidas} de {ranking.totalFaixas} faixas atingidas</strong>}
+    </div>}
   </section>;
 }
 
