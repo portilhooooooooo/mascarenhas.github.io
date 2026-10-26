@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const page=readFileSync(new URL('../src/tasks/TaskResults.tsx',import.meta.url),'utf8');
+assert.match(page,/period: 'custom'/);
+assert.match(page,/period:'custom',inicio:todayISO\(\),fim:todayISO\(\)/);
+assert.match(page,/periodo?[\s\S]*?/i);
+assert.match(page,/api\('\/api\/tasks\/results\?'\+params/);
+assert.match(page,/\/api\/tasks\/results\/details\?/);
+assert.match(page,/include_pending:'1'/);
+assert.match(page,/!canViewOthers && answer\.people\?\.some/);
+console.log('Calendário custom, detalhamento e isolamento do analista preservados.');
