@@ -90,7 +90,7 @@ function SelectFilter({ title, value, options, onChange }: {
 }
 
 function stat(title: string, value: string, Icon: typeof Clock3, onOpen: () => void) {
-  return <button type="button" className="task-results-stat task-results-stat-clickable"
+  return <button type="button" className="task-results-stat task-results-stat-clickable mba-metric-card"
     key={title} onClick={onOpen} aria-label={title + ': ' + value + '. Ver relação'}>
     <span className="task-results-stat-top"><span>{title}</span><Icon size={16} strokeWidth={1.7}/></span>
     <strong>{value}</strong>
@@ -285,7 +285,7 @@ export function TaskResults({ api, visible, canViewOthers, userId, userName }: {
           <div className="task-results-bar-track"><span style={{width:count/maxType*100+'%'}}/></div>
         </div>)}
       </div> : <p className="task-results-empty">
-        {shown ? 'Nenhuma tarefa concluída no período.' : 'Aguardando dados.'}
+        {shown ? 'Nenhuma conclusão no período.' : 'Aguardando dados.'}
       </p>}
     </article>
     <article className="task-results-card">

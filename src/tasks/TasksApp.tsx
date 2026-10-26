@@ -296,7 +296,7 @@ export function TasksApp() {
     const fit = () => {
       const padding = root.closest('.content');
       const bottom = padding ? parseFloat(getComputedStyle(padding).paddingBottom) : 12;
-      root.style.setProperty('--task-station-height', `${Math.max(280, (window.innerHeight - root.getBoundingClientRect().top - bottom) / 0.9)}px`);
+      root.style.setProperty('--task-station-height', `${Math.max(280, (window.innerHeight - root.getBoundingClientRect().top - bottom))}px`);
     };
     fit();
     const observer = new ResizeObserver(fit);

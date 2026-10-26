@@ -1,0 +1,167 @@
+/*
+ * UI Foundation V1: Resultados + Tarefas.
+ * Visual only; portfolio, loading, query and authorization contracts unchanged.
+ */
+:root {
+  --mba-ui-card-height: 100px;
+  --mba-ui-card-radius: 9px;
+  --mba-ui-card-padding: 14px 16px;
+  --mba-ui-panel-padding: 16px 18px;
+  --mba-ui-gap: 10px;
+  --mba-ui-field-height: 36px;
+  --mba-ui-title-size: 20px;
+  --mba-ui-panel-title-size: 14px;
+  --mba-ui-label-size: 12px;
+  --mba-ui-value-size: 26px;
+  --mba-ui-focus: #bf572e;
+}
+.mba-visually-hidden:not(:focus):not(:active) {
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+  clip:rect(0,0,0,0); white-space:nowrap; border:0;
+}
+:is(.base-geral-page,.closing-page-v2,.ranking-screen,.task-results-page,.assignments-board) {
+  color:var(--mba-text);
+}
+:is(.base-geral-header,.closing-heading,.ranking-topline,.task-results-heading,.assignments-header) h1 {
+  font-size:var(--mba-ui-title-size); font-weight:700; line-height:1.2; letter-spacing:-.03em;
+}
+:is(.base-geral-kpis,.closing-kpis-main,.ranking-kpis,.task-results-stats,.assignments-kpis) {
+  gap:var(--mba-ui-gap);
+}
+button.mba-metric-card,
+article.mba-metric-card {
+  box-sizing:border-box; display:flex; flex-direction:column; align-items:stretch;
+  min-width:0; min-height:var(--mba-ui-card-height); height:100%;
+  padding:var(--mba-ui-card-padding); border:1px solid var(--mba-border);
+  border-radius:var(--mba-ui-card-radius); background:var(--mba-surface);
+  color:var(--mba-text); gap:9px; text-align:left;
+  box-shadow:none; transform:none; font-family:inherit;
+}
+button.mba-metric-card {cursor:pointer}
+button.mba-metric-card:hover {
+  background:var(--mba-subtle);border-color:var(--mba-border-strong);box-shadow:none;transform:none;
+}
+button.mba-metric-card:focus-visible {
+  outline:2px solid var(--mba-ui-focus);outline-offset:2px;
+}
+:is(.base-geral-card-top,.closing-kpi-top,.task-results-stat-top) {
+  font-size:var(--mba-ui-label-size);font-weight:500;line-height:1.25;
+}
+.mba-metric-card > strong,
+.task-results-stat.mba-metric-card > strong,
+.assignments-kpi.mba-metric-card > strong,
+.base-geral-card.mba-metric-card > strong,
+.closing-kpi-button.mba-metric-card > strong:not(.closing-gauge-value),
+.ranking-kpi.mba-metric-card > strong {
+  font-size:var(--mba-ui-value-size);font-weight:700;line-height:1.12;letter-spacing:-.045em;
+  font-variant-numeric:tabular-nums; margin:0; color:inherit;
+}
+.mba-metric-card :is(svg,.base-geral-card-top svg,.closing-kpi-top svg) {
+  flex:none;color:var(--mba-muted);
+}
+.base-geral-page .base-geral-kpis{margin-bottom:12px}
+.base-geral-card.mba-metric-card {justify-content:flex-start;gap:12px}
+.closing-kpi-button.mba-metric-card {justify-content:flex-start}
+.closing-kpi-button.closing-goal-kpi.mba-metric-card{
+  display:grid;justify-items:center;align-content:start;gap:2px;
+}
+.closing-kpi-button.closing-goal-kpi .closing-gauge{max-height:38px}
+.closing-kpi-button.closing-goal-kpi .closing-gauge-value{font-size:18px;line-height:1}
+.ranking-kpi.mba-metric-card {gap:12px}
+.ranking-kpi.mba-metric-card > span {font-size:var(--mba-ui-label-size);font-weight:500;color:var(--mba-text-2)}
+.ranking-kpi-main.mba-metric-card {background:var(--mba-blue-dark);border-color:var(--mba-blue-dark);color:#fff}
+.ranking-kpi-main.mba-metric-card > span {color:#dce4f3}
+button.ranking-kpi-main.mba-metric-card:hover {background:var(--mba-blue);border-color:var(--mba-blue)}
+.ranking-kpis{margin-bottom:12px}
+.assignments-kpi.mba-metric-card {gap:12px}
+.assignments-kpi.mba-metric-card > span {font-size:var(--mba-ui-label-size)}
+.task-results-stat-clickable.mba-metric-card {gap:12px}
+:is(.base-geral-panel,.closing-surface,.ranking-section,.task-results-card,.assignments-people) {
+  border:1px solid var(--mba-border);border-radius:var(--mba-ui-card-radius);
+  background:var(--mba-surface);box-shadow:none;
+}
+:is(.base-geral-panel,.closing-surface,.task-results-card) {padding:var(--mba-ui-panel-padding)}
+:is(.base-geral-panel,.closing-surface,.ranking-section,.task-results-card,.assignments-board) h2 {
+  font-size:var(--mba-ui-panel-title-size);font-weight:700;letter-spacing:-.015em;
+}
+:is(.base-geral-filters,.closing-filter-row,.task-results-filters,.assignments-filters) {
+  gap:var(--mba-ui-gap);
+}
+:is(.base-geral-filter select,.closing-filter-row select,.closing-filter-row input[type="date"],
+    .task-results-filter select,.task-results-filter input[type="date"],
+    .assignments-filters select,.assignments-filters input) {
+  box-sizing:border-box;height:var(--mba-ui-field-height);min-height:var(--mba-ui-field-height);
+  border:1px solid var(--mba-border-strong);border-radius:7px;
+  background:var(--mba-surface);color:var(--mba-text);
+  font:500 12px Inter,system-ui,sans-serif;
+}
+:is(.base-geral-filter span,.closing-filter-row label,.task-results-filter span,.assignments-filters label) {
+  font-size:11px;color:var(--mba-text-2);
+}
+:is(.base-geral-panel,.ranking-section,.closing-surface,.task-results-card) > header {
+  margin-bottom:12px;
+}
+.mba-help-disclosure {
+  color:var(--mba-text-2);font-size:11px;line-height:1.5;
+}
+.mba-help-disclosure summary {
+  cursor:pointer;display:inline-flex;align-items:center;
+  font-weight:600;list-style:none;padding:6px 0;text-underline-offset:3px;
+}
+.mba-help-disclosure summary:hover{text-decoration:underline}
+.mba-help-disclosure summary::-webkit-details-marker{display:none}
+.mba-help-disclosure p{margin:6px 0 0;line-height:1.55}
+.base-geral-context,.closing-source-context {
+  font-size:11px;color:var(--mba-text-2);
+}
+.closing-source-context {display:flex;gap:8px 16px;align-items:baseline;flex-wrap:wrap;margin-top:6px}
+.base-geral-actions button,.ranking-refresh,.assignments-refresh {
+  min-width:34px;min-height:34px;padding:0 8px;
+}
+.ranking-context{display:inline-block;font-size:11px;color:var(--mba-text-2)}
+.ranking-notice {padding:9px 12px;margin-bottom:12px}
+.ranking-topline{margin-bottom:12px}
+.ranking-source-line{scroll-margin-top:100px}
+#ranking-indicators,#ranking-action-plan{scroll-margin-top:100px}
+.ranking-kpi[title]{white-space:normal}
+.task-results-page .task-results-card{gap:12px}
+.task-results-page .task-results-empty{padding:10px 12px;min-height:0}
+.task-results-heading{align-items:center}
+.task-results-filters{padding:12px;gap:10px}
+.task-results-stat.mba-metric-card{min-height:var(--mba-ui-card-height)}
+.assignments-board{gap:12px}
+.assignments-toolbar{gap:10px}
+.assignments-summary{color:var(--mba-text-2)}
+.assignments-views{gap:3px}
+.assignments-kpis {margin-top:0}
+.assignments-board .assignments-data-note {margin:0}
+.tasks-react-root .task-results-page,
+.tasks-react-root .assignments-board{max-width:1640px}
+#tarefas[data-react-tasks="true"] .task-station .tasks-process-item strong{font-size:12px}
+#tarefas[data-react-tasks="true"] .task-station .tasks-process-item small{font-size:11px}
+#tarefas[data-react-tasks="true"] .queue-station-filters .mba-react-select-trigger{font-size:12px}
+#tarefas[data-react-tasks="true"] .task-station .execution-card .task-question h3{font-size:14px}
+#tarefas[data-react-tasks="true"] .task-station .execution-card .task-option-card strong{font-size:13px}
+@media(max-width:1000px) {
+  .assignments-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px) {
+  :root{--mba-ui-card-padding:12px;--mba-ui-panel-padding:14px;--mba-ui-value-size:23px}
+  .ranking-kpis,.assignments-kpis,.base-geral-kpis,.closing-kpis-main,.task-results-stats {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .ranking-kpi-main.mba-metric-card{grid-column:span 2}
+}
+
+/* Tabular results remain legible at the same density across the product. */
+:is(.base-geral-products,.ranking-score-table,.task-results-table,.assignments-table) {
+  font-size:12px;font-variant-numeric:tabular-nums;
+}
+:is(.base-geral-products,.ranking-score-table,.task-results-table,.assignments-table) th {
+  font-size:11px;font-weight:650;color:var(--mba-text-2);
+}
+:is(.base-geral-products,.ranking-score-table,.task-results-table,.assignments-table) td {
+  font-size:12px;line-height:1.4;
+}
+.ranking-footnote.mba-help-disclosure {margin:0;padding:0 17px 12px}
+.ranking-footnote.mba-help-disclosure p{font-size:11px}

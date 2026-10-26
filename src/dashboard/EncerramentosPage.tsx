@@ -267,7 +267,7 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
     {cards.map(card=>card.key==='meta'
-      ? <button className="closing-kpi closing-kpi-button closing-goal-kpi" type="button" key={card.key}
+      ? <button className="closing-kpi closing-kpi-button closing-goal-kpi mba-metric-card" type="button" key={card.key}
           onClick={()=>document.getElementById('closing-aging-target')?.scrollIntoView({behavior:'smooth',block:'center'})}
           aria-label={'Meta: '+card.value+'. Ver metas por aging'}>
           <span className="closing-goal-kpi-title">Meta</span>
@@ -278,7 +278,7 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
           </svg>
           <strong className="closing-gauge-value">{card.value}</strong>
         </button>
-      : <button className="closing-kpi closing-kpi-button" type="button"
+      : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
           title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
             card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' :
@@ -604,11 +604,12 @@ function CompositionPanel({ dados, carteira, agingMensal, isNubank, onOpenTipo }
     </div> : <p className="closing-nodata">{carteira==='Agibank Regular' && !agingMensal
       ? 'Classificação mensal consolidada indisponível. Exibindo apenas os validados do período, quando disponíveis.'
       : 'Sem encerramentos classificados no recorte.'}</p>}
-    {carteira==='Agibank Regular'&&<p className="closing-card-foot">
-      {consolidated
+    {carteira==='Agibank Regular'&&<div className="closing-source-context">
+      <span>{consolidated ? 'Consolidado mensal · independe dos filtros acima' : 'Visão parcial · conciliação indisponível'}</span>
+      <details className="mba-help-disclosure"><summary>Critérios</summary><p>{consolidated
         ? 'Mês vigente: '+agingMensal!.periodo+' · '+num(agingMensal!.origens.validacoes_do_mes)+' validados + '+num(agingMensal!.origens.historico_adicional)+' adicionais do Benner, com CNJ deduplicado. Este consolidado mensal independe dos filtros de período e tipo acima.'
-        : 'Visão parcial: somente validações da plataforma. A reconciliação mensal com o Benner não está disponível.'}
-    </p>}
+        : 'Visão parcial: somente validações da plataforma. A reconciliação mensal com o Benner não está disponível.'}</p></details>
+    </div>}
   </section>;
 }
 
@@ -853,9 +854,6 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
     <div className="closing-heading"><h1>Encerramentos</h1></div>
     <div className="closing-filter-row">
-      <label><span>Carteira</span><select value={carteira} disabled aria-label="Carteira atual autorizada">
-        <option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option>
-      </select></label>
       <label><span>Tipo</span><select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>
         {visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}
       </select></label>

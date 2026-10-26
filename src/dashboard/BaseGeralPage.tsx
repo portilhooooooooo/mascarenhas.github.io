@@ -367,10 +367,10 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   };
   return <section className="base-geral-page" aria-label="Base Geral da carteira processual">
     <header className="base-geral-header">
-      <div><h1>Base Geral</h1><p>Indicadores consolidados da carteira processual</p></div>
+      <div><h1>Base Geral</h1></div>
       <div className="base-geral-actions">
         <span>{portfolioName(portfolio)}</span>
-        <button type="button" onClick={() => void refresh()} disabled={pending}><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/> Atualizar</button>
+        <button type="button" onClick={() => void refresh()} disabled={pending} aria-label="Atualizar Base Geral" title="Atualizar Base Geral"><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
       </div>
     </header>
     <div className="base-geral-filters">
@@ -392,16 +392,15 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     </div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
     <div className="base-geral-kpis">
-      {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card"
-        onClick={() => openDetail(key)} aria-label={'Abrir relação: ' + label}>
+      {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
+        onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
         <strong>{shown ? number(categories[key]) : '—'}</strong>
-        <span className="base-geral-card-bottom">{subtitle}</span>
       </button>)}
     </div>
     <div className="base-geral-bottom">
       <section className="base-geral-panel" id="base-geral-produtos">
-        <header><div><h2>Produto</h2><p>Distribuição da carteira por produto</p></div>
+        <header><div><h2>Produto</h2></div>
           <div className="base-geral-panel-actions"><span className="base-geral-tally">{number(products.reduce((sum, item) => sum + Number(item.value), 0))} registros</span>
             <button type="button" className="base-geral-csv-action" disabled={!products.length} onClick={() =>
               saveCsv('base_geral_produtos_' + portfolio + '.csv', serializeBaseGeralCsv(
@@ -426,7 +425,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         </div>
       </section>
       <section className="base-geral-panel base-geral-comparison">
-        <header><div><h2>Prejuízo X Lucro</h2><p>Base prescrita versus base ativa · quantidade de processos</p></div></header>
+        <header><div><h2>Prejuízo X Lucro</h2><span className="base-geral-context">Quantidade de processos</span></div></header>
         <div className="base-geral-chart-area">
           <button type="button" className={'base-geral-donut ' + (!donutReady ? 'is-unavailable' : '')}
             style={chartStyle} onClick={() => openDetail('active')} aria-label="Detalhar comparação entre base prescrita e base ativa">
@@ -438,7 +437,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
             {!donutReady && <p className="base-geral-unavailable">Aguardando as contagens filtradas de aging e base ativa.</p>}
           </div>
         </div>
-        <p className="base-geral-caption">Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p>
+        <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
       </section>
     </div>
     {detail && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
