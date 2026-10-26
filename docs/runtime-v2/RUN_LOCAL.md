@@ -42,3 +42,6 @@ A API aceita somente a instância runtime-v2-image-linked-creation identificada 
 
 ## Atomicidade de Encerramentos — 25/10/2026
 Para validar o novo caminho, aplicar as OITO migrações no banco descartável via scripts/runtime_v2_test_database.py e usar RUNTIME_V2_CLOSING_ATOMIC=1. Imagem de aplicação 14503a1: mba-runtime-v2-release:closing-atomic; SQL final 581b8e1. Testes de falha: -k closing_event_failure. Benchmark e rollback aceitam somente os nomes internos explicitamente adicionados para essa variante.
+
+## Fechamento — 25/10/2026
+Último grupo necessário executado: python -m pytest tests/test_runtime_v2_http.py -k "actual_skip or atomic_skip_rpc" -o junit_family=xunit1 -q. Evitar -k skip isolado: corresponde também ao marcador skipif e pode selecionar todo o módulo. Para upload: -k upload_recovery. NOVE migrações no inicializador do stage; RUNTIME_V2_SKIP_ATOMIC=1 habilita a nova função, sem modificar produção. CIs válidos do código: backend 40d77ab/run40246991661 e frontend 99ec81d/run40247238570. Casos adicionais já executados: 1fbd5ad; documentação/evidência usa skip-ci para não repetir baterias.

@@ -32,3 +32,6 @@ Imagem candidata 25bb6c1: mba-runtime-v2-release:linked-creation, digest 726fbb1
 
 ## Atomicidade de Encerramentos — 25/10/2026
 Nova flag RUNTIME_V2_CLOSING_ATOMIC deve ficar 0 antes de voltar à aplicação anterior ou remover a função. Drenar e conciliar recibos processing/uncertain primeiro. A migração 20261025233600 é aditiva, sem alteração destrutiva de dados; preferir mantê-la no rollback. Se for necessário retirar, após todos os consumidores estarem desligados: DROP FUNCTION public.runtime_v2_save_closing(text,uuid,uuid,jsonb,jsonb,text,date,boolean). Isso não desfaz análises salvas e restaura o risco conhecido de escrita parcial do caminho antigo. Nada foi executado em produção.
+
+## Fechamento — 25/10/2026
+Para a nona migração, desabilitar RUNTIME_V2_SKIP_ATOMIC antes de retirar a função e conciliar recibos processing/uncertain antes de voltar a consumidores sem idempotência. Preferir manter a função aditiva no rollback. Retirada eventual, só após desligar consumidores: DROP FUNCTION public.runtime_v2_skip_process(text,uuid,uuid,boolean,text). Não desfaz movimentos já concluídos nem remove dados. A captura skip-stage-schema.sql é fixture, não migração para sobrescrever a função de produção. Ensaios anteriores de rollback não certificam automaticamente a imagem final 40d77ab.

@@ -29,3 +29,6 @@ O procedimento seguro pode manter a operação indisponível enquanto a incertez
 Antes de voltar a código sem recibos, suspender novas gravações finais e conciliar todos os ativos; não apagar o journal. O ensaio controlado de rollback usa comandos novos e concluídos, não demonstra reconciliação de uma escrita parcial publicada.
 
 Testes HTTP executados verificam ACK perdido com replay único, resultado incerto bloqueando outra chave, recusa de replay após revogação/carteira incorreta e auditoria incapaz de DELETE. A implementação da ferramenta e esses testes são do stage. Conciliação administrativa de um incidente real e escala do journal em produção NÃO EXECUTADAS.
+
+## Fechamento — 25/10/2026
+Upload de Encerramentos: após timeout, primeiro consultar tarefa protegida; o teste confirmou total importado e reenvio 409 sem duplicação. Só liberar reenvio quando houver evidência de rollback integral, nunca apenas pelo status HTTP. Skip usa intenção estável mesmo com novo timestamp de telemetria; recibo evita repetir movimento/evento. Isso não autoriza liberar processing/uncertain por idade ou apagar recibos. Ensaios sintéticos não certificam conciliação de um incidente real.

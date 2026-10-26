@@ -35,3 +35,6 @@ Importação de Encerramentos deve persistir classificação junto com upload/pr
 
 ## Atomicidade de Encerramentos — 25/10/2026
 R06/R04: análise de Encerramentos, estado do processo, metadados e evento devem confirmar na mesma transação, tanto na conclusão quanto no adiamento. Regra dos 60 dias/classificações continuam na implementação existente; o novo SQL não recalcula critérios.
+
+## Fechamento — 25/10/2026
+R04/A15: repetir a mesma intenção de pular processo não repete movimento de fila/evento. Um clique intencional novo após sucesso é outra operação. Timestamp de telemetria não define a identidade de um comando de skip.

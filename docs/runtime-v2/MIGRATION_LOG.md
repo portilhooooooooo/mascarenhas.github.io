@@ -1,5 +1,35 @@
 # Registro da migração
 
+## Fechamento do escopo implementado — 25/10/2026, Campo Grande
+**Migração ainda NO-GO para promoção.** Implementação deste checkpoint encerrada, sem abrir novas frentes de desenvolvimento ou repetir testes amplos. Aplicação backend: 40d77ab; frontend release: 99ec81d; dev: ceb55c3. Casos adicionais já executados foram commitados em 1fbd5ad. Produção não foi alterada.
+
+### Última correção concluída: Pular processo
+Duas reproduções controladas no caminho anterior falharam: repetir a mesma operação gerou dois eventos e dois movimentos de fila; falhar no evento deixou a fila movida mesmo com resposta de erro. A nova operação runtime_v2_skip_process usa a função de fila efetiva e grava o evento na mesma transação. Recibos duráveis protegem repetição/conexão perdida; uma ação intencional nova continua permitida. O status 409/TASK_ARCHIVED foi preservado.
+
+Frontend guarda apenas o identificador/checksum da intenção, isolado por usuário/carteira. client_action_at é telemetria, não muda a identidade da operação ao reenviar após F5. Nenhum payload operacional, token ou resposta passou a ser persistido por essa mudança. O backend continua autoritativo para autorização antes do replay.
+
+**Nona migração, stage somente:** 20261025235800_runtime_v2_atomic_skip.sql. Flag RUNTIME_V2_SKIP_ATOMIC=1 somente nas instâncias descartáveis; função e RPC anterior sem EXECUTE para anon/authenticated, como confirmado por metadata somente leitura. Nenhum DDL publicado foi executado.
+
+### Verificações necessárias e seus resultados
+- **Quatro testes de upload PASSOU:** ACK perdido com consulta autoritativa e reenvio 409 sem duplicação; seis envios simultâneos com uma aceitação; rollback integral seguido de reenvio explícito; perfil revogado durante a espera sem importação. Integridade de contagens, classificação e atribuição conferida em PostgreSQL.
+- **Onze casos de skip PASSOU em 5,54 s:** replay sem repetir evento/fila, rollback do evento, concorrência, ACK perdido, nova intenção legítima, negações por carteira/atribuição/arquivamento/revogação e duas negações de RPC de browser.
+- Browser: A15-skip-intent e A15-write-intent PASSOU em Chromium e Firefox na release e Chromium na dev; sem erros JS/console. Comandos simultâneos foram deduplicados; F5 não enviou comando e reenvio com outro timestamp manteve o mesmo identificador. Respostas de browser são fixtures; provas de escrita estão nos testes HTTP/SQL separados.
+- CI do código backend 40d77ab: PASSOU (run 40246991661). CI frontend 99ec81d: PASSOU (run 40247238570). A suíte completa do CI do código foi executada; os nove casos adicionados depois foram executados localmente dentro do grupo de onze, sem nova rodada ampla.
+- Uma seleção local com palavra skip também correspondeu ao marcador skipif do módulo e executou a suíte HTTP inteira: 122 PASSOU e uma falha de fixture. O teste usava nomes de colunas incorretos para revogação; foi corrigido para revoked_at/revocation_reason reais. O grupo afetado de onze passou depois. **Não se apresenta essa execução como uma suíte única com 123 PASSOU.** Os logs da falha ficam preservados.
+- Houve ainda um erro de sintaxe na nova fixture de upload, corrigido antes da execução, e tentativa prematura de criar imagem antes do fim do build, retornando 404 somente no harness. Não foram falhas de produção.
+- Build disponível: sha256:528d196b02881621ca41f692ef36532f69a44dd23f88d53b3a1dd8334bfd222f, fonte 40d77ab. Rebuild/rollback anteriores pertencem à imagem de Encerramentos. O ensaio específico de reprodutibilidade/rollback dessa imagem final de skip NÃO foi repetido; continua como gate, sem herdar indevidamente a validação anterior.
+
+### Pendências remanescentes, sem expansão do escopo
+1. Quatro divergências entre testes de domínio e comportamento efetivo: criação genérica sem responsável; dois contratos de prazo de Defesa; concordância automática em Liminar sem evidência suficiente. Permanecem registradas; regras e asserts não foram alterados para forçar verde.
+2. A15 integral: demais comandos operacionais, workers/integrações externas e conciliação real de escrita incerta. Upload e skip acima cobrem os cenários enumerados, não todos os fluxos.
+3. A16 integral: paridade dos demais indicadores/exportações e representatividade de Nubank.
+4. B03 real: correlação dos timeouts, fila/transporte/SQL e configuração efetiva de pool, ainda sem causa original comprovada.
+5. Validação autenticada legítima via .bat/local.portilhobackoffice.site ou main Cloudflare. O agente não tem conta autorizada e não fabricou login.
+6. Gate final da imagem/rollback, promoção rastreável e duas horas de monitoramento após liberação. Sem deploy ou parada de produção nesta fase.
+
+Para evitar novas rodadas sem necessidade, commits de evidência/documentação e o commit exclusivamente de testes já executados usam [skip ci]. Isso não transforma o HEAD documental em um novo resultado de CI: os commits de aplicação efetivamente aprovados são os identificados acima. O frontend visual permanece preservado. Não existe aprovação técnica GO implícita neste fechamento.
+
+
 ## Checkpoint adicional — atomicidade de Encerramentos, 25/10/2026
 **Parecer atual: NO-GO.** Nova candidata de aplicação 14503a1, SQL/testes 581b8e1. Este checkpoint passa a registrar quatro falhas de domínio restantes; os números anteriores abaixo são históricos. Os CIs finais do checkpoint anterior (release 69fb5ea, backend 9a9f5fc) concluíram com sucesso.
 

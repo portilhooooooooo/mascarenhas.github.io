@@ -38,3 +38,6 @@ UploadService → auth_import_processes com classifier_classification dentro de 
 
 ## Atomicidade de Encerramentos — 25/10/2026
 Caminho opcional RUNTIME_V2_CLOSING_ATOMIC: resolvedor atual → runtime_v2_save_closing (carteira/linha bloqueada) → análise+status+metadata+evento transacionais. Na conclusão, reutiliza auth_save_analysis. Recibo durável continua em fronteira própria e conserva uncertain em caso de ACK inconclusivo.
+
+## Fechamento — 25/10/2026
+Pular processo: intenção do cliente → recibo autorizado → runtime_v2_skip_process → skip_task_process efetiva + evento, na mesma transação. Negação de acesso é reavaliada antes de replay. Importação mantém os locks/transação existentes; recuperação consulta estado autoritativo, sem supor rollback por timeout.
