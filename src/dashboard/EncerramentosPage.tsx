@@ -245,26 +245,29 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
-  const agingGoals=agingMensal && dados?.carteira==='Agibank Regular'
-    ? regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel):null;
-  const ranking=agingGoals?regularAgingRanking(agingGoals):null;
-  const points=(value:number)=>value.toFixed(1).replace('.',',');
+  const goals=agingMensal && dados?.carteira==='Agibank Regular'
+    ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
+  const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.total_em_acompanhamento):'—'},
-    {key:'meta',icon:Target,value:ranking?points(ranking.pontos)+' / '+points(ranking.pontosPossiveis):'—'},
+    {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
     {key:'motivo',icon:ClipboardList,value:motivosPendentes == null ? '—':num(motivosPendentes)},
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
     {cards.map(card=>card.key==='meta'
       ? <button className="closing-kpi closing-kpi-button closing-goal-kpi" type="button" key={card.key}
           onClick={()=>document.getElementById('closing-aging-target')?.scrollIntoView({behavior:'smooth',block:'center'})}
-          aria-label={'Pontuação de aging: '+card.value+' pontos. Ir ao detalhamento expandido'}>
-          <div className="closing-kpi-top"><span>Pontuação Aging</span><Target size={15} strokeWidth={1.7}/></div>
-          <strong className="closing-goal-kpi-score">{card.value}</strong>
-          {ranking&&<span className="closing-goal-kpi-foot">{ranking.faixasAtingidas} de {ranking.totalFaixas} faixas atingidas</span>}
+          aria-label={'Meta: '+card.value+'. Ver metas por aging'}>
+          <span className="closing-goal-kpi-title">Meta</span>
+          <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
+            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
+            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
+              strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
+          </svg>
+          <strong className="closing-gauge-value">{card.value}</strong>
         </button>
       : <button className="closing-kpi closing-kpi-button" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
