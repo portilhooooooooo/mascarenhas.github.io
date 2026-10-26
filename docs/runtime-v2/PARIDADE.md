@@ -29,3 +29,6 @@ Checkpoint 25/10: classificações CSV/XLSX preservadas em RPC atômica; somente
 
 ## Atomicidade de Encerramentos — 25/10/2026
 Nova matriz HTTP de Encerramentos: 18 combinações Admin/Legal Leader/Analista × Enter/Regular/Nubank × conclusão/adiamento, com mesma classificação, prazo de reabertura e um evento após replay. Paridade de dados analíticos de outras áreas continua pendente. Correção de mock de módulo inexistente permite executar os asserts originais do adiamento; não é mudança de regra de negócio.
+
+## Fechamento — 25/10/2026
+Checkpoint final: nova intenção legítima de skip continua movendo a fila; apenas o replay da MESMA intenção deixa de duplicar posição/evento. Contagens/classificações dos uploads recuperados conferidas. Nenhuma alteração de regras de aptidão, medianas, período/coorte ou permissões foi introduzida. Quatro divergências de domínio e paridade analítica integral permanecem abertas.
