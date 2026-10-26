@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownUp, CheckCircle2, Clock3, Download, RefreshCw, Users, Gauge } from 'lucide-react';
 import type { ApiRequest } from './renderers';
 import { taskTypeLabel } from './model';
+import { normalizeProductivityFilters, productivityParams } from './productivityFilters';
 import { createDemoTaskResults, isDemoTaskResultsHost } from './demoTaskResults';
 import './taskResults.css';
 
@@ -108,7 +109,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const pageRef=useRef<HTMLElement>(null);
   const blockHeights=useRef(new Map<number,number>());
   const demoMode = canViewOthers && isDemoTaskResultsHost();
-  const [filters, setFilters] = useState<Filters>(()=>{try { const v=JSON.parse(sessionStorage.getItem('mba_runtime_filters:'+runtimeScope())||'null')?.filters; return v && ['today','7','30','90','all'].includes(v.period) && ['all','overdue','today','future','none'].includes(v.deadline) && typeof v.person==='string' ? v : DEFAULT_FILTERS; } catch {return DEFAULT_FILTERS;} });
+  const [filters, setFilters] = useState<Filters>(()=>{try { return normalizeProductivityFilters(JSON.parse(sessionStorage.getItem('mba_runtime_filters:'+runtimeScope())||'null')?.filters); } catch {return DEFAULT_FILTERS;} });
   const scope=runtimeScope();
   const preferenceKey='mba_runtime_filters:'+scope;
   const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
@@ -118,7 +119,7 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
   const [exportError, setExportError] = useState('');
   const query = useQuery({queryKey:['runtime-v2',scope,'tasks-results',filters],enabled:visible && !!userId && !!scope,
     queryFn:async ({signal})=>{
-      const params=new URLSearchParams({...filters,person:canViewOthers?filters.person:'all',duration:'all',include_pending:'0',include_growth:'0'});
+      const params=productivityParams(filters,canViewOthers,false);
       const answer:ResultPayload=demoMode ? createDemoTaskResults({...filters,duration:'all'}) : await api('/api/tasks/results?'+params,{signal});
       if(scope!==runtimeScope()) throw new Error('Resposta de escopo anterior descartada.');
       if(!answer || !Array.isArray(answer.people) || !answer.summary || ![answer.summary.completed,answer.summary.today_completed].every(v=>Number.isFinite(v)&&v>=0)) throw new Error('Resposta inválida da API de produtividade.');
@@ -142,8 +143,8 @@ export function TaskResults({ api, visible, canViewOthers, userId }: {
     if (demoMode || exporting || !data || loadedKey !== key) return;
     setExporting(true); setError('');
     try {
-      const params = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all', include_pending: '0', include_growth: '0' });
-      const legacyParams = new URLSearchParams({ ...filters, person: canViewOthers ? filters.person : 'all', duration: 'all' });
+      const params = productivityParams(filters,canViewOthers,false);
+      const legacyParams = productivityParams(filters,canViewOthers,true);
       const result = await withOldApiFallback(api, '/api/tasks/results/export?' + params,
         '/api/tasks/results/export?' + legacyParams);
       if (!result?.content_base64 || typeof result?.filename !== 'string') throw new Error('Arquivo XLSX indisponível.');

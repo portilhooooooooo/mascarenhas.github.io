@@ -38,9 +38,15 @@ type Dados = {
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; concorda:boolean|null };
 type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
+type ClosingClassificationRow = { cnj: string; tipo: string; origem: 'validado' | 'benner_adicional' };
+type ClosingClassification = {
+  total: number; tipos: TipoRow[]; itens: ClosingClassificationRow[];
+  regra: string;
+};
 type MonthlyAging = {
   periodo:string; unidade:'cnjs_unicos'; total_elegivel:number; total_com_faixa:number; sem_tag:number;
   aging:AgingRow[];
+  classificacoes?: ClosingClassification;
   origens:{validacoes_do_mes:number;historico_adicional:number;do_mes_adicionais:number;herdados_adicionais:number;
     sobreposicoes_deduplicadas:number;movimentos_excluidos_por_tipo:number};
 };
@@ -86,6 +92,7 @@ const CLASSES = [
   { tipo: 'DERROTA', label: 'Derrota' },
   { tipo: 'VITORIA', label: 'Vitória' },
   { tipo: 'ACORDO', label: 'Acordo' },
+  { tipo: 'EXTINCAO', label: 'Extinção' },
 ];
 const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   ? ['0–12 meses', '12–24 meses', '>24 meses', 'Sem tag / não reconhecida']
@@ -542,13 +549,17 @@ function AgingPanel({ dados, carteira, agingMensal }: {
   </section>;
 }
 
-function CompositionPanel({ dados, isNubank, onOpenTipo }: {
-  dados: Dados | null; isNubank: boolean; onOpenTipo:(tipo:Tipo)=>void;
+function CompositionPanel({ dados, carteira, agingMensal, isNubank, onOpenTipo }: {
+  dados: Dados | null; carteira: string; agingMensal: MonthlyAging|null;
+  isNubank: boolean; onOpenTipo:(tipo:Tipo)=>void;
 }) {
-  const types=dados?.etapas?.tipos||[];
-  const total=valueOrZero(dados?.etapas?.total);
+  // Monthly classification is the union of platform validations + eligible Benner
+  // history, keyed by CNJ. It is deliberately independent of the dashboard's date/type filters.
+  const consolidated=carteira==='Agibank Regular' ? agingMensal?.classificacoes : null;
+  const types=consolidated?.tipos || dados?.etapas?.tipos || [];
+  const total=consolidated ? consolidated.total : valueOrZero(dados?.etapas?.total);
   const getQty=(value:string)=>valueOrZero(types.find(t=>t.tipo===value)?.quantidade);
-  const colors=['#a64f34','#d08960','#e8b894','#eddcc9'];
+  const colors=['#a64f34','#d08960','#e8b894','#eddcc9','#c6b49f'];
   const rows=CLASSES.filter(t=>(!isNubank||t.tipo!=='DERROTA_VOLUNTARIA')&&getQty(t.tipo)>0)
     .map((t,i)=>({...t,qty:getQty(t.tipo),color:colors[i%colors.length]}));
   const circumference=2*Math.PI*53;
@@ -561,7 +572,7 @@ function CompositionPanel({ dados, isNubank, onOpenTipo }: {
   });
   return <section className="closing-surface closing-composition" aria-label="Composição dos encerramentos">
     <header className="closing-card-head"><h2>Composição dos encerramentos</h2></header>
-    {dados?.etapas && total>0 ? <div className="closing-composition-donut">
+    {(consolidated || dados?.etapas) && total>0 ? <div className="closing-composition-donut">
       <div className="closing-donut-wrap">
         <svg className="closing-donut" viewBox="0 0 146 146" role="img" aria-label="Distribuição de encerramentos por classificação">
           <circle cx="73" cy="73" r="53" fill="none" stroke="#edf0f3" strokeWidth="18"/>
@@ -575,7 +586,7 @@ function CompositionPanel({ dados, isNubank, onOpenTipo }: {
             <title>{seg.label}: {num(seg.qty)} ({percent(seg.qty/total*100)})</title>
           </circle>)}
         </svg>
-        <div className="closing-donut-center"><strong>{num(total)}</strong><span>Validados</span></div>
+        <div className="closing-donut-center"><strong>{num(total)}</strong><span>{consolidated?'Consolidados':'Validados'}</span></div>
       </div>
       <div className="closing-donut-legend">
         {rows.map(row=><button key={row.tipo} type="button" className="closing-donut-legend-item"
@@ -584,8 +595,71 @@ function CompositionPanel({ dados, isNubank, onOpenTipo }: {
           <strong>{num(row.qty)}</strong><small>{percent(row.qty/total*100)}</small>
         </button>)}
       </div>
-    </div> : <p className="closing-nodata">Sem encerramentos validados no período.</p>}
+    </div> : <p className="closing-nodata">{carteira==='Agibank Regular' && !agingMensal
+      ? 'Classificação mensal consolidada indisponível. Exibindo apenas os validados do período, quando disponíveis.'
+      : 'Sem encerramentos classificados no recorte.'}</p>}
+    {carteira==='Agibank Regular'&&<p className="closing-card-foot">
+      {consolidated
+        ? 'Mês vigente: '+agingMensal!.periodo+' · '+num(agingMensal!.origens.validacoes_do_mes)+' validados + '+num(agingMensal!.origens.historico_adicional)+' adicionais do Benner, com CNJ deduplicado. Este consolidado mensal independe dos filtros de período e tipo acima.'
+        : 'Visão parcial: somente validações da plataforma. A reconciliação mensal com o Benner não está disponível.'}
+    </p>}
   </section>;
+}
+
+function ConsolidatedClassificationDialog({ classification, selectedType, onClose }:{
+  classification: ClosingClassification; selectedType:Tipo; onClose:()=>void;
+}) {
+  const [search,setSearch]=useState('');
+  const [page,setPage]=useState(1);
+  const typeLabel=CLASSES.find(item=>item.tipo===selectedType)?.label||selectedType;
+  const filtered=classification.itens.filter(item=>item.tipo===selectedType
+    && (!search || item.cnj.includes(search.replace(/\D/g,''))));
+  const pages=Math.max(1,Math.ceil(filtered.length/20));
+  const shown=filtered.slice((page-1)*20,page*20);
+  useEffect(()=>{
+    const listener=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};
+    const previous=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    window.addEventListener('keydown',listener);
+    return()=>{document.body.style.overflow=previous;window.removeEventListener('keydown',listener);};
+  },[onClose]);
+  const exportCsv=()=>{
+    const cells=[['CNJ','Classificação','Origem'],...filtered.map(item=>[
+      closingCnj(item.cnj),typeLabel,item.origem==='validado'?'Validado na plataforma':'Histórico Benner'])];
+    const csv='\ufeff'+cells.map(row=>row.map(v=>'"'+v.replace(/"/g,'""')+'"').join(';')).join('\r\n');
+    const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    link.download='classificacoes-consolidadas.csv';document.body.appendChild(link);link.click();link.remove();
+    URL.revokeObjectURL(link.href);
+  };
+  return <div className="closing-dialog-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}>
+    <section role="dialog" aria-modal="true" aria-label={'Classificação consolidada — '+typeLabel} className="closing-dialog">
+      <header className="closing-dialog-head"><h2>Classificação consolidada — {typeLabel}</h2>
+        <button type="button" onClick={onClose} aria-label="Fechar detalhes"><X size={18}/></button>
+      </header>
+      <div className="closing-dialog-toolbar">
+        <form onSubmit={e=>e.preventDefault()}><Search size={15}/><input value={search}
+          onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Buscar CNJ" aria-label="Buscar CNJ"/></form>
+        <button type="button" onClick={exportCsv} disabled={!filtered.length}><Download size={15}/> CSV</button>
+      </div>
+      <p className="closing-dialog-source">CNJs únicos no mês, incluindo validações e histórico Benner reconciliados</p>
+      <div className="closing-dialog-table-wrap">
+        <table className="closing-dialog-table"><thead><tr><th>CNJ</th><th>Classificação</th><th>Origem</th><th>Copiar</th></tr></thead>
+          <tbody>{shown.map(item=><tr key={item.cnj}><td><strong>{closingCnj(item.cnj)}</strong></td>
+            <td>{typeLabel}</td><td>{item.origem==='validado'?'Validação':'Benner adicional'}</td>
+            <td><button type="button" onClick={()=>{void navigator.clipboard.writeText(closingCnj(item.cnj));}}>Copiar CNJ</button></td>
+          </tr>)}</tbody>
+        </table>
+        {!shown.length&&<div className="closing-dialog-empty">Nenhum CNJ encontrado.</div>}
+      </div>
+      <footer className="closing-dialog-footer"><span>{num(filtered.length)} processos únicos</span>
+        <nav aria-label="Páginas da classificação">
+          <button type="button" onClick={()=>setPage(x=>Math.max(1,x-1))} disabled={page===1} aria-label="Anterior"><ChevronLeft size={16}/></button>
+          <span>{page} / {pages}</span>
+          <button type="button" onClick={()=>setPage(x=>Math.min(pages,x+1))} disabled={page>=pages} aria-label="Próxima"><ChevronRight size={16}/></button>
+        </nav>
+      </footer>
+    </section>
+  </div>;
 }
 
 function ComarcasPanel({ dados, etapa, analista }: { dados: Dados | null; etapa: Etapa; analista: string }) {
@@ -651,6 +725,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const [posicaoBenner,setPosicaoBenner] = useState<MonthlyBennerPosition | null>(null);
   const [activeCard,setActiveCard] = useState<ClosingCard | null>(null);
   const [tipoRecorte,setTipoRecorte] = useState<Tipo|null>(null);
+  const [consolidatedType,setConsolidatedType] = useState<Tipo|null>(null);
   const [motivosPendentes,setMotivosPendentes] = useState<number | null>(null);
   const [snapshotRevision,setSnapshotRevision] = useState(0);
   const [pending,setPending] = useState(false);
@@ -676,6 +751,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
       setAnalises(null);
       setPosicaoBenner(null);
       setActiveCard(null);
+      setConsolidatedType(null);
       setMotivosPendentes(null);
       setError('');
     };
@@ -792,13 +868,21 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
       motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
     {!isNubank && <AgingPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
     <div className="closing-secondary-grid">
-      <CompositionPanel dados={shown} isNubank={isNubank} onOpenTipo={t=>{setTipoRecorte(t);setActiveCard("aptidoes");}}/>
+      <CompositionPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}
+        isNubank={isNubank} onOpenTipo={t=>{
+          if(carteira==='Agibank Regular'&&blockKeys.aging===filterKey&&agingMensal?.classificacoes) {
+            setConsolidatedType(t);setActiveCard(null);
+          } else {setTipoRecorte(t);setActiveCard('aptidoes');}
+        }}/>
       <AnalystsPanel analysts={analysts} unavailable={!analises || blockKeys.analises!==filterKey}/>
     </div>
     <section className="closing-territory" aria-label="Detalhamento territorial">
       <header className="closing-territory-heading">Detalhamento territorial</header>
       <ComarcasPanel dados={shown} etapa={etapa} analista={analista}/>
     </section>
+    {consolidatedType && blockKeys.aging===filterKey && agingMensal?.classificacoes &&
+      <ConsolidatedClassificationDialog key={consolidatedType+filterKey} selectedType={consolidatedType}
+        classification={agingMensal.classificacoes} onClose={()=>setConsolidatedType(null)}/>}
     {activeCard==='benner'
       ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira}
           posicao={blockKeys.benner===filterKey?posicaoBenner:null}
