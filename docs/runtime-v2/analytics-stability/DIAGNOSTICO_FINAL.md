@@ -1,6 +1,6 @@
 # Diagnóstico final — Estabilização Analítica Runtime V2
 
-> Atualização pós-revisão: ver [REVIEW.md](REVIEW.md). Código FE cbba140 / BE 7041476. CIs específicos aprovados; gate geral de segurança falhou em dois aliases preexistentes. NO-GO para promoção.
+> Atualização pós-revisão: ver [REVIEW.md](REVIEW.md). Código FE cbba140 / BE 7041476; contrato de teste Nubank reconciliado em BE a679323. CIs analytics, processos e segurança aprovados. NO-GO para promoção enquanto faltar validação HTTP autenticada das novas RPCs.
 Data: 26/10/2026. Parecer: **GO para revisão da candidata; NO-GO para promoção de produção neste momento.**
 
 A candidata está implementada, commitada em branches isoladas e validada com navegador real, SQL executado, referência anterior e CI. Produção continua na Runtime V2 anterior. Não houve aplicação das novas migrações, novo deploy nem login do agente.

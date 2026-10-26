@@ -17,4 +17,8 @@ Branches: fix/analytics-stability-20261026 e migration/analytics-stability-20261
 
 ## Revisão posterior
 
-FE cbba140 e BE 7041476 corrigem cinco achados. Ver REVIEW.md para testes, CIs e o gate geral de segurança com duas falhas legadas de aliases. Nenhum deploy.
+FE cbba140 e BE 7041476 corrigem cinco achados. Naquela execução, o gate geral de segurança ainda expunha duas expectativas legadas de aliases; a reconciliação posterior está registrada abaixo. Nenhum deploy.
+
+## Reconciliação do alias Nubank
+
+BE a679323 atualiza somente `tests/test_portfolio_scope.py` para o contrato canônico `nubank_mba`, vigente no runtime desde 7f95326. O arquivo isolado passou com 24 testes; o gate local completo passou com 133 testes e 46 subtestes. Os workflows analytics 40338373148, processos 40338384646 e segurança 40338384417 passaram. Nenhuma regra de autorização, dado, migração ou produção foi alterada.

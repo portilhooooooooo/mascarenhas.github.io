@@ -8,7 +8,8 @@ Não houve merge, login do agente, migração SQL ou deploy de produção. Os PR
 
 A revisão partiu de FE 6d4186d e BE a7b95aa. Código corrigido e testado:
 - Frontend: cbba140e603797039579122c2f0ef8ccfd8f7461.
-- Backend: 704147651e03b34f5068c374ab24032ad5eda860.
+- Backend (código da candidata): 704147651e03b34f5068c374ab24032ad5eda860.
+- Reconciliação do contrato Nubank nos testes: a67932318665697fc9a6a68a18aa65cd046d7a8d.
 
 Commits posteriores de relatório não alteram esse código. Foram revisados scheduler, cancelamento, estados parciais, chamadas API, decorators/escopo, tratamento HTTP, novas funções SQL, índices existentes, flags e rollback. Não foi executada uma nova auditoria exaustiva do repositório.
 
@@ -32,29 +33,27 @@ As fixtures 23, 30 e demais valores acima são sintéticas. Não são números d
 - CI backend analytics: **37 passaram, 1 ignorado**, em 6,69 s. O ignorado é o benchmark opt-in já executado na etapa anterior.
 - SQL de agregação não mudou nesta revisão: mantêm-se as 576 comparações anteriores e seus limites de cobertura. Não foi repetido benchmark sem alteração de consulta.
 - Gate de processos/encerramentos do PR: **passou**.
-- Gate geral de segurança do PR: **falhou** em dois casos legados descritos abaixo.
+- Gate geral de segurança do PR: **passou** após reconciliar duas expectativas legadas de alias com o contrato canônico já vigente. Localmente, o conjunto exato fechou com **133 testes e 46 subtestes aprovados**.
 
 Os ensaios de reprodução anteriores às correções usavam fixtures novas sobre o build/código da candidata anterior. Não foram apresentados como testes aprovados dos commits novos. Logs e métricas anteriores e finais estão em evidence/review; traces completos finais são artefatos do CI.
 
-## Gate geral: falhas anteriores à migração
+## Gate geral: aliases Nubank reconciliados
 
-O workflow Security regression checks não está verde. Falham:
+A implementação já canonicalizava `Nubank`, `NUBANK_BASE_ATIVA_*` e `nubank_mba` como `nubank_mba` desde o commit 7f95326 de 15/10/2026. Duas expectativas criadas antes dessa mudança ainda exigiam o identificador legado `nubank`.
 
-1. test_aliases_are_canonical[Nubank-nubank].
-2. test_datajud_source_maps_to_portfolio[NUBANK_BASE_ATIVA_2026-09-16-nubank].
+O commit a679323 atualizou somente o contrato de teste: as duas expectativas agora apontam para `nubank_mba` e foi acrescentada cobertura explícita para `NUBANK_MBA`. Não houve alteração em autorização, escopo, aliases do runtime ou dados. O arquivo isolado passou com **24 testes**; o gate completo passou localmente com **133 testes e 46 subtestes** e também passou no GitHub Actions.
 
-Os testes esperam nubank, enquanto a implementação atual normaliza para nubank_mba. A reprodução no checkout main anterior retornou **2 falhas, 11 aprovados e 10 desmarcados**, em 0,66 s. A candidata não altera esses aliases, a política de carteira ou esses testes.
-
-O gate atual também retornou essas falhas; não classificá-lo como aprovado porque a suite específica de analytics passou. Não foram removidas asserções, ignorados casos de segurança nem alteradas regras de carteira para obter CI verde. A divergência exige reconciliação do contrato/teste em alteração separada ou decisão explícita de aceite do responsável pelo gate.
-
-A falha legada do guard Benner descrita no diagnóstico anterior permanece registrada; não foi repetida nesta revisão por não ter mudança relacionada.
+A execução anterior 40335900360 permanece registrada como evidência da falha. A execução 40338384417 demonstra a reconciliação. A falha legada do guard Benner descrita no diagnóstico anterior permanece separada e não foi repetida, pois não houve mudança relacionada.
 
 ## CIs e artefatos
 
 - Frontend cbba140: https://github.com/portilhooooooooo/mascarenhas.github.io/actions/runs/40335887476 — PASSOU, Chromium e Firefox.
 - Backend 7041476, analytics: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40335892928 — PASSOU.
 - Backend 7041476, processos/encerramentos: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40335899594 — PASSOU.
-- Backend 7041476, segurança geral: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40335900360 — FALHOU nos dois aliases.
+- Backend 7041476, segurança geral anterior: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40335900360 — FALHOU nos dois aliases legados.
+- Backend a679323, analytics: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40338373148 — PASSOU.
+- Backend a679323, processos/encerramentos: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40338384646 — PASSOU.
+- Backend a679323, segurança geral: https://github.com/portilhooooooooo/mba-backoffice-backend/actions/runs/40338384417 — PASSOU.
 - PR frontend: https://github.com/portilhooooooooo/mascarenhas.github.io/pull/37.
 - PR backend: https://github.com/portilhooooooooo/mba-backoffice-backend/pull/39.
 
@@ -70,4 +69,4 @@ Os testes verificam preservação do conteúdo e altura dos KPIs; não certifica
 
 Os cinco achados da candidata foram corrigidos e têm cobertura direcionada. A candidata pode seguir para revisão humana e validação integrada em ambiente autorizado.
 
-**NO-GO para merge que dispare publicação ou promoção produtiva:** gate geral de segurança com duas falhas, validação HTTP autenticada das novas RPCs e gates de promoção descritos em ROLLBACK.md ainda pendentes. Flags novas seguem desligadas por padrão; a aplicação produtiva não foi alterada.
+**NO-GO para merge que dispare publicação ou promoção produtiva:** validação HTTP autenticada das novas RPCs e gates de promoção descritos em ROLLBACK.md ainda pendentes. Flags novas seguem desligadas por padrão; a aplicação produtiva não foi alterada.
