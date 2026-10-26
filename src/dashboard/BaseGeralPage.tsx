@@ -203,7 +203,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
 
   const shown = dataKey === filterKey ? data : null;
   const summary = shown?.summary;
-  const undated = validNumber(summary?.without_entry_date);
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
 
   useEffect(() => {
@@ -387,9 +386,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
     {error && <div className="base-geral-error" role="alert">{error} <button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
-    {undated != null && undated > 0 && <div className="base-geral-warning base-geral-source-warning" role="status">
-      {number(undated)} processos em andamento não têm data de entrada comprovada nas fontes disponíveis. Eles não entram no cálculo de Base ativa, Base prescrita ou no comparativo Prejuízo X Lucro.
-    </div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
     <div className="base-geral-kpis">
       {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
