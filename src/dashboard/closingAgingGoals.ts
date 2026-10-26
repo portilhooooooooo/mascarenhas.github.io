@@ -48,7 +48,7 @@ export const regularAgingRanking = (rows: readonly RegularAgingGoal[]) => {
   return {
     faixasAtingidas,
     totalFaixas: REGULAR_AGING_GOALS.length,
-    pontos: faixasAtingidas * 0.2,
-    pontosPossiveis: REGULAR_AGING_GOALS.length * 0.2,
+    pontos: faixasAtingidas * 2 / 10,
+    pontosPossiveis: REGULAR_AGING_GOALS.length * 2 / 10,
   };
 };
