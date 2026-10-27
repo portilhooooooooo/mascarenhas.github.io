@@ -409,7 +409,7 @@
 @media(max-width:620px){.closing-kpi-button,.closing-goal-kpi{height:100px;min-height:100px}}
 
 /* Seven equal-height metrics. Rollback the Meta card to its semicircle. */
-.closing-kpis-main{grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+.closing-kpis-main{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
 .closing-goal-kpi-body{
   flex-direction:row;
   align-items:center;
@@ -446,3 +446,9 @@
 .closing-ticket-dialog>span,.closing-ticket-dialog>small{display:block;color:var(--mba-muted);font-size:11px;margin-top:8px}
 @media(max-width:1390px){.closing-kpis-main{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:750px){.closing-kpis-main{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+@media(max-width:1000px){
+  .closing-kpis-main{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}

@@ -389,6 +389,27 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     </div>
     </div>
     <div className="base-geral-bottom">
+      <section className="base-geral-panel base-geral-comparison">
+        <header><div><h2>Prejuízo X Lucro</h2><span className="base-geral-context">Quantidade de processos</span></div></header>
+        <div className="base-geral-comparison-compact">
+          <div className={'base-geral-comparison-track' + (!donutReady ? ' is-unavailable' : '')}
+            role="img" aria-label={donutReady
+              ? 'Base ativa ' + activeShare.toFixed(1).replace('.', ',') + ' por cento; base prescrita ' + (100-activeShare).toFixed(1).replace('.', ',') + ' por cento'
+              : 'Comparação indisponível'}>
+            {donutReady && <><span className="is-active" style={{width:activeShare+'%'}}/><span className="is-prescribed" style={{width:(100-activeShare)+'%'}}/></>}
+          </div>
+          <div className="base-geral-comparison-values">
+            <button type="button" onClick={() => openDetail('active')}>
+              <i className="is-active"/><span>Base ativa</span><strong>{number(active)}</strong><small>{donutReady ? activeShare.toFixed(1).replace('.', ',')+'%' : '—'}</small>
+            </button>
+            <button type="button" onClick={() => openDetail('prescribed')}>
+              <i className="is-prescribed"/><span>Base prescrita</span><strong>{number(prescribed)}</strong><small>{donutReady ? (100-activeShare).toFixed(1).replace('.', ',')+'%' : '—'}</small>
+            </button>
+          </div>
+          {!donutReady && <p className="base-geral-unavailable">Aguardando as contagens filtradas de aging e base ativa.</p>}
+        </div>
+        <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos da comparação são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
+      </section>
       <section className="base-geral-panel base-geral-products-table" id="base-geral-produtos">
         <header><div><h2>Produto</h2><span className="base-geral-context">Distribuição por produto</span></div>
           <span className="base-geral-tally">{number(productTotal)} processos</span>
@@ -410,27 +431,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
             }) : <tr><td colSpan={4} className="base-geral-empty">Nenhum produto encontrado.</td></tr>}</tbody>
           </table>
         </div>
-      </section>
-      <section className="base-geral-panel base-geral-comparison">
-        <header><div><h2>Prejuízo X Lucro</h2><span className="base-geral-context">Quantidade de processos</span></div></header>
-        <div className="base-geral-comparison-compact">
-          <div className={'base-geral-comparison-track' + (!donutReady ? ' is-unavailable' : '')}
-            role="img" aria-label={donutReady
-              ? 'Base ativa ' + activeShare.toFixed(1).replace('.', ',') + ' por cento; base prescrita ' + (100-activeShare).toFixed(1).replace('.', ',') + ' por cento'
-              : 'Comparação indisponível'}>
-            {donutReady && <><span className="is-active" style={{width:activeShare+'%'}}/><span className="is-prescribed" style={{width:(100-activeShare)+'%'}}/></>}
-          </div>
-          <div className="base-geral-comparison-values">
-            <button type="button" onClick={() => openDetail('active')}>
-              <i className="is-active"/><span>Base ativa</span><strong>{number(active)}</strong><small>{donutReady ? activeShare.toFixed(1).replace('.', ',')+'%' : '—'}</small>
-            </button>
-            <button type="button" onClick={() => openDetail('prescribed')}>
-              <i className="is-prescribed"/><span>Base prescrita</span><strong>{number(prescribed)}</strong><small>{donutReady ? (100-activeShare).toFixed(1).replace('.', ',')+'%' : '—'}</small>
-            </button>
-          </div>
-          {!donutReady && <p className="base-geral-unavailable">Aguardando as contagens filtradas de aging e base ativa.</p>}
-        </div>
-        <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos da comparação são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
       </section>
     </div>
     {revenueOpen && portfolio === 'agibank_mba' && canViewBilling && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {

@@ -255,7 +255,7 @@
   margin-bottom:14px;
 }
 .base-geral-kpi-layout.with-billing {
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(4,minmax(0,1fr));
 }
 .base-geral-kpi-layout>.base-geral-kpis {
   display:contents;
@@ -414,4 +414,21 @@
 /* Keep full-width stacked panels inside the dashboard gutters. */
 .base-geral-page,.base-geral-page *,.base-geral-page *::before,.base-geral-page *::after{
   box-sizing:border-box;
+}
+
+/* Orange-only data visual language, distinct tonal values for the two aging groups. */
+.base-geral-page{
+  --base-geral-orange-primary:#C77436;
+  --base-geral-orange-light:#F0B77E;
+}
+.base-geral-comparison-track>.is-active,
+.base-geral-comparison-values i.is-active{
+  background:var(--base-geral-orange-primary);
+}
+.base-geral-comparison-track>.is-prescribed,
+.base-geral-comparison-values i.is-prescribed{
+  background:var(--base-geral-orange-light);
+}
+.base-geral-product-share-track>span{
+  background:var(--base-geral-orange-primary);
 }

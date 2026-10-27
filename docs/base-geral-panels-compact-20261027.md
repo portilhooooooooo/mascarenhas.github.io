@@ -13,3 +13,11 @@
 - Comparação compacta: altura 149px no desktop e 173px no mobile.
 
 A implementação é para dev/tasks-workspace, sem promoção automática para produção.
+
+## Revisão visual subsequente — grade uniforme e laranja
+
+- A disposição passa a ser: indicadores, Prejuízo X Lucro, Produtos.
+- A comparação e os gráficos de participação utilizam a escala laranja: tom principal #C77436 e tom claro #F0B77E (base prescrita).
+- Base Geral e Encerramentos usam quatro colunas no desktop (>1000px), duas no mobile; alturas de 100px. A carteira com faturamento também utiliza quatro colunas, em vez de três.
+- Chromium com API sintética confirmou a mesma largura nos dois módulos: 341px em 1440px e 167px em 390px, sem overflow. A comparação permanece com 149px de altura em desktop.
+- Capturas de layout com valores fictícios: `docs/screenshots/base-geral-laranja-1440-0.webp` e `docs/screenshots/base-geral-laranja-1440-1.webp`.

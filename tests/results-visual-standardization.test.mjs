@@ -13,7 +13,7 @@ assert.match(shared,/\.defense-results-card\{\s*height:100px;\s*min-height:100px
 assert.match(shared,/\.defense-results-page\{\s*width:100%;\s*max-width:1480px;/);
 assert.match(group,/base-geral-products-table/);
 assert.doesNotMatch(group,/productGradient/);
-assert.match(closing,/\.closing-kpis-main\{grid-template-columns:repeat\(7/);
+assert.match(closing,/\.closing-kpis-main\{grid-template-columns:repeat\(4/);
 assert.match(closing,/\.closing-goal-kpi-body\{\s*flex-direction:row;/);
 assert.match(page,/Ticket médio esperado/);
 assert.match(page,/dados\?\.indicadores\?\.ticket_medio/);
@@ -22,3 +22,9 @@ assert.doesNotMatch(page,/api\/base-geral\/faturamento/);
 assert.match(page,/não representa faturamento|Não representa faturamento/);
 assert.match(page,/strokeDashoffset=\{\(1-\(goalPercent\?\?0\)\/100\)\*Math\.PI\*43\}/);
 console.log('Result modules aligned to 100px and centered 1480px; Meta restored; historical ticket reused without billing access.');
+
+assert.ok(group.indexOf('<section className="base-geral-panel base-geral-comparison">') <
+  group.indexOf('<section className="base-geral-panel base-geral-products-table"'),
+  'Comparação precede Produtos no fluxo de leitura');
+assert.match(base,/--base-geral-orange-primary:#C77436/);
+assert.match(base,/--base-geral-orange-light:#F0B77E/);
