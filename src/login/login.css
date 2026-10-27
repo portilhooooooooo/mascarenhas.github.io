@@ -130,51 +130,22 @@ body[data-react-login="true"] #login-error { display:none!important; }
   background:#382220;border:1px solid #713a35;border-radius:8px;
   color:#f5c8c1;font-size:12px;line-height:1.5;
 }
+/* Editorial de duas partes: vídeo 16:9 completo e uma legenda própria.
+   Nunca force um vídeo panorâmico a ocupar um card vertical: isso cria
+   letterboxing ou corta a fachada ao usar object-fit:cover. */
 #login-view .react-login-visual {
-  position:relative;min-height:min(670px,75vh);
-  overflow:hidden;border-radius:22px;
-  background:#252525;
+  position:relative;align-self:center;min-width:0;
+  overflow:hidden;border-radius:22px;background:#202022;
   isolation:isolate;
 }
-/* O vídeo fornecido é 16:9 e 910x512. Evite ampliá-lo ou cortar metade dos
-   pixels em um painel quase quadrado; preencha apenas as margens com o poster. */
-#login-view .react-login-visual::before {
-  content:"";position:absolute;inset:-28px;z-index:0;
-  background:
-    linear-gradient(rgba(24,23,23,.4),rgba(24,23,23,.4)),
-    url("/assets/mascarenhas-login-poster.jpg?v=20261027-3b74ad84") center/cover no-repeat;
-  filter:blur(24px) saturate(.75);
-  pointer-events:none;
-}
 #login-view .react-login-visual video {
-  position:absolute;inset:0;display:block;width:100%;height:100%;
-  object-fit:contain;z-index:1;
-  /* Evite filtros que enfatizam artefatos de compressão no arquivo WhatsApp. */
-}
-#login-view .react-login-visual-fallback {
-  position:absolute;inset:0;display:grid;place-items:center;z-index:-1;
-  background:
-    radial-gradient(ellipse at 75% 22%,rgba(165,122,100,.33),transparent 52%),
-    linear-gradient(155deg,#413b3b 0%,#28282a 48%,#191a1d 100%);
-}
-#login-view .react-login-visual-fallback:before,
-#login-view .react-login-visual-fallback:after {
-  content:"";position:absolute;height:120%;width:1px;
-  background:linear-gradient(0deg,transparent,rgba(203,137,101,.3),transparent);
-  transform:rotate(34deg);
-}
-#login-view .react-login-visual-fallback:before { left:27%; }
-#login-view .react-login-visual-fallback:after { right:19%; }
-#login-view .react-login-visual-fallback img {
-  width:min(180px,35%);opacity:.11;filter:brightness(0) invert(1);
-}
-#login-view .react-login-visual:after {
-  content:"";position:absolute;inset:0;z-index:2;
-  background:linear-gradient(0deg,rgba(16,16,17,.84),transparent 33%);
-  pointer-events:none;
+  position:relative;display:block;width:100%;height:auto;
+  aspect-ratio:16 / 9;object-fit:cover;
 }
 #login-view .react-login-visual-caption {
-  position:absolute;z-index:3;bottom:38px;left:38px;right:38px;display:grid;gap:9px;
+  position:relative;display:grid;gap:9px;
+  padding:26px clamp(24px,3vw,38px) 32px;
+  background:linear-gradient(180deg,#252426,#19191b);
   justify-items:start;text-align:left;
 }
 #login-view .react-login-visual-caption span {
