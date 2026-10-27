@@ -38,3 +38,13 @@
 .defense-results-pagination button:disabled{cursor:default;opacity:.45}
 @media(max-width:960px){.defense-results-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.defense-results-grid{grid-template-columns:1fr 1fr;gap:8px}.defense-results-card{min-height:115px;padding:13px 12px;gap:16px}.defense-results-card strong{font-size:25px}.defense-results-dialog-header{padding:15px}.defense-results-dialog-toolbar{padding:0 15px 12px}.defense-results-pagination{padding:10px 15px}}
+
+/* Reagendamento: colunas do arquivo operacional e controle compacto de exportação. */
+.defense-results-dialog-toolbar{align-items:center;justify-content:space-between;gap:12px}
+.defense-results-export{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;min-height:34px;padding:0 12px;background:transparent;border:1px solid var(--mba-border,#dce2eb);border-radius:8px;color:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.defense-results-export:disabled{opacity:.55;cursor:default}
+.defense-results-export:hover:not(:disabled){border-color:var(--mba-blue,#41598e)}
+.defense-results-table--reschedule th:nth-child(2),.defense-results-table--reschedule td:nth-child(2){width:70px;min-width:70px}
+.defense-results-table--reschedule th:nth-child(3),.defense-results-table--reschedule td:nth-child(3){width:112px;min-width:112px;white-space:nowrap}
+.defense-results-table--reschedule th:nth-child(4),.defense-results-table--reschedule td:nth-child(4){min-width:310px;white-space:normal}
+@media(max-width:520px){.defense-results-dialog-toolbar{flex-wrap:wrap}.defense-results-dialog-toolbar label{max-width:none;flex:1 1 190px}.defense-results-export{flex:0 0 auto}}
