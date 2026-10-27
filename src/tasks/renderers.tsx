@@ -3,7 +3,7 @@ import { SelectMenu } from '../dashboard/SelectMenu';
 import { OptionGroup as QaOptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
-import { ClosingAnalysisFlow, type ClosingAnalysisPayload, type ClosingPrefill } from './ClosingAnalysisFlow';
+import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
 import { clearQaDraft } from './qaDraft';
 
@@ -150,7 +150,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
   }, [api, process.id]);
 
-  const submit = async (draft: ClosingAnalysisPayload) => {
+  const submit = async (draft: ClosingAnalysisDraft) => {
     setBusy(true);
     setError(null);
     try {

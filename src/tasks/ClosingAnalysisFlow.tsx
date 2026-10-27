@@ -11,17 +11,9 @@ type AppealResult = 'sentenca_desconstituida' | 'condenacao_mantida'
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
-export type ClosingPreclassificationDraft = {
-  workflow_version: 6;
-  review_mode: 'preclassification';
-  classification_agreed: boolean;
-  disagreement_point: 'sentenca' | 'acordao' | 'execucao' | 'transito' | 'encerramento' | null;
-  disagreement_answer: string | null;
-};
-export type ClosingAnalysisPayload = ClosingAnalysisDraft | ClosingPreclassificationDraft;
-
 export type ClosingAnalysisDraft = {
-  workflow_version: 5;
+  workflow_version: 5 | 7;
+  preliminary_classification_agreed?: boolean;
   first_instance_merit: TrialResult;
   had_appeal: boolean | null;
   appeal_decided: boolean | null;
@@ -56,7 +48,7 @@ type Props = {
   draftKey?: string;
   busy?: boolean;
   error?: string | null;
-  onSubmit: (draft: ClosingAnalysisPayload) => Promise<void> | void;
+  onSubmit: (draft: ClosingAnalysisDraft) => Promise<void> | void;
   onSkip: () => Promise<void> | void;
   onPhaseEntered?: (index: number, stage: string) => void;
 };
@@ -188,10 +180,12 @@ function costsAnswer(value: boolean | 'sem_pendencia' | null | undefined): Costs
   return value === 'sem_pendencia' ? 'sem_pendencia' : yesNo(value);
 }
 
-function LegacyClosingAnalysisFlow({
-  cnj, classifierClassification, prefill, draftKey = '', busy = false, error = null,
+export function ClosingAnalysisFlow({
+  cnj, classifierClassification, classifierReason, prefill, draftKey = '', busy = false, error = null,
   onSubmit, onSkip, onPhaseEntered,
 }: Props) {
+  const preliminaryAvailable = ['Vitória', 'Derrota', 'Derrota voluntária', 'Acordo', 'Extinção'].includes(classifierClassification || '');
+  const [preliminaryAgreed, setPreliminaryAgreed] = useQaField<YesNo>(draftKey, 'closing.preliminaryAgreed', null);
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
   const [appealDecided, setAppealDecided] = useQaField<YesNo>(draftKey, 'closing.appealDecided', null);
@@ -384,7 +378,7 @@ function LegacyClosingAnalysisFlow({
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || (sentence !== 'sem_sentenca' && hadAppeal === null) || classificationAgreed === null
+    if ((preliminaryAvailable && preliminaryAgreed === null) || !outcome || !sentence || (sentence !== 'sem_sentenca' && hadAppeal === null) || classificationAgreed === null
       || (appealOther && (classificationAgreed !== 'sim' || !otherDescriptionValid))) {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
       return;
@@ -395,7 +389,8 @@ function LegacyClosingAnalysisFlow({
     }
     setLocalError(null);
     await onSubmit({
-      workflow_version: 5,
+      workflow_version: preliminaryAvailable ? 7 : 5,
+      ...(preliminaryAvailable ? { preliminary_classification_agreed: preliminaryAgreed === 'sim' } : {}),
       first_instance_merit: sentence,
       had_appeal: sentence === 'sem_sentenca' ? null : hadAppeal === 'sim',
       appeal_decided: hadAppeal === 'sim' ? appealDecided === 'sim' : null,
@@ -420,7 +415,8 @@ function LegacyClosingAnalysisFlow({
     });
   };
 
-  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={CLOSING_STAGES} stageStates={{
+  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={preliminaryAvailable ? ['Classificação preliminar', ...CLOSING_STAGES] : CLOSING_STAGES} stageStates={{
+    'Classificação preliminar': preliminaryAgreed !== null ? 'completed' : 'pending',
     'Cadastro de Sentença': sentence ? 'completed' : 'pending',
     'Cadastro de Acórdão': sentence === 'sem_sentenca' ? 'not_applicable' : appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': sentence === 'sem_sentenca' || finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
@@ -429,6 +425,15 @@ function LegacyClosingAnalysisFlow({
   }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}
     onChangeCapture={() => { interactedBeforePrefill.current = true; }}
     onKeyDownCapture={() => { interactedBeforePrefill.current = true; }}>
+
+    {preliminaryAvailable ? <TaskQuestion number={String(++questionNumber)} stage="Classificação preliminar"
+      question={classifierReason?.trim()
+        ? 'Identificamos que esse processo se enquadra como ' + classifierClassification + ' por ' + classifierReason.trim().slice(0, 280) + '. Você concorda?'
+        : 'Identificamos classificação preliminar de ' + classifierClassification + ', mas o motivo não está documentado. Você concorda?'} >
+      <BinaryChoice name="closing-preliminary-agreement" value={preliminaryAgreed} disabled={busy}
+        onChange={value => { setPreliminaryAgreed(value); setLocalError(null); }} />
+      <p className="closing-inline-note">Todas as etapas jurídicas aplicáveis serão verificadas, independentemente da resposta.</p>
+    </TaskQuestion> : null}
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
@@ -555,118 +560,4 @@ function LegacyClosingAnalysisFlow({
       || (!appealOther && classificationAgreed === 'nao' && validReason)))} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
-}
-
-// Classification-first flow (v6). A preliminary suggestion is not a final
-// legal assessment; the short path is recorded for review, never as apt/Benner.
-const REVIEW_AREAS = [
-  { value: 'sentenca', label: 'Sentença' },
-  { value: 'acordao', label: 'Acórdão / recurso' },
-  { value: 'execucao', label: 'Execução / pagamento' },
-  { value: 'transito', label: 'Trânsito em julgado' },
-  { value: 'encerramento', label: 'Classificação do encerramento' },
-] as const;
-type ReviewArea = ClosingPreclassificationDraft['disagreement_point'];
-const REVIEW_QUESTIONS: Record<Exclude<ReviewArea, null>, {
-  question: string; options: { value: string; label: string }[];
-}> = {
-  sentenca: { question: 'Qual resultado de sentença foi identificado?', options: SENTENCES },
-  acordao: { question: 'Qual é a situação do recurso ou acórdão?', options: [
-    { value: 'sem_recurso', label: 'Sem recurso' },
-    { value: 'recurso_pendente', label: 'Recurso pendente' },
-    { value: 'mantida', label: 'Decisão mantida' },
-    { value: 'reformada', label: 'Decisão reformada' },
-    { value: 'anulada', label: 'Sentença anulada' },
-    { value: 'incerto', label: 'Informação inconclusiva' },
-  ] },
-  execucao: { question: 'Qual é a situação da execução?', options: [
-    { value: 'nao_requerida', label: 'Não foi requerida' },
-    { value: 'requerida_pendente', label: 'Execução pendente' },
-    { value: 'quitada', label: 'Pagamento integral realizado' },
-    { value: 'incerta', label: 'Informação inconclusiva' },
-  ] },
-  transito: { question: 'Qual é a situação do trânsito em julgado?', options: [
-    { value: 'confirmado', label: 'Confirmado' },
-    { value: 'nao_identificado', label: 'Não identificado' },
-    { value: 'incerto', label: 'Informação inconclusiva' },
-  ] },
-  encerramento: { question: 'Qual classificação deve ser reavaliada?', options: [
-    { value: 'vitoria', label: 'Vitória' },
-    { value: 'derrota', label: 'Derrota' },
-    { value: 'derrota_voluntaria', label: 'Derrota voluntária' },
-    { value: 'acordo', label: 'Acordo' },
-    { value: 'extincao', label: 'Extinção' },
-    { value: 'inapto', label: 'Não apto' },
-    { value: 'incerto', label: 'Indeterminado' },
-  ] },
-};
-
-function ClosingPreclassificationFlow({
-  draftKey = '', classifierClassification, classifierReason,
-  busy = false, error, onSubmit, onSkip, onPhaseEntered, onFullReview,
-}: Props & { onFullReview: () => void }) {
-  const [agreed, setAgreed] = useQaField<YesNo>(draftKey, 'closing.review.agreed', null);
-  const [point, setPoint] = useQaField<ReviewArea>(draftKey, 'closing.review.point', null);
-  const [answer, setAnswer] = useQaField<string | null>(draftKey, 'closing.review.answer', null);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const selected = point ? REVIEW_QUESTIONS[point] : null;
-  const validAnswer = Boolean(selected?.options.some(option => option.value === answer));
-  const ready = agreed === 'sim' || (agreed === 'nao' && Boolean(point) && validAnswer);
-  const reason = (classifierReason || '').trim().slice(0, 280);
-  const statement = reason
-    ? 'Identificamos que esse processo se enquadra como ' + classifierClassification + ' por ' + reason + '. Você concorda com a afirmação acima?'
-    : 'Identificamos classificação preliminar de ' + classifierClassification + ', mas o motivo não está documentado. Você concorda com a classificação?';
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!ready) {
-      setLocalError('Conclua as perguntas antes de salvar.');
-      return;
-    }
-    setLocalError(null);
-    await onSubmit({
-      workflow_version: 6, review_mode: 'preclassification',
-      classification_agreed: agreed === 'sim',
-      disagreement_point: agreed === 'nao' ? point : null,
-      disagreement_answer: agreed === 'nao' ? answer : null,
-    });
-  };
-
-  let number = 0;
-  return <TaskForm className="closing-flow closing-review-flow" progressive submitOnFinalEnter
-    stages={['Classificação prévia', 'Divergência']} dynamicStages
-    draftKey={draftKey} onPhaseEntered={onPhaseEntered} onSubmit={submit}>
-    <TaskQuestion number={String(++number)} stage="Classificação prévia" question={statement}>
-      <OptionGroup name="closing-preliminary-agreement" value={agreed} disabled={busy}
-        options={[{ value: 'sim', label: 'Sim' }, { value: 'nao', label: 'Não' }]}
-        onChange={value => { setAgreed(value as YesNo); setPoint(null); setAnswer(null); setLocalError(null); }} />
-      <p className="closing-inline-note">A confirmação registra a análise para revisão jurídica; não autoriza encerramento automático.</p>
-    </TaskQuestion>
-    {agreed === 'nao' ? <TaskQuestion number={String(++number)} stage="Divergência" question="Em qual ponto você discorda?">
-      <OptionGroup name="closing-disagreement-area" value={point} disabled={busy}
-        options={[...REVIEW_AREAS]}
-        onChange={value => { setPoint(value as ReviewArea); setAnswer(null); setLocalError(null); }} />
-    </TaskQuestion> : null}
-    {agreed === 'nao' && point && selected
-      ? <TaskQuestion number={String(++number)} stage="Divergência" question={selected.question}>
-        <OptionGroup name="closing-disagreement-answer" value={answer} disabled={busy}
-          options={selected.options}
-          onChange={value => { setAnswer(value); setLocalError(null); }} />
-      </TaskQuestion> : null}
-    {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <button className="closing-full-review-button" type="button" disabled={busy} onClick={onFullReview}>
-      Abrir análise completa
-    </button>
-    <TaskActionBar busy={busy} ready={ready} onSkip={() => void onSkip()}
-      submitLabel="Registrar e próximo" skipLabel="Pular esse processo" />
-  </TaskForm>;
-}
-
-export function ClosingAnalysisFlow(props: Props) {
-  const [fullReview, setFullReview] = useState(false);
-  useEffect(() => { setFullReview(false); }, [props.draftKey, props.cnj]);
-  const recognized = ['Vitória', 'Derrota', 'Derrota voluntária', 'Acordo', 'Extinção'].includes(props.classifierClassification || '');
-  if (recognized && !fullReview) {
-    return <ClosingPreclassificationFlow {...props} onFullReview={() => setFullReview(true)} />;
-  }
-  return <LegacyClosingAnalysisFlow {...props} />;
 }

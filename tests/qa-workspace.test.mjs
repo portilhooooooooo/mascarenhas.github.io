@@ -38,7 +38,7 @@ assert.match(renderer, /clearQaDraft\(draftKey\)/, 'Limpar cache após resposta 
 assert.match(legacy, /clearQaDraft\(draftKey\)/, 'Limpar cache de liminar e pagamentos');
 assert.match(style, /\.qa-step\[hidden\]/, 'Somente etapa ativa visível');
 assert.match(questions, /qa-stage-track/, 'Fluxos exibem as etapas');
-assert.match(closing, /stages=\{CLOSING_STAGES\}/, 'Encerramento apresenta etapas fixas');
+assert.match(closing, /stages=\{preliminaryAvailable \? \['Classificação preliminar', \.\.\.CLOSING_STAGES\] : CLOSING_STAGES\}/, 'Encerramento apresenta classificação prévia seguida das etapas jurídicas fixas');
 assert.match(closing, /classification_disagreement_reason/, 'Discordância tem justificativa');
 assert.match(closing, /\{ value: 'sem_sentenca', label: 'Sem sentença' \}/, 'Cadastro de sentença inclui a opção sem sentença');
 assert.match(closing, /\{ value: 'extincao', label: 'Extinção' \},\s*\{ value: 'sem_sentenca', label: 'Sem sentença' \}/, 'Sem sentença ocupa a quinta opção (tecla 5)');
