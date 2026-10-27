@@ -10,15 +10,9 @@ type AuthWindow = Window & typeof globalThis & {
   };
 };
 
-function greetingFor(date: Date): string {
-  const hour = date.getHours();
-  return hour < 12 ? 'Bom dia.' : hour < 18 ? 'Boa tarde.' : 'Boa noite.';
-}
-
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [authState, setAuthState] = useState<LoginState>({ busy: false, error: null });
-  const [greeting, setGreeting] = useState(() => greetingFor(new Date()));
 
   useLayoutEffect(() => {
     document.body.dataset.reactLogin = 'true';
@@ -30,11 +24,8 @@ function LoginPage() {
       const detail = (event as CustomEvent<LoginState>).detail;
       if (detail) setAuthState(detail);
     };
-    const refreshGreeting = () => setGreeting(greetingFor(new Date()));
-    window.addEventListener('focus', refreshGreeting);
     window.addEventListener('mba:auth-state', handleAuthState);
     return () => {
-      window.removeEventListener('focus', refreshGreeting);
       window.removeEventListener('mba:auth-state', handleAuthState);
     };
   }, []);
@@ -60,9 +51,20 @@ function LoginPage() {
     </header>
     <main className="react-login-main">
       <section className="react-login-access" aria-labelledby="react-login-title">
-        <h1 id="react-login-title">{greeting}</h1>
-        <p className="react-login-subtitle">Faça login abaixo e explore como estamos trabalhando</p>
+        <h1 id="react-login-title">Explore como estamos trabalhando</h1>
         <form className="react-login-form" noValidate onSubmit={submit}>
+          <button className="react-login-corporate" type="button"
+            onClick={() => void startMicrosoftLogin()} aria-busy={authState.busy}
+            disabled={authState.busy}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+              <path fill="#F35325" d="M1 1h10v10H1z"/>
+              <path fill="#81BC06" d="M13 1h10v10H13z"/>
+              <path fill="#05A6F0" d="M1 13h10v10H1z"/>
+              <path fill="#FFBA08" d="M13 13h10v10H13z"/>
+            </svg>
+            Continuar via Microsoft
+          </button>
+          <div className="react-login-divider" aria-hidden="true">ou</div>
           <label className="react-login-field" htmlFor="login-display-email">
             <span>E-mail corporativo</span>
             <input id="login-display-email" name="display-email" type="email" inputMode="email"
@@ -82,7 +84,7 @@ function LoginPage() {
           aria-label="Vídeo institucional do escritório Mascarenhas Barbosa">
           <source src="/assets/mascarenhas-login.mp4?v=20261027-3b74ad84" type="video/mp4"/>
         </video>
-        <div className="react-login-visual-caption"><span>MASCARENHAS BARBOSA</span><strong>Operação que transforma informação em decisão.</strong></div>
+        <div className="react-login-visual-caption"><span>MASCARENHAS BARBOSA · DESDE 1968</span><strong>Transformando ideias em produção.</strong></div>
       </aside>
     </main>
   </div>;

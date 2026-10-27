@@ -175,3 +175,6 @@ body[data-react-login="true"] #login-error { display:none!important; }
 @media(prefers-reduced-motion:reduce) {
   #login-view .react-login-view *,#login-view .react-login-view *::before { transition:none !important; }
 }
+
+/* The separator keeps the original minimal form layout. */
+#login-view .react-login-divider{text-transform:none;}
