@@ -178,3 +178,6 @@ body[data-react-login="true"] #login-error { display:none!important; }
 
 /* The separator keeps the original minimal form layout. */
 #login-view .react-login-divider{text-transform:none;}
+
+/* Center the editorial heading over the original 465px form. */
+#login-view .react-login-access h1{max-width:465px;margin-inline:auto;text-align:center}
