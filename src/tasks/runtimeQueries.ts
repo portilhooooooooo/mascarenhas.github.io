@@ -85,7 +85,8 @@ for(const event of ['mba:server-data-changed','mba:realtime-invalidate'])window.
  const detail=(raw as CustomEvent<{module?:string;portfolio_id?:string}>).detail;
  const w=window as Window & {MBA_API?:{getPortfolioId?:()=>string}};
  if(detail?.portfolio_id && detail.portfolio_id!==w.MBA_API?.getPortfolioId?.())return;
- const names=detail?.module==='tarefas'?['tasks-results','task-assignees','encerramentos']:
+ const names=detail?.module==='tarefas'?['tasks-results','task-assignees','encerramentos','enter-defense-results']:
+   detail?.module==='defesas'?['enter-defense-results']:
    detail?.module==='encerramentos'?['tasks-results','encerramentos','base-geral','ranking']:
    detail?.module==='pagamentos'?['base-geral']:[];
  if(names.length)void runtimeQueries.invalidateQueries({predicate:query=>query.queryKey[0]==='runtime-v2' && query.queryKey[1]===runtimeScope() && names.includes(String(query.queryKey[2]))});
