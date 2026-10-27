@@ -6,6 +6,10 @@ on:
       - .github/workflows/deploy-access-roles.yml
       - src/dashboard/UsersPage.tsx
       - src/dashboard/EncerramentosPage.tsx
+      - src/dashboard/GestaoProcessualPage.tsx
+      - src/dashboard/DefesasResultadosPage.tsx
+      - src/dashboard/defesasResultados.css
+      - src/tasks/runtimeQueries.ts
       - src/dashboard/encerramentos.css
       - src/dashboard/operacaoEncerramentosService.ts
       - src/tasks/TaskResults.tsx
