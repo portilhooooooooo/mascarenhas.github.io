@@ -95,7 +95,7 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
       if(expected===undefined||all.length!==expected)throw new Error('Exportação incompleta; tente novamente.');
       if(all.some(row=>typeof row.reschedule_justification!=='string'||!row.reschedule_justification))
         throw new Error('A API de testes ainda não disponibilizou as justificativas padronizadas.');
-      const clean=(value:string)=>'"'+( /^[\\s]*[=+@-]/.test(value)?"'"+value:value ).replaceAll('"','""')+'"';
+      const clean=(value:string)=>'"'+( /^[\\s]*[=+@-]/.test(value)?"'"+value:value ).replace(/"/g,'""')+'"';
       const entries=[['CNJ','VAZIO','FATAL','JUSTIFICATIVA'],...all.map(row=>[
         row.cnj||'', '',date(row.reschedule_fatal)==='—'?'':date(row.reschedule_fatal),
         row.reschedule_justification||''
