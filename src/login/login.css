@@ -136,13 +136,13 @@ body[data-react-login="true"] #login-error { display:none!important; }
   background:#252525;
   isolation:isolate;
 }
-/* O vídeo original é 16:9 e 1024x576. Evite ampliá-lo ou cortar metade dos
+/* O vídeo fornecido é 16:9 e 910x512. Evite ampliá-lo ou cortar metade dos
    pixels em um painel quase quadrado; preencha apenas as margens com o poster. */
 #login-view .react-login-visual::before {
   content:"";position:absolute;inset:-28px;z-index:0;
   background:
     linear-gradient(rgba(24,23,23,.4),rgba(24,23,23,.4)),
-    url("/assets/mascarenhas-login-poster.jpg?v=20261027-a2690cd3") center/cover no-repeat;
+    url("/assets/mascarenhas-login-poster.jpg?v=20261027-3b74ad84") center/cover no-repeat;
   filter:blur(24px) saturate(.75);
   pointer-events:none;
 }
