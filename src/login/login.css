@@ -1,12 +1,12 @@
 /*
- * Login editorial: referências Claude (estrutura e tipografia) + marca Mascarenhas.
- * Nenhuma navegação de produção é alterada; a mídia à direita é opcional.
+ * Login editorial em Sol (claro), independente da preferência Lua interna.
+ * Mantém a estrutura, a autenticação e o vídeo institucional lateral.
  */
 #login-view .react-login-view,
 #login-view .react-login-view *,
 #login-view .react-login-view *::before,
 #login-view .react-login-view *::after { box-sizing:border-box; }
-body[data-react-login="true"] .login-screen { min-height:100dvh;display:block;padding:0;background:#161617; }
+body[data-react-login="true"] .login-screen { min-height:100dvh;display:block;padding:0;background:#F4F5F3;color-scheme:light; }
 body[data-react-login="true"] .login-panel,
 body[data-react-login="true"] .login-box,
 body[data-react-login="true"] #login-view {
@@ -19,25 +19,26 @@ body[data-react-login="true"] .login-security,
 body[data-react-login="true"] #login-error { display:none!important; }
 
 #login-view .react-login-view {
-  --login-accent:#bb7d5b;
-  --login-accent-hover:#c78f6f;
-  --login-accent-soft:rgba(190,128,95,.15);
+  --login-accent:#B95A32;
+  --login-accent-hover:#984621;
+  --login-accent-soft:rgba(185,90,50,.12);
   min-height:100dvh;
   display:grid;
   grid-template-rows:88px minmax(0,1fr);
-  background:#161617;
-  color:#f6f0ec;
+  background:#F4F5F3;
+  color:#242826;
+  color-scheme:light;
   font-family:Inter,ui-sans-serif,system-ui,sans-serif;
 }
 #login-view .react-login-header {
   height:88px;
   display:flex;align-items:center;
   padding:0 clamp(26px,5vw,82px);
-  background:#161617;
+  background:#F4F5F3;
 }
-#login-view .react-login-brand { display:flex;align-items:center;gap:12px;color:#fbf7f4; }
+#login-view .react-login-brand { display:flex;align-items:center;gap:12px;color:#242826; }
 #login-view .react-login-brand img {
-  height:40px;width:56px;object-fit:contain;
+  height:40px;width:56px;object-fit:contain;filter:brightness(0);
 }
 #login-view .react-login-brand>span {
   font:400 20px/1.13 Georgia,"Times New Roman",serif;
@@ -45,7 +46,7 @@ body[data-react-login="true"] #login-error { display:none!important; }
 }
 #login-view .react-login-brand small {
   display:block;margin-top:5px;font:600 9px/1 Inter,system-ui,sans-serif;
-  letter-spacing:.25em;color:#c88d6d;
+  letter-spacing:.25em;color:#B95A32;
 }
 #login-view .react-login-main {
   width:100%;max-width:1680px;margin:0 auto;
@@ -62,73 +63,73 @@ body[data-react-login="true"] #login-error { display:none!important; }
 #login-view .react-login-access h1 {
   margin:0 0 13px;
   font:400 clamp(37px,3.35vw,61px)/1.08 Georgia,"Times New Roman",serif;
-  letter-spacing:-.043em;color:#f8f3ef;
+  letter-spacing:-.043em;color:#242826;
   text-wrap:balance;
   text-align:left;
 }
 #login-view .react-login-subtitle {
   margin:0 0 clamp(23px,3.4vh,40px);
-  max-width:465px;color:#aaa39f;font-size:14px;line-height:1.65;text-align:left;
+  max-width:465px;color:#525D57;font-size:14px;line-height:1.65;text-align:left;
 }
 #login-view .react-login-form {
   display:grid;gap:10px;max-width:465px;
   padding:24px 25px 25px;
-  border:1px solid #373436;border-radius:22px;background:#171719;
+  border:1px solid #E7E9E6;border-radius:22px;background:#FFFFFF;
 }
 #login-view .react-login-corporate,#login-view .react-login-primary {
   position:relative;width:100%;height:44px;
   display:flex;align-items:center;justify-content:center;gap:10px;
-  border:1px solid #3a3839;border-radius:10px;
+  border:1px solid #D8DED8;border-radius:10px;
   font:500 13px/1 Inter,system-ui,sans-serif;
   cursor:pointer;transition:background .15s,border-color .15s;
 }
 #login-view .react-login-corporate {
-  background:#292829;color:#faf7f3;
+  background:#F9FAF8;color:#242826;
 }
 #login-view .react-login-corporate:hover:not(:disabled) {
-  background:#353234;border-color:#57504c;
+  background:#F3F5F1;border-color:#C5CDC7;
 }
 #login-view .react-login-corporate svg { width:16px;height:16px;flex:none; }
 #login-view .react-login-unavailable { opacity:.45;cursor:not-allowed; }
 #login-view .react-login-unavailable small {
   position:absolute;right:12px;top:50%;transform:translateY(-50%);
-  font-size:9px;color:#e2bda8;
+  font-size:9px;color:#984621;
 }
 #login-view .react-login-divider {
-  display:flex;align-items:center;gap:12px;color:#858080;
+  display:flex;align-items:center;gap:12px;color:#76807A;
   font-size:11px;text-transform:uppercase;margin:4px 0;
 }
 #login-view .react-login-divider::before,
 #login-view .react-login-divider::after {
-  content:"";height:1px;flex:1;background:#373436;
+  content:"";height:1px;flex:1;background:#E7E9E6;
 }
-#login-view .react-login-field { display:grid;gap:7px;font-size:11px;color:#bbb3ad; }
+#login-view .react-login-field { display:grid;gap:7px;font-size:11px;color:#525D57; }
 #login-view .react-login-field input {
   width:100%;height:44px;
-  padding:0 13px;border:1px solid #393739;border-radius:9px;
-  outline:0;background:#202022;color:#fff8f3;font-size:13px;
+  padding:0 13px;border:1px solid #D8DED8;border-radius:9px;
+  outline:0;background:#F9FAF8;color:#242826;font-size:13px;
 }
-#login-view .react-login-field input::placeholder { color:#888183; }
+#login-view .react-login-field input::placeholder { color:#87918B;opacity:1; }
 #login-view .react-login-field input:focus {
-  border-color:#be8d74;box-shadow:0 0 0 3px var(--login-accent-soft);
+  border-color:var(--login-accent);box-shadow:0 0 0 3px var(--login-accent-soft);
 }
 #login-view .react-login-primary {
   margin-top:4px;
-  background:#b97a58;border-color:#b97a58;color:#fff;
+  background:var(--login-accent);border-color:var(--login-accent);color:#fff;
   font-weight:600;
 }
 #login-view .react-login-primary:hover:not(:disabled) {
-  background:#c38b69;border-color:#c38b69;
+  background:var(--login-accent-hover);border-color:var(--login-accent-hover);
 }
 #login-view .react-login-primary:disabled { opacity:.55;cursor:wait; }
 #login-view .react-login-primary:focus-visible,
 #login-view .react-login-corporate:focus-visible {
-  outline:2px solid #c78f6f;outline-offset:3px;
+  outline:2px solid var(--login-accent);outline-offset:3px;
 }
 #login-view .react-login-error {
   margin-top:17px;padding:12px 14px;
-  background:#382220;border:1px solid #713a35;border-radius:8px;
-  color:#f5c8c1;font-size:12px;line-height:1.5;
+  background:#FFF4F1;border:1px solid #F0C5BC;border-radius:8px;
+  color:#9E382F;font-size:12px;line-height:1.5;
 }
 #login-view .react-login-visual {
   position:relative;min-height:min(670px,75vh);
