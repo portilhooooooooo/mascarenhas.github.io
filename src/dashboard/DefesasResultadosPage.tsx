@@ -77,9 +77,9 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
   const active=cards.find(card=>card.kind===kind);
   if(!allowed) return <section className="defense-results-page"><p className="defense-results-state">Disponível apenas na carteira Agibank · Enter.</p></section>;
 
-  return <section className="defense-results-page" aria-label="Resultados de Defesas da Enter">
+  return <section className="defense-results-page" aria-label="Resultados das pendências Talisman de Defesas da Enter">
     <div className="defense-results-heading">
-      <div><h1>Defesas</h1><span>Agibank · Enter</span></div>
+      <div><h1>Defesas</h1><span>Enter · Pendências Talisman</span></div>
       <button className="defense-results-refresh" type="button" onClick={()=>void summary.refetch()} disabled={summary.isFetching}>
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>
