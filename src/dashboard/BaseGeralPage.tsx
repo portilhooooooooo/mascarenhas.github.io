@@ -251,7 +251,9 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const summary = shown?.summary;
   const currentBilling = canViewBilling && billingKey === filterKey && portfolio === 'agibank_mba' ? billing : null;
   const estimatedRevenue = currentBilling?.total_amount ?? null;
-  const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
+  const products = (shown?.charts.por_produto?.filter(row =>
+    Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [])
+    .sort((a, b) => Number(b.value) - Number(a.value));
   const productTotal = products.reduce((sum, row) => sum + Number(row.value), 0);
   useEffect(() => {
     let cancelled = false;
@@ -281,9 +283,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const active = categories.active;
   const donutReady = active != null && prescribed != null && active + prescribed > 0;
   const activeShare = donutReady ? active! / (active! + prescribed!) * 100 : 0;
-  const chartStyle = donutReady
-    ? { background: 'conic-gradient(var(--mba-orange) 0% ' + activeShare + '%, var(--mba-blue) ' + activeShare + '% 100%)' }
-    : undefined;
 
   const detailCategory = detail === 'injunction'
     ? (tutelaOutcome === 'deferidas' ? 'injunction_deferida' : 'injunction_indeferida')
@@ -361,6 +360,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     </div>
     {error && <div className="base-geral-error" role="alert">{shown?'Atualização indisponível. Últimos dados preservados.':error} <button type="button" onClick={() => void refresh(true)}>Tentar novamente</button></div>}
     {shown?._read_status==='stale' && <div className="base-geral-warning" role="status">Exibindo último consolidado disponível. A consulta será revalidada automaticamente.</div>}
+    <div className={'base-geral-kpi-layout' + (portfolio === 'agibank_mba' && canViewBilling ? ' with-billing' : '')}>
     <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
       {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
         onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
@@ -387,6 +387,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         <strong>{shown ? number(categories[key]) : <span className="base-geral-skeleton" aria-label="Carregando"/>}</strong>
       </button>)}
     </div>
+    </div>
     <div className="base-geral-bottom">
       <section className="base-geral-panel base-geral-products-table" id="base-geral-produtos">
         <header><div><h2>Produto</h2><span className="base-geral-context">Distribuição por produto</span></div>
@@ -394,29 +395,42 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         </header>
         <div className="base-geral-table-scroll">
           <table className="base-geral-products">
-            <thead><tr><th>Produto</th><th>Processos</th><th>Participação</th><th>Detalhar</th></tr></thead>
-            <tbody>{products.length ? products.map(row => <tr key={row.label}>
-              <td>{row.label}</td><td>{number(row.value)}</td>
-              <td>{productTotal ? (Number(row.value)/productTotal*100).toFixed(1).replace('.', ',') : '0'}%</td>
-              <td><button type="button" onClick={() => setProduct(row.label)} aria-label={'Filtrar pelo produto ' + row.label}>Ver relação <ArrowUpRight size={12}/></button></td>
-            </tr>) : <tr><td colSpan={4} className="base-geral-empty">Nenhum produto encontrado.</td></tr>}</tbody>
+            <thead><tr><th>Produto</th><th>Processos</th><th>Participação</th><th className="base-geral-products-action-head">Detalhar</th></tr></thead>
+            <tbody>{products.length ? products.map(row => {
+              const share = productTotal ? Number(row.value) / productTotal * 100 : 0;
+              return <tr key={row.label}>
+                <td title={row.label}>{row.label}</td>
+                <td>{number(row.value)}</td>
+                <td><div className="base-geral-product-share">
+                  <div className="base-geral-product-share-track" aria-hidden="true"><span style={{width: share + '%'}}/></div>
+                  <span>{share.toFixed(1).replace('.', ',')}%</span>
+                </div></td>
+                <td><button type="button" onClick={() => setProduct(row.label)} aria-label={'Filtrar pelo produto ' + row.label}>Ver relação <ArrowUpRight size={12}/></button></td>
+              </tr>;
+            }) : <tr><td colSpan={4} className="base-geral-empty">Nenhum produto encontrado.</td></tr>}</tbody>
           </table>
         </div>
       </section>
       <section className="base-geral-panel base-geral-comparison">
         <header><div><h2>Prejuízo X Lucro</h2><span className="base-geral-context">Quantidade de processos</span></div></header>
-        <div className="base-geral-chart-area">
-          <button type="button" className={'base-geral-donut ' + (!donutReady ? 'is-unavailable' : '')}
-            style={chartStyle} onClick={() => openDetail('active')} aria-label="Detalhar comparação entre base prescrita e base ativa">
-            <span><strong>{donutReady ? activeShare.toFixed(1).replace('.', ',') + '%' : '—'}</strong><small>Base ativa</small></span>
-          </button>
-          <div className="base-geral-donut-labels">
-            <button type="button" onClick={() => openDetail('active')}><i className="is-active"/> Base ativa <strong>{number(active)}</strong></button>
-            <button type="button" onClick={() => openDetail('prescribed')}><i className="is-prescribed"/> Base prescrita <strong>{number(prescribed)}</strong></button>
-            {!donutReady && <p className="base-geral-unavailable">Aguardando as contagens filtradas de aging e base ativa.</p>}
+        <div className="base-geral-comparison-compact">
+          <div className={'base-geral-comparison-track' + (!donutReady ? ' is-unavailable' : '')}
+            role="img" aria-label={donutReady
+              ? 'Base ativa ' + activeShare.toFixed(1).replace('.', ',') + ' por cento; base prescrita ' + (100-activeShare).toFixed(1).replace('.', ',') + ' por cento'
+              : 'Comparação indisponível'}>
+            {donutReady && <><span className="is-active" style={{width:activeShare+'%'}}/><span className="is-prescribed" style={{width:(100-activeShare)+'%'}}/></>}
           </div>
+          <div className="base-geral-comparison-values">
+            <button type="button" onClick={() => openDetail('active')}>
+              <i className="is-active"/><span>Base ativa</span><strong>{number(active)}</strong><small>{donutReady ? activeShare.toFixed(1).replace('.', ',')+'%' : '—'}</small>
+            </button>
+            <button type="button" onClick={() => openDetail('prescribed')}>
+              <i className="is-prescribed"/><span>Base prescrita</span><strong>{number(prescribed)}</strong><small>{donutReady ? (100-activeShare).toFixed(1).replace('.', ',')+'%' : '—'}</small>
+            </button>
+          </div>
+          {!donutReady && <p className="base-geral-unavailable">Aguardando as contagens filtradas de aging e base ativa.</p>}
         </div>
-        <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
+        <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos da comparação são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
       </section>
     </div>
     {revenueOpen && portfolio === 'agibank_mba' && canViewBilling && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {

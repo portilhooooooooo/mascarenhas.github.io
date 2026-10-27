@@ -59,9 +59,11 @@ test('Base Geral is purely drilldown-driven without CSV or manual refresh contro
   assert.match(page,/base-geral-products-table/);
   assert.match(page,/productTotal/);
   assert.match(page,/className="base-geral-products"/);
+  assert.match(page,/className="base-geral-product-share"/);
+  assert.match(page,/className=\{'base-geral-comparison-track'/);
   assert.match(page,/base-geral-comparison/);
   assert.match(styles,/\.base-geral-kpis-status\{grid-template-columns:repeat\(5/);
-  assert.match(styles,/\.base-geral-bottom\{grid-template-columns:repeat\(2/);
+  assert.match(styles,/\.base-geral-bottom \{\s*display:flex;\s*flex-direction:column;/);
 });
 
 test('18-calendar-month operational aging rule is preserved and closing stays separate', () => {
