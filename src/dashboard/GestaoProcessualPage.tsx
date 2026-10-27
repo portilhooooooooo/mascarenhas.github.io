@@ -90,7 +90,7 @@ export function GestaoProcessualPage() {
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Entradas</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
-      {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>
+      {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
     </nav>
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><VisaoGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
     {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
