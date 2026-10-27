@@ -19,7 +19,7 @@ assert.match(options, /Manutenção da extinção/);
 assert.doesNotMatch(options, /Não foi possível identificar|resultado_indeterminado|Condenação reduzida/);
 assert.match(source, /appeal_other_description:/, 'Other description is submitted');
 assert.match(source, /otherDescriptionValid/, 'Other must contain details');
-assert.match(source, /classification_agreed: appealOther \? false/, 'Other always needs human review');
+assert.match(source, /classification_agreed: false/, 'Disagreement is always escalated for human review');
 assert.match(source, /setAppealOtherDescription/, 'Other description uses task draft');
 assert.match(source, /finalMerit = 'indeterminado'; \/\/ Resultado ainda não mapeado/, 'Other cannot turn into victory');
 assert.doesNotMatch(source, /appellant === 'banco' \? 'vitoria'/);

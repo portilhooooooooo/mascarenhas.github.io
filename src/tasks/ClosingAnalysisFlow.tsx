@@ -4,12 +4,24 @@ import './closingAnalysisFlow.css';
 import { OptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 
 type YesNo = 'sim' | 'nao' | null;
+type DisagreementPoint = 'sentenca' | 'acordao' | 'recurso' | 'transito' | 'execucao' | 'custas' | 'classificacao' | 'outro';
+const DISAGREEMENT_POINTS: {value:DisagreementPoint;label:string}[] = [
+  {value:'sentenca',label:'Sentença'}, {value:'acordao',label:'Acórdão'},
+  {value:'recurso',label:'Recurso / prazo recursal'}, {value:'transito',label:'Trânsito em julgado'},
+  {value:'execucao',label:'Execução / pagamento'}, {value:'custas',label:'Custas finais'},
+  {value:'classificacao',label:'Classificação sugerida'}, {value:'outro',label:'Outro ponto'},
+];
 type CostsAnswer = 'sim' | 'nao' | 'sem_pendencia' | null;
 type TrialResult = 'procedente' | 'parcialmente_procedente' | 'improcedente' | 'extincao' | 'sem_sentenca';
 type AppealResult = 'sentenca_desconstituida' | 'condenacao_mantida'
   | 'condenacao_afastada' | 'sem_condenacao_mantida' | 'condenacao_imposta' | 'outro';
 type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
+
+export type ClosingConfirmationDraft = {
+  workflow_version: 6;
+  confirmation: 'sim';
+};
 
 export type ClosingAnalysisDraft = {
   workflow_version: 5;
@@ -42,11 +54,12 @@ type Props = {
   cnj: string;
   prefill?: ClosingPrefill;
   classifierClassification?: string | null;
+  classifierReason?: string | null;
   contextHint?: string;
   draftKey?: string;
   busy?: boolean;
   error?: string | null;
-  onSubmit: (draft: ClosingAnalysisDraft) => Promise<void> | void;
+  onSubmit: (draft: ClosingAnalysisDraft | ClosingConfirmationDraft) => Promise<void> | void;
   onSkip: () => Promise<void> | void;
   onPhaseEntered?: (index: number, stage: string) => void;
 };
@@ -68,7 +81,7 @@ const OUTCOME_LABELS: Record<string, string> = {
 };
 
 const CLOSING_STAGES = [
-  'Cadastro de Sentença', 'Cadastro de Acórdão', 'Cadastro de Execução',
+  'Conferência da classificação', 'Ponto de divergência', 'Cadastro de Sentença', 'Cadastro de Acórdão', 'Cadastro de Execução',
   'Cadastro de Trânsito em Julgado', 'Cadastro de Encerramento',
 ] as const;
 
@@ -179,7 +192,7 @@ function costsAnswer(value: boolean | 'sem_pendencia' | null | undefined): Costs
 }
 
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, prefill, draftKey = '', busy = false, error = null,
+  cnj, classifierClassification, classifierReason, prefill, draftKey = '', busy = false, error = null,
   onSubmit, onSkip, onPhaseEntered,
 }: Props) {
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
@@ -195,7 +208,8 @@ export function ClosingAnalysisFlow({
   const [costsPaid, setCostsPaid] = useQaField<CostsAnswer>(draftKey, 'closing.costsPaid', null);
   const [executionRequested, setExecutionRequested] = useQaField<YesNo>(draftKey, 'closing.executionRequested', null);
   const [fullPayment, setFullPayment] = useQaField<YesNo>(draftKey, 'closing.fullPayment', null);
-  const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.classificationAgreed', null);
+  const [classificationAgreed, setClassificationAgreed] = useQaField<YesNo>(draftKey, 'closing.priorClassificationAgreed', null);
+  const [disagreementPoint, setDisagreementPoint] = useQaField<DisagreementPoint|null>(draftKey, 'closing.disagreementPoint', null);
   const [disagreementReason, setDisagreementReason] = useQaField(draftKey, 'closing.disagreementReason', '');
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -313,36 +327,21 @@ export function ClosingAnalysisFlow({
     : finalMerit === 'vitoria' ? 'Vitória'
     : finalMerit === 'derrota' ? 'Derrota'
     : null;
-  const costsNote = costsPaid === 'nao'
-    ? ' As custas finais ainda não foram pagas, mas isso não impede a aptidão.'
-    : '';
-  const confirmationText = sentence === 'sem_sentenca'
-    ? 'Não foi identificada sentença nos autos. O processo não está apto ao encerramento. Você confirma essa informação?'
-    : appealOther
-    ? 'Identificamos que o resultado do acórdão exige revisão. A classificação ainda não está definida. Confirma o registro?'
-    : outcome?.startsWith('apto_') && closingClassification
-      ? 'Identificamos que esse processo está apto para encerramento como ' +
-        closingClassification + '.' + costsNote + ' Você concorda com essa informação?'
-      : outcome
-        ? 'Identificamos que esse processo ' +
-          (closingClassification
-            ? 'tem classificação sugerida de ' + closingClassification + ', mas'
-            : 'ainda não tem classificação definida e') +
-          ' não está apto para encerramento: ' +
-          OUTCOME_LABELS[outcome].replace(/^(?:Inapto(?: temporariamente)?|Revisão)\s*[—–]\s*/i, '') +
-          '. Você concorda com essa informação?'
-        : null;
-  // Qualquer alteração nas respostas anteriores exige uma nova concordância.
-  const reviewSignature = JSON.stringify([sentence, hadAppeal, appellant, appealDecided, appealResult, appealOtherDescription,
-    deadlineOpen, deadlineDate, transitConfirmed, transitDate, costsPaid, executionRequested, fullPayment]);
-  const lastReviewSignature = useRef(reviewSignature);
-  useEffect(() => {
-    if (lastReviewSignature.current !== reviewSignature) {
-      lastReviewSignature.current = reviewSignature;
-      setClassificationAgreed(null);
-      setDisagreementReason('');
-    }
-  }, [reviewSignature, setClassificationAgreed, setDisagreementReason]);
+  // The first agreement belongs to the original classifier statement.
+  // Later edits never silently clear or replace this operator decision.
+  const hasPreviousClassification = Boolean(classifierClassification?.trim());
+  const priorReason = classifierReason?.trim().replace(/[.!?;\s]+$/, '') || null;
+  const statement = hasPreviousClassification
+    ? 'Identificamos que esse processo se enquadra como ' + classifierClassification
+      + (priorReason ? ' por ' + priorReason + '.' : '. O motivo não consta da análise prévia.')
+    : 'Não há classificação prévia suficiente para apresentar uma conclusão.';
+  const manualReview = !hasPreviousClassification || classificationAgreed === 'nao';
+  const hasSelectedPoint = disagreementPoint !== null;
+  const otherPointValid = disagreementPoint !== 'outro' || (disagreementReason.trim().length >= 6 && disagreementReason.trim().length <= 500);
+  const disagreementExplanation = disagreementPoint
+    ? 'Divergência em: ' + DISAGREEMENT_POINTS.find(item => item.value === disagreementPoint)!.label
+      + (disagreementPoint === 'outro' ? ' — ' + disagreementReason.trim() : '')
+    : null;
   const sentenceDescription: Record<TrialResult, string> = {
     procedente: 'SENTENÇA PROCEDENTE', parcialmente_procedente: 'SENTENÇA PARCIALMENTE PROCEDENTE',
     improcedente: 'SENTENÇA IMPROCEDENTE', extincao: 'SENTENÇA DE EXTINÇÃO',
@@ -370,17 +369,17 @@ export function ClosingAnalysisFlow({
       : outcome === 'inapto_sem_sentenca' ? 'PROCESSO NÃO APTO AO ENCERRAMENTO — SEM SENTENÇA'
       : 'CLASSIFICAÇÃO AINDA NÃO DEFINIDA',
   ].filter(Boolean).join(', ') + '.';
-  const validReason = disagreementReason.trim().length >= 6 && disagreementReason.trim().length <= 2000;
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || (sentence !== 'sem_sentenca' && hadAppeal === null) || classificationAgreed === null
-      || (appealOther && (classificationAgreed !== 'sim' || !otherDescriptionValid))) {
-      setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
+    if (hasPreviousClassification && classificationAgreed === 'sim') {
+      setLocalError(null);
+      await onSubmit({workflow_version:6,confirmation:'sim'});
       return;
     }
-    if (!appealOther && classificationAgreed === 'nao' && !validReason) {
-      setLocalError('Explique a divergência (entre 6 e 2.000 caracteres) antes de enviar para revisão.');
+    if (!hasSelectedPoint || !otherPointValid || !outcome || !sentence || (sentence !== 'sem_sentenca' && hadAppeal === null)
+      || (appealOther && !otherDescriptionValid)) {
+      setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
       return;
     }
     setLocalError(null);
@@ -404,22 +403,50 @@ export function ClosingAnalysisFlow({
       full_payment: finalMerit === 'derrota' && transitConfirmed === 'sim'
         && costsPaid !== null && executionRequested === 'sim' ? fullPayment === 'sim' : null,
       classifier_classification: classifierClassification || null,
-      classification_agreed: appealOther ? false : classificationAgreed === 'sim',
-      classification_disagreement_reason: appealOther ? 'Acórdão — Outro: ' + appealOtherDescription.trim()
-        : classificationAgreed === 'nao' ? disagreementReason.trim() : null,
+      classification_agreed: false,
+      classification_disagreement_reason: (disagreementExplanation || 'Divergência na classificação inicial')
+        + (appealOther ? ' — Acórdão: ' + appealOtherDescription.trim() : ''),
     });
   };
 
-  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={CLOSING_STAGES} stageStates={{
+  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={CLOSING_STAGES} dynamicStages stageStates={{
+    'Conferência da classificação': hasPreviousClassification && classificationAgreed !== null ? 'completed' : 'pending',
+    'Ponto de divergência': hasSelectedPoint && otherPointValid ? 'completed' : 'pending',
     'Cadastro de Sentença': sentence ? 'completed' : 'pending',
     'Cadastro de Acórdão': sentence === 'sem_sentenca' ? 'not_applicable' : appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': sentence === 'sem_sentenca' || finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
     'Cadastro de Trânsito em Julgado': sentence === 'sem_sentenca' || (outcome && !canAnswerTransit) ? 'not_applicable' : transitConfirmed !== null && !(finalMerit === 'derrota' && costsPaid !== null && executionRequested === 'nao' && !hasValidTransitDate) ? 'completed' : 'pending',
-    'Cadastro de Encerramento': classificationAgreed === 'sim' || (!appealOther && classificationAgreed === 'nao' && validReason) ? 'completed' : 'pending',
+    'Cadastro de Encerramento': outcome && otherPointValid ? 'completed' : 'pending',
   }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}
     onChangeCapture={() => { interactedBeforePrefill.current = true; }}
     onKeyDownCapture={() => { interactedBeforePrefill.current = true; }}>
 
+    {hasPreviousClassification ? <TaskQuestion number={String(++questionNumber)} stage="Conferência da classificação"
+      question={statement + ' Você concorda com a afirmação acima?'}>
+      {!priorReason ? <p className="closing-inline-note">A origem não trouxe um motivo individualizado. Confirmar a sugestão não autoriza envio automático ao Benner.</p> : null}
+      <BinaryChoice name="closing-prior-agreement" value={classificationAgreed} disabled={busy}
+        onChange={value => { setClassificationAgreed(value); setDisagreementPoint(null); setDisagreementReason(''); setLocalError(null); }}/>
+    </TaskQuestion> : <TaskQuestion number={String(++questionNumber)} stage="Conferência da classificação"
+      question="Não foi encontrada classificação prévia confiável. Inicie a análise jurídica para classificar este processo.">
+      <p className="closing-inline-note">A ausência de sugestão não é uma classificação automática.</p>
+      <OptionGroup name="closing-unclassified" value={classificationAgreed} disabled={busy}
+        onChange={value=>{setClassificationAgreed(value as YesNo);setDisagreementPoint('classificacao');}}
+        options={[{value:'nao',label:'Iniciar análise'}]}/>
+    </TaskQuestion>}
+
+    {manualReview && classificationAgreed === 'nao' && hasPreviousClassification ?
+      <TaskQuestion number={String(++questionNumber)} stage="Ponto de divergência" question="Em qual ponto você discorda?">
+        <OptionGroup name="closing-disagreement-point" value={disagreementPoint} disabled={busy}
+          onChange={value => {setDisagreementPoint(value as DisagreementPoint);setDisagreementReason('');setLocalError(null);}}
+          options={DISAGREEMENT_POINTS}/>
+        {disagreementPoint === 'outro' ? <label className="closing-disagreement-field">
+          <span>Qual é a divergência?</span>
+          <textarea value={disagreementReason} disabled={busy} minLength={6} maxLength={500} required
+            onChange={event => {setDisagreementReason(event.target.value);setLocalError(null);}}/>
+        </label> : null}
+      </TaskQuestion> : null}
+
+    {manualReview && classificationAgreed === 'nao' && hasSelectedPoint && otherPointValid ? <>
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
         options={SENTENCES} onChange={value => {
@@ -523,26 +550,15 @@ export function ClosingAnalysisFlow({
         }} />
       </TaskQuestion> : null}
 
-    {outcome && confirmationText ? <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Encerramento" question={confirmationText}>
-      <div className="closing-review-observation">
-        <strong>Descrição proposta do andamento</strong>
-        <p>{proposedDescription}</p>
-      </div>
-      <BinaryChoice name="closing-classification-agreement" value={classificationAgreed} disabled={busy}
-        onChange={value => { setClassificationAgreed(value); setLocalError(null); if (value === 'sim') setDisagreementReason(''); }} />
-      {classificationAgreed === 'nao' && !appealOther ? <label className="closing-disagreement-field">
-        <span>Por que você discorda da classificação ou da descrição?</span>
-        <textarea value={disagreementReason} required disabled={busy} maxLength={2000}
-          placeholder="Descreva a divergência encontrada no processo."
-          onChange={event => { setDisagreementReason(event.target.value); setLocalError(null); }}/>
-      </label> : null}
-      {classificationAgreed === 'sim' && reopenAt ? <p className="closing-inline-note">
-        Reanálise prevista em {formatDate(reopenAt)}.
-      </p> : null}
-    </TaskQuestion> : null}
+    {outcome ? <section className="closing-review-observation" aria-label="Resultado proposto da correção">
+      <strong>Resultado da revisão: {OUTCOME_LABELS[outcome]}</strong>
+      <p>{proposedDescription}</p>
+      <small>A divergência registrada será encaminhada para validação. Nenhum andamento será disparado automaticamente.</small>
+    </section> : null}
+    </> : null}
     {localError || error ? <p className="task-renderer-error" role="alert">{localError || error}</p> : null}
-    <TaskActionBar busy={busy} ready={Boolean(outcome && (classificationAgreed === 'sim'
-      || (!appealOther && classificationAgreed === 'nao' && validReason)))} onSkip={() => void onSkip()}
+    <TaskActionBar busy={busy} ready={Boolean(hasPreviousClassification && classificationAgreed === 'sim'
+      || (manualReview && classificationAgreed === 'nao' && hasSelectedPoint && otherPointValid && outcome))} onSkip={() => void onSkip()}
       skipLabel="Pular esse processo" />
   </TaskForm>;
 }

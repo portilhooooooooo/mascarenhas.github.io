@@ -62,12 +62,12 @@ assert.match(questions, /current < total - 1 \? <button type="button" className=
 assert.match(questions, /if \(current >= total - 1\) return;/, 'Próximo não conclui análise na última pergunta');
 assert.doesNotMatch(closing, /className=\{'closing-outcome closing-summary '/, 'Card de classificação removido');
 assert.doesNotMatch(style, /\.closing-summary/, 'Sem CSS de card de classificação');
-assert.match(closing, /closing-classification-agreement/, 'Confirmação final Sim/Não');
+assert.match(closing, /closing-prior-agreement/, 'A primeira etapa valida a classificação anterior');
 assert.match(closing, /outcome === 'apto_derrota_voluntaria'/, 'Classificação considera Derrota Voluntária');
-assert.match(closing, /'Identificamos que esse processo está apto para encerramento como '/, 'Confirmação final informa classificação');
+assert.match(closing, /Identificamos que esse processo se enquadra como/, 'Abertura informa a classificação prévia');
 assert.match(closing, /closingClassification\.toLocaleUpperCase\('pt-BR'\)/, 'Descrição final explicita classificação');
-assert.match(closing, /classificationAgreed === 'nao' && validReason/, 'Discordância justificada libera registro de revisão');
-assert.match(closing, /setClassificationAgreed\(null\)/, 'Alterar respostas invalida confirmação anterior');
+assert.match(closing, /disagreementPoint !== null/, 'Discordância exige a identificação do ponto divergente');
+assert.match(closing, /closing.priorClassificationAgreed/, 'A concordância inicial possui chave de rascunho nova');
 assert.doesNotMatch(closing, /A análise será registrada para revisão/, 'Texto redundante removido; justificativa e revisão continuam no contrato');
 assert.match(style, /form\[data-qa-index='0'\][^\n]*\.qa-context-note/, 'Indício contextual não ocupa todas as perguntas');
 assert.doesNotMatch(renderer, /\|\| task\.title/, 'Título da tarefa não pode ser indício daquele processo');

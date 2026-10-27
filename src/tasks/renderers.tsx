@@ -3,7 +3,7 @@ import { SelectMenu } from '../dashboard/SelectMenu';
 import { OptionGroup as QaOptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
-import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
+import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingConfirmationDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
 import { clearQaDraft } from './qaDraft';
 
@@ -100,6 +100,8 @@ function closingClassifierClassification(process: TaskProcess) {
   const normalized = String(raw || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (normalized.includes('derrota voluntaria')) return 'Derrota voluntária';
   if (normalized.includes('vitoria')) return 'Vitória';
+  if (normalized.includes('acordo')) return 'Acordo';
+  if (normalized.includes('extincao')) return 'Extinção';
   if (normalized.includes('derrota')) return 'Derrota';
   return null;
 }
@@ -122,6 +124,11 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const classifierClassification = closingClassifierClassification(process);
+  const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
+  const rawPriorReason = metadata.review_reason || metadata.classifier_reason || metadata.classification_reason
+    || process.reason || process.reason_label || null;
+  const classifierReason = typeof rawPriorReason === 'string' && rawPriorReason.trim()
+    ? rawPriorReason.trim().slice(0, 800) : null;
   const [closingPrefill, setClosingPrefill] = useState<{ processId: string; values: ClosingPrefill } | null>(null);
   useEffect(() => {
     let active = true;
@@ -141,7 +148,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
   }, [api, process.id]);
 
-  const submit = async (draft: ClosingAnalysisDraft) => {
+  const submit = async (draft: ClosingAnalysisDraft | ClosingConfirmationDraft) => {
     setBusy(true);
     setError(null);
     try {
@@ -178,6 +185,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     cnj={process.case_number || 'Processo sem número'}
     draftKey={draftKey}
     classifierClassification={classifierClassification}
+    classifierReason={classifierReason}
     prefill={closingPrefill?.processId === process.id ? closingPrefill.values : undefined}
     contextHint={closingSentenceHint(process)}
     busy={busy}
