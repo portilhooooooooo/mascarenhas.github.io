@@ -136,9 +136,20 @@ body[data-react-login="true"] #login-error { display:none!important; }
   background:#252525;
   isolation:isolate;
 }
+/* O vídeo original é 16:9 e 1024x576. Evite ampliá-lo ou cortar metade dos
+   pixels em um painel quase quadrado; preencha apenas as margens com o poster. */
+#login-view .react-login-visual::before {
+  content:"";position:absolute;inset:-28px;z-index:0;
+  background:
+    linear-gradient(rgba(24,23,23,.4),rgba(24,23,23,.4)),
+    url("/assets/mascarenhas-login-poster.jpg?v=20261027-a2690cd3") center/cover no-repeat;
+  filter:blur(24px) saturate(.75);
+  pointer-events:none;
+}
 #login-view .react-login-visual video {
-  position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;z-index:0;
-  filter:contrast(1.08) saturate(.88) brightness(.79);
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  object-fit:contain;z-index:1;
+  /* Evite filtros que enfatizam artefatos de compressão no arquivo WhatsApp. */
 }
 #login-view .react-login-visual-fallback {
   position:absolute;inset:0;display:grid;place-items:center;z-index:-1;
@@ -158,12 +169,12 @@ body[data-react-login="true"] #login-error { display:none!important; }
   width:min(180px,35%);opacity:.11;filter:brightness(0) invert(1);
 }
 #login-view .react-login-visual:after {
-  content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(0deg,rgba(16,16,17,.82),transparent 45%);
+  content:"";position:absolute;inset:0;z-index:2;
+  background:linear-gradient(0deg,rgba(16,16,17,.84),transparent 33%);
   pointer-events:none;
 }
 #login-view .react-login-visual-caption {
-  position:absolute;z-index:2;bottom:38px;left:38px;right:38px;display:grid;gap:9px;
+  position:absolute;z-index:3;bottom:38px;left:38px;right:38px;display:grid;gap:9px;
   justify-items:start;text-align:left;
 }
 #login-view .react-login-visual-caption span {

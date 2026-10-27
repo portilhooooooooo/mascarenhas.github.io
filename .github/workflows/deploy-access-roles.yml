@@ -18,6 +18,11 @@ on:
       - app.js
       - auth.js
       - index.html
+      - src/login/login.css
+      - src/login/main.tsx
+      - assets/mascarenhas-login.mp4
+      - assets/mascarenhas-login-poster.jpg
+      - tests/login-brand-media.test.mjs
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,6 +41,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:hardening
+      - run: node tests/login-brand-media.test.mjs
       - run: npm run build
       - name: Deploy production Worker
         env:
