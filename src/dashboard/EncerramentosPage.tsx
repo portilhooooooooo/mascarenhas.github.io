@@ -276,11 +276,9 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
           </div>
           <div className="closing-goal-kpi-body">
             <strong className="closing-gauge-value">{card.value}</strong>
-            <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
-              <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
-              <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
-                strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
-            </svg>
+            <span className="closing-goal-kpi-progress" aria-hidden="true">
+              <i style={{width:(goalPercent ?? 0)+'%'}}/>
+            </span>
           </div>
         </button>
       : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"

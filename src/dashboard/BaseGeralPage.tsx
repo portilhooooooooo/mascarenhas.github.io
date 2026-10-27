@@ -192,14 +192,14 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     if (!visibleRef.current || portfolio !== 'agibank_mba' || !canViewBilling) return;
     const serial = ++billingSequence.current;
     const api = getApi();
-    const queryKey = ['runtime-v2',runtimeScope(),'base-geral','faturamento',filterQuery] as const;
+    const queryKey = ['runtime-v2',runtimeScope(),'base-geral','faturamento'] as const;
     setBillingPending(true);
     try {
       if (!api) throw new Error('API indisponível.');
       if (force) await runtimeQueries.invalidateQueries({queryKey:[...queryKey],exact:true});
       const response = await runtimeQueries.fetchQuery({
         queryKey:[...queryKey],staleTime:75000,
-        queryFn:()=>api.request<unknown>('/api/base-geral/faturamento' + (filterQuery ? '?' + filterQuery : '')),
+        queryFn:()=>api.request<unknown>('/api/base-geral/faturamento'),
       });
       if (serial !== billingSequence.current) return;
       if (!validRegularBilling(response)) throw new Error('Resultado de faturamento inválido.');
@@ -211,7 +211,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     } finally {
       if (serial === billingSequence.current) setBillingPending(false);
     }
-  }, [portfolio, filterKey, filterQuery, canViewBilling]);
+  }, [portfolio, filterKey, canViewBilling]);
 
   useEffect(() => { if(visible)void refresh(); }, [refresh,visible]);
   useEffect(() => { if(visible && portfolio === 'agibank_mba' && canViewBilling)void refreshBilling(); }, [refreshBilling,visible,portfolio,canViewBilling]);
@@ -253,16 +253,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const estimatedRevenue = currentBilling?.total_amount ?? null;
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
   const productTotal = products.reduce((sum, row) => sum + Number(row.value), 0);
-  // Only brand-neutral and native Backoffice tokens: no imported rainbow palette.
-  const productColors = ['var(--mba-blue)', 'var(--mba-orange)', 'var(--mba-text-2)', 'var(--mba-border-strong)', 'var(--mba-muted)', 'var(--mba-text)', 'var(--mba-border)'];
-  const productGradient = productTotal > 0 ? {
-    background: 'conic-gradient(' + products.map((row, index) => {
-      const start = products.slice(0,index).reduce((sum,item)=>sum+Number(item.value),0)/productTotal*100;
-      const end = products.slice(0,index+1).reduce((sum,item)=>sum+Number(item.value),0)/productTotal*100;
-      return productColors[index % productColors.length] + ' ' + start + '% ' + end + '%';
-    }).join(',') + ')',
-  } : undefined;
-
   useEffect(() => {
     let cancelled = false;
     setClosingCount(null);
@@ -398,23 +388,19 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       </button>)}
     </div>
     <div className="base-geral-bottom">
-      <section className="base-geral-panel base-geral-products-chart" id="base-geral-produtos">
-        <header><div><h2>Produto</h2><span className="base-geral-context">Distribuição da carteira</span></div></header>
-        <div className="base-geral-chart-area">
-          <button type="button" className={'base-geral-donut ' + (!productTotal ? 'is-unavailable' : '')}
-            disabled={!productTotal}
-            style={productGradient} onClick={() => setProduct(products[0]?.label || '')}
-            aria-label="Filtrar pelo produto de maior participação">
-            <span><strong>{productTotal ? number(productTotal) : '—'}</strong><small>processos</small></span>
-          </button>
-          <div className="base-geral-product-legend">
-            {products.length ? products.map((item,index) => <button type="button" key={item.label}
-              onClick={() => setProduct(item.label)} aria-label={'Filtrar pelo produto ' + item.label}>
-              <i style={{background:productColors[index % productColors.length]}}/>
-              <span title={item.label}>{item.label}</span><strong>{number(item.value)}</strong>
-              <small>{productTotal ? (Number(item.value)/productTotal*100).toFixed(1).replace('.', ',') : '0'}%</small>
-            </button>) : <p className="base-geral-unavailable">Nenhum produto encontrado.</p>}
-          </div>
+      <section className="base-geral-panel base-geral-products-table" id="base-geral-produtos">
+        <header><div><h2>Produto</h2><span className="base-geral-context">Distribuição por produto</span></div>
+          <span className="base-geral-tally">{number(productTotal)} processos</span>
+        </header>
+        <div className="base-geral-table-scroll">
+          <table className="base-geral-products">
+            <thead><tr><th>Produto</th><th>Processos</th><th>Participação</th><th>Detalhar</th></tr></thead>
+            <tbody>{products.length ? products.map(row => <tr key={row.label}>
+              <td>{row.label}</td><td>{number(row.value)}</td>
+              <td>{productTotal ? (Number(row.value)/productTotal*100).toFixed(1).replace('.', ',') : '0'}%</td>
+              <td><button type="button" onClick={() => setProduct(row.label)} aria-label={'Filtrar pelo produto ' + row.label}>Ver relação <ArrowUpRight size={12}/></button></td>
+            </tr>) : <tr><td colSpan={4} className="base-geral-empty">Nenhum produto encontrado.</td></tr>}</tbody>
+          </table>
         </div>
       </section>
       <section className="base-geral-panel base-geral-comparison">

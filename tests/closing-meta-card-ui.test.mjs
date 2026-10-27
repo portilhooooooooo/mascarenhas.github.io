@@ -5,12 +5,12 @@ const style=readFileSync(new URL('../src/dashboard/encerramentos.css',import.met
 const metric=page.slice(page.indexOf("function Metrics("),page.indexOf("type QueueView"));
 assert.match(metric,/closing-kpi closing-kpi-button closing-goal-kpi mba-metric-card/);
 assert.match(metric,/className="closing-kpi-top"[\s\S]*?closing-goal-kpi-title">Meta<\/span>[\s\S]*?<Target size=\{15\}/);
-assert.match(metric,/closing-goal-kpi-body"[\s\S]*?<strong className="closing-gauge-value">\{card.value\}<\/strong>[\s\S]*?<svg viewBox="0 0 104 57"/);
+assert.match(metric,/closing-goal-kpi-progress/);
 assert.match(metric,/goalPercent!==null\?percent\(goalPercent\):'—'/);
 assert.match(metric,/document\.getElementById\('closing-aging-target'\)/);
-assert.match(metric,/strokeDashoffset=\{\(1-\(goalPercent\?\?0\)\/100\)\*Math\.PI\*43\}/);
-assert.match(style,/closing-goal-kpi-body\{display:flex;align-items:center;justify-content:space-between/);
+assert.match(metric,/goalPercent \?\? 0/);
+assert.match(style,/closing-goal-kpi-body\{display:flex;flex-direction:column/);
 assert.match(style,/closing-goal-kpi \.closing-gauge-value\{[^}]*font-size:25px/);
 assert.doesNotMatch(style,/closing-goal-kpi \.closing-gauge-value\{[^}]*position:absolute/);
-assert.match(style,/@media\(max-width:670px\)[^\n]*closing-goal-kpi \.closing-gauge-value\{font-size:22px\}/);
+assert.match(style,/closing-goal-kpi-progress\{display:block;height:5px/);
 console.log('Meta card: KPI hierarchy, accessible click target, responsive gauge and unchanged calculation.');

@@ -391,3 +391,19 @@
 @media(max-width:750px){
   .closing-goal-summary{flex-wrap:wrap;justify-content:flex-end;gap:5px 10px}
 }
+
+/* Metric cards: 100px platform rhythm, including Meta. */
+.closing-page-v2{max-width:1480px}
+.closing-kpis-main{gap:9px}
+.closing-kpi-button,.closing-goal-kpi{height:100px;min-height:100px;padding:13px 14px}
+.closing-goal-kpi .closing-kpi-top{width:100%}
+.closing-goal-kpi-body{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:9px;min-width:0;min-height:0}
+.closing-goal-kpi .closing-gauge-value{font-size:25px;line-height:1.1}
+.closing-goal-kpi-progress{display:block;height:5px;width:100%;border-radius:999px;background:var(--mba-border);overflow:hidden}
+.closing-goal-kpi-progress i{display:block;height:100%;border-radius:inherit;background:var(--mba-orange);transition:width .18s ease}
+.closing-kpi-top{font-size:11px}
+.closing-heading{margin-bottom:12px}
+.closing-filter-row{padding:10px 12px;margin-bottom:10px}
+.closing-surface{padding:14px 16px}
+.closing-aging{padding:12px 14px}
+@media(max-width:620px){.closing-kpi-button,.closing-goal-kpi{height:100px;min-height:100px}}

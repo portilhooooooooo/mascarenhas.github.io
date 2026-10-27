@@ -182,3 +182,18 @@
 .base-geral-skeleton{display:inline-block;width:74px;height:23px;border-radius:5px;vertical-align:middle;background:var(--mba-subtle);animation:base-geral-shimmer 1.35s ease-in-out infinite}
 @keyframes base-geral-shimmer{0%,100%{opacity:.5}50%{opacity:.95}}
 @media(prefers-reduced-motion:reduce){.base-geral-skeleton{animation:none}}
+
+/* Cards follow the platform's 100px metric rhythm. Product is a table again. */
+.base-geral-kpis-primary .base-geral-card,.base-geral-kpis-status .base-geral-card{
+  height:100px;min-height:100px;padding:13px 15px;
+}
+.base-geral-kpis-primary .base-geral-card strong{font-size:26px}
+.base-geral-kpis-status .base-geral-card strong{font-size:24px}
+.base-geral-revenue-note{font-size:10px;white-space:nowrap}
+.base-geral-products-table .base-geral-products th{font-size:10.5px;font-weight:600}
+.base-geral-products-table .base-geral-products td{font-size:11.5px;padding:11px 10px}
+.base-geral-products-table .base-geral-products tr:hover td{background:var(--mba-subtle)}
+.base-geral-bottom .base-geral-panel{min-height:240px}
+@media(max-width:620px){
+ .base-geral-kpis-primary .base-geral-card,.base-geral-kpis-status .base-geral-card{height:100px;min-height:100px}
+}

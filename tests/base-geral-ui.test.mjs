@@ -56,9 +56,9 @@ test('Base Geral is purely drilldown-driven without CSV or manual refresh contro
   assert.match(page,/onClick=\{\(\) => openDetail\(key\)\}/);
   assert.match(page,/className="base-geral-kpis base-geral-kpis-status"/);
   assert.match(page,/catalog\.slice\(3\)/);
-  assert.match(page,/base-geral-products-chart/);
-  assert.match(page,/productGradient/);
-  assert.match(page,/base-geral-product-legend/);
+  assert.match(page,/base-geral-products-table/);
+  assert.match(page,/productTotal/);
+  assert.match(page,/className="base-geral-products"/);
   assert.match(page,/base-geral-comparison/);
   assert.match(styles,/\.base-geral-kpis-status\{grid-template-columns:repeat\(5/);
   assert.match(styles,/\.base-geral-bottom\{grid-template-columns:repeat\(2/);
