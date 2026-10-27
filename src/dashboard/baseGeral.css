@@ -122,3 +122,17 @@
 @media(max-width:1470px){.base-geral-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:920px){.base-geral-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.base-geral-overlay{padding:8px}.base-geral-dialog{max-height:calc(100dvh - 16px)}.base-geral-dialog-toolbar{flex-wrap:wrap}.base-geral-dialog-toolbar form{max-width:none;width:100%}.base-geral-header{align-items:flex-start}.base-geral-card{min-height:95px;padding:12px}.base-geral-card strong{font-size:22px}.base-geral-panel-actions{gap:7px}.base-geral-panel-actions .base-geral-tally{display:none}}
+
+/* Faturamento da Regular usa a mesma hierarquia de KPIs e não altera outras carteiras. */
+.base-geral-kpis-regular{grid-template-columns:repeat(3,minmax(0,1fr))}
+.base-geral-revenue-card strong{font-size:clamp(20px,2vw,28px);white-space:nowrap}
+.base-geral-revenue-card:disabled{cursor:default;opacity:.65;transform:none;box-shadow:none}
+.base-geral-revenue-note{margin-top:auto;color:var(--mba-muted);font-size:10px}
+.base-geral-revenue-dialog{width:min(480px,100%)}
+.base-geral-revenue-breakdown{display:grid;gap:14px}
+.base-geral-revenue-breakdown>div{display:flex;align-items:center;justify-content:space-between;gap:14px;font-size:12px;color:var(--mba-text-2)}
+.base-geral-revenue-breakdown strong{font-weight:700;color:var(--mba-text);font-variant-numeric:tabular-nums}
+.base-geral-revenue-total{border-top:1px solid var(--mba-border);padding-top:14px}
+.base-geral-revenue-total strong{font-size:20px;letter-spacing:-.03em}
+@media(max-width:920px){.base-geral-kpis-regular{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.base-geral-kpis-regular{grid-template-columns:1fr}}
