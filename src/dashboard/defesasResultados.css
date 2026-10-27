@@ -48,3 +48,37 @@
 .defense-results-table--reschedule th:nth-child(3),.defense-results-table--reschedule td:nth-child(3){width:112px;min-width:112px;white-space:nowrap}
 .defense-results-table--reschedule th:nth-child(4),.defense-results-table--reschedule td:nth-child(4){min-width:310px;white-space:normal}
 @media(max-width:520px){.defense-results-dialog-toolbar{flex-wrap:wrap}.defense-results-dialog-toolbar label{max-width:none;flex:1 1 190px}.defense-results-export{flex:0 0 auto}}
+
+/* Resultados > Defesas / Protocolos: same 100px cards, gutters and content width as Encerramentos. */
+.defense-results-page{
+  width:100%;
+  max-width:1480px;
+  margin:0 auto;
+}
+.defense-results-heading{margin:0 0 12px}
+.defense-results-heading h1{font-size:19px}
+.defense-results-grid{gap:9px}
+.defense-results-card{
+  height:100px;
+  min-height:100px;
+  padding:13px 14px;
+  gap:13px;
+  border-radius:9px;
+  box-shadow:none;
+}
+.defense-results-card-heading{font-size:11px;font-weight:500}
+.defense-results-card-heading svg{width:15px;height:15px}
+.defense-results-card strong{font-size:25px;font-weight:700}
+.defense-results-card:hover,.defense-results-card:focus-visible{
+  box-shadow:none;
+  background:var(--mba-subtle);
+}
+@media(max-width:520px){
+  .defense-results-card{
+    height:100px;
+    min-height:100px;
+    padding:13px 14px;
+    gap:13px;
+  }
+  .defense-results-card strong{font-size:25px}
+}

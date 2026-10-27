@@ -407,3 +407,42 @@
 .closing-surface{padding:14px 16px}
 .closing-aging{padding:12px 14px}
 @media(max-width:620px){.closing-kpi-button,.closing-goal-kpi{height:100px;min-height:100px}}
+
+/* Seven equal-height metrics. Rollback the Meta card to its semicircle. */
+.closing-kpis-main{grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+.closing-goal-kpi-body{
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px;
+  min-width:0;
+  min-height:42px;
+}
+.closing-goal-kpi .closing-gauge{
+  display:block;
+  width:90px;
+  height:50px;
+  max-width:48%;
+  min-width:0;
+  flex-shrink:1;
+  overflow:visible;
+}
+.closing-ticket-kpi strong{font-size:clamp(17px,1.4vw,25px);white-space:nowrap;letter-spacing:-.04em}
+.closing-ticket-dialog{
+  background:var(--mba-surface);
+  color:var(--mba-text);
+  border:1px solid var(--mba-border);
+  border-radius:10px;
+  width:min(520px,calc(100vw - 32px));
+  margin:auto;
+  padding:20px 22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.14);
+}
+.closing-ticket-dialog header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}
+.closing-ticket-dialog h2{font-size:15px;font-weight:650;margin:0}
+.closing-ticket-dialog header button{border:0;background:transparent;color:var(--mba-text-2);cursor:pointer}
+.closing-ticket-dialog>strong{display:block;font-size:28px;font-variant-numeric:tabular-nums}
+.closing-ticket-dialog>p{color:var(--mba-text-2);font-size:12px;line-height:1.55}
+.closing-ticket-dialog>span,.closing-ticket-dialog>small{display:block;color:var(--mba-muted);font-size:11px;margin-top:8px}
+@media(max-width:1390px){.closing-kpis-main{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:750px){.closing-kpis-main{grid-template-columns:repeat(2,minmax(0,1fr))}}

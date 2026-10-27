@@ -58,6 +58,6 @@ assert.ok(ui.includes('goalPercent!==null?percent(goalPercent)'));
 assert.ok(!ui.includes('Pontuação Aging'));
 assert.ok(ui.includes('closing-aging-card-gap'));
 assert.ok(ui.includes('closing-goal-footer'));
-assert.ok(ui.includes('closing-goal-kpi-progress'));
+assert.ok(ui.includes('className="closing-gauge"'));
 assert.ok(ui.includes('closing-gauge-value'));
 console.log('Metas Regular, composição, percentual faltante e GAP validados.');

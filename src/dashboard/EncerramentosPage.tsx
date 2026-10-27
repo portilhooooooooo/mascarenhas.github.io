@@ -1,7 +1,7 @@
 import { analyticalRead } from '../analytics/readScheduler';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, Wallet, X } from 'lucide-react';
 import { getClosingCases, sendClosingsToBenner, type ClosingCase, type ClosingStatus, type ClosingValidatedFilter } from './operacaoEncerramentosService';
 import { regularAgingGoals, regularAgingRanking, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
@@ -99,6 +99,7 @@ const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   : ['0–3 meses', '4–10 meses', '>10 meses', 'Sem tag / não reconhecida'];
 const num = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 const percent = (value: number) => value.toFixed(1).replace('.', ',') + '%';
+const currency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
 const valueOrZero = (value: number | undefined | null) => Number(value || 0);
 
 function localISO(daysBack: number): string {
@@ -257,6 +258,10 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
   const goals=agingMensal && dados?.carteira==='Agibank Regular'
     ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
+  const [ticketDetailsOpen, setTicketDetailsOpen] = useState(false);
+  const historicalTicket = dados?.indicadores?.ticket_medio;
+  const historicalSample = dados?.indicadores?.ticket_amostra ?? 0;
+  const expectedTicket = typeof historicalTicket === 'number' && Number.isFinite(historicalTicket) && historicalTicket >= 0 && historicalSample > 0 ? historicalTicket : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
     {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
@@ -276,9 +281,11 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
           </div>
           <div className="closing-goal-kpi-body">
             <strong className="closing-gauge-value">{card.value}</strong>
-            <span className="closing-goal-kpi-progress" aria-hidden="true">
-              <i style={{width:(goalPercent ?? 0)+'%'}}/>
-            </span>
+            <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
+              <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
+              <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
+                strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
+            </svg>
           </div>
         </button>
       : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"
@@ -290,6 +297,21 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
           <strong>{card.value}</strong>
         </button>)}
+    <button className="closing-kpi closing-kpi-button mba-metric-card closing-ticket-kpi" type="button"
+      onClick={()=>setTicketDetailsOpen(true)}
+      aria-label={'Ticket médio esperado: '+(expectedTicket === null ? 'indisponível' : currency(expectedTicket))+'. Ver metodologia'}>
+      <div className="closing-kpi-top"><span>Ticket médio esperado</span><Wallet size={15} strokeWidth={1.7}/></div>
+      <strong>{expectedTicket === null ? '—' : currency(expectedTicket)}</strong>
+    </button>
+    {ticketDetailsOpen && <div className="closing-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setTicketDetailsOpen(false);}}>
+      <section className="closing-ticket-dialog" role="dialog" aria-modal="true" aria-label="Ticket médio esperado">
+        <header><h2>Ticket médio esperado</h2><button type="button" onClick={()=>setTicketDetailsOpen(false)} aria-label="Fechar detalhes"><X size={18}/></button></header>
+        <strong>{expectedTicket === null ? '—' : currency(expectedTicket)}</strong>
+        <p>Estimativa baseada na média dos valores pagos registrados nos encerramentos com informação financeira, conforme os filtros selecionados.</p>
+        <span>Amostra: {num(historicalSample)} registros com valor pago.</span>
+        <small>Não representa faturamento, antecipação de parcelas ou valor garantido de recebimento.</small>
+      </section>
+    </div>}
   </section>;
 }
 
