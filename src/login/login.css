@@ -146,7 +146,7 @@ body[data-react-login="true"] #login-error { display:none!important; }
 }
 #login-view .react-login-visual-caption {
   position:absolute;z-index:2;bottom:clamp(24px,3vw,38px);
-  left:clamp(24px,3vw,38px);width:47%;
+  right:clamp(24px,3vw,38px);width:47%;
   display:grid;gap:9px;justify-items:start;text-align:left;
 }
 #login-view .react-login-visual-caption span {
