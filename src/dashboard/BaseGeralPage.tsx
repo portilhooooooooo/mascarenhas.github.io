@@ -21,6 +21,26 @@ type Summary = {
   suspended?: number | null;
   without_entry_date?: number | null;
 };
+type RegularBilling = {
+  billing_month: string; source_send_month: string;
+  fee_brl: number; installments_per_case: number;
+  monthly_cases: number; monthly_amount: number;
+  sent_cases: number; advanced_cases: number; advanced_installments: number;
+  advance_amount: number; total_amount: number;
+  missing_entry_date: number; not_under_35_years: number;
+};
+const validRegularBilling = (value: unknown): value is RegularBilling => {
+  if (!value || typeof value !== 'object') return false;
+  const v = value as Partial<RegularBilling>;
+  const integers = [v.fee_brl, v.installments_per_case, v.monthly_cases,
+    v.monthly_amount, v.sent_cases, v.advanced_cases, v.advanced_installments,
+    v.advance_amount, v.total_amount, v.missing_entry_date, v.not_under_35_years];
+  return /^20\d{2}-(0[1-9]|1[0-2])$/.test(v.billing_month || '') &&
+    /^20\d{2}-(0[1-9]|1[0-2])$/.test(v.source_send_month || '') &&
+    integers.every(x => typeof x === 'number' && Number.isSafeInteger(x) && x >= 0) &&
+    v.fee_brl === 35 && v.installments_per_case === 18 &&
+    v.total_amount === v.monthly_amount! + v.advance_amount!;
+};
 type Dashboard = {
   summary: Summary;
   charts: { por_produto: Row[] };
@@ -47,15 +67,9 @@ const catalog: Array<{ key: Category; label: string; subtitle: string; icon: Luc
 const number = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value)
   ? new Intl.NumberFormat('pt-BR').format(value) : '—';
 const validNumber = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
-const REGULAR_CASE_FEE = 35;
 const money = (value: number | null) => value === null ? '—' : new Intl.NumberFormat('pt-BR', {
   style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0,
 }).format(value);
-export const regularEstimatedRevenue = (portfolio: string, total: unknown): number | null => {
-  if (portfolio !== 'agibank_mba' || typeof total !== 'number' || !Number.isSafeInteger(total) || total < 0) return null;
-  const amount = total * REGULAR_CASE_FEE;
-  return Number.isSafeInteger(amount) ? amount : null;
-};
 const dateStart = (period: Period) => {
   if (period === 'all') return '';
   const d = new Date();
@@ -149,6 +163,11 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [closingCount, setClosingCount] = useState<{ key: string; value: number } | null>(null);
   const [detail, setDetail] = useState<Category | null>(null);
   const [revenueOpen, setRevenueOpen] = useState(false);
+  const [billing, setBilling] = useState<RegularBilling | null>(null);
+  const [billingKey, setBillingKey] = useState('');
+  const [billingPending, setBillingPending] = useState(false);
+  const [billingError, setBillingError] = useState('');
+  const billingSequence = useRef(0);
   const [tutelaOutcome, setTutelaOutcome] = useState<'deferidas' | 'indeferidas'>('deferidas');
   const [detailSearchInput, setDetailSearchInput] = useState('');
   const [detailSearch, setDetailSearch] = useState('');
@@ -192,10 +211,38 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     }
   }, [filterKey, filterQuery]);
 
+  const refreshBilling = useCallback(async (force = false) => {
+    if (!visibleRef.current || portfolio !== 'agibank_mba') return;
+    const serial = ++billingSequence.current;
+    const api = getApi();
+    const queryKey = ['runtime-v2',runtimeScope(),'base-geral','faturamento',filterQuery] as const;
+    setBillingPending(true);
+    try {
+      if (!api) throw new Error('API indisponível.');
+      if (force) await runtimeQueries.invalidateQueries({queryKey:[...queryKey],exact:true});
+      const response = await runtimeQueries.fetchQuery({
+        queryKey:[...queryKey],staleTime:75000,
+        queryFn:()=>api.request<unknown>('/api/base-geral/faturamento' + (filterQuery ? '?' + filterQuery : '')),
+      });
+      if (serial !== billingSequence.current) return;
+      if (!validRegularBilling(response)) throw new Error('Resultado de faturamento inválido.');
+      setBilling(response); setBillingKey(filterKey); setBillingError('');
+    } catch (cause) {
+      if (serial === billingSequence.current) {
+        setBilling(null); setBillingKey(''); setBillingError(cause instanceof Error ? cause.message : 'Faturamento indisponível.');
+      }
+    } finally {
+      if (serial === billingSequence.current) setBillingPending(false);
+    }
+  }, [portfolio, filterKey, filterQuery]);
+
   useEffect(() => { if(visible)void refresh(); }, [refresh,visible]);
+  useEffect(() => { if(visible && portfolio === 'agibank_mba')void refreshBilling(); }, [refreshBilling,visible,portfolio]);
   useEffect(() => {
     const changed = () => {
       ++requestSequence.current;
+      ++billingSequence.current;
+      setBilling(null); setBillingKey(''); setBillingPending(false); setBillingError('');
       setPortfolio((window as Env).MBA_API?.getPortfolioId?.() || '');
       setRevision(value => value + 1);
       setUf(''); setProduct(''); setSituation(''); setResolution('');
@@ -208,15 +255,20 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     return () => { window.removeEventListener('mba:portfolio-changed', changed); ++requestSequence.current; };
   }, []);
   useEffect(() => {
-    const tick = () => { if (visibleRef.current && !document.hidden) void refresh(true); };
+    const tick = () => {
+      if (visibleRef.current && !document.hidden) {
+        void refresh(true); void refreshBilling(true);
+      }
+    };
     const interval = window.setInterval(tick, 300000);
     document.addEventListener('visibilitychange', tick);
     return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', tick); };
-  }, [refresh]);
+  }, [refresh,refreshBilling]);
 
   const shown = dataKey === filterKey ? data : null;
   const summary = shown?.summary;
-  const estimatedRevenue = regularEstimatedRevenue(portfolio, summary?.total);
+  const currentBilling = billingKey === filterKey && portfolio === 'agibank_mba' ? billing : null;
+  const estimatedRevenue = currentBilling?.total_amount ?? null;
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
 
   useEffect(() => {
@@ -388,7 +440,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <div><h1>Base Geral</h1></div>
       <div className="base-geral-actions">
         <span>{portfolioName(portfolio)}</span>
-        <button type="button" onClick={() => void refresh(true)} disabled={pending} aria-label="Atualizar Base Geral" title="Atualizar Base Geral"><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
+        <button type="button" onClick={() => { void refresh(true); void refreshBilling(true); }} disabled={pending || billingPending} aria-label="Atualizar Base Geral" title="Atualizar Base Geral"><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
       </div>
     </header>
     <div className="base-geral-filters">
@@ -415,13 +467,15 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       </button>)}
       {portfolio === 'agibank_mba' && <button type="button"
         className="base-geral-card mba-metric-card base-geral-revenue-card"
-        title="Faturamento estimado: R$ 35 por processo da Regular"
+        title="Faturamento projetado: 18 mensalidades de R$ 35 e antecipação pelos andamentos enviados no mês corrente"
         aria-label="Detalhar faturamento estimado da Regular"
         disabled={estimatedRevenue === null}
         onClick={() => setRevenueOpen(true)}>
         <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={15} strokeWidth={1.7}/></span>
         <strong>{money(estimatedRevenue)}</strong>
-        <span className="base-geral-revenue-note">Estimado · R$ 35/processo</span>
+        <span className="base-geral-revenue-note">{currentBilling
+          ? 'Projetado · ' + currentBilling.billing_month.slice(5) + '/' + currentBilling.billing_month.slice(0,4)
+          : billingPending ? 'Calculando…' : billingError ? 'Consulta indisponível' : '18 × R$ 35'}</span>
       </button>}
     </div>
     <div className="base-geral-bottom">
@@ -471,15 +525,18 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     }}>
       <section className="base-geral-dialog base-geral-revenue-dialog" role="dialog" aria-modal="true" aria-label="Cálculo de faturamento estimado">
         <header className="base-geral-dialog-head">
-          <div><h2>Faturamento</h2><p>Regular · estimativa</p></div>
+          <div><h2>Faturamento</h2><p>Regular · billing {currentBilling?.billing_month.slice(5)}/{currentBilling?.billing_month.slice(0,4)}</p></div>
           <button type="button" className="base-geral-dismiss" onClick={() => setRevenueOpen(false)} aria-label="Fechar faturamento"><X size={19}/></button>
         </header>
         <div className="base-geral-revenue-breakdown">
-          <div><span>Processos considerados</span><strong>{number(summary?.total)}</strong></div>
-          <div><span>Valor unitário</span><strong>R$ 35,00</strong></div>
-          <div className="base-geral-revenue-total"><span>Faturamento estimado</span><strong>{money(estimatedRevenue)}</strong></div>
+          <div><span>Mensalidades ({number(currentBilling?.monthly_cases)})</span><strong>{money(currentBilling?.monthly_amount ?? null)}</strong></div>
+          <div><span>Andamentos enviados em {currentBilling?.source_send_month.slice(5)}/{currentBilling?.source_send_month.slice(0,4)}</span><strong>{number(currentBilling?.sent_cases)}</strong></div>
+          <div><span>Processos com antecipação</span><strong>{number(currentBilling?.advanced_cases)}</strong></div>
+          <div><span>Parcelas vincendas antecipadas</span><strong>{number(currentBilling?.advanced_installments)}</strong></div>
+          <div><span>Antecipações</span><strong>{money(currentBilling?.advance_amount ?? null)}</strong></div>
+          <div className="base-geral-revenue-total"><span>Faturamento projetado</span><strong>{money(estimatedRevenue)}</strong></div>
         </div>
-        <p className="base-geral-caption">Calculado sobre os processos do período e filtros selecionados. Não representa valores faturados ou recebidos.</p>
+        <p className="base-geral-caption">Processos com menos de 35 anos desde a entrada, até 18 parcelas de R$ 35. Antecipação baseada exclusivamente no primeiro andamento de encerramento confirmado como enviado ao Benner no mês anterior ao billing. Estimativa sujeita à conciliação; não representa valores faturados ou recebidos.</p>
       </section>
     </div>}
     {detail && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
