@@ -2,15 +2,17 @@ import {runtimeScope} from '../tasks/runtimeQueries';
 import { useModuleVisible } from './useModuleVisible';
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
+import { DefesasResultadosPage } from './DefesasResultadosPage';
 import { BaseGeralPage } from './BaseGeralPage';
 import { RankingPage } from '../ranking/RankingPage';
 import './gestaoMetabase.css';
 
-type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking';
+type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking' | 'defesas';
 
 function currentAnalyticsTab(): AnalyticsTab {
   const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
   if (path === 'analytics/ranking') return 'ranking';
+  if (path === 'analytics/defesas') return 'defesas';
   return path === 'analytics/encerramentos' ? 'encerramentos' : 'geral';
 }
 function navigateAnalytics(route: string) {
@@ -32,6 +34,8 @@ export function GestaoProcessualPage() {
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
   const canViewRanking = canViewAnalytics && policy?.canAccess('ranking') === true;
+  const portfolio = (window as Window & {MBA_API?: {getPortfolioId?: () => string}}).MBA_API?.getPortfolioId?.();
+  const canViewEnterDefenses = canViewAnalytics && permissions['tasks.view'] === true && portfolio === 'agibank_enter';
 
   useEffect(() => {
     const sync = (event: Event) => {
@@ -64,7 +68,9 @@ export function GestaoProcessualPage() {
   }, []);
   // Mantém a intenção de navegação entre trocas de carteira.
   // Enquanto a permissão não existir, exibe apenas a visão autorizada.
-  const displayedTab: AnalyticsTab = activeTab === 'ranking' && canViewRanking
+  const displayedTab: AnalyticsTab = activeTab === 'defesas' && canViewEnterDefenses
+    ? 'defesas'
+    : activeTab === 'ranking' && canViewRanking
     ? 'ranking'
     : (activeTab === 'encerramentos' || !canViewAnalytics) && canViewClosing
       ? 'encerramentos'
@@ -82,9 +88,11 @@ export function GestaoProcessualPage() {
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Base Geral</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
+      {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
     </nav>
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
     {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
     {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage key={runtimeScope()}/></div> : null}
+    {canViewEnterDefenses && visitedTabs.includes('defesas') ? <div style={{display: displayedTab === 'defesas' ? 'contents' : 'none'}}><DefesasResultadosPage key={runtimeScope()} visible={visible && displayedTab==='defesas'}/></div> : null}
   </div>;
 }
