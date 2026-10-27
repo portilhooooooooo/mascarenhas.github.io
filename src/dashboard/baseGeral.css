@@ -136,3 +136,49 @@
 .base-geral-revenue-total strong{font-size:20px;letter-spacing:-.03em}
 @media(max-width:920px){.base-geral-kpis-regular{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.base-geral-kpis-regular{grid-template-columns:1fr}}
+
+/* Base Geral 2026-10-27 — native Backoffice palette, cards for statuses, two donuts. */
+.base-geral-page{max-width:1640px;padding-top:6px}
+.base-geral-header{margin-bottom:14px}
+.base-geral-header h1{font-size:19px;font-weight:650;letter-spacing:-.025em}
+.base-geral-actions{gap:0}
+.base-geral-filters{gap:11px;padding:10px 12px;margin-bottom:18px}
+.base-geral-kpis{gap:11px}
+.base-geral-kpis-primary{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px}
+.base-geral-kpis-with-billing{grid-template-columns:repeat(4,minmax(0,1fr))}
+.base-geral-kpis-status{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:16px}
+.base-geral-kpis-primary .base-geral-card{min-height:118px;padding:16px 17px}
+.base-geral-kpis-primary .base-geral-card strong{font-size:28px;font-weight:650}
+.base-geral-kpis-status .base-geral-card{min-height:94px;padding:13px 15px}
+.base-geral-kpis-status .base-geral-card strong{font-size:23px;font-weight:650}
+.base-geral-card{gap:12px}
+.base-geral-card-top{font-size:11.5px}
+.base-geral-card-top svg{width:14px;height:14px}
+.base-geral-bottom{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:12px}
+.base-geral-panel{padding:18px 20px;min-height:278px}
+.base-geral-panel>header{margin-bottom:14px}
+.base-geral-panel h2{font-size:13px;font-weight:650}
+.base-geral-context{display:block;margin-top:4px;color:var(--mba-muted);font-size:10.5px}
+.base-geral-chart-area{justify-content:flex-start;gap:22px;min-height:190px}
+.base-geral-donut{width:152px;height:152px;flex-basis:152px}
+.base-geral-donut::after{inset:21px}
+.base-geral-donut strong{font-size:21px}
+.base-geral-donut:disabled{cursor:default}
+.base-geral-product-legend{display:flex;flex:1;min-width:0;flex-direction:column;gap:1px}
+.base-geral-product-legend button{display:grid;grid-template-columns:9px minmax(0,1fr) auto 44px;align-items:center;gap:9px;padding:7px 4px;min-height:30px;text-align:left;color:var(--mba-text-2);border:0;border-bottom:1px solid var(--mba-border);background:transparent;font:inherit;font-size:11px;cursor:pointer}
+.base-geral-product-legend button:hover{background:var(--mba-subtle)}
+.base-geral-product-legend i{width:9px;height:9px;border-radius:3px}
+.base-geral-product-legend span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.base-geral-product-legend strong{color:var(--mba-text);font-size:11px;font-weight:650;font-variant-numeric:tabular-nums}
+.base-geral-product-legend small{text-align:right;color:var(--mba-muted);font-size:10.5px;font-variant-numeric:tabular-nums}
+.base-geral-donut-labels{gap:8px}
+.base-geral-donut-labels>button{gap:8px}
+.base-geral-products-chart .base-geral-donut:focus-visible,.base-geral-product-legend button:focus-visible{outline:2px solid var(--mba-blue);outline-offset:2px}
+@media(max-width:1300px){.base-geral-bottom{grid-template-columns:1fr}.base-geral-kpis-status{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:950px){.base-geral-kpis-primary,.base-geral-kpis-with-billing{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.base-geral-kpis-status{grid-template-columns:repeat(2,minmax(0,1fr))}.base-geral-bottom{gap:10px}.base-geral-panel{padding:15px;min-height:0}.base-geral-chart-area{flex-wrap:wrap;justify-content:center}.base-geral-product-legend{width:100%;flex-basis:100%}}
+
+/* Loading is contained inside the metrics instead of displacing the layout. */
+.base-geral-skeleton{display:inline-block;width:74px;height:23px;border-radius:5px;vertical-align:middle;background:var(--mba-subtle);animation:base-geral-shimmer 1.35s ease-in-out infinite}
+@keyframes base-geral-shimmer{0%,100%{opacity:.5}50%{opacity:.95}}
+@media(prefers-reduced-motion:reduce){.base-geral-skeleton{animation:none}}

@@ -2,7 +2,7 @@ import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight, CheckCircle2, CirclePause, Clock3, FileCheck2,
-  Download, FileX2, FolderOpen, Hourglass, RefreshCw, Search, ShieldAlert, Wallet, X,
+  FileX2, FolderOpen, Hourglass, Search, ShieldAlert, Wallet, X,
   type LucideIcon,
 } from 'lucide-react';
 import { getClosingCases } from './operacaoEncerramentosService';
@@ -113,27 +113,6 @@ const validDashboard = (value: unknown): value is Dashboard => {
 const getApi = () => (window as Env).MBA_AUTOMATION_API || (window as Env).MBA_API;
 
 
-// XLS/Excel-safe semicolon CSV with BOM; no formula from imported data is evaluated.
-export function serializeBaseGeralCsv(header: string[], rows: Array<Array<unknown>>) {
-  const safe = (value: unknown) => {
-    let text = String(value ?? '');
-    if (/^[\s]*[=+@\t\r]/.test(text) || /^-[^0-9]/.test(text)) text = "'" + text;
-    return '"' + text.replace(/"/g, '""') + '"';
-  };
-  return '\ufeff' + [header, ...rows].map(row => row.map(safe).join(';')).join('\r\n');
-}
-function saveCsv(filename: string, content: string) {
-  const uri = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8' }));
-  const a = document.createElement('a');
-  a.href = uri;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  window.setTimeout(() => URL.revokeObjectURL(uri), 1000);
-}
-
-
 function Select({ label, value, options, onChange }: {
   label: string; value: string; options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
@@ -163,6 +142,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [closingCount, setClosingCount] = useState<{ key: string; value: number } | null>(null);
   const [detail, setDetail] = useState<Category | null>(null);
   const [revenueOpen, setRevenueOpen] = useState(false);
+  const [canViewBilling, setCanViewBilling] = useState(() => (window as Window & {MBA_CURRENT_USER?: {permissions?: Record<string,boolean>}}).MBA_CURRENT_USER?.permissions?.['faturamento.view'] === true);
   const [billing, setBilling] = useState<RegularBilling | null>(null);
   const [billingKey, setBillingKey] = useState('');
   const [billingPending, setBillingPending] = useState(false);
@@ -171,9 +151,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [tutelaOutcome, setTutelaOutcome] = useState<'deferidas' | 'indeferidas'>('deferidas');
   const [detailSearchInput, setDetailSearchInput] = useState('');
   const [detailSearch, setDetailSearch] = useState('');
-  const [exporting, setExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState('');
-  const exportSequence = useRef(0);
   const [detailPage, setDetailPage] = useState(1);
   const [detailData, setDetailData] = useState<Paged | null>(null);
   const [detailPending, setDetailPending] = useState(false);
@@ -212,7 +189,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   }, [filterKey, filterQuery]);
 
   const refreshBilling = useCallback(async (force = false) => {
-    if (!visibleRef.current || portfolio !== 'agibank_mba') return;
+    if (!visibleRef.current || portfolio !== 'agibank_mba' || !canViewBilling) return;
     const serial = ++billingSequence.current;
     const api = getApi();
     const queryKey = ['runtime-v2',runtimeScope(),'base-geral','faturamento',filterQuery] as const;
@@ -234,10 +211,15 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     } finally {
       if (serial === billingSequence.current) setBillingPending(false);
     }
-  }, [portfolio, filterKey, filterQuery]);
+  }, [portfolio, filterKey, filterQuery, canViewBilling]);
 
   useEffect(() => { if(visible)void refresh(); }, [refresh,visible]);
-  useEffect(() => { if(visible && portfolio === 'agibank_mba')void refreshBilling(); }, [refreshBilling,visible,portfolio]);
+  useEffect(() => { if(visible && portfolio === 'agibank_mba' && canViewBilling)void refreshBilling(); }, [refreshBilling,visible,portfolio,canViewBilling]);
+  useEffect(() => {
+    const sync = () => setCanViewBilling((window as Window & {MBA_CURRENT_USER?: {permissions?: Record<string,boolean>}}).MBA_CURRENT_USER?.permissions?.['faturamento.view'] === true);
+    for (const event of ['mba:authenticated','mba:profile-ready','mba:logged-out','mba:session-expired']) window.addEventListener(event, sync);
+    return () => { for (const event of ['mba:authenticated','mba:profile-ready','mba:logged-out','mba:session-expired']) window.removeEventListener(event, sync); };
+  }, []);
   useEffect(() => {
     const changed = () => {
       ++requestSequence.current;
@@ -249,7 +231,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       setData(null); setDataKey(''); setClosingCount(null);
       setDetail(null); setRevenueOpen(false); setDetailData(null); setError('');
       setDetailSearch(''); setDetailSearchInput(''); setTutelaOutcome('deferidas');
-      exportSequence.current += 1; setExporting(false); setExportProgress('');
+
     };
     window.addEventListener('mba:portfolio-changed', changed);
     return () => { window.removeEventListener('mba:portfolio-changed', changed); ++requestSequence.current; };
@@ -267,9 +249,19 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
 
   const shown = dataKey === filterKey ? data : null;
   const summary = shown?.summary;
-  const currentBilling = billingKey === filterKey && portfolio === 'agibank_mba' ? billing : null;
+  const currentBilling = canViewBilling && billingKey === filterKey && portfolio === 'agibank_mba' ? billing : null;
   const estimatedRevenue = currentBilling?.total_amount ?? null;
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
+  const productTotal = products.reduce((sum, row) => sum + Number(row.value), 0);
+  // Only brand-neutral and native Backoffice tokens: no imported rainbow palette.
+  const productColors = ['var(--mba-blue)', 'var(--mba-orange)', 'var(--mba-text-2)', 'var(--mba-border-strong)', 'var(--mba-muted)', 'var(--mba-text)', 'var(--mba-border)'];
+  const productGradient = productTotal > 0 ? {
+    background: 'conic-gradient(' + products.map((row, index) => {
+      const start = products.slice(0,index).reduce((sum,item)=>sum+Number(item.value),0)/productTotal*100;
+      const end = products.slice(0,index+1).reduce((sum,item)=>sum+Number(item.value),0)/productTotal*100;
+      return productColors[index % productColors.length] + ' ' + start + '% ' + end + '%';
+    }).join(',') + ')',
+  } : undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -300,7 +292,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const donutReady = active != null && prescribed != null && active + prescribed > 0;
   const activeShare = donutReady ? active! / (active! + prescribed!) * 100 : 0;
   const chartStyle = donutReady
-    ? { background: 'conic-gradient(var(--mba-orange, #e87828) 0% ' + activeShare + '%, var(--mba-blue, #4577ba) ' + activeShare + '% 100%)' }
+    ? { background: 'conic-gradient(var(--mba-orange) 0% ' + activeShare + '%, var(--mba-blue) ' + activeShare + '% 100%)' }
     : undefined;
 
   const detailCategory = detail === 'injunction'
@@ -337,12 +329,11 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   }, [detail, detailPage, detailCategory, detailSearch, listSupported, filtersSupported, filterQuery, portfolio, revision]);
 
   const openDetail = (value: Category) => {
-    exportSequence.current += 1;
     setDetail(value); setDetailPage(1); setDetailData(null);
     setDetailSearch(''); setDetailSearchInput(''); setTutelaOutcome('deferidas');
-    setDetailError(''); setExportProgress(''); setExporting(false);
+    setDetailError('');
   };
-  const closeDetail = () => { exportSequence.current += 1; setExporting(false); setDetail(null); };
+  const closeDetail = () => setDetail(null);
   useEffect(() => {
     if (!detail && !revenueOpen) return;
     const keydown = (event: KeyboardEvent) => {
@@ -358,89 +349,11 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   }, [detail, revenueOpen]);
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
 
-  const exportDetails = async () => {
-    if (!detail || !listSupported || !filtersSupported || exporting || detailPending || !detailData) return;
-    const serial = ++exportSequence.current;
-    if (detail !== 'closing') {
-      const api = getApi();
-      if (!api) { setDetailError('API indisponível.'); return; }
-      const params = new URLSearchParams(filterQuery);
-      params.set('category', detailCategory || 'active');
-      if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
-      setExporting(true); setDetailError(''); setExportProgress('Gerando CSV completo na API...');
-      try {
-        const file = await api.request<{filename: string; csv: string; total: number}>(
-          '/api/base-geral/export?' + params.toString());
-        if (serial !== exportSequence.current) return;
-        if (typeof file.csv !== 'string' || !file.filename || !Number.isSafeInteger(file.total)) {
-          throw new Error('Resposta inválida da exportação.');
-        }
-        saveCsv(file.filename, file.csv);
-        setExportProgress(number(file.total) + ' registros exportados.');
-      } catch (cause) {
-        if (serial === exportSequence.current) setDetailError(
-          cause instanceof Error ? cause.message : 'Falha ao exportar CSV.');
-      } finally {
-        if (serial === exportSequence.current) setExporting(false);
-      }
-      return;
-    }
-    const total = detailData.total;
-    if (!Number.isSafeInteger(total) || total < 0 || total > 10000) {
-      setDetailError('A relação excede o limite de 10.000 registros da consulta paginada. É necessário exportar pelo backend.');
-      return;
-    }
-    const pageSize = 100;
-    const pages = Math.ceil(total / pageSize);
-    const api = getApi();
-    if (!api) { setDetailError('API indisponível.'); return; }
-    setExporting(true); setDetailError(''); setExportProgress('Preparando CSV...');
-    const all: ProcessRow[] = [];
-    try {
-      for (let first = 0; first < pages; first += 4) {
-        if (serial !== exportSequence.current) return;
-        const indexes = Array.from({ length: Math.min(4, pages - first) }, (_, i) => first + i);
-        const batches = await Promise.all(indexes.map(async index => {
-          if (detail === 'closing') {
-            const r = await getClosingCases('APTOS', pageSize, index * pageSize, detailSearch.trim(), 'todos', 'todos', 'nao', 'todos');
-            return (r.rows || []).map(row => ({
-              id: row.cnj, cnj: row.cnj, state: row.uf || '—', pasta: row.pasta,
-              tipo_validado: row.tipo_validado, situation: 'Apto, sem envio ao Benner',
-            } satisfies ProcessRow));
-          }
-          const params = new URLSearchParams(filterQuery);
-          params.set('category', detailCategory || 'active');
-          params.set('page', String(index + 1));
-          params.set('page_size', String(pageSize));
-          if (detailSearch.trim()) params.set('q', detailSearch.replace(/\D/g, '').slice(0, 20));
-          const r = await api.request<Paged>('/api/base-geral/processos?' + params.toString());
-          return r.rows || [];
-        }));
-        if (serial !== exportSequence.current) return;
-        batches.forEach(rows => all.push(...rows));
-        setExportProgress('Consultados ' + number(all.length) + ' de ' + number(total));
-      }
-      if (serial !== exportSequence.current) return;
-      if (all.length !== total) throw new Error('A relação mudou durante a exportação. Atualize a consulta antes de tentar novamente.');
-      const name = 'closing';
-      const csv = serializeBaseGeralCsv(
-        ['CNJ', 'Situação', 'UF', 'Pasta', 'Classificação', 'Data entrada', 'Produto', 'Encerramento'],
-        all.map(row => [row.cnj, row.situation || '', row.state || '', row.pasta || '', row.tipo_validado || '', row.entry_date || '', row.product || '', row.resolution || '']),
-      );
-      saveCsv('base_geral_' + name + '_' + portfolio + '.csv', csv);
-      setExportProgress(number(total) + ' registros exportados.');
-    } catch (cause) {
-      if (serial === exportSequence.current) setDetailError(cause instanceof Error ? cause.message : 'Falha ao exportar CSV.');
-    } finally {
-      if (serial === exportSequence.current) setExporting(false);
-    }
-  };
   return <section className="base-geral-page" aria-label="Base Geral da carteira processual">
     <header className="base-geral-header">
       <div><h1>Base Geral</h1></div>
       <div className="base-geral-actions">
         <span>{portfolioName(portfolio)}</span>
-        <button type="button" onClick={() => { void refresh(true); void refreshBilling(true); }} disabled={pending || billingPending} aria-label="Atualizar Base Geral" title="Atualizar Base Geral"><RefreshCw size={15} className={pending ? 'base-geral-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
       </div>
     </header>
     <div className="base-geral-filters">
@@ -457,15 +370,14 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
     {error && <div className="base-geral-error" role="alert">{shown?'Atualização indisponível. Últimos dados preservados.':error} <button type="button" onClick={() => void refresh(true)}>Tentar novamente</button></div>}
-    {shown?._read_status==='stale' && <div className="base-geral-warning" role="status">Exibindo último consolidado disponível. A consulta ao banco será revalidada na próxima atualização.</div>}
-    {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
-    <div className={'base-geral-kpis' + (portfolio === 'agibank_mba' ? ' base-geral-kpis-regular' : '')}>
-      {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
+    {shown?._read_status==='stale' && <div className="base-geral-warning" role="status">Exibindo último consolidado disponível. A consulta será revalidada automaticamente.</div>}
+    <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
+      {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
         onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
-        <strong>{shown ? number(categories[key]) : '—'}</strong>
+        <strong>{shown ? number(categories[key]) : <span className="base-geral-skeleton" aria-label="Carregando"/>}</strong>
       </button>)}
-      {portfolio === 'agibank_mba' && <button type="button"
+      {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
         className="base-geral-card mba-metric-card base-geral-revenue-card"
         title="Faturamento projetado: 18 mensalidades de R$ 35 e antecipação pelos andamentos enviados no mês corrente"
         aria-label="Detalhar faturamento estimado da Regular"
@@ -478,30 +390,31 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
           : billingPending ? 'Calculando…' : billingError ? 'Consulta indisponível' : '18 × R$ 35'}</span>
       </button>}
     </div>
+    <div className="base-geral-kpis base-geral-kpis-status">
+      {catalog.slice(3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
+        onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
+        <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
+        <strong>{shown ? number(categories[key]) : <span className="base-geral-skeleton" aria-label="Carregando"/>}</strong>
+      </button>)}
+    </div>
     <div className="base-geral-bottom">
-      <section className="base-geral-panel" id="base-geral-produtos">
-        <header><div><h2>Produto</h2></div>
-          <div className="base-geral-panel-actions"><span className="base-geral-tally">{number(products.reduce((sum, item) => sum + Number(item.value), 0))} registros</span>
-            <button type="button" className="base-geral-csv-action" disabled={!products.length} onClick={() =>
-              saveCsv('base_geral_produtos_' + portfolio + '.csv', serializeBaseGeralCsv(
-                ['Produto', 'Processos', 'Participação (%)'],
-                products.map(item => [item.label, item.value,
-                  products.reduce((acc, p) => acc + Number(p.value), 0)
-                    ? (Number(item.value) / products.reduce((acc, p) => acc + Number(p.value), 0) * 100).toFixed(1).replace('.', ',')
-                    : '0'])
-              ))}><Download size={14}/> CSV</button>
+      <section className="base-geral-panel base-geral-products-chart" id="base-geral-produtos">
+        <header><div><h2>Produto</h2><span className="base-geral-context">Distribuição da carteira</span></div></header>
+        <div className="base-geral-chart-area">
+          <button type="button" className={'base-geral-donut ' + (!productTotal ? 'is-unavailable' : '')}
+            disabled={!productTotal}
+            style={productGradient} onClick={() => setProduct(products[0]?.label || '')}
+            aria-label="Filtrar pelo produto de maior participação">
+            <span><strong>{productTotal ? number(productTotal) : '—'}</strong><small>processos</small></span>
+          </button>
+          <div className="base-geral-product-legend">
+            {products.length ? products.map((item,index) => <button type="button" key={item.label}
+              onClick={() => setProduct(item.label)} aria-label={'Filtrar pelo produto ' + item.label}>
+              <i style={{background:productColors[index % productColors.length]}}/>
+              <span title={item.label}>{item.label}</span><strong>{number(item.value)}</strong>
+              <small>{productTotal ? (Number(item.value)/productTotal*100).toFixed(1).replace('.', ',') : '0'}%</small>
+            </button>) : <p className="base-geral-unavailable">Nenhum produto encontrado.</p>}
           </div>
-        </header>
-        <div className="base-geral-table-scroll">
-          <table className="base-geral-products"><thead><tr><th>Produto</th><th>Processos</th><th>Participação</th><th>Detalhar</th></tr></thead>
-            <tbody>{products.length ? products.map(item => {
-              const total = products.reduce((sum, row) => sum + Number(row.value), 0);
-              const share = total ? (Number(item.value) / total * 100).toFixed(1).replace('.', ',') : '0';
-              return <tr key={item.label}><td>{item.label}</td><td>{number(item.value)}</td><td>{share}%</td>
-                <td><button type="button" onClick={() => { setProduct(item.label); window.scrollTo({top: 0, behavior: 'smooth'}); }} aria-label={'Filtrar pelo produto ' + item.label}>Filtrar <ArrowUpRight size={13}/></button></td>
-              </tr>;
-            }) : <tr><td colSpan={4} className="base-geral-empty">Sem produtos para os filtros selecionados.</td></tr>}</tbody>
-          </table>
         </div>
       </section>
       <section className="base-geral-panel base-geral-comparison">
@@ -520,7 +433,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
       </section>
     </div>
-    {revenueOpen && portfolio === 'agibank_mba' && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
+    {revenueOpen && portfolio === 'agibank_mba' && canViewBilling && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) setRevenueOpen(false);
     }}>
       <section className="base-geral-dialog base-geral-revenue-dialog" role="dialog" aria-modal="true" aria-label="Cálculo de faturamento estimado">
@@ -552,8 +465,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
             <button key={outcome} type="button" className={tutelaOutcome === outcome ? 'active' : ''}
               aria-pressed={tutelaOutcome === outcome} onClick={() => {
                 if (outcome === tutelaOutcome) return;
-                exportSequence.current += 1;
-                setExporting(false); setExportProgress(''); setDetailError('');
+                setDetailError('');
                 setTutelaOutcome(outcome); setDetailPage(1); setDetailData(null);
               }}>
               {outcome === 'deferidas' ? 'Deferidas' : 'Indeferidas'}
@@ -566,11 +478,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
               placeholder={detail === 'closing' ? 'Buscar CNJ ou pasta' : 'Buscar CNJ'} aria-label="Buscar processo"/>
             <button type="submit" disabled={detailPending}>Buscar</button>
           </form>
-          <button type="button" onClick={() => void exportDetails()}
-            disabled={!detailData || detailPending || exporting || (detail === 'closing' && detailData.total > 10000)}
-            title="Exporta a relação completa dos processos filtrados">
-            <Download size={15}/> {exporting ? 'Exportando...' : 'CSV completo'}
-          </button>
         </div>}
         {listSupported && filtersSupported && <p className="base-geral-dialog-source">
           {detail === 'closing' ? 'Fonte: fila operacional de encerramentos · aptos sem envio confirmado'
@@ -579,10 +486,9 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         </p>}
         {!listSupported && <div className="base-geral-warning">A categoria não está disponível para consulta.</div>}
         {listSupported && !filtersSupported && <div className="base-geral-warning">
-          Os filtros atuais não são suportados pela listagem desta categoria. Limpe-os para consultar ou exportar uma relação consistente com os cards.
+          Os filtros atuais não são suportados pela listagem desta categoria. Limpe-os para consultar uma relação consistente com os cards.
         </div>}
         {detailError && <p className="base-geral-error base-geral-dialog-error" role="alert">{detailError}</p>}
-        {exportProgress && <p className="base-geral-export-status" role="status">{exportProgress}</p>}
         {listSupported && filtersSupported && <div className="base-geral-dialog-table-wrap">
           <table className="base-geral-detail-table">
             <thead><tr><th>CNJ</th><th>Situação</th><th>UF</th><th>Data entrada</th><th>Produto</th>{detail === 'closing' && <><th>Pasta</th><th>Classificação</th></>}</tr></thead>

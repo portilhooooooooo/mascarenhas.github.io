@@ -51,14 +51,17 @@ test('tutela popup toggles Deferidas and Indeferidas with independent counts', (
   assert.match(page,/injunction_denied/);
 });
 
-test('CSV exports the whole available filtered relation and rejects partial exports', () => {
-  assert.match(page,/Promise\.all\(indexes\.map/);
-  assert.match(page,/all\.length !== total/);
-  assert.match(page,/total > 10000/);
-  assert.match(page,/serializeBaseGeralCsv/);
-  assert.match(page,/CSV completo/);
-  assert.match(page,/base_geral_produtos_/);
-  assert.match(page,/\['CNJ', 'Situação', 'UF', 'Pasta', 'Classificação', 'Data entrada', 'Produto', 'Encerramento'\]/);
+test('Base Geral is purely drilldown-driven without CSV or manual refresh controls', () => {
+  assert.doesNotMatch(page,/Exportando|CSV completo|base_geral_produtos_|base-geral-csv-action|RefreshCw|Atualizar Base Geral|exportDetails|saveCsv/);
+  assert.match(page,/onClick=\{\(\) => openDetail\(key\)\}/);
+  assert.match(page,/className="base-geral-kpis base-geral-kpis-status"/);
+  assert.match(page,/catalog\.slice\(3\)/);
+  assert.match(page,/base-geral-products-chart/);
+  assert.match(page,/productGradient/);
+  assert.match(page,/base-geral-product-legend/);
+  assert.match(page,/base-geral-comparison/);
+  assert.match(styles,/\.base-geral-kpis-status\{grid-template-columns:repeat\(5/);
+  assert.match(styles,/\.base-geral-bottom\{grid-template-columns:repeat\(2/);
 });
 
 test('18-calendar-month operational aging rule is preserved and closing stays separate', () => {
@@ -75,11 +78,19 @@ test('Regular billing reads its own secured endpoint and never multiplies the en
   assert.match(page, /\/api\/base-geral\/faturamento/);
   assert.match(page, /const estimatedRevenue = currentBilling\?\.total_amount \?\? null/);
   assert.doesNotMatch(page, /total \* REGULAR_CASE_FEE/);
-  assert.match(page, /portfolio === 'agibank_mba' && <button/);
+  assert.match(page, /portfolio === 'agibank_mba' && canViewBilling && <button/);
   assert.match(page, /billingSequence.current/);
   assert.match(page, /refreshBilling\(true\)/);
   assert.match(page, /currentBilling\?\.source_send_month/);
   assert.match(page, /currentBilling\?\.advanced_installments/);
   assert.match(page, /não representa valores faturados ou recebidos/);
-  assert.match(styles, /base-geral-kpis-regular\{grid-template-columns:repeat\(3/);
+  assert.match(styles, /base-geral-kpis-with-billing\{grid-template-columns:repeat\(4/);
+});
+
+test('only backend-issued permission makes billing visible and fetchable', () => {
+  assert.match(page,/permissions\?\.\['faturamento\.view'\] === true/);
+  assert.match(page,/if \(!visibleRef\.current \|\| portfolio !== 'agibank_mba' \|\| !canViewBilling\) return/);
+  assert.match(page,/currentBilling = canViewBilling && billingKey/);
+  assert.match(page,/revenueOpen && portfolio === 'agibank_mba' && canViewBilling/);
+  assert.doesNotMatch(page,/Acesso restrito|acesso restrito/);
 });
