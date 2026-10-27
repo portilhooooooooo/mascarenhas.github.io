@@ -10,7 +10,7 @@ test('login restores the dark Lua presentation independent of saved workspace th
   assert.match(css, /#login-view \.react-login-view \{[\s\S]*?background:#161617;[\s\S]*?color:#f6f0ec;/);
   assert.match(css, /border:1px solid #373436;border-radius:22px;background:#171719;/);
   assert.match(css, /outline:0;background:#202022;color:#fff8f3/);
-  assert.match(css, /background:#b97a58;border-color:#b97a58;color:#fff/);
+  assert.match(css, /background:#f1f1f1;color:#171717;border:1px solid #f1f1f1/);
 });
 
 test('institutional video and HTML5 playback remain unchanged', () => {
