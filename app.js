@@ -670,7 +670,41 @@ function setResourceBusy(name, busy) {
   if (name === 'encerramentos') setIntegrationBusy('liminar', busy);
 }
 
+let bennerLaunchPollTimer;
+async function loadBennerLaunchHealth() {
+  clearTimeout(bennerLaunchPollTimer);
+  // This consumer reports launches; legal validation has its own state.
+  const portfolio = window.MBA_API?.getPortfolioId?.();
+  const stale = () => portfolio !== window.MBA_API?.getPortfolioId?.();
+  const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  try {
+    const result = await window.MBA_AUTOMATION_API.request('/api/integrations/benner-andamentos/status');
+    if (stale()) return;
+    setIntegrationHealth('benner-andamentos', result.online === true);
+    const c = result.launch?.counts || {};
+    put('benner-andamentos-job-status', Number(c.PROCESSANDO) ? 'Lançando' : Number(c.NA_FILA) ? 'Na fila' : 'Sem envios pendentes');
+    put('benner-andamentos-job-progress', `${Number(c.ENVIADO || 0)} confirmados · ${Number(c.NA_FILA || 0)} na fila · ${Number(c.ERRO || 0)} falhas`);
+    put('benner-andamentos-validation', ({
+      VALIDADO: 'Validado', AUSENTE: 'Ausente', INCONCLUSIVO: 'Inconclusivo',
+      PENDENTE: 'Pendente', NAO_APLICAVEL: 'Não se aplica',
+    })[result.validation?.state] || 'Pendente');
+  } catch (_error) {
+    if (stale()) return;
+    const badge = document.getElementById('benner-andamentos-health');
+    if (badge) { badge.textContent = 'Sem consulta'; badge.className = 'status-badge planned'; }
+    put('benner-andamentos-job-status', 'Consulta indisponível');
+    put('benner-andamentos-job-progress', '—');
+    put('benner-andamentos-validation', 'Não consultado');
+  } finally {
+    if (document.getElementById('automacoes')?.classList.contains('active')
+        && window.MBA_CURRENT_USER?.permissions?.['automations.view']) {
+      bennerLaunchPollTimer = setTimeout(() => void loadBennerLaunchHealth(), 15000);
+    }
+  }
+}
+
 async function loadIntegrationHealth() {
+  void loadBennerLaunchHealth();
   try {
     const health = await window.MBA_AUTOMATION_API.request('/api/integrations/health');
     setIntegrationHealth('liminar', Boolean(health.liminar?.online));
@@ -679,14 +713,11 @@ async function loadIntegrationHealth() {
     setIntegrationBusy('liminar', Boolean(health.liminar?.busy));
     setIntegrationBusy('encerramentos', Boolean(health.encerramentos?.busy));
     setIntegrationBusy('datajud', Boolean(health.datajud?.busy));
-    window.MBA_AUTOMATION_API.request('/api/automations/benner-andamentos/reasons')
-      .then(() => setIntegrationHealth('benner-andamentos', true))
-      .catch(() => setIntegrationHealth('benner-andamentos', false));
+
   } catch (_error) {
     setIntegrationHealth('liminar', false);
     setIntegrationHealth('datajud', false);
     setIntegrationHealth('encerramentos', false);
-    setIntegrationHealth('benner-andamentos', false);
   }
 }
 
@@ -772,6 +803,8 @@ document.querySelector('#integration-template-download')?.addEventListener('clic
     box.hidden = false;
   }
 });
+
+document.querySelector('[data-benner-launch]')?.addEventListener('click', () => navigateRoute('operacao/encerramentos'));
 
 document.querySelectorAll('.integration-run-button').forEach((button) => button.addEventListener('click', async () => {
   const type = button.dataset.integration;
@@ -894,7 +927,7 @@ document.querySelector('#reset-task-otp')?.addEventListener('click', async () =>
 });
 
 async function loadIntegrationJobs(type) {
-  const path = type === 'benner-andamentos' ? '/api/automations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
+  const path = type === 'benner-andamentos' ? '/api/integrations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
   const jobs = await window.MBA_AUTOMATION_API.request(path);
   window.dispatchEvent(new CustomEvent('mba:jobs-loaded', { detail: { integration: type, jobs } }));
   return jobs;
