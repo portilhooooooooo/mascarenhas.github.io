@@ -3,7 +3,7 @@ import { SelectMenu } from '../dashboard/SelectMenu';
 import { OptionGroup as QaOptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 import type { Task, TaskProcess } from './model';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
-import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
+import { ClosingAnalysisFlow, type ClosingAnalysisPayload, type ClosingPrefill } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
 import { clearQaDraft } from './qaDraft';
 
@@ -101,9 +101,18 @@ function closingClassifierClassification(process: TaskProcess) {
   if (normalized.includes('derrota voluntaria')) return 'Derrota voluntária';
   if (normalized.includes('vitoria')) return 'Vitória';
   if (normalized.includes('derrota')) return 'Derrota';
+  if (normalized.includes('acordo')) return 'Acordo';
+  if (normalized.includes('extincao')) return 'Extinção';
   return null;
 }
 
+
+function closingClassifierReason(process: TaskProcess): string | null {
+  const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
+  const values = [metadata.review_reason, metadata.indicio_movimentacao, metadata.datajud_tipo, process.reason_label];
+  const reason = values.find(value => typeof value === 'string' && value.trim().length > 0);
+  return typeof reason === 'string' ? reason.trim().slice(0, 280) : null;
+}
 
 function closingSentenceHint(process: TaskProcess): string | undefined {
   const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
@@ -141,7 +150,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     }).catch(() => { /* A telemetria não pode bloquear a execução humana. */ });
   }, [api, process.id]);
 
-  const submit = async (draft: ClosingAnalysisDraft) => {
+  const submit = async (draft: ClosingAnalysisPayload) => {
     setBusy(true);
     setError(null);
     try {
@@ -178,6 +187,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     cnj={process.case_number || 'Processo sem número'}
     draftKey={draftKey}
     classifierClassification={classifierClassification}
+    classifierReason={closingClassifierReason(process)}
     prefill={closingPrefill?.processId === process.id ? closingPrefill.values : undefined}
     contextHint={closingSentenceHint(process)}
     busy={busy}
