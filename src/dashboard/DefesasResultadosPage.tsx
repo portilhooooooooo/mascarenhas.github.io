@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, Clock3, FileCheck2, FileX2, RefreshCw, Search, X, type LucideIcon } from 'lucide-react';
+import { CheckCircle2, Clock3, Download, FileCheck2, FileX2, RefreshCw, Search, X, type LucideIcon } from 'lucide-react';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import './defesasResultados.css';
 
@@ -11,6 +11,7 @@ type DefenseRow = {
   decision?: string | null; reason?: string | null; situation?: string | null;
   fatal_deadline?: string | null; analyzed_at?: string | null;
   reschedule_required: boolean;
+  reschedule_fatal?: string|null; reschedule_justification?: string|null;
 };
 type Response = {summary: DefenseSummary; rows: DefenseRow[]; total: number; page: number; limit: number};
 type Api = {request: <T>(path: string, options?: RequestInit) => Promise<T>; getPortfolioId?: () => string};
@@ -30,10 +31,10 @@ const date = (value?: string | null) => {
   return parts.length === 3 ? parts.reverse().join('/') : '—';
 };
 
-function requestResults(kind: Kind, page: number, search: string, signal?: AbortSignal): Promise<Response> {
+function requestResults(kind: Kind, page: number, search: string, signal?: AbortSignal, limit=25): Promise<Response> {
   const api = (window as Environment).MBA_API || (window as Environment).MBA_AUTOMATION_API;
   if (!api) return Promise.reject(new Error('API indisponível.'));
-  const params = new URLSearchParams({kind,page:String(page),limit:'25'});
+  const params = new URLSearchParams({kind,page:String(page),limit:String(limit)});
   if (search.trim()) params.set('q',search.trim());
   return api.request<Response>('/api/resultados/defesas?' + params, {signal});
 }
@@ -48,6 +49,8 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
   const [search,setSearch]=useState('');
   const [page,setPage]=useState(1);
   const [querySearch,setQuerySearch]=useState('');
+  const [exporting,setExporting]=useState(false);
+  const [exportError,setExportError]=useState<string|null>(null);
   const portfolio=(window as Environment).MBA_API?.getPortfolioId?.();
   const allowed=portfolio==='agibank_enter' && Boolean(scope);
   const summary=useQuery({queryKey:['runtime-v2',scope,'enter-defense-results','summary'],
@@ -73,13 +76,47 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
     window.addEventListener('keydown',close);
     return ()=>window.removeEventListener('keydown',close);
   },[kind]);
-  const open=(next:Kind)=>{setSearch('');setQuerySearch('');setPage(1);setKind(next)};
+  const exportCsv=async()=>{
+    if(kind!=='reschedule'||exporting)return;
+    setExporting(true);setExportError(null);
+    try {
+      const all:DefenseRow[]=[];
+      const size=100;
+      let expected:number|undefined;
+      for(let next=1;next<=10000;next++){
+        const result=await requestResults('reschedule',next,querySearch,undefined,size);
+        if(!valid(result)||!Array.isArray(result.rows))throw new Error('Resposta da API inválida.');
+        if(expected===undefined)expected=result.total;
+        if(result.total!==expected || (result.rows.length===0 && all.length<expected))
+          throw new Error('A lista mudou durante a exportação. Atualize e tente novamente.');
+        all.push(...result.rows);
+        if(all.length>=expected)break;
+      }
+      if(expected===undefined||all.length!==expected)throw new Error('Exportação incompleta; tente novamente.');
+      if(all.some(row=>typeof row.reschedule_justification!=='string'||!row.reschedule_justification))
+        throw new Error('A API de testes ainda não disponibilizou as justificativas padronizadas.');
+      const clean=(value:string)=>'"'+( /^[\\s]*[=+@-]/.test(value)?"'"+value:value ).replaceAll('"','""')+'"';
+      const entries=[['CNJ','VAZIO','FATAL','JUSTIFICATIVA'],...all.map(row=>[
+        row.cnj||'', '',date(row.reschedule_fatal)==='—'?'':date(row.reschedule_fatal),
+        row.reschedule_justification||''
+      ])];
+      const csv='\\uFEFF'+entries.map(cells=>cells.map(v=>clean(v)).join(';')).join('\\r\\n');
+      const link=document.createElement('a');
+      const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+      link.href=url;
+      link.download='reagendamentos-enter-talisman-'+new Date().toISOString().slice(0,10)+'.csv';
+      document.body.appendChild(link);link.click();link.remove();
+      window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }catch(error){setExportError(error instanceof Error?error.message:'Não foi possível gerar o CSV.');}
+    finally{setExporting(false);}
+  };
+  const open=(next:Kind)=>{setSearch('');setQuerySearch('');setPage(1);setExportError(null);setKind(next)};
   const active=cards.find(card=>card.kind===kind);
   if(!allowed) return <section className="defense-results-page"><p className="defense-results-state">Disponível apenas na carteira Agibank · Enter.</p></section>;
 
-  return <section className="defense-results-page" aria-label="Resultados de Defesas da Enter">
+  return <section className="defense-results-page" aria-label="Resultados das pendências Talisman de Defesas da Enter">
     <div className="defense-results-heading">
-      <div><h1>Defesas</h1><span>Agibank · Enter</span></div>
+      <div><h1>Defesas</h1><span>Enter · Pendências Talisman</span></div>
       <button className="defense-results-refresh" type="button" onClick={()=>void summary.refetch()} disabled={summary.isFetching}>
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>
@@ -103,13 +140,30 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
           <div><h2 id={id+'-title'}>{active?.title}</h2><span>{detail.data ? number(detail.data.total)+' processos' : 'Relação de processos'}</span></div>
           <button type="button" aria-label="Fechar relação" onClick={()=>setKind(null)}><X size={18}/></button>
         </header>
-        <div className="defense-results-dialog-toolbar"><label><Search size={15}/><input aria-label="Buscar CNJ" placeholder="Buscar CNJ" value={search} onChange={event=>setSearch(event.target.value)}/></label></div>
+        <div className="defense-results-dialog-toolbar"><label><Search size={15}/><input aria-label="Buscar CNJ" placeholder="Buscar CNJ" value={search} onChange={event=>setSearch(event.target.value)}/></label>
+          {kind==='reschedule'&&<button className="defense-results-export" type="button" onClick={()=>void exportCsv()} disabled={exporting}>
+            <Download size={14}/>{exporting?'Gerando CSV…':'Baixar CSV'}
+          </button>}
+        </div>
+        {kind==='reschedule'&&exportError&&<p className="defense-results-error" role="alert">{exportError}</p>}
         {detail.error && <p className="defense-results-error" role="alert">Não foi possível consultar os processos. {(detail.error as Error).message} <button type="button" onClick={()=>void detail.refetch()}>Tentar novamente</button></p>}
-        <div className="defense-results-table-wrap"><table className="defense-results-table">
-          <thead><tr><th>CNJ</th><th>Analista</th><th>Situação</th><th>Prazo</th><th>Última análise</th></tr></thead>
-          <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
-            <td><strong>{row.cnj||'—'}</strong></td><td>{row.analyst||'—'}</td><td>{row.situation|| (kind==='pending'?'Sem análise':'—')}</td><td>{date(row.fatal_deadline)}</td><td>{date(row.analyzed_at)}</td>
-          </tr>)}</tbody>
+        <div className="defense-results-table-wrap"><table className={'defense-results-table'+(kind==='reschedule'?' defense-results-table--reschedule':'')}>
+          {kind==='reschedule'
+          ? <>
+              <thead><tr><th>CNJ</th><th>VAZIO</th><th>FATAL</th><th>JUSTIFICATIVA</th></tr></thead>
+              <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
+                <td><strong>{row.cnj||'—'}</strong></td>
+                <td aria-label="Vazio"></td>
+                <td>{date(row.reschedule_fatal)}</td>
+                <td>{row.reschedule_justification||'Justificativa não disponível na API de testes.'}</td>
+              </tr>)}</tbody>
+            </>
+          : <>
+              <thead><tr><th>CNJ</th><th>Analista</th><th>Situação</th><th>Prazo</th><th>Última análise</th></tr></thead>
+              <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
+                <td><strong>{row.cnj||'—'}</strong></td><td>{row.analyst||'—'}</td><td>{row.situation|| (kind==='pending'?'Sem análise':'—')}</td><td>{date(row.fatal_deadline)}</td><td>{date(row.analyzed_at)}</td>
+              </tr>)}</tbody>
+            </>}
         </table>
         {detail.isFetching&&!detail.data&&<p className="defense-results-empty" role="status">Carregando processos…</p>}
         {!detail.isFetching&&detail.data&&!detail.data.rows.length&&<p className="defense-results-empty">Nenhum processo encontrado.</p>}
