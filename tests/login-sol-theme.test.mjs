@@ -15,7 +15,7 @@ test('login restores the dark Lua presentation independent of saved workspace th
 
 test('institutional video and HTML5 playback remain unchanged', () => {
   assert.match(login, /<video autoPlay muted playsInline loop preload="auto"/);
-  assert.match(login, /<source src="\/assets\/mascarenhas-login.mp4" type="video\/mp4"\/>/);
-  assert.match(login, /poster="\/assets\/mascarenhas-login-poster.jpg"/);
+  assert.match(login, /<source src="\/assets\/mascarenhas-login.mp4\?v=20261027-a2690cd3" type="video\/mp4"\/>/);
+  assert.match(login, /poster="\/assets\/mascarenhas-login-poster.jpg\?v=20261027-a2690cd3"/);
   assert.match(css, /object-fit:cover;z-index:0/);
 });

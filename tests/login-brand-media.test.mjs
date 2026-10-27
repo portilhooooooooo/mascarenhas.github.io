@@ -16,8 +16,8 @@ assert.match(login, /src="\/favicon-white.svg\?/);
 assert.doesNotMatch(login, /react-login-visual-fallback|MBA_BRAND_MEDIA/);
 
 assert.match(login, /<video autoPlay muted playsInline loop preload="auto"/);
-assert.match(login, /<source src="\/assets\/mascarenhas-login.mp4" type="video\/mp4"\/>/);
-assert.match(login, /poster="\/assets\/mascarenhas-login-poster.jpg"/);
+assert.match(login, /<source src="\/assets\/mascarenhas-login.mp4\?v=20261027-a2690cd3" type="video\/mp4"\/>/);
+assert.match(login, /poster="\/assets\/mascarenhas-login-poster.jpg\?v=20261027-a2690cd3"/);
 assert.match(css, /object-fit:cover;z-index:0/);
 assert.match(css, /position:absolute;z-index:2;bottom:38px/);
 assert.match(build, /await cp\('assets\/mascarenhas-login.mp4',/);
