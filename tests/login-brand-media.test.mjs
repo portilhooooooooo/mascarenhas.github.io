@@ -21,7 +21,7 @@ assert.match(login, /poster="\/assets\/mascarenhas-login-poster.jpg\?v=20261027-
 assert.match(css, /aspect-ratio:7 \/ 5/);
 assert.match(css, /object-fit:cover;object-position:34% center/);
 assert.match(css, /react-login-visual-caption \{[\s\S]*position:absolute;z-index:2/);
-assert.match(css, /right:clamp\(24px,3vw,38px\);width:47%/);
+assert.match(css, /left:clamp\(24px,3vw,38px\);width:47%/);
 assert.match(css, /react-login-visual::after \{[\s\S]*linear-gradient/);
 assert.doesNotMatch(css, /react-login-visual::before/);
 assert.doesNotMatch(css, /react-login-visual video \{[^}]*object-fit:contain/s);
