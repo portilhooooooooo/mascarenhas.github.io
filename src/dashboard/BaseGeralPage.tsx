@@ -2,7 +2,7 @@ import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight, CheckCircle2, CirclePause, Clock3, FileCheck2,
-  Download, FileX2, FolderOpen, Hourglass, RefreshCw, Search, ShieldAlert, X,
+  Download, FileX2, FolderOpen, Hourglass, RefreshCw, Search, ShieldAlert, Wallet, X,
   type LucideIcon,
 } from 'lucide-react';
 import { getClosingCases } from './operacaoEncerramentosService';
@@ -47,6 +47,15 @@ const catalog: Array<{ key: Category; label: string; subtitle: string; icon: Luc
 const number = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value)
   ? new Intl.NumberFormat('pt-BR').format(value) : '—';
 const validNumber = (value: unknown): number | null => typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : null;
+const REGULAR_CASE_FEE = 35;
+const money = (value: number | null) => value === null ? '—' : new Intl.NumberFormat('pt-BR', {
+  style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0,
+}).format(value);
+export const regularEstimatedRevenue = (portfolio: string, total: unknown): number | null => {
+  if (portfolio !== 'agibank_mba' || typeof total !== 'number' || !Number.isSafeInteger(total) || total < 0) return null;
+  const amount = total * REGULAR_CASE_FEE;
+  return Number.isSafeInteger(amount) ? amount : null;
+};
 const dateStart = (period: Period) => {
   if (period === 'all') return '';
   const d = new Date();
@@ -139,6 +148,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [error, setError] = useState('');
   const [closingCount, setClosingCount] = useState<{ key: string; value: number } | null>(null);
   const [detail, setDetail] = useState<Category | null>(null);
+  const [revenueOpen, setRevenueOpen] = useState(false);
   const [tutelaOutcome, setTutelaOutcome] = useState<'deferidas' | 'indeferidas'>('deferidas');
   const [detailSearchInput, setDetailSearchInput] = useState('');
   const [detailSearch, setDetailSearch] = useState('');
@@ -190,7 +200,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       setRevision(value => value + 1);
       setUf(''); setProduct(''); setSituation(''); setResolution('');
       setData(null); setDataKey(''); setClosingCount(null);
-      setDetail(null); setDetailData(null); setError('');
+      setDetail(null); setRevenueOpen(false); setDetailData(null); setError('');
       setDetailSearch(''); setDetailSearchInput(''); setTutelaOutcome('deferidas');
       exportSequence.current += 1; setExporting(false); setExportProgress('');
     };
@@ -206,6 +216,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
 
   const shown = dataKey === filterKey ? data : null;
   const summary = shown?.summary;
+  const estimatedRevenue = regularEstimatedRevenue(portfolio, summary?.total);
   const products = shown?.charts.por_produto?.filter(row => Number.isFinite(Number(row.value)) && Number(row.value) > 0) || [];
 
   useEffect(() => {
@@ -281,13 +292,18 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   };
   const closeDetail = () => { exportSequence.current += 1; setExporting(false); setDetail(null); };
   useEffect(() => {
-    if (!detail) return;
-    const keydown = (event: KeyboardEvent) => { if (event.key === 'Escape') closeDetail(); };
+    if (!detail && !revenueOpen) return;
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (revenueOpen) setRevenueOpen(false);
+        else closeDetail();
+      }
+    };
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', keydown);
     return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', keydown); };
-  }, [detail]);
+  }, [detail, revenueOpen]);
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
 
   const exportDetails = async () => {
@@ -391,12 +407,22 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     {error && <div className="base-geral-error" role="alert">{shown?'Atualização indisponível. Últimos dados preservados.':error} <button type="button" onClick={() => void refresh(true)}>Tentar novamente</button></div>}
     {shown?._read_status==='stale' && <div className="base-geral-warning" role="status">Exibindo último consolidado disponível. A consulta ao banco será revalidada na próxima atualização.</div>}
     {pending && !shown && <p role="status" className="base-geral-muted">Carregando indicadores...</p>}
-    <div className="base-geral-kpis">
+    <div className={'base-geral-kpis' + (portfolio === 'agibank_mba' ? ' base-geral-kpis-regular' : '')}>
       {catalog.map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
         onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
         <strong>{shown ? number(categories[key]) : '—'}</strong>
       </button>)}
+      {portfolio === 'agibank_mba' && <button type="button"
+        className="base-geral-card mba-metric-card base-geral-revenue-card"
+        title="Faturamento estimado: R$ 35 por processo da Regular"
+        aria-label="Detalhar faturamento estimado da Regular"
+        disabled={estimatedRevenue === null}
+        onClick={() => setRevenueOpen(true)}>
+        <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={15} strokeWidth={1.7}/></span>
+        <strong>{money(estimatedRevenue)}</strong>
+        <span className="base-geral-revenue-note">Estimado · R$ 35/processo</span>
+      </button>}
     </div>
     <div className="base-geral-bottom">
       <section className="base-geral-panel" id="base-geral-produtos">
@@ -440,6 +466,22 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         <details className="mba-help-disclosure"><summary>Critérios do indicador</summary><p>Corte de aging: 18 meses calendários desde a entrada. Base prescrita é um indicador operacional, não confirmação de prescrição jurídica. Processos sem data de entrada ficam fora do comparativo; os dois grupos do donut são exclusivos. Valores em quantidade de processos, não monetários.</p></details>
       </section>
     </div>
+    {revenueOpen && portfolio === 'agibank_mba' && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
+      if (event.target === event.currentTarget) setRevenueOpen(false);
+    }}>
+      <section className="base-geral-dialog base-geral-revenue-dialog" role="dialog" aria-modal="true" aria-label="Cálculo de faturamento estimado">
+        <header className="base-geral-dialog-head">
+          <div><h2>Faturamento</h2><p>Regular · estimativa</p></div>
+          <button type="button" className="base-geral-dismiss" onClick={() => setRevenueOpen(false)} aria-label="Fechar faturamento"><X size={19}/></button>
+        </header>
+        <div className="base-geral-revenue-breakdown">
+          <div><span>Processos considerados</span><strong>{number(summary?.total)}</strong></div>
+          <div><span>Valor unitário</span><strong>R$ 35,00</strong></div>
+          <div className="base-geral-revenue-total"><span>Faturamento estimado</span><strong>{money(estimatedRevenue)}</strong></div>
+        </div>
+        <p className="base-geral-caption">Calculado sobre os processos do período e filtros selecionados. Não representa valores faturados ou recebidos.</p>
+      </section>
+    </div>}
     {detail && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) closeDetail();
     }}>
