@@ -69,3 +69,17 @@ test('18-calendar-month operational aging rule is preserved and closing stays se
   assert.match(page,/getClosingCases\('APTOS', 25/);
   assert.match(page,/permissions\?\.\['encerramentos\.view'\]/);
 });
+
+test('Faturamento exists only for Regular, from filtered canonical total at R$ 35 per process', () => {
+  assert.match(page, /const REGULAR_CASE_FEE = 35/);
+  assert.match(page, /portfolio !== 'agibank_mba'/);
+  assert.match(page, /Number\.isSafeInteger\(total\)/);
+  assert.match(page, /total \* REGULAR_CASE_FEE/);
+  assert.match(page, /regularEstimatedRevenue\(portfolio, summary\?\.total\)/);
+  assert.match(page, /portfolio === 'agibank_mba' && <button/);
+  assert.match(page, /disabled=\{estimatedRevenue === null\}/);
+  assert.match(page, /setRevenueOpen\(true\)/);
+  assert.match(page, /Cálculo de faturamento estimado/);
+  assert.match(page, /Não representa valores faturados ou recebidos/);
+  assert.match(styles, /base-geral-kpis-regular\{grid-template-columns:repeat\(3/);
+});
