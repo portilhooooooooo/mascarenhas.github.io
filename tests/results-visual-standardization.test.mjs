@@ -14,7 +14,7 @@ assert.match(shared,/\.defense-results-page\{\s*width:100%;\s*max-width:1480px;/
 assert.match(group,/base-geral-products-table/);
 assert.doesNotMatch(group,/productGradient/);
 assert.match(closing,/\.closing-kpis-main\{grid-template-columns:repeat\(4/);
-assert.match(closing,/\.closing-goal-kpi-body\{\s*flex-direction:row;/);
+assert.match(closing,/\.closing-kpis-main \.closing-goal-kpi \.closing-gauge-value \{[\s\S]*?position:absolute/);
 assert.match(page,/Ticket médio esperado/);
 assert.match(page,/dados\?\.indicadores\?\.ticket_medio/);
 assert.match(page,/dados\?\.indicadores\?\.ticket_amostra/);

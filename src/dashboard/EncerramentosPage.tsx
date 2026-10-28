@@ -272,21 +272,16 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
   ];
   return <section className="closing-kpis closing-kpis-main" aria-label="Indicadores operacionais">
     {cards.map(card=>card.key==='meta'
-      ? <button className="closing-kpi closing-kpi-button closing-goal-kpi mba-metric-card" type="button" key={card.key}
+      ? <button className="closing-kpi closing-kpi-button closing-goal-kpi" type="button" key={card.key}
           onClick={()=>document.getElementById('closing-aging-target')?.scrollIntoView({behavior:'smooth',block:'center'})}
           aria-label={'Meta: '+card.value+'. Ver metas por aging'}>
-          <div className="closing-kpi-top">
-            <span className="closing-goal-kpi-title">Meta</span>
-            <Target size={15} strokeWidth={1.7}/>
-          </div>
-          <div className="closing-goal-kpi-body">
-            <strong className="closing-gauge-value">{card.value}</strong>
-            <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
-              <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
-              <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
-                strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
-            </svg>
-          </div>
+          <span className="closing-goal-kpi-title">Meta</span>
+          <svg viewBox="0 0 104 57" className="closing-gauge" aria-hidden="true">
+            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-track)" strokeWidth="9" strokeLinecap="round" fill="none"/>
+            <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
+              strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
+          </svg>
+          <strong className="closing-gauge-value">{card.value}</strong>
         </button>
       : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"
           key={card.key} onClick={()=>onOpen(card.key)}
