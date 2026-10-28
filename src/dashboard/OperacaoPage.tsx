@@ -1,3 +1,4 @@
+import {createPortal} from 'react-dom';
 import './operacao.css';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
 import {OperacaoLiminarPage} from './OperacaoLiminarPage';
@@ -348,6 +349,18 @@ function navigateOperationModule(module: OperationModule) {
 }
 
 export function OperacaoPage() {
+  // This page stays mounted after first visit; only expose its portaled tabs while
+  // Operação is the selected module, otherwise they would leak into other views.
+  const [operationVisible, setOperationVisible] = useState(() => document.getElementById('acordos')?.classList.contains('active') === true);
+  useEffect(() => {
+    const section = document.getElementById('acordos');
+    if (!section) return;
+    const sync = () => setOperationVisible(section.classList.contains('active'));
+    const observer = new MutationObserver(sync);
+    observer.observe(section, {attributes:true,attributeFilter:['class']});
+    sync();
+    return () => observer.disconnect();
+  }, []);
   const [module, setModule] = useState<OperationModule>(() => operationModuleFromLocation() || 'pagamentos');
   // Mount once per authorized visit, then keep state between submodule changes.
   const [visited, setVisited] = useState<OperationModule[]>(() => [operationModuleFromLocation() || 'pagamentos']);
@@ -411,14 +424,16 @@ export function OperacaoPage() {
     if (allowed[module]) setVisited(previous => previous.includes(module) ? previous : [...previous, module]);
   }, [module, allowed]);
 
-  return <div className="operacao-module-shell">
-    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
+  const shellTabs = document.getElementById('mba-shell-tabs');
+  const operationTabs = <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
       {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => navigateOperationModule('pagamentos')}>Pagamentos</button> : null}
       {allowed.liminar ? <button type="button" className={module === 'liminar' ? 'active' : ''} aria-current={module === 'liminar' ? 'page' : undefined} onClick={() => navigateOperationModule('liminar')}>Liminar</button> : null}
       {allowed.encerramentos ? <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => navigateOperationModule('encerramentos')}>Encerramentos</button> : null}
       {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => navigateOperationModule('protocolos')}>Protocolos</button> : null}
       {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => navigateOperationModule('defesas')}>Defesas</button> : null}
-    </nav>
+    </nav>;
+  return <div className="operacao-module-shell">
+    {shellTabs ? (operationVisible ? createPortal(operationTabs, shellTabs) : null) : operationTabs}
     {allowed.pagamentos && visited.includes('pagamentos') ? <div style={{display: module === 'pagamentos' ? 'contents' : 'none'}}><PagamentosPage/></div> : null}
     {allowed.liminar && visited.includes('liminar') ? <div style={{display: module === 'liminar' ? 'contents' : 'none'}}><OperacaoLiminarPage/></div> : null}
     {allowed.encerramentos && visited.includes('encerramentos') ? <div style={{display: module === 'encerramentos' ? 'contents' : 'none'}}><OperacaoEncerramentosPage/></div> : null}

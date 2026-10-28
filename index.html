@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-white.svg?v=20261013-original">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
   <link rel="stylesheet" href="payment-receipt.css?v=20260917-task-lobby-v2">
@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="brand-themes.css">
   <link rel="stylesheet" href="design-system-v2.css">
   <link rel="stylesheet" href="reimagined-workspace.css">
+  <link rel="stylesheet" href="nav-editorial.css">
 </head>
 <body class="auth-loading">
   <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
@@ -33,7 +34,7 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
-        <div class="brand"><span>MBA</span> <span class="brand-word">Backoffice</span></div>
+        <div class="brand"><img class="brand-symbol" src="/favicon-white.svg?v=20261013-original-mark" alt="Mascarenhas Barbosa"><span class="brand-word">Backoffice</span></div>
         <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true"><i data-lucide="panel-left-close"></i></button>
       </div>
       <p class="brand-caption">Hub de Gestão</p>
@@ -54,12 +55,14 @@
 
       <div class="sidebar-bottom">
         <div id="portfolio-switcher" aria-label="Seleção de carteira"></div>
+        <button class="nav-item sidebar-users-button" data-page="usuarios" data-permission="users.view" type="button" hidden><i data-lucide="users"></i><span>Usuários</span></button>
         <button class="sidebar-logout" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
       </div>
     </aside>
 
     <div class="main-area">
       <header class="topbar">
+        <div id="mba-shell-tabs" class="mba-shell-tabs" aria-label="Submódulos"></div>
         <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         <div class="top-actions">
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>

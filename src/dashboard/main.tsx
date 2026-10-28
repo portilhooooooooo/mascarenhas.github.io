@@ -233,10 +233,10 @@ function configureApplicationShell() {
 
   const orderedItems: Array<HTMLElement | null> = [
     nav.querySelector<HTMLElement>('[data-page="processos"]'),
-    nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
-    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
-    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
     nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
+    nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
+    nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
+    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
