@@ -12,7 +12,8 @@ type Appellant = 'banco' | 'autora';
 type FinalMerit = 'vitoria' | 'derrota' | 'indeterminado';
 
 export type ClosingAnalysisDraft = {
-  workflow_version: 5;
+  workflow_version: 5 | 7;
+  preliminary_classification_agreed?: boolean;
   first_instance_merit: TrialResult;
   had_appeal: boolean | null;
   appeal_decided: boolean | null;
@@ -42,6 +43,7 @@ type Props = {
   cnj: string;
   prefill?: ClosingPrefill;
   classifierClassification?: string | null;
+  classifierReason?: string | null;
   contextHint?: string;
   draftKey?: string;
   busy?: boolean;
@@ -179,9 +181,15 @@ function costsAnswer(value: boolean | 'sem_pendencia' | null | undefined): Costs
 }
 
 export function ClosingAnalysisFlow({
-  cnj, classifierClassification, prefill, draftKey = '', busy = false, error = null,
+  cnj, classifierClassification, classifierReason, prefill, draftKey = '', busy = false, error = null,
   onSubmit, onSkip, onPhaseEntered,
 }: Props) {
+  // Um rótulo isolado não é evidência: não pedir concordância sobre uma
+  // classificação sem fundamento apresentado ao analista. O questionário
+  // jurídico completo continua obrigatório e define o resultado final.
+  const preliminaryAvailable = ['Vitória', 'Derrota', 'Derrota voluntária', 'Acordo', 'Extinção'].includes(classifierClassification || '')
+    && Boolean(classifierReason?.trim());
+  const [preliminaryAgreed, setPreliminaryAgreed] = useQaField<YesNo>(draftKey, 'closing.preliminaryAgreed', null);
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
   const [appealDecided, setAppealDecided] = useQaField<YesNo>(draftKey, 'closing.appealDecided', null);
@@ -374,7 +382,7 @@ export function ClosingAnalysisFlow({
   let questionNumber = 0;
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!outcome || !sentence || (sentence !== 'sem_sentenca' && hadAppeal === null) || classificationAgreed === null
+    if ((preliminaryAvailable && preliminaryAgreed === null) || !outcome || !sentence || (sentence !== 'sem_sentenca' && hadAppeal === null) || classificationAgreed === null
       || (appealOther && (classificationAgreed !== 'sim' || !otherDescriptionValid))) {
       setLocalError('Conclua todas as perguntas apresentadas antes de salvar.');
       return;
@@ -385,7 +393,8 @@ export function ClosingAnalysisFlow({
     }
     setLocalError(null);
     await onSubmit({
-      workflow_version: 5,
+      workflow_version: preliminaryAvailable ? 7 : 5,
+      ...(preliminaryAvailable ? { preliminary_classification_agreed: preliminaryAgreed === 'sim' } : {}),
       first_instance_merit: sentence,
       had_appeal: sentence === 'sem_sentenca' ? null : hadAppeal === 'sim',
       appeal_decided: hadAppeal === 'sim' ? appealDecided === 'sim' : null,
@@ -410,7 +419,8 @@ export function ClosingAnalysisFlow({
     });
   };
 
-  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={CLOSING_STAGES} stageStates={{
+  return <TaskForm className="closing-flow" progressive submitOnFinalEnter stages={preliminaryAvailable ? ['Classificação preliminar', ...CLOSING_STAGES] : CLOSING_STAGES} stageStates={{
+    'Classificação preliminar': preliminaryAgreed !== null ? 'completed' : 'pending',
     'Cadastro de Sentença': sentence ? 'completed' : 'pending',
     'Cadastro de Acórdão': sentence === 'sem_sentenca' ? 'not_applicable' : appealPending || appealJudged || (hadAppeal === 'nao' && (deadlineOpen === 'nao' || Boolean(outcome))) ? 'completed' : 'pending',
     'Cadastro de Execução': sentence === 'sem_sentenca' || finalMerit === 'vitoria' || (outcome && (finalMerit !== 'derrota' || transitConfirmed !== 'sim')) ? 'not_applicable' : outcome ? 'completed' : 'pending',
@@ -419,6 +429,14 @@ export function ClosingAnalysisFlow({
   }} draftKey={draftKey} onSubmit={submit} onPhaseEntered={onPhaseEntered}
     onChangeCapture={() => { interactedBeforePrefill.current = true; }}
     onKeyDownCapture={() => { interactedBeforePrefill.current = true; }}>
+
+    {preliminaryAvailable ? <TaskQuestion number={String(++questionNumber)} stage="Classificação preliminar"
+      question={'O classificador sugeriu ' + classifierClassification + ' com base no indício: ' +
+        classifierReason?.trim().slice(0, 280) + '. Esse indício corresponde ao que consta nos autos?'} >
+      <BinaryChoice name="closing-preliminary-agreement" value={preliminaryAgreed} disabled={busy}
+        onChange={value => { setPreliminaryAgreed(value); setLocalError(null); }} />
+      <p className="closing-inline-note">A resposta valida apenas a evidência apresentada. A aptidão ao encerramento será definida após as etapas jurídicas.</p>
+    </TaskQuestion> : null}
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
       <OptionGroup name="closing-sentence" value={sentence} disabled={busy}
