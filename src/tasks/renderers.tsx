@@ -2,7 +2,6 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { SelectMenu } from '../dashboard/SelectMenu';
 import { OptionGroup as QaOptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 import type { Task, TaskProcess } from './model';
-import { closingClassifierEvidence } from './closingEvidence';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
@@ -102,15 +101,9 @@ function closingClassifierClassification(process: TaskProcess) {
   if (normalized.includes('derrota voluntaria')) return 'Derrota voluntária';
   if (normalized.includes('vitoria')) return 'Vitória';
   if (normalized.includes('derrota')) return 'Derrota';
-  if (normalized.includes('acordo')) return 'Acordo';
-  if (normalized.includes('extincao')) return 'Extinção';
   return null;
 }
 
-
-function closingClassifierReason(process: TaskProcess): string | null {
-  return closingClassifierEvidence(process.source_metadata, process.reason_label);
-}
 
 function closingSentenceHint(process: TaskProcess): string | undefined {
   const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
@@ -185,7 +178,6 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     cnj={process.case_number || 'Processo sem número'}
     draftKey={draftKey}
     classifierClassification={classifierClassification}
-    classifierReason={closingClassifierReason(process)}
     prefill={closingPrefill?.processId === process.id ? closingPrefill.values : undefined}
     contextHint={closingSentenceHint(process)}
     busy={busy}
