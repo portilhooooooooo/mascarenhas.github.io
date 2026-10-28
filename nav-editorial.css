@@ -103,16 +103,6 @@
   height:16px;
   flex:0 0 16px;
 }
-.app-shell .sidebar .main-nav .nav-item[data-page="acordos"] {
-  margin-top:16px;
-}
-.app-shell .sidebar .main-nav .nav-item[data-page="acordos"]::after {
-  content:"";
-  height:1px;
-  position:absolute;
-  top:-10px;left:1px;right:1px;
-  background:#34393c;
-}
 /* Users is a real guarded navigation action, before Sign out. */
 .app-shell .sidebar .sidebar-bottom .sidebar-users-button {
   display:flex;

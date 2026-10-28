@@ -35,7 +35,9 @@ test('geometria de Carteiras, estado ativo e ordenação',()=>{
   assert.match(css,/\.nav-item:not\(\.active\) \{[\s\S]*?background:transparent !important/);
   const nav=shell.match(/const orderedItems: Array<HTMLElement \| null> = \[([\s\S]*?)\];/)[1];
   const pages=[...nav.matchAll(/\[data-page="([^"]+)"\]/g)].map(x=>x[1]);
-  assert.deepEqual(pages,['processos','dashboard','tarefas','automacoes','acordos']);
+  assert.deepEqual(pages,['dashboard','processos','tarefas','automacoes','acordos']);
+  assert.doesNotMatch(css,/\.main-nav \.nav-item\[data-page="acordos"\]\s*\{\s*margin-top/);
+  assert.doesNotMatch(css,/\.main-nav \.nav-item\[data-page="acordos"\]::after/);
 });
 
 test('usuários no rodapé respeita permissão existente',()=>{
