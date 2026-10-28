@@ -203,9 +203,9 @@ function LoginPage() {
         </section>
         <aside className="react-login-visual" aria-label="Identidade visual Mascarenhas Barbosa">
           <video autoPlay muted playsInline loop preload="auto"
-            poster="/assets/mascarenhas-login-poster.jpg?v=20261027-a2690cd3"
+            poster="/assets/mascarenhas-login-poster.jpg?v=20261027-3b74ad84"
             aria-label="Vídeo institucional do escritório Mascarenhas Barbosa">
-            <source src="/assets/mascarenhas-login.mp4?v=20261027-a2690cd3" type="video/mp4"/>
+            <source src="/assets/mascarenhas-login.mp4?v=20261027-3b74ad84" type="video/mp4"/>
           </video>
         </aside>
       </main>

@@ -130,15 +130,14 @@ body[data-react-login="true"] #login-error { display:none!important; }
   background:#382220;border:1px solid #713a35;border-radius:8px;
   color:#f5c8c1;font-size:12px;line-height:1.5;
 }
+/* Same institutional media geometry and crop as main. Other login controls stay on dev. */
 #login-view .react-login-visual {
-  position:relative;min-height:min(670px,75vh);
-  overflow:hidden;border-radius:22px;
-  background:#252525;
-  isolation:isolate;
+  position:relative;align-self:center;min-width:0;aspect-ratio:7 / 5;
+  overflow:hidden;border-radius:22px;background:#161617;isolation:isolate;
 }
 #login-view .react-login-visual video {
-  position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;z-index:0;
-  filter:contrast(1.08) saturate(.88) brightness(.79);
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  object-fit:cover;object-position:34% center;z-index:0;
 }
 #login-view .react-login-visual-fallback {
   position:absolute;inset:0;display:grid;place-items:center;z-index:-1;
@@ -158,9 +157,8 @@ body[data-react-login="true"] #login-error { display:none!important; }
   width:min(180px,35%);opacity:.11;filter:brightness(0) invert(1);
 }
 #login-view .react-login-visual:after {
-  content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(0deg,rgba(16,16,17,.82),transparent 45%);
-  pointer-events:none;
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(0deg,rgba(12,12,14,.93) 0%,rgba(12,12,14,.65) 21%,rgba(12,12,14,.18) 48%,transparent 70%);
 }
 #login-view .react-login-visual-caption {
   position:absolute;z-index:2;bottom:38px;left:38px;right:38px;display:grid;gap:9px;
