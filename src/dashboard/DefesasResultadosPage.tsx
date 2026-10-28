@@ -116,7 +116,7 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
 
   return <section className="defense-results-page" aria-label="Resultados das pendências Talisman de Defesas da Enter">
     <div className="defense-results-heading">
-      <div><h1>Defesas</h1><span>Enter · Pendências Talisman</span></div>
+      <div><span>Enter · Pendências Talisman</span></div>
       <button className="defense-results-refresh" type="button" onClick={()=>void summary.refetch()} disabled={summary.isFetching}>
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>

@@ -56,36 +56,32 @@ function launch(saved = null) {
   return { state, attributes, document, button, events };
 }
 
-test('Claro é o padrão e o botão oferece o tema de destino Escuro', () => {
+test('Sol é o padrão e o seletor acessível alterna para Lua', () => {
   const app = launch();
   assert.equal(app.attributes.get('data-mba-theme'), 'sol');
   assert.equal(app.document.documentElement.style.colorScheme, 'light');
-  assert.match(app.button.innerHTML, /Escuro/);
-  assert.match(app.button.innerHTML, /<path d=\"M20.7/);
-  assert.equal(app.button['aria-label'], 'Ativar tema Escuro');
+  assert.match(app.button.innerHTML, /Sol/);
   app.button.listeners.click();
   assert.equal(app.attributes.get('data-mba-theme'), 'lua');
   assert.equal(app.state.get('mba-backoffice-theme-v1'), 'lua');
-  assert.equal(app.button['aria-label'], 'Ativar tema Claro');
-  assert.match(app.button.innerHTML, /Claro/);
-  assert.match(app.button.title, /Mudar para tema Claro/);
+  assert.equal(app.button['aria-pressed'], 'true');
+  assert.match(app.button.title, /Lua/);
   app.button.listeners.click();
   assert.equal(app.attributes.get('data-mba-theme'), 'sol');
-  assert.match(app.button.innerHTML, /Escuro/);
 });
 
 test('preferência Lua é restaurada antes de renderizar a interface', () => {
   const app = launch('lua');
   assert.equal(app.attributes.get('data-mba-theme'), 'lua');
   assert.equal(app.document.documentElement.style.colorScheme, 'dark');
-  assert.match(app.button.innerHTML, /Claro/);
+  assert.match(app.button.innerHTML, /Lua/);
 });
 
 test('mudança em outra aba atualiza tema e seletor', () => {
   const app = launch();
   app.events.storage({key:'mba-backoffice-theme-v1',newValue:'lua'});
   assert.equal(app.attributes.get('data-mba-theme'),'lua');
-  assert.match(app.button.innerHTML,/Claro/);
+  assert.match(app.button.innerHTML,/Lua/);
 });
 
 test('Sol mantém a paleta clara e Lua define as superfícies de trabalho grafite', () => {

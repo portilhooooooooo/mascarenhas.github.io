@@ -875,9 +875,8 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const shown = loadedKey === filterKey ? dados : null;
   const analysts = blockKeys.analises===filterKey && analises ? analises.analistas : [];
 
-  return <div className="closing-page-v2">
+  return <div className="closing-page-v2" role="region" aria-label="Encerramentos">
     {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
-    <div className="closing-heading"><h1>Encerramentos</h1></div>
     <div className="closing-filter-row">
       <label><span>Tipo</span><select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>
         {visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}

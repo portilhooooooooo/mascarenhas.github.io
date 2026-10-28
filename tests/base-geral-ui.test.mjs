@@ -9,7 +9,7 @@ const styles = fs.readFileSync(new URL('../src/dashboard/baseGeral.css', import.
 test('Base Geral navigation and exact eight compact cards', () => {
   assert.match(tabs, />Base Geral<\/button>/);
   assert.match(tabs, /<BaseGeralPage\b/);
-  assert.match(page, /<h1>Base Geral<\/h1>/);
+  assert.doesNotMatch(page, /<h1>Base Geral<\/h1>/);
   const order = ['Base ativa','Base prescrita','Em encerramento','Suspensos',
     'Improcedentes','Extintos','Procedências','Com tutela deferida'];
   assert.deepEqual([...page.matchAll(/key: '([^']+)', label: '([^']+)', subtitle:/g)].map(x=>x[2]),order);

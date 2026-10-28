@@ -306,7 +306,6 @@ function PagamentosPage() {
   const queueTotal=Number(summary?.queues?.provision||0)+Number(summary?.queues?.receipt||0);
 
   return <div className="protocolos-page-react operacao-pagamentos-page">
-    <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Pagamentos</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
 
     <section className="protocolos-session-bar" aria-label="Status do backend">

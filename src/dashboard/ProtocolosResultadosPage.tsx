@@ -84,7 +84,7 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
 
   return <section className="defense-results-page" aria-label="Resultados dos protocolos pendentes no Talisman">
     <div className="defense-results-heading">
-      <div><h1>Protocolos</h1><span>Enter · {count(summary.data?.active)} pendências Talisman</span></div>
+      <div><span>Enter · {count(summary.data?.active)} pendências Talisman</span></div>
       <button className="defense-results-refresh" type="button" onClick={()=>void summary.refetch()} disabled={summary.isFetching}>
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>

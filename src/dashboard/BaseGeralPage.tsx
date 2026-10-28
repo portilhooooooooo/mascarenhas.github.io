@@ -100,11 +100,6 @@ export function operationalAgingCutoff(now = new Date()): string {
   anniversary.setUTCDate(anniversary.getUTCDate() - 1);
   return anniversary.toISOString().slice(0, 10);
 }
-const portfolioName = (id: string) => ({
-  agibank_enter: 'Agibank · Enter', agibank_mba: 'Agibank · MBA',
-  energisa_enter: 'Energisa · Enter', banco_pan_mba: 'Banco Pan · MBA',
-  nubank_mba: 'Nubank · MBA',
-}[id] || id.replace(/_/g, ' '));
 const validDashboard = (value: unknown): value is Dashboard => {
   if (!value || typeof value !== 'object') return false;
   const d = value as Partial<Dashboard>;
@@ -339,12 +334,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
 
   return <section className="base-geral-page" aria-label="Base Geral da carteira processual">
-    <header className="base-geral-header">
-      <div><h1>Base Geral</h1></div>
-      <div className="base-geral-actions">
-        <span>{portfolioName(portfolio)}</span>
-      </div>
-    </header>
     <div className="base-geral-filters">
       <Select label="Período da entrada" value={period} onChange={value => setPeriod(value as Period)} options={[
         {value:'all',label:'Todo o histórico'}, {value:'month',label:'Mês atual'},

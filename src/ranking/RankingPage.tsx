@@ -199,7 +199,7 @@ export function RankingPage() {
   if (!portfolio) return <section className="ranking-screen" role="status">O Ranking é restrito às carteiras Agibank.</section>;
   return <section className="ranking-screen" aria-label="Projeção gerencial do Ranking Agibank">
     <div className="ranking-topline">
-      <div><h1>Ranking</h1><span className="ranking-context">Projeção não homologada · Agibank {portfolio === 'agibank_enter' ? 'Enter' : 'MBA'}</span></div>
+      <div><span className="ranking-context">Projeção não homologada · Agibank {portfolio === 'agibank_enter' ? 'Enter' : 'MBA'}</span></div>
       <button className="ranking-refresh" type="button" title="Atualizar Ranking" aria-label="Atualizar Ranking" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} className={loading ? 'ranking-spin' : ''}/><span className="mba-visually-hidden">Atualizar</span></button>
     </div>
     {error && <div className="ranking-error" role="alert"><AlertCircle size={16}/><span>Não foi possível carregar a projeção: {error}. O backend de testes precisa disponibilizar a API do Ranking.</span><button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}
