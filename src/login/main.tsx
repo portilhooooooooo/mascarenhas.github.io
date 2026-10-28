@@ -196,7 +196,7 @@ function LoginPage() {
                   disabled={authState.busy} onChange={event => setEmail(event.target.value)}/>
               </label>
               <button className="react-login-primary" type="submit"
-                aria-busy={authState.busy} disabled={authState.busy}>Continuar com e-mail</button>
+                aria-busy={authState.busy} disabled={authState.busy}>Continuar</button>
             </form>
           </div>
           {authState.error ? <div className="react-login-error" role="alert">{authState.error}</div> : null}

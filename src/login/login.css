@@ -213,11 +213,12 @@ body[data-react-login="true"] #login-error { display:none!important; }
 #login-view .react-login-field input{
   height:44px;background:#202022;border:1px solid #393739;color:#fff8f3;
 }
+/* Institutional copper primary action: match the main branch. */
 #login-view .react-login-primary{
-  margin:0;background:#f1f1f1;color:#171717;border:1px solid #f1f1f1;font-weight:600;
+  margin:0;background:#b97a58;color:#fff;border:1px solid #b97a58;font-weight:600;
 }
 #login-view .react-login-primary:hover:not(:disabled){
-  background:#e4e2e0;border-color:#e4e2e0;
+  background:#c38b69;border-color:#c38b69;
 }
 #login-view .react-login-visual-caption span{color:#e4b294}
 #login-view .react-login-visual-caption strong{
