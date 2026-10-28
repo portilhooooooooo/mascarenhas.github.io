@@ -3,6 +3,7 @@ import {useQuery} from '@tanstack/react-query';
 import {CheckCircle2,Clock3,FileX2,ReceiptText,Wallet,X} from 'lucide-react';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import {paymentList,paymentSnapshot,type Snapshot} from './pagamentosSnapshot';
+import {PagamentosTypePie} from './PagamentosTypePie';
 import {PagamentosKanban} from './PagamentosKanban';
 import './pagamentosResultados.css';
 
@@ -56,19 +57,26 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
  ];
  if(!allowed)return <div className="payments-results"><p role="alert" className="payments-results-error">Acesso financeiro restrito.</p></div>;
  return <section className="payments-results" aria-label="Resultados de pagamentos">
-   <div className="payments-results-filters payments-results-filters--compact" aria-label="Filtros de pagamentos">
-     <select aria-label="Escritório" value={office} onChange={e=>setOffice(e.target.value)}>
-       <option value="">Todos os escritórios</option>
-       {(data?.filters.offices||[]).map(item=><option key={item} value={item}>{item}</option>)}
-     </select>
-     <select aria-label="Situação" value={situation} onChange={e=>setSituation(e.target.value)}>
-       <option value="">Todas as situações</option>
-       {(data?.filters.situations||[]).map(item=><option key={item} value={item}>{item}</option>)}
-     </select>
-     <select aria-label="Tipo de pagamento" value="todos" onChange={()=>{}}>
-       <option value="todos">Todos os tipos</option><option value="acordo" disabled>Acordo — indisponível</option><option value="condenacao" disabled>Condenação — indisponível</option>
-     </select>
-     <span className="payments-results-month">{month(data?.monthly.period)}</span>
+   <div className="base-geral-filters payments-results-filters-standard" aria-label="Filtros de pagamentos">
+     <label className="base-geral-filter"><span>Escritório</span>
+       <select aria-label="Escritório" value={office} onChange={e=>setOffice(e.target.value)}>
+         <option value="">Todos</option>
+         {(data?.filters.offices||[]).map(item=><option key={item} value={item}>{item}</option>)}
+       </select>
+     </label>
+     <label className="base-geral-filter"><span>Situação</span>
+       <select aria-label="Situação" value={situation} onChange={e=>setSituation(e.target.value)}>
+         <option value="">Todas</option>
+         {(data?.filters.situations||[]).map(item=><option key={item} value={item}>{item}</option>)}
+       </select>
+     </label>
+     <label className="base-geral-filter"><span>Tipo</span>
+       <select aria-label="Tipo de pagamento" value="todos" onChange={()=>{}}>
+         <option value="todos">Todos</option>
+         <option value="acordo" disabled>Acordo (indisponível)</option>
+         <option value="condenacao" disabled>Condenação (indisponível)</option>
+       </select>
+     </label>
    </div>
    {snapshot.error?<div role="alert" className="payments-results-error">Falha ao consultar pagamentos. <button type="button" onClick={()=>void snapshot.refetch()}>Tentar novamente</button></div>:null}
    <div className="payments-results-kpis">
@@ -80,10 +88,9 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        </button>;
      })}
    </div>
-   <PagamentosKanban enabled={enabled} loading={snapshot.isPending} office={office} situation={situation} stages={data?.stages}/>
    <div className="payments-results-lower payments-results-lower--compact">
      <section className="payments-results-panel">
-       <header className="payments-results-panel-heading"><h2>Liquidados por escritório</h2><strong>{count(data?.monthly.total)}</strong></header>
+       <header className="payments-results-panel-heading"><h2>Liquidados por escritório <span className="payments-results-month-inline">· {month(data?.monthly.period)}</span></h2><strong>{count(data?.monthly.total)}</strong></header>
        <div className="payments-results-firms">
          {(data?.monthly.firms||[]).map(item=>{
            const max=data?.monthly.firms[0]?.quantidade||1;
@@ -97,12 +104,11 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        </div>
      </section>
      <section className="payments-results-panel">
-       <header className="payments-results-panel-heading"><h2>Acordo × Condenação</h2><span className="payments-results-unavailable" title="Sem classificação na fonte de pagamentos">Indisponível</span></header>
-       <div className="payments-results-comparison">
-         <div><span>Acordo</span><strong>—</strong></div><div><span>Condenação</span><strong>—</strong></div>
-       </div>
+       <header className="payments-results-panel-heading"><h2>Acordo × Condenação</h2></header>
+       <PagamentosTypePie types={data?.types}/>
      </section>
    </div>
+   <PagamentosKanban enabled={enabled} loading={snapshot.isPending} office={office} situation={situation} stages={data?.stages}/>
    {detail&&enabled?<div className="payments-results-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setDetail(null)}}>
      <section className="payments-results-dialog" role="dialog" aria-modal="true" aria-label="Detalhamento de pagamentos">
        <header><div><h2>{detail==='total'?'Pagamentos':detail==='paid'?'Liquidados':'Em aprovação'}</h2><span>{office||'Todos os escritórios'}</span></div><button type="button" aria-label="Fechar" onClick={()=>setDetail(null)}><X size={17}/></button></header>

@@ -12,13 +12,14 @@ export const STAGES: Array<{id:StageId; title:string; statuses:string[]}> = [
  {id:'liquidado',title:'Liquidados',statuses:['Liquidado']},
  {id:'interrompido',title:'Cancelados',statuses:['Pagamento cancelado','Cancelado (Valores)','Recusado (Valores)','Recusado (Técnica)']},
 ];
+export type PaymentTypeBreakdown={acordo:number;condenacao:number};
 export type Snapshot = {
  version:number;source:{import_id:string;updated_at?:string|null}|null;
  cards:{total:number;paid:number;approval:number;no_receipt:number|null;ticket_median:number|null};
  stages:Record<StageId,{total:number;rows:PaymentRow[]}>;
  monthly:{period:string;total:number;firms:Array<{credenciado:string;quantidade:number}>};
  filters:{offices:string[];situations:string[]};
- types:null;
+ types:PaymentTypeBreakdown|null;
 };
 type Api = {request:<T>(path:string,options?:RequestInit)=>Promise<T>};
 type Environment = Window & {MBA_API?:Api;MBA_AUTOMATION_API?:Api};
