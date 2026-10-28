@@ -165,3 +165,46 @@ button.ranking-kpi-main.mba-metric-card:hover {background:var(--mba-blue);border
 }
 .ranking-footnote.mba-help-disclosure {margin:0;padding:0 17px 12px}
 .ranking-footnote.mba-help-disclosure p{font-size:11px}
+
+/* Results KPI grid contract — Base Geral / Encerramentos.
+ * A shared ceiling keeps cards from getting excessively wide on large monitors.
+ * Both sections use the same column count, gap, card geometry, and breakpoints.
+ * Existing KPI behavior, business logic, dialogs and tooltips remain unchanged. */
+.gestao-processual-react :is(.base-geral-page,.closing-page-v2) {
+  width:100%;
+  max-width:1200px;
+  margin-inline:auto;
+}
+.gestao-processual-react :is(.base-geral-kpi-layout,.closing-kpis-main) {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  align-items:stretch;
+}
+.gestao-processual-react .base-geral-kpi-layout.with-billing {
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+.gestao-processual-react :is(.base-geral-kpi-layout .base-geral-card,.closing-kpis-main>.closing-kpi) {
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  height:100px;
+  min-height:100px;
+  border-radius:9px;
+  padding:13px 14px;
+}
+@media(max-width:1160px) {
+  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main) {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+@media(max-width:900px) {
+  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main) {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:500px) {
+  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main) {
+    grid-template-columns:minmax(0,1fr);
+  }
+}
