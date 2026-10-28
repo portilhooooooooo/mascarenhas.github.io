@@ -13,6 +13,10 @@ on:
       - src/dashboard/encerramentos.css
       - src/dashboard/operacaoEncerramentosService.ts
       - src/tasks/TaskResults.tsx
+      - src/tasks/ClosingAnalysisFlow.tsx
+      - src/tasks/renderers.tsx
+      - tests/closing-classification-first.test.mjs
+      - tests/closing-preliminary-evidence.test.mjs
       - src/tasks/TasksApp.tsx
       - src/tasks/model.ts
       - app.js
@@ -40,6 +44,10 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: node tests/closing-classification-first.test.mjs
+      - run: node tests/closing-preliminary-evidence.test.mjs
+      - run: node tests/closing-appeal-regression.test.mjs
+      - run: node tests/closing-costs-options.test.mjs
       - run: npm run test:hardening
       - run: node tests/login-brand-media.test.mjs
       - run: npm run build
