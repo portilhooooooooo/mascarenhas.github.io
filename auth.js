@@ -168,11 +168,15 @@
     const name = user.name || user.nome || user.email.split('@')[0];
     const firstName = name.trim().split(/\s+/)[0];
     const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'U';
-    const roleLabels = { admin: 'Admin', legal_leader: 'Legal Leader', stakeholder: 'Stakeholder', analyst: 'Analista', user: 'Analista' };
+    const roleLabels = { admin: 'Administrador', user: 'Usuário' };
 
-    document.getElementById('profile-name').textContent = name;
-    document.getElementById('profile-role').textContent = roleLabels[user.role] || 'Usuário';
-    document.getElementById('profile-avatar').textContent = initials;
+    // Topbar intentionally has no user identity; the sidebar owns account actions.
+    const profileName = document.getElementById('profile-name');
+    const profileRole = document.getElementById('profile-role');
+    const profileAvatar = document.getElementById('profile-avatar');
+    if (profileName) profileName.textContent = name;
+    if (profileRole) profileRole.textContent = roleLabels[user.role] || 'Usuário';
+    if (profileAvatar) profileAvatar.textContent = initials;
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 
@@ -212,7 +216,7 @@
     return document.querySelector('main .page.active')?.id || 'dashboard';
   }
 
-  function dispatchModuleActivation(pageId = activePageId(), force = false) {
+  function dispatchModuleAuthentication(pageId = activePageId(), force = false) {
     const user = window.MBA_CURRENT_USER;
     if (!user?.permissions) return;
 
@@ -231,7 +235,7 @@
     if (typeof originalShowPage === 'function' && !originalShowPage.__mbaLazyWrapped) {
       const wrapped = function(pageId, updateRoute = true) {
         const result = originalShowPage(pageId, updateRoute);
-        queueMicrotask(() => dispatchModuleActivation(pageId));
+        queueMicrotask(() => dispatchModuleAuthentication(pageId));
         return result;
       };
       wrapped.__mbaLazyWrapped = true;
@@ -244,12 +248,12 @@
         ? event.target.closest('[data-page], [data-go]')
         : null;
       if (!target) return;
-      queueMicrotask(() => dispatchModuleActivation(activePageId()));
+      queueMicrotask(() => dispatchModuleAuthentication(activePageId()));
     });
 
     const activateFromHistory = () => {
       if (!window.MBA_CURRENT_USER) return;
-      queueMicrotask(() => dispatchModuleActivation(activePageId()));
+      queueMicrotask(() => dispatchModuleAuthentication(activePageId()));
     };
     window.addEventListener('popstate', activateFromHistory);
     window.addEventListener('hashchange', activateFromHistory);
@@ -280,7 +284,7 @@
       window.dispatchEvent(new CustomEvent('mba:profile-ready', { detail: immutableCopy(profile) }));
       window.restorePageRoute?.();
       window.dispatchEvent(new CustomEvent('mba:authenticated', { detail: immutableCopy(profile) }));
-      dispatchModuleActivation(activePageId(), true);
+      dispatchModuleAuthentication(activePageId(), true);
     }
     setAuthState(true);
     publishLoginState({ busy: false, error: null, status: 'authenticated' });
@@ -383,8 +387,8 @@
       }
 
       if (getStoredToken()) {
-        // The welcome animation is limited to a successful Microsoft callback.
-        // An ordinary F5 does not incur the five-second welcome delay.
+        // A new Microsoft OAuth callback gets a five-second visual welcome
+        // after successful profile validation. Ordinary F5/session refresh does not.
         if (code) document.body.classList.add('mba-auth-transition-hold');
         await loadProfileWithRetry(deadline, maxAttempts, retryBudget);
         if (code) {

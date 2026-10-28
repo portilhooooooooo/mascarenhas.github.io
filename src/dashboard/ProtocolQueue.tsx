@@ -3,13 +3,11 @@ import {AlertTriangle,CheckCircle2,ChevronLeft,ChevronRight,Clock3,ExternalLink,
 import {protocolDetail,protocolStage} from './protocoloPresentation';
 import {retryProtocoloItems,type ProtocoloItem,type ProtocoloStatus,type ProtocoloSummary} from './protocoloService';
 type ProtocolView =
-  | 'ACTIVE'
   | 'ALL'
   | 'PENDING'
   | 'RUNNING'
   | 'DOCUMENTOS_ENVIADOS'
-  | 'SENT'
-  | 'DONE'
+  | 'COMPLETED'
   | 'MISSING_DOCUMENTS'
   | 'ERRORS';
 
@@ -71,13 +69,11 @@ function isMissingDocuments(item: ProtocoloItem) {
 }
 
 function viewMatches(item: ProtocoloItem, view: ProtocolView) {
-  if (view === 'ACTIVE') return item.status !== 'DONE';
   if (view === 'ALL') return true;
   if (view === 'PENDING') return item.status === 'PENDING';
   if (view === 'RUNNING') return item.status === 'RUNNING';
   if (view === 'DOCUMENTOS_ENVIADOS') return item.status === 'DOCUMENTOS_ENVIADOS';
-  if (view === 'SENT') return item.status === 'ENVIADO';
-  if (view === 'DONE') return item.status === 'DONE';
+  if (view === 'COMPLETED') return item.status === 'ENVIADO' || item.status === 'DONE';
   if (view === 'MISSING_DOCUMENTS') return isMissingDocuments(item);
   return item.status === 'HUMAN_NECESSARY' && !isMissingDocuments(item);
 }
@@ -86,20 +82,18 @@ function viewCount(summary: ProtocoloSummary | null, items: ProtocoloItem[], vie
   const statuses = summary?.statuses || {};
   const legacyMissingDocuments = items.filter(isLegacyDocumentIssue).length;
   const missingDocuments = Number(statuses.SEM_DOCUMENTOS || 0) + legacyMissingDocuments;
-  if (view === 'ACTIVE') return Object.entries(statuses).reduce((sum, [status, value]) => sum + (status === 'DONE' ? 0 : Number(value || 0)), 0);
   if (view === 'ALL') return Object.values(statuses).reduce((sum, value) => sum + Number(value || 0), 0);
   if (view === 'PENDING') return Number(statuses.PENDING || 0);
   if (view === 'RUNNING') return Number(statuses.RUNNING || 0);
   if (view === 'DOCUMENTOS_ENVIADOS') return Number(statuses.DOCUMENTOS_ENVIADOS || 0);
-  if (view === 'SENT') return Number(statuses.ENVIADO || 0);
-  if (view === 'DONE') return Number(statuses.DONE || 0);
+  if (view === 'COMPLETED') return Number(statuses.ENVIADO || 0) + Number(statuses.DONE || 0);
   if (view === 'MISSING_DOCUMENTS') return missingDocuments;
   return Math.max(0, Number(statuses.HUMAN_NECESSARY || 0) - legacyMissingDocuments);
 }
 
 export function ProtocolQueue({summary,items,loading,canRun,refresh,setError}:{summary:ProtocoloSummary|null;items:ProtocoloItem[];loading:boolean;canRun:boolean;refresh:()=>Promise<void>;setError:(message:string)=>void}) {
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<ProtocolView>('ACTIVE');
+  const [view, setView] = useState<ProtocolView>('ALL');
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState(1);
   const [selectedRetryIds, setSelectedRetryIds] = useState<Set<string>>(() => new Set());
@@ -189,13 +183,11 @@ export function ProtocolQueue({summary,items,loading,canRun,refresh,setError}:{s
   };
 
   const filters: Array<{ key: ProtocolView; label: string; tone?: string; icon?: typeof Clock3 }> = [
-    { key: 'ACTIVE', label: 'Fila ativa' },
     { key: 'ALL', label: 'Todos' },
     { key: 'PENDING', label: 'Aguardando', icon: Clock3 },
     { key: 'RUNNING', label: 'Em execução', tone: 'blue', icon: LoaderCircle },
     { key: 'DOCUMENTOS_ENVIADOS', label: 'Documentos enviados', tone: 'blue', icon: FileCheck2 },
-    { key: 'SENT', label: 'Enviados, aguardando baixa', tone: 'success', icon: CheckCircle2 },
-    { key: 'DONE', label: 'Baixados do snapshot', tone: 'success', icon: CheckCircle2 },
+    { key: 'COMPLETED', label: 'Enviados / concluídos', tone: 'success', icon: CheckCircle2 },
     { key: 'MISSING_DOCUMENTS', label: 'Sem documentos', icon: Files },
     { key: 'ERRORS', label: 'Ação necessária', tone: 'danger', icon: AlertTriangle },
   ];
@@ -205,7 +197,7 @@ return (
       <header className="protocolos-workspace-head">
         <div>
           <h2>Fila de protocolos</h2>
-          <p>Exibindo tarefas ativas. O histórico inclui baixas por reconciliação, que não comprovam o protocolo.</p>
+          <p>Filtre pelo estado e confira o motivo antes de agir.</p>
         </div>
       </header>
 

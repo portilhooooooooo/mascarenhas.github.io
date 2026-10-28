@@ -257,7 +257,7 @@
     const processesCached = cachedTaskProcesses(path, method);
     if (processesCached) return processesCached;
 
-    if(window.MBA_CURRENT_USER?.runtime_features?.write_intents===true&&method==='POST'&&/^\/api\/task-processes\/[0-9a-f-]{36}\/(?:skip|liminar-validation|(?:liminar|defesa|encerramento|comprovante_pagamento)-analysis)$/.test(path))return operationalWrite(path,options,method);
+    if(method==='POST'&&/^\/api\/task-processes\/[0-9a-f-]{36}\/(?:skip|liminar-validation|(?:liminar|defesa|encerramento|comprovante_pagamento)-analysis)$/.test(path))return operationalWrite(path,options,method);
     if (method !== 'GET') return performRequest(path, options, method);
 
     const requestKey = JSON.stringify([window.MBA_CURRENT_USER?.id||'unvalidated',window.MBA_SESSION_GENERATION||'bootstrap',authorizationEpoch,getPortfolioId(),path]);

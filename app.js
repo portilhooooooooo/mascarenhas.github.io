@@ -18,7 +18,6 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   processos: 'processos',
   dashboard: 'analytics',
-  'banco-dados': 'banco-dados',
   acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
   automacoes: 'automacoes',
@@ -36,6 +35,7 @@ const pageRoutes = Object.freeze({
 const nestedPageRoutes = Object.freeze({
   'analytics/encerramentos': 'dashboard',
   'analytics/defesas': 'dashboard',
+  'analytics/protocolos': 'dashboard',
   'analytics/ranking': 'dashboard',
   'operacao/pagamentos': 'acordos',
   'operacao/liminar': 'acordos',
@@ -108,9 +108,10 @@ function canAccessRoute(pageId, route) {
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
   if (route === 'analytics/defesas' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
+  if (route === 'analytics/protocolos' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
-    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true || user?.permissions?.['tasks.assign'] === true || user?.permissions?.['tasks.view_others'] === true;
+    return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
   }
   return true;
 }
@@ -270,7 +271,7 @@ let permissionCatalog = [];
 let userPortfolioCatalog = [];
 let selectedUser = null;
 let authenticatedUser = null;
-const roleLabels = { admin: 'Admin', legal_leader: 'Legal Leader', stakeholder: 'Stakeholder', analyst: 'Analista', user: 'Analista', operational: 'Operacional' };
+const roleLabels = { admin: 'Administrador', user: 'Usuário', operational: 'Operacional' };
 const userKind = user => user.access_kind === 'operational' ? 'operational' : user.role;
 const exclusiveUsersEmail = 'gabriel.portilho@mascarenhasbarbosa.com.br';
 const permissionSections = { dashboard: 'Dashboard', automations: 'Automações', tutelas: 'Tutelas', encerramentos: 'Encerramentos', pagamentos: 'Pagamentos', agreements: 'Acordos', tasks: 'Tarefas', users: 'Usuários', settings: 'Configurações' };
@@ -320,7 +321,7 @@ function renderPermissionEditor(user) {
   document.querySelector('#selected-user-name').textContent = user.name || 'Sem nome';
   document.querySelector('#selected-user-email').textContent = user.email;
   document.querySelector('#selected-user-role').value = userKind(user);
-  document.querySelector('#selected-user-role').disabled = user.email.toLowerCase() === exclusiveUsersEmail;
+  document.querySelector('#selected-user-role').disabled = true;
   document.querySelector('#selected-user-active').checked = Boolean(user.active);
   document.querySelector('#selected-user-task-access').checked = Boolean(user.task_access_enabled);
   const operational = user.access_kind === 'operational';
@@ -399,10 +400,6 @@ document.querySelector('#save-user-permissions')?.addEventListener('click', asyn
   const original = button.textContent;
   try {
     if (selectedUser.email.toLowerCase() === exclusiveUsersEmail) return;
-    const role = document.querySelector('#selected-user-role').value;
-    if (role !== selectedUser.role) {
-      await window.MBA_API.request(`/api/users/${selectedUser.id}/role`, {method: 'PATCH', body: JSON.stringify({role})});
-    }
     await window.MBA_USER_ACCESS.save(selectedUser.id);
     const active = document.querySelector('#selected-user-active').checked;
     if (active !== selectedUser.active) {
@@ -427,9 +424,8 @@ document.querySelector('#user-create-role')?.addEventListener('change', event =>
 document.querySelector('#user-create-form')?.addEventListener('submit', async event => {
   event.preventDefault();
   const form = event.currentTarget, errorBox = document.querySelector('#user-create-error'), submit = form.querySelector('[type="submit"]');
-  const role = form.elements.role.value;
-  const access_kind = 'administrative';
-  const payload = {role, access_kind, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: access_kind === 'operational' ? [...form.querySelectorAll('[name="allowed_modules"]:checked')].map(input => input.value) : []};
+  const access_kind = form.elements.role.value;
+  const payload = {access_kind, name: form.elements.name.value.trim(), email: form.elements.email.value.trim(), allowed_modules: access_kind === 'operational' ? [...form.querySelectorAll('[name="allowed_modules"]:checked')].map(input => input.value) : []};
   submit.disabled = true; errorBox.hidden = true;
   try {
     const existing = usersCache.find(user => String(user.email || '').toLowerCase() === payload.email.toLowerCase());
@@ -674,7 +670,41 @@ function setResourceBusy(name, busy) {
   if (name === 'encerramentos') setIntegrationBusy('liminar', busy);
 }
 
+let bennerLaunchPollTimer;
+async function loadBennerLaunchHealth() {
+  clearTimeout(bennerLaunchPollTimer);
+  // This consumer reports launches; legal validation has its own state.
+  const portfolio = window.MBA_API?.getPortfolioId?.();
+  const stale = () => portfolio !== window.MBA_API?.getPortfolioId?.();
+  const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+  try {
+    const result = await window.MBA_AUTOMATION_API.request('/api/integrations/benner-andamentos/status');
+    if (stale()) return;
+    setIntegrationHealth('benner-andamentos', result.online === true);
+    const c = result.launch?.counts || {};
+    put('benner-andamentos-job-status', Number(c.PROCESSANDO) ? 'Lançando' : Number(c.NA_FILA) ? 'Na fila' : 'Sem envios pendentes');
+    put('benner-andamentos-job-progress', `${Number(c.ENVIADO || 0)} confirmados · ${Number(c.NA_FILA || 0)} na fila · ${Number(c.ERRO || 0)} falhas`);
+    put('benner-andamentos-validation', ({
+      VALIDADO: 'Validado', AUSENTE: 'Ausente', INCONCLUSIVO: 'Inconclusivo',
+      PENDENTE: 'Pendente', NAO_APLICAVEL: 'Não se aplica',
+    })[result.validation?.state] || 'Pendente');
+  } catch (_error) {
+    if (stale()) return;
+    const badge = document.getElementById('benner-andamentos-health');
+    if (badge) { badge.textContent = 'Sem consulta'; badge.className = 'status-badge planned'; }
+    put('benner-andamentos-job-status', 'Consulta indisponível');
+    put('benner-andamentos-job-progress', '—');
+    put('benner-andamentos-validation', 'Não consultado');
+  } finally {
+    if (document.getElementById('automacoes')?.classList.contains('active')
+        && window.MBA_CURRENT_USER?.permissions?.['automations.view']) {
+      bennerLaunchPollTimer = setTimeout(() => void loadBennerLaunchHealth(), 15000);
+    }
+  }
+}
+
 async function loadIntegrationHealth() {
+  void loadBennerLaunchHealth();
   try {
     const health = await window.MBA_AUTOMATION_API.request('/api/integrations/health');
     setIntegrationHealth('liminar', Boolean(health.liminar?.online));
@@ -683,14 +713,11 @@ async function loadIntegrationHealth() {
     setIntegrationBusy('liminar', Boolean(health.liminar?.busy));
     setIntegrationBusy('encerramentos', Boolean(health.encerramentos?.busy));
     setIntegrationBusy('datajud', Boolean(health.datajud?.busy));
-    window.MBA_AUTOMATION_API.request('/api/automations/benner-andamentos/reasons')
-      .then(() => setIntegrationHealth('benner-andamentos', true))
-      .catch(() => setIntegrationHealth('benner-andamentos', false));
+
   } catch (_error) {
     setIntegrationHealth('liminar', false);
     setIntegrationHealth('datajud', false);
     setIntegrationHealth('encerramentos', false);
-    setIntegrationHealth('benner-andamentos', false);
   }
 }
 
@@ -776,6 +803,8 @@ document.querySelector('#integration-template-download')?.addEventListener('clic
     box.hidden = false;
   }
 });
+
+document.querySelector('[data-benner-launch]')?.addEventListener('click', () => navigateRoute('operacao/encerramentos'));
 
 document.querySelectorAll('.integration-run-button').forEach((button) => button.addEventListener('click', async () => {
   const type = button.dataset.integration;
@@ -898,7 +927,7 @@ document.querySelector('#reset-task-otp')?.addEventListener('click', async () =>
 });
 
 async function loadIntegrationJobs(type) {
-  const path = type === 'benner-andamentos' ? '/api/automations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
+  const path = type === 'benner-andamentos' ? '/api/integrations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
   const jobs = await window.MBA_AUTOMATION_API.request(path);
   window.dispatchEvent(new CustomEvent('mba:jobs-loaded', { detail: { integration: type, jobs } }));
   return jobs;

@@ -5,7 +5,6 @@ import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
-import { BancoDadosPage } from './BancoDadosPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
@@ -14,8 +13,8 @@ import './protocolos.css';
 import './controladoria.css';
 import './defesas.css';
 import './users.css';
-import './bancoDados.css';
 import './ui-architecture.css';
+import './ui-foundations.css';
 
 type DashboardWindow = Window & typeof globalThis & {
   MBA_CURRENT_USER?: { permissions?: Record<string, boolean> };
@@ -33,115 +32,6 @@ function labelNavItem(button: Element, label: string) {
   if (span) span.textContent = label;
 }
 
-function configureProfileControl() {
-  const profile = document.querySelector<HTMLElement>('.profile');
-  if (!profile || profile.dataset.mbaUsersToggle === 'true') return;
-
-  profile.dataset.mbaUsersToggle = 'true';
-  profile.setAttribute('role', 'button');
-  profile.setAttribute('tabindex', '0');
-  profile.setAttribute('aria-label', 'Abrir menu do usuário');
-  profile.setAttribute('aria-haspopup', 'menu');
-  profile.setAttribute('aria-expanded', 'false');
-
-  const menu = document.createElement('div');
-  menu.className = 'profile-menu';
-  menu.id = 'profile-menu';
-  menu.hidden = true;
-  menu.setAttribute('role', 'menu');
-  menu.setAttribute('aria-label', 'Opções do usuário');
-  profile.setAttribute('aria-controls', menu.id);
-
-  const usersItem = document.createElement('button');
-  usersItem.type = 'button';
-  usersItem.className = 'profile-menu-item';
-  usersItem.textContent = 'Usuários';
-  usersItem.setAttribute('role', 'menuitem');
-
-  const logoutItem = document.createElement('button');
-  logoutItem.type = 'button';
-  logoutItem.className = 'profile-menu-item profile-menu-logout';
-  logoutItem.textContent = 'Sair';
-  logoutItem.setAttribute('role', 'menuitem');
-
-  menu.append(usersItem, logoutItem);
-  profile.appendChild(menu);
-
-  const syncUsersVisibility = () => {
-    const user = (window as DashboardWindow).MBA_CURRENT_USER;
-    usersItem.hidden = user?.permissions?.['users.view'] !== true;
-  };
-
-  const setOpen = (open: boolean) => {
-    syncUsersVisibility();
-    menu.hidden = !open;
-    profile.setAttribute('aria-expanded', String(open));
-    profile.classList.toggle('profile-menu-open', open);
-  };
-
-  const toggleMenu = () => setOpen(menu.hidden);
-
-  const openUsers = () => {
-    const user = (window as DashboardWindow).MBA_CURRENT_USER;
-    if (user?.permissions?.['users.view'] !== true) return;
-    setOpen(false);
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    (window as DashboardWindow).showPage?.('usuarios');
-  };
-
-  profile.addEventListener('click', event => {
-    if (event.target instanceof Element && event.target.closest('.profile-menu')) return;
-    toggleMenu();
-  });
-
-  profile.addEventListener('keydown', event => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      toggleMenu();
-      return;
-    }
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setOpen(true);
-      const firstVisible = [...menu.querySelectorAll<HTMLButtonElement>('.profile-menu-item')]
-        .find(item => !item.hidden);
-      firstVisible?.focus();
-      return;
-    }
-    if (event.key === 'Escape') {
-      setOpen(false);
-      profile.focus();
-    }
-  });
-
-  usersItem.addEventListener('click', event => {
-    event.stopPropagation();
-    openUsers();
-  });
-
-  logoutItem.addEventListener('click', event => {
-    event.stopPropagation();
-    setOpen(false);
-    document.getElementById('logout-button')?.click();
-  });
-
-  document.addEventListener('click', event => {
-    if (!menu.hidden && event.target instanceof Node && !profile.contains(event.target)) {
-      setOpen(false);
-    }
-  });
-
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !menu.hidden) {
-      setOpen(false);
-      profile.focus();
-    }
-  });
-
-  window.addEventListener('mba:authenticated', syncUsersVisibility);
-  syncUsersVisibility();
-}
-
 function setTopModuleActive(page: string) {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) return;
@@ -149,7 +39,7 @@ function setTopModuleActive(page: string) {
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
   if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
   const label = document.getElementById('mba-active-module');
-  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados', 'banco-dados': 'Banco de Dados' };
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
   if (label) label.textContent = titles[page] || 'Workspace';
 }
 
@@ -175,7 +65,6 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'dashboard') setTopModuleActive('dashboard');
-  if (activePage.id === 'banco-dados') { setTopModuleActive('banco-dados'); return; }
   if (activePage.id === 'usuarios') {
     document.querySelectorAll('.main-nav .nav-item').forEach(item => item.classList.remove('active'));
     const label = document.getElementById('mba-active-module');
@@ -186,12 +75,10 @@ function syncTopModuleFromActivePage() {
 function configureApplicationShell() {
   const nav = document.querySelector<HTMLElement>('.main-nav');
   if (!nav) {
-    configureProfileControl();
     return;
   }
 
   if (nav.dataset.mbaModuleNav === 'true') {
-    configureProfileControl();
     syncTopModuleFromActivePage();
     return;
   }
@@ -199,23 +86,20 @@ function configureApplicationShell() {
 
   // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
   // A página /controladoria permanece montável para preservar links legados.
-  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard', 'banco-dados']);
+  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
   const labels: Record<string, string> = {
     processos: 'Processos',
     tarefas: 'Tarefas',
     acordos: 'Operação',
     automacoes: 'Automações',
     dashboard: 'Resultados',
-    'banco-dados': 'Banco de Dados',
   };
 
   const buttons = [...nav.querySelectorAll<HTMLElement>('.nav-item')];
-  const baseDados = buttons.find(button => button.textContent?.trim() === 'Documentos') ?? null;
-
   const syncVisibility = () => {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
-      const recognized = visiblePages.has(page) || button === baseDados;
+      const recognized = visiblePages.has(page);
       const eligible = recognized && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
@@ -233,17 +117,15 @@ function configureApplicationShell() {
   buttons.forEach(button => {
     const page = button.dataset.page || '';
     if (visiblePages.has(page)) labelNavItem(button, labels[page]);
-    else if (button === baseDados) labelNavItem(button, 'Base de dados');
     else button.dataset.mbaHidden = 'true';
   });
 
   const orderedItems: Array<HTMLElement | null> = [
+    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="processos"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
-    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
-    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
-    nav.querySelector<HTMLElement>('[data-page="banco-dados"]'),
+    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
@@ -258,7 +140,6 @@ function configureApplicationShell() {
   window.addEventListener('mba:session-expired', syncVisibility);
   window.addEventListener('mba:logged-out', syncVisibility);
   syncVisibility();
-  configureProfileControl();
 }
 
 let operacaoRoot: Root | null = null;
@@ -364,39 +245,6 @@ function configureProtocolosLifecycle() {
   syncProtocolosLifecycle();
 }
 
-let bancoDadosRoot: Root | null = null;
-function unmountBancoDados() {
-  if (!bancoDadosRoot) return;
-  bancoDadosRoot.unmount();
-  bancoDadosRoot = null;
-  document.getElementById('banco-dados')?.replaceChildren();
-}
-function syncBancoDadosLifecycle() {
-  const section = document.getElementById('banco-dados');
-  if (!section) return;
-  // Hiding a tab or the browser must not destroy a visited React root.
-  if (!mayOpen('banco-dados')) {
-    unmountBancoDados();
-    return;
-  }
-  if (section.classList.contains('active') && !bancoDadosRoot) {
-    bancoDadosRoot = createRoot(section);
-    bancoDadosRoot.render(<StrictMode><BancoDadosPage /></StrictMode>);
-  }
-}
-function configureBancoDadosLifecycle() {
-  const section = document.getElementById('banco-dados');
-  if (!section) return;
-  new MutationObserver(syncBancoDadosLifecycle).observe(section, { attributes: true, attributeFilter: ['class'] });
-  for (const event of ['mba:authenticated', 'mba:profile-ready', 'mba:module-visibility-updated']) {
-    window.addEventListener(event, syncBancoDadosLifecycle);
-  }
-  window.addEventListener('mba:portfolio-changed', () => { unmountBancoDados(); syncBancoDadosLifecycle(); });
-  window.addEventListener('mba:session-expired', unmountBancoDados);
-  window.addEventListener('mba:logged-out', unmountBancoDados);
-  syncBancoDadosLifecycle();
-}
-
 let usersRoot: Root | null = null;
 
 function mountUsersPage() {
@@ -492,7 +340,6 @@ mountTasksPage();
 configureOperacaoLifecycle();
 configureProtocolosLifecycle();
 configureUsersLifecycle();
-configureBancoDadosLifecycle();
 
 // Drop the previous root on every portfolio transition; no stale client data persists.
 let processosRoot: Root | null = null;

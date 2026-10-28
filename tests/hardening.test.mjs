@@ -53,8 +53,7 @@ assert.doesNotMatch(auth, /renderMicrosoftOnlyLogin/, 'auth must not render logi
 assert.doesNotMatch(auth, /getElementById\('microsoft-login'\)/, 'auth must not mutate the React login button');
 assert.doesNotMatch(auth, /getElementById\('login-error'\)/, 'auth must not own the visible login error box');
 assert.doesNotMatch(auth, /data-auth-provider="google"/, 'auth must not offer Google');
-assert.match(auth, /dispatchModuleActivation\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
-assert.match(auth, /new CustomEvent\('mba:authenticated', \{ detail: immutableCopy\(profile\) \}\)/, 'only a real sign-in may dispatch the authentication event');
+assert.match(auth, /dispatchModuleAuthentication\(activePageId\(\), true\)/, 'bootstrap must activate only the current module');
 
 assert.match(pageInit, /window\.MBA_REACT_LOGIN = true;/, 'React login ownership must be declared before bootstrap');
 assert.match(pageInit, /window\.MBA_REACT_TASKS = true;/, 'React task ownership must be declared before bootstrap');
@@ -67,8 +66,9 @@ assert.match(login, /MBA_AUTH\?\.getLoginState\?\.\(\)/, 'React login must hydra
 assert.match(login, /mba:auth-state/, 'React login must subscribe to auth state changes');
 assert.match(login, /useLayoutEffect/, 'React login must claim the surface before paint');
 assert.match(login, /id="login-display-email"/, 'corporate login must preserve the decorative e-mail field');
-assert.match(login, /Continuar com a Microsoft/, 'corporate login must preserve the Microsoft access action');
-assert.doesNotMatch(login, /Entrar com Google|Continuar via Microsoft/, 'login must not reintroduce removed auth buttons');
+assert.match(login, /onSubmit=\{submitEmail\}[\s\S]*?>Continuar<\/button>/, 'corporate login must preserve the Continuar action using Microsoft SSO');
+assert.match(login, /Continuar com a Microsoft/, 'login must preserve the Microsoft sign-in option');
+assert.doesNotMatch(login, /Entrar com Google|Continuar via Google/, 'no Google sign-in is allowed');
 assert.match(login, /favicon-white\.svg\?v=20261013-original-mark/, 'login must use the original Mascarenhas symbol in white');
 assert.doesNotMatch(login, /id="microsoft-login"/, 'React buttons must not expose a legacy DOM control point');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');

@@ -25,6 +25,7 @@ const files = [
   'brand-themes.css',
   'design-system-v2.css',
   'reimagined-workspace.css',
+  'nav-editorial.css',
   'brand-theme.js',
   'agreements.css',
   'payment-receipt.css',
@@ -84,6 +85,7 @@ const builtIndexHtml = indexHtml
   .replace(/brand-themes\.css(?:\?v=[^"']+)?/g, `brand-themes.css?v=${buildVersion}`)
   .replace(/design-system-v2\.css(?:\?v=[^"\']+)?/g, `design-system-v2.css?v=${buildVersion}`)
   .replace(/reimagined-workspace\.css(?:\?v=[^"\']+)?/g, `reimagined-workspace.css?v=${buildVersion}`)
+  .replace(/nav-editorial\.css(?:\?v=[^"\']+)?/g, `nav-editorial.css?v=${buildVersion}`)
   .replace(/brand-theme\.js(?:\?v=[^"']+)?/g, `brand-theme.js?v=${buildVersion}`)
   .replace(/styles\.css(?:\?v=[^"']+)?/g, `styles.css?v=${buildVersion}`)
   .replace(/agreements\.css(?:\?v=[^"']+)?/g, `agreements.css?v=${buildVersion}`)

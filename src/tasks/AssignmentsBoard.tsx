@@ -409,14 +409,14 @@ export function AssignmentsBoard({ tasks, api, canAssign, visible = true }: {
 
   return <section className="assignments-board" aria-label="Gestão de atribuições individuais">
     <header className="assignments-header">
-      <div><h1>Gestão de atribuições</h1><p>Distribuição, acompanhamento e redistribuição de tarefas da carteira selecionada.</p></div>
-      <button className="secondary-button assignments-refresh" type="button" disabled={loading || working} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15} /> Atualizar</button>
+      <div><h1>Atribuições</h1></div>
+      <button className="secondary-button assignments-refresh" type="button" title="Atualizar atribuições" aria-label="Atualizar atribuições" disabled={loading || working} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15} /><span className="mba-visually-hidden">Atualizar</span></button>
     </header>
     <div className="assignments-kpis" aria-label="Indicadores das atribuições">
-      <button type="button" className="assignments-kpi" onClick={() => { setStatus('unassigned'); setView('task'); }}><span>Sem responsável</span><strong>{loading && !rows.length ? '—' : counts.unassigned.toLocaleString('pt-BR')}</strong><small>Tarefas abertas</small></button>
-      <button type="button" className="assignments-kpi" onClick={() => { setStatus('today'); setView('deadline'); }}><span>Vencem hoje</span><strong>{loading && !rows.length ? '—' : counts.today.toLocaleString('pt-BR')}</strong><small>Prazos do dia</small></button>
-      <button type="button" className="assignments-kpi" onClick={() => { setStatus('overdue'); setView('deadline'); }}><span>Vencidas</span><strong className={counts.overdue ? 'assignments-risk-number' : ''}>{loading && !rows.length ? '—' : counts.overdue.toLocaleString('pt-BR')}</strong><small>Exigem atenção</small></button>
-      <button type="button" className="assignments-kpi" onClick={() => { setStatus('in_progress'); setView('people'); }}><span>Em andamento</span><strong>{loading && !rows.length ? '—' : counts.working.toLocaleString('pt-BR')}</strong><small>Em execução</small></button>
+      <button type="button" className="assignments-kpi mba-metric-card" onClick={() => { setStatus('unassigned'); setView('task'); }}><span>Sem responsável</span><strong>{loading && !rows.length ? '—' : counts.unassigned.toLocaleString('pt-BR')}</strong></button>
+      <button type="button" className="assignments-kpi mba-metric-card" onClick={() => { setStatus('today'); setView('deadline'); }}><span>Vencem hoje</span><strong>{loading && !rows.length ? '—' : counts.today.toLocaleString('pt-BR')}</strong></button>
+      <button type="button" className="assignments-kpi mba-metric-card" onClick={() => { setStatus('overdue'); setView('deadline'); }}><span>Vencidas</span><strong className={counts.overdue ? 'assignments-risk-number' : ''}>{loading && !rows.length ? '—' : counts.overdue.toLocaleString('pt-BR')}</strong></button>
+      <button type="button" className="assignments-kpi mba-metric-card" onClick={() => { setStatus('in_progress'); setView('people'); }}><span>Em andamento</span><strong>{loading && !rows.length ? '—' : counts.working.toLocaleString('pt-BR')}</strong></button>
     </div>
     {(loading || loadErrors.length > 0) && <div className="assignments-data-note">{loading ? 'Indicadores parciais até o fim da consulta.' : 'Indicadores parciais: alguns lotes não foram consultados.'}</div>}
     <div className="assignments-toolbar">
@@ -437,7 +437,7 @@ export function AssignmentsBoard({ tasks, api, canAssign, visible = true }: {
     </div>
     {loadErrors.length > 0 && <div role="alert" className="assignments-warning">Falha na consulta de {loadErrors.length} grupo(s) de tarefas: {loadErrors.slice(0, 5).join(', ')}{loadErrors.length > 5 ? '…' : ''}. Os totais não representam toda a carteira. <button type="button" disabled={loading} onClick={() => setRefresh(value => value + 1)}>Tentar novamente</button></div>}
     {notice && <div role="status" className="assignments-notice"><Check size={15} /><span>{notice}</span><button aria-label="Fechar aviso" type="button" onClick={() => setNotice('')}><X size={14} /></button></div>}
-    <div className="assignments-summary" aria-live="polite"><span>{filteredSummary} · {filtered.length} no filtro atual</span><span>{view === 'people' ? groupedPeople.length + ' responsáveis' : 'Atribuição individual por processo'}</span></div>
+    <div className="assignments-summary" aria-live="polite"><span>{filtered.length} registros · {filteredSummary}</span></div>
     {canAssign && selectedRows.length > 0 && <div className="assignments-bulk" aria-label="Ações para tarefas selecionadas">
       <div className="assignments-bulk-head"><strong>{selectedRows.length} tarefa(s) selecionada(s)</strong><button type="button" disabled={working} onClick={() => setSelected([])}>Limpar seleção</button></div>
       <div className="assignments-bulk-controls">

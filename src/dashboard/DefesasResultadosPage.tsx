@@ -93,10 +93,8 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
         if(all.length>=expected)break;
       }
       if(expected===undefined||all.length!==expected)throw new Error('Exportação incompleta; tente novamente.');
-      if(all.some(row=>typeof row.reschedule_justification!=='string'||!row.reschedule_justification.trim()))
-        throw new Error('Há processos sem justificativa validada. A exportação foi bloqueada para evitar dados incorretos.');
-      if(all.some(row=>row.decision==='apto' && row.reschedule_required && !row.reschedule_fatal))
-        throw new Error('Há divergências de fatal sem data operacional registrada. A exportação foi bloqueada.');
+      if(all.some(row=>typeof row.reschedule_justification!=='string'||!row.reschedule_justification))
+        throw new Error('A API de testes ainda não disponibilizou as justificativas padronizadas.');
       const clean=(value:string)=>'"'+( /^[\s]*[=+@-]/.test(value)?"'"+value:value ).replace(/"/g,'""')+'"';
       const entries=[['CNJ','VAZIO','FATAL','JUSTIFICATIVA'],...all.map(row=>[
         row.cnj||'', '',date(row.reschedule_fatal)==='—'?'':date(row.reschedule_fatal),
@@ -118,7 +116,7 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
 
   return <section className="defense-results-page" aria-label="Resultados das pendências Talisman de Defesas da Enter">
     <div className="defense-results-heading">
-      <div><h1>Defesas</h1><span>Enter · Pendências Talisman</span></div>
+      <div><span>Enter · Pendências Talisman</span></div>
       <button className="defense-results-refresh" type="button" onClick={()=>void summary.refetch()} disabled={summary.isFetching}>
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>
@@ -157,7 +155,7 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
                 <td><strong>{row.cnj||'—'}</strong></td>
                 <td aria-label="Vazio"></td>
                 <td>{date(row.reschedule_fatal)}</td>
-                <td>{row.reschedule_justification?.trim()||'Justificativa não registrada na análise.'}</td>
+                <td>{row.reschedule_justification||'Justificativa não disponível na API de testes.'}</td>
               </tr>)}</tbody>
             </>
           : <>

@@ -288,7 +288,7 @@
 .closing-queue-footer nav button{display:grid;place-items:center;width:25px;height:25px;background:#fff;border:1px solid var(--closing-line);border-radius:6px;cursor:pointer;color:var(--closing-ink)}
 .closing-queue-footer nav button:disabled{opacity:.35;cursor:not-allowed}
 @media(max-width:1190px){.closing-kpis-main{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:670px){.closing-kpis-main{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-queue-head{align-items:flex-start}.closing-queue-tools form{flex:1}.closing-queue-total{margin:0}.closing-queue-tools .closing-queue-send{width:100%;justify-content:center}}
+@media(max-width:670px){.closing-kpis-main{grid-template-columns:repeat(2,minmax(0,1fr))}.closing-goal-kpi .closing-gauge{width:70px}.closing-goal-kpi .closing-gauge-value{font-size:22px}.closing-queue-head{align-items:flex-start}.closing-queue-tools form{flex:1}.closing-queue-total{margin:0}.closing-queue-tools .closing-queue-send{width:100%;justify-content:center}}
 
 /* Benner: drill-down modal aberto pelo KPI, sem ocupar o dashboard. */
 .closing-queue-dialog{width:min(1120px,calc(100vw - 36px));max-height:min(820px,calc(100dvh - 32px));min-height:360px}
@@ -377,3 +377,117 @@
 /* Meta consolidada por CNJ: outubro recebe pendencias anteriores sem baixa. */
 .closing-aging-month{font-size:10px;font-weight:500;color:var(--closing-muted)}
 .closing-goal-context{display:block;margin-top:10px;font-size:10px;color:var(--closing-muted);line-height:1.4}
+
+/* Ranking de encerramentos: Aging sempre aberto, com pontuação separada da meta quantitativa. */
+.closing-goal-gap{font-size:10px;font-weight:500;color:var(--closing-muted)}
+.closing-aging-card-gap{font-size:10px;line-height:1.25;color:var(--closing-muted)}
+.closing-aging-card-gap.is-complete{color:#26765e;font-weight:600}
+.closing-goal-footer{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;margin-top:9px}
+.closing-goal-footer .closing-goal-context{margin:0}
+.closing-goal-footer>strong{font-size:10px;font-weight:600;color:var(--closing-muted);white-space:nowrap}
+@media(max-width:750px){
+  .closing-goal-summary{flex-wrap:wrap;justify-content:flex-end;gap:5px 10px}
+}
+
+/* Metric cards: 100px platform rhythm, including Meta. */
+.closing-page-v2{max-width:1480px}
+.closing-kpis-main{gap:9px}
+.closing-kpi-button,.closing-goal-kpi{height:100px;min-height:100px;padding:13px 14px}
+.closing-goal-kpi .closing-kpi-top{width:100%}
+.closing-goal-kpi-body{display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:9px;min-width:0;min-height:0}
+.closing-goal-kpi .closing-gauge-value{font-size:25px;line-height:1.1}
+.closing-goal-kpi-progress{display:block;height:5px;width:100%;border-radius:999px;background:var(--mba-border);overflow:hidden}
+.closing-goal-kpi-progress i{display:block;height:100%;border-radius:inherit;background:var(--mba-orange);transition:width .18s ease}
+.closing-kpi-top{font-size:11px}
+.closing-heading{margin-bottom:12px}
+.closing-filter-row{padding:10px 12px;margin-bottom:10px}
+.closing-surface{padding:14px 16px}
+.closing-aging{padding:12px 14px}
+@media(max-width:620px){.closing-kpi-button,.closing-goal-kpi{height:100px;min-height:100px}}
+
+/* Seven equal-height metrics. Rollback the Meta card to its semicircle. */
+.closing-kpis-main{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.closing-goal-kpi-body{
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  gap:4px;
+  min-width:0;
+  min-height:42px;
+}
+.closing-goal-kpi .closing-gauge{
+  display:block;
+  width:90px;
+  height:50px;
+  max-width:48%;
+  min-width:0;
+  flex-shrink:1;
+  overflow:visible;
+}
+.closing-ticket-kpi strong{font-size:clamp(17px,1.4vw,25px);white-space:nowrap;letter-spacing:-.04em}
+.closing-ticket-dialog{
+  background:var(--mba-surface);
+  color:var(--mba-text);
+  border:1px solid var(--mba-border);
+  border-radius:10px;
+  width:min(520px,calc(100vw - 32px));
+  margin:auto;
+  padding:20px 22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.14);
+}
+.closing-ticket-dialog header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}
+.closing-ticket-dialog h2{font-size:15px;font-weight:650;margin:0}
+.closing-ticket-dialog header button{border:0;background:transparent;color:var(--mba-text-2);cursor:pointer}
+.closing-ticket-dialog>strong{display:block;font-size:28px;font-variant-numeric:tabular-nums}
+.closing-ticket-dialog>p{color:var(--mba-text-2);font-size:12px;line-height:1.55}
+.closing-ticket-dialog>span,.closing-ticket-dialog>small{display:block;color:var(--mba-muted);font-size:11px;margin-top:8px}
+@media(max-width:1390px){.closing-kpis-main{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:750px){.closing-kpis-main{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+@media(max-width:1000px){
+  .closing-kpis-main{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+
+/* Meta: rollback visual pontual da main; mantem as demais metricas atuais. */
+.closing-kpis-main .closing-goal-kpi {
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  height:100px;
+  min-height:100px;
+  padding:9px 11px 4px;
+  gap:0;
+  --closing-gauge-track:#fff0dc;
+  --closing-gauge-fill:#d59a54;
+}
+.closing-kpis-main .closing-goal-kpi-title {
+  align-self:flex-start;
+  font-size:11px;
+  color:var(--mba-text-2);
+  font-weight:550;
+}
+.closing-kpis-main .closing-goal-kpi .closing-gauge {
+  display:block;
+  width:104px;
+  height:55px;
+  max-width:98%;
+  margin-top:0;
+  overflow:visible;
+}
+.closing-kpis-main .closing-goal-kpi .closing-gauge-value {
+  position:absolute;
+  left:50%;
+  bottom:14px;
+  transform:translateX(-50%);
+  color:var(--closing-ink);
+  font-size:17px;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:normal;
+  white-space:nowrap;
+}

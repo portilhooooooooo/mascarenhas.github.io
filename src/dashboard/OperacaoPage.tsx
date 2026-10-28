@@ -1,3 +1,4 @@
+import {createPortal} from 'react-dom';
 import './operacao.css';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
 import {OperacaoLiminarPage} from './OperacaoLiminarPage';
@@ -251,7 +252,6 @@ function PagamentosPage() {
   const [canImport,setCanImport]=useState(false);
   const [canRun,setCanRun]=useState(false);
   const inFlight=useRef(false);
-  const lastRefreshAt=useRef(0);
 
   const refresh=useCallback(async()=>{
     if(inFlight.current)return;
@@ -259,7 +259,6 @@ function PagamentosPage() {
     try{
       const [nextSummary,nextItems]=await Promise.all([getPagamentoOperacaoSummary(),getPagamentoOperacaoItems()]);
       setSummary(nextSummary);setItems(nextItems);setError('');
-      lastRefreshAt.current=Date.now();
     }catch(cause){
       setError(cause instanceof Error?cause.message:'Não foi possível consultar Pagamentos.');
       setSummary(current=>current?{...current,session:{state:'unknown'}}:null);
@@ -276,20 +275,6 @@ function PagamentosPage() {
     permissions();window.addEventListener('mba:authenticated',permissions);return()=>window.removeEventListener('mba:authenticated',permissions);
   },[refresh]);
 
-  useEffect(()=>{
-    // Show the retained list instantly; revalidate in the background if stale.
-    const revalidate=()=>{
-      if(!canView||document.hidden||operationModuleFromLocation()!=='pagamentos'||
-          !document.getElementById('acordos')?.classList.contains('active'))return;
-      if(Date.now()-lastRefreshAt.current>30000)void refresh();
-    };
-    window.addEventListener('mba:route-changed',revalidate);
-    document.addEventListener('visibilitychange',revalidate);
-    return()=>{
-      window.removeEventListener('mba:route-changed',revalidate);
-      document.removeEventListener('visibilitychange',revalidate);
-    };
-  },[canView,refresh]);
 
   const importFile=async()=>{
     if(!file||!canImport||importBusy)return;
@@ -321,7 +306,6 @@ function PagamentosPage() {
   const queueTotal=Number(summary?.queues?.provision||0)+Number(summary?.queues?.receipt||0);
 
   return <div className="protocolos-page-react operacao-pagamentos-page">
-    <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Pagamentos</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
 
     <section className="protocolos-session-bar" aria-label="Status do backend">
@@ -364,8 +348,20 @@ function navigateOperationModule(module: OperationModule) {
 }
 
 export function OperacaoPage() {
+  // This page stays mounted after first visit; only expose its portaled tabs while
+  // Operação is the selected module, otherwise they would leak into other views.
+  const [operationVisible, setOperationVisible] = useState(() => document.getElementById('acordos')?.classList.contains('active') === true);
+  useEffect(() => {
+    const section = document.getElementById('acordos');
+    if (!section) return;
+    const sync = () => setOperationVisible(section.classList.contains('active'));
+    const observer = new MutationObserver(sync);
+    observer.observe(section, {attributes:true,attributeFilter:['class']});
+    sync();
+    return () => observer.disconnect();
+  }, []);
   const [module, setModule] = useState<OperationModule>(() => operationModuleFromLocation() || 'pagamentos');
-  // Mount an authorized operation only on first visit; keep its filters/data on later visits.
+  // Mount once per authorized visit, then keep state between submodule changes.
   const [visited, setVisited] = useState<OperationModule[]>(() => [operationModuleFromLocation() || 'pagamentos']);
   const [allowed, setAllowed] = useState<OperationVisibility>({
     pagamentos: false, liminar: false, encerramentos: false, protocolos: false, defesas: false,
@@ -389,7 +385,6 @@ export function OperacaoPage() {
         protocolos: canAccessProtocols,
         defesas: canAccessProtocols,
       };
-      // Evita rerender de todos os fluxos a cada revalidação sintética do shell.
       setAllowed(previous => OPERATION_MODULES.every(key => previous[key] === next[key]) ? previous : next);
       setModule(previous => {
         const requested = operationModuleFromLocation();
@@ -402,12 +397,10 @@ export function OperacaoPage() {
     window.addEventListener('mba:authenticated', sync);
     window.addEventListener('mba:profile-ready', sync);
     window.addEventListener('mba:portfolio-changed', sync);
-    window.addEventListener('mba:module-visibility-updated', sync);
     return () => {
       window.removeEventListener('mba:authenticated', sync);
       window.removeEventListener('mba:profile-ready', sync);
       window.removeEventListener('mba:portfolio-changed', sync);
-      window.removeEventListener('mba:module-visibility-updated', sync);
     };
   }, []);
 
@@ -430,14 +423,16 @@ export function OperacaoPage() {
     if (allowed[module]) setVisited(previous => previous.includes(module) ? previous : [...previous, module]);
   }, [module, allowed]);
 
-  return <div className="operacao-module-shell">
-    <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
+  const shellTabs = document.getElementById('mba-shell-tabs');
+  const operationTabs = <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
       {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => navigateOperationModule('pagamentos')}>Pagamentos</button> : null}
       {allowed.liminar ? <button type="button" className={module === 'liminar' ? 'active' : ''} aria-current={module === 'liminar' ? 'page' : undefined} onClick={() => navigateOperationModule('liminar')}>Liminar</button> : null}
       {allowed.encerramentos ? <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => navigateOperationModule('encerramentos')}>Encerramentos</button> : null}
       {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => navigateOperationModule('protocolos')}>Protocolos</button> : null}
       {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => navigateOperationModule('defesas')}>Defesas</button> : null}
-    </nav>
+    </nav>;
+  return <div className="operacao-module-shell">
+    {shellTabs ? (operationVisible ? createPortal(operationTabs, shellTabs) : null) : operationTabs}
     {allowed.pagamentos && visited.includes('pagamentos') ? <div style={{display: module === 'pagamentos' ? 'contents' : 'none'}}><PagamentosPage/></div> : null}
     {allowed.liminar && visited.includes('liminar') ? <div style={{display: module === 'liminar' ? 'contents' : 'none'}}><OperacaoLiminarPage/></div> : null}
     {allowed.encerramentos && visited.includes('encerramentos') ? <div style={{display: module === 'encerramentos' ? 'contents' : 'none'}}><OperacaoEncerramentosPage/></div> : null}

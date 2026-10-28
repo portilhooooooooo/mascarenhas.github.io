@@ -63,18 +63,6 @@ type UsersWindow = Window & typeof globalThis & {
 
 const mbaWindow = window as UsersWindow;
 const MASTER_EMAIL = 'gabriel.portilho@mascarenhasbarbosa.com.br';
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Admin',
-  legal_leader: 'Legal Leader',
-  stakeholder: 'Stakeholder',
-  analyst: 'Analista',
-  user: 'Analista',
-};
-const ASSIGNABLE_ROLES = [
-  {value: 'analyst', label: 'Analista'},
-  {value: 'legal_leader', label: 'Legal Leader'},
-  {value: 'stakeholder', label: 'Stakeholder'},
-];
 
 const SECTION_LABELS: Record<string, string> = {
   processos: 'Processos',
@@ -131,7 +119,6 @@ function sourceLabel(source?: string) {
   if (source === 'override_allow') return 'Liberação individual';
   if (source === 'override_deny') return 'Bloqueio individual';
   if (source === 'exclusive_policy') return 'Política exclusiva';
-  if (source === 'role_policy') return 'Controlado pelo perfil';
   return 'Perfil padrão';
 }
 
@@ -155,7 +142,6 @@ export function UsersPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftPermissions, setDraftPermissions] = useState<Record<string, boolean>>({});
   const [draftActive, setDraftActive] = useState(true);
-  const [draftRole, setDraftRole] = useState('analyst');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [permissionView, setPermissionView] = useState<'modules' | 'advanced'>('modules');
@@ -236,7 +222,6 @@ export function UsersPage() {
     if (!selected) return;
     setDraftPermissions(permissionMap(selected));
     setDraftActive(Boolean(selected.active));
-    setDraftRole(selected.role === 'user' ? 'analyst' : selected.role);
     setFeedback('');
   }, [selected]);
 
@@ -255,7 +240,6 @@ export function UsersPage() {
   const totalBlocked = users.filter(user => user.account_locked || !user.active).length;
   const selectedProtected = isProtectedUser(selected);
   const dirty = Boolean(selected) && (draftActive !== Boolean(selected?.active)
-    || draftRole !== (selected?.role === 'user' ? 'analyst' : selected?.role)
     || Object.entries(draftPermissions).some(([key, value]) => value !== (permissionMap(selected)[key] === true)));
   const moduleGroups = groups.map(group => ({
     ...group,
@@ -272,13 +256,6 @@ export function UsersPage() {
     setPageError('');
     setFeedback('');
     try {
-      const roleChanged = draftRole !== (selected.role === 'user' ? 'analyst' : selected.role);
-      if (roleChanged) {
-        await apiRequest(`/api/users/${selected.id}/role`, {
-          method: 'PATCH',
-          body: JSON.stringify({role: draftRole}),
-        });
-      }
       if (draftActive !== selected.active) {
         await apiRequest(
           `/api/users/${selected.id}/${draftActive ? 'activate' : 'deactivate'}`,
@@ -293,22 +270,17 @@ export function UsersPage() {
         );
       }
 
-      // Only submit actual checkbox changes. Sending the entire previous role's
-      // effective map would override and silently undo a role switch.
-      const previous = permissionMap(selected);
       const editable = permissions
         .filter(permission => !permission.key.startsWith('users.'))
-        .filter(permission => (draftPermissions[permission.key] === true) !== (previous[permission.key] === true))
         .map(permission => ({
           permission_id: permission.id,
           allowed: draftPermissions[permission.key] === true,
         }));
-      if (editable.length) {
-        await apiRequest(`/api/users/${selected.id}/permissions`, {
-          method: 'PUT',
-          body: JSON.stringify({ permissions: editable }),
-        });
-      }
+
+      await apiRequest(`/api/users/${selected.id}/permissions`, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions: editable }),
+      });
       setFeedback('Alterações salvas.');
       await load(selected.id);
     } catch (error: any) {
@@ -428,7 +400,7 @@ export function UsersPage() {
                   </div>
                   <span><Mail />{selected.email}</span>
                   <div className="users-detail-chips">
-                    <span>{ROLE_LABELS[selected.role] || 'Analista'}</span>
+                    <span>{selected.role === 'admin' ? 'Administrador' : 'Usuário'}</span>
                     <span>Microsoft Entra</span>
                     <span className={`state-${statusOf(selected).className}`}>{statusOf(selected).label}</span>
                   </div>
@@ -456,22 +428,6 @@ export function UsersPage() {
                 </label>
               </div>
 
-              <div className="users-access-state">
-                <div>
-                  <strong>Modelo de credencial</strong>
-                  <small>Legal Leader pode atribuir tarefas e prazos, ver a equipe e executar automações.</small>
-                </div>
-                <select
-                  aria-label="Modelo de credencial"
-                  value={draftRole}
-                  onChange={event => setDraftRole(event.target.value)}
-                  disabled={!canManage || selectedProtected}
-                >
-                  {selectedProtected && <option value="admin">Admin (exclusivo)</option>}
-                  {ASSIGNABLE_ROLES.map(role => <option key={role.value} value={role.value}>{role.label}</option>)}
-                </select>
-              </div>
-
               <div className="users-permission-heading">
                 <div><strong>Autorizações</strong><small>O acesso exige permissão individual e módulo disponível na carteira. Controladoria e Automações são exclusivos das carteiras Enter.</small></div>
                 <span>{Object.values(draftPermissions).filter(Boolean).length} liberadas</span>
@@ -491,8 +447,7 @@ export function UsersPage() {
                     <header><strong>{group.label}</strong></header>
                     {group.permissions.map(permission => {
                       const exclusive = permission.key.startsWith('users.') && !selectedProtected;
-                      const roleManaged = ['tasks.assign','tasks.view_others','tasks.execute_others','tasks.manage','automations.view','automations.run','automations.manage','automations.override_daily_limit','settings.manage'].includes(permission.key);
-                      const disabled = !canManage || selectedProtected || exclusive || roleManaged;
+                      const disabled = !canManage || selectedProtected || exclusive;
                       const effective = selectedEffective[permission.key];
                       return (
                         <label className={`users-permission-row ${disabled ? 'disabled' : ''}`} key={permission.id}>
@@ -567,7 +522,6 @@ function CreateUserDialog({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [tenant, setTenant] = useState('');
-  const [role, setRole] = useState('analyst');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -583,7 +537,6 @@ function CreateUserDialog({
         name: name.trim(),
         email: email.trim(),
         auth_provider: 'microsoft',
-        role,
       };
       if (tenant.trim()) payload.microsoft_tenant_id = tenant.trim();
       const result = await apiRequest('/api/users', {
@@ -608,12 +561,6 @@ function CreateUserDialog({
           <button type="button" onClick={onClose} aria-label="Fechar"><X /></button>
         </header>
         <form onSubmit={submit}>
-          <label>
-            Modelo de credencial
-            <select value={role} onChange={event => setRole(event.target.value)}>
-              {ASSIGNABLE_ROLES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
-            </select>
-          </label>
           <label>Nome<input value={name} onChange={event => setName(event.target.value)} maxLength={120} required /></label>
           <label>E-mail corporativo<input value={email} onChange={event => setEmail(event.target.value)} type="email" required /></label>
           <label>

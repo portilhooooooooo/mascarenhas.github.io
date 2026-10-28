@@ -1,4 +1,4 @@
-/* Mascarenhas Barbosa — seleção Sol / Lua.
+/* Mascarenhas Barbosa — seletor Sol / Lua.
  * Executado no <head> para aplicar a preferência antes da primeira pintura.
  * Independente de React, da autenticação e dos módulos operacionais.
  */

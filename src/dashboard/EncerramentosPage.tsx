@@ -1,9 +1,9 @@
 import { analyticalRead } from '../analytics/readScheduler';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, X } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Search, Send, Target, UsersRound, Wallet, X } from 'lucide-react';
 import { getClosingCases, sendClosingsToBenner, type ClosingCase, type ClosingStatus, type ClosingValidatedFilter } from './operacaoEncerramentosService';
-import { regularAgingGoals, regularAgingSummary } from './closingAgingGoals';
+import { regularAgingGoals, regularAgingRanking, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
 
 type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
@@ -36,8 +36,8 @@ type Dados = {
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
-type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; concorda:boolean|null };
-type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
+type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; classificacao_validada:string|null; concorda:boolean|null };
+type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{metodologia?:string;confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
 type ClosingClassificationRow = { cnj: string; tipo: string; origem: 'validado' | 'benner_adicional' };
 type ClosingClassification = {
   total: number; tipos: TipoRow[]; itens: ClosingClassificationRow[];
@@ -99,6 +99,7 @@ const ageBands = (carteira: string) => carteira === 'Agibank Regular'
   : ['0–3 meses', '4–10 meses', '>10 meses', 'Sem tag / não reconhecida'];
 const num = (value: number) => new Intl.NumberFormat('pt-BR').format(value);
 const percent = (value: number) => value.toFixed(1).replace('.', ',') + '%';
+const currency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 2 }).format(value);
 const valueOrZero = (value: number | undefined | null) => Number(value || 0);
 
 function localISO(daysBack: number): string {
@@ -164,17 +165,18 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   const pageSize=20;
   useEffect(()=>{
     if(!hasDetails)return;
-    let active=true;const controller=new AbortController();const owner=runtimeScope();
+    let active=true;
     setBusy(true);setError('');
     const request: Promise<{rows:ClosingCase[];total:number}> =
       (kind==='analisados'||kind==='acuracia')
-      ? analyticalRead(signal=>loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search,kind==='acuracia'?concordancia:'todos',signal),{priority:0,signal:controller.signal,isCurrent:()=>owner===runtimeScope()}).then(data=>({
+      ? loadClosingAnalyses(inicio,fim,tipo,pageSize,(page-1)*pageSize,search,kind==='acuracia'?concordancia:'todos').then(data=>({
         total:data.total,
         rows:data.rows.map(row=>({
           portfolio_id:'',cnj:row.cnj,analista_id:row.analista,
           tipo_validado:row.tipo,validacao_decisao:null,analisado_em:row.analisado_em,
           validado_em:row.analisado_em,status_envio:undefined,
-          classificador_originario:row.classificador_originario, concorda_originario:row.concorda,
+          classificador_originario:row.classificador_originario, classificacao_validada:row.classificacao_validada,
+          concorda_originario:row.concorda,
         } as ClosingCase))
       }))
       : getClosingCases(listStatus!,pageSize,(page-1)*pageSize,search,kind==='motivo'?'nao':'todos',
@@ -183,7 +185,7 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
       .then(data=>{if(active){setItems(data.rows || []);setTotal(data.total);}})
       .catch(cause=>{if(active){setError(cause instanceof Error?cause.message:'Consulta indisponível.');setItems([]);setTotal(null);}})
       .finally(()=>{if(active)setBusy(false);});
-    return()=>{active=false;controller.abort()};
+    return()=>{active=false};
   },[listStatus,hasDetails,page,search,concordancia,kind,inicio,fim,tipo,tipoRecorte]);
   useEffect(()=>{
     const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape')onClose();};
@@ -202,8 +204,8 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
       {!hasDetails ? <div className="closing-dialog-empty" role="status">
         A relação de CNJs deste indicador ainda não é disponibilizada pela API de Resultados.
       </div> : <>
-        {kind==='acuracia' && <div className="closing-accuracy-tabs" role="group" aria-label="Concordância com o classificador">
-          {([{key:'todos',label:'Todos'},{key:'sim',label:'Concordantes'},{key:'nao',label:'Divergentes'},{key:'nao_avaliados',label:'Não avaliados'}] as const).map(item=>
+        {kind==='acuracia' && <div className="closing-accuracy-tabs" role="group" aria-label="Comparação de classificação original e validada">
+          {([{key:'todos',label:'Todos'},{key:'sim',label:'Correspondentes'},{key:'nao',label:'Divergentes'},{key:'nao_avaliados',label:'Não comparáveis'}] as const).map(item=>
             <button key={item.key} type="button" aria-pressed={concordancia===item.key}
               className={concordancia===item.key?'active':''} onClick={()=>{setConcordancia(item.key);setPage(1);}}>{item.label}</button>)}
         </div>}
@@ -217,17 +219,21 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
             <Download size={15}/>CSV
           </button>
         </div>
-        <p className="closing-dialog-source">{kind==='acuracia'?'Classificação sugerida antes da tarefa × concordância declarada pelo analista':
+        <p className="closing-dialog-source">{kind==='acuracia'?'Classificação original × resultado jurídico validado. Revisões e categorias não comparáveis não entram no percentual.':
           kind==='analisados' ? 'Análises humanas do período selecionado' : 'Relação da fila operacional · os totais podem diferir dos indicadores do período.'}</p>
         {error && <p className="closing-error" role="alert">{error}</p>}
         <div className="closing-dialog-table-wrap">
           <table className="closing-dialog-table">
-            <thead><tr><th>CNJ</th><th>{kind==='acuracia'?'Classificador':'Pasta'}</th><th>{kind==='acuracia'?'Concordância':'Classificação'}</th><th>Analista</th><th>{kind==='analisados'||kind==='acuracia'?'Analisado em':'Benner'}</th></tr></thead>
+            <thead><tr><th>CNJ</th><th>{kind==='acuracia'?'Classificador':'Pasta'}</th>{kind==='acuracia'&&<th>Validado</th>}<th>{kind==='acuracia'?'Comparação':'Classificação'}</th><th>Analista</th><th>{kind==='analisados'||kind==='acuracia'?'Analisado em':'Benner'}</th></tr></thead>
             <tbody>{items.map(row=><tr key={row.cnj}>
               <td><strong>{closingCnj(row.cnj)}</strong></td>
               <td>{kind==='acuracia'?(row as ClosingCase & {classificador_originario?:string|null}).classificador_originario||'—':row.pasta||'—'}</td>
-              <td>{kind==='acuracia'?((row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===true?'Concorda':
-                (row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===false?'Diverge':'Não avaliado'):row.tipo_validado||'—'}</td>
+              {kind==='acuracia'&&<td>{({
+                VITORIA:'Vitória', DERROTA:'Derrota', DERROTA_VOLUNTARIA:'Derrota voluntária',
+                ACORDO:'Acordo', EXTINCAO:'Extinção',
+              } as Record<string,string>)[(row as ClosingCase & {classificacao_validada?:string|null}).classificacao_validada||'']||'—'}</td>}
+              <td>{kind==='acuracia'?((row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===true?'Corresponde':
+                (row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===false?'Diverge':'Não comparável'):row.tipo_validado||'—'}</td>
               <td>{row.analista_id || '—'}</td>
               <td>{kind==='analisados'||kind==='acuracia'?(row.analisado_em ? new Date(row.analisado_em).toLocaleDateString('pt-BR') : '—') : (row.status_envio || '—')}</td>
             </tr>)}</tbody>
@@ -248,18 +254,23 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
   </div>;
 }
 
-function Metrics({ dados, carteira, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
-  dados: Dados | null; carteira:string; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
+function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes, onOpen }: {
+  dados: Dados | null; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
   motivosPendentes: number | null; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
-  const goals=agingMensal && carteira==='Agibank Regular'
+  const accuracyReady=accuracy?.metodologia==='classificacao_validada_v2';
+  const goals=agingMensal && dados?.carteira==='Agibank Regular'
     ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
+  const [ticketDetailsOpen, setTicketDetailsOpen] = useState(false);
+  const historicalTicket = dados?.indicadores?.ticket_medio;
+  const historicalSample = dados?.indicadores?.ticket_amostra ?? 0;
+  const expectedTicket = typeof historicalTicket === 'number' && Number.isFinite(historicalTicket) && historicalTicket >= 0 && historicalSample > 0 ? historicalTicket : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
-    {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
+    {key:'acuracia',icon:Target,value:accuracyReady && accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.total_em_acompanhamento):'—'},
     {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
@@ -278,18 +289,35 @@ function Metrics({ dados, carteira, agingMensal, analises, posicaoBenner, motivo
           </svg>
           <strong className="closing-gauge-value">{card.value}</strong>
         </button>
-      : <button className="closing-kpi closing-kpi-button" type="button"
-          key={card.key} onClick={()=>onOpen(card.key)}
-          title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
+      : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"
+          key={card.key} disabled={card.key==='acuracia'&&!accuracyReady}
+          onClick={()=>onOpen(card.key)}
+          title={card.key==='acuracia'&&!accuracyReady?'Acurácia indisponível até o backend publicar a metodologia V2.':
+            card.key==='acuracia'?'Acertos do classificador entre '+num(accuracy?.avaliados??0)+' análises com resultado jurídico comparável; '+num(accuracy?.nao_avaliados??0)+' sem comparação válida.':
+            card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
             card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' :
             card.key==='aptidoes' ? 'Validações auditadas na plataforma. A meta de aging também considera registros Benner reconciliados e o saldo anterior sem baixa.' : undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
           <strong>{card.value}</strong>
         </button>)}
+    <button className="closing-kpi closing-kpi-button mba-metric-card closing-ticket-kpi" type="button"
+      onClick={()=>setTicketDetailsOpen(true)}
+      aria-label={'Ticket médio esperado: '+(expectedTicket === null ? 'indisponível' : currency(expectedTicket))+'. Ver metodologia'}>
+      <div className="closing-kpi-top"><span>Ticket médio esperado</span><Wallet size={15} strokeWidth={1.7}/></div>
+      <strong>{expectedTicket === null ? '—' : currency(expectedTicket)}</strong>
+    </button>
+    {ticketDetailsOpen && <div className="closing-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setTicketDetailsOpen(false);}}>
+      <section className="closing-ticket-dialog" role="dialog" aria-modal="true" aria-label="Ticket médio esperado">
+        <header><h2>Ticket médio esperado</h2><button type="button" onClick={()=>setTicketDetailsOpen(false)} aria-label="Fechar detalhes"><X size={18}/></button></header>
+        <strong>{expectedTicket === null ? '—' : currency(expectedTicket)}</strong>
+        <p>Estimativa baseada na média dos valores pagos registrados nos encerramentos com informação financeira, conforme os filtros selecionados.</p>
+        <span>Amostra: {num(historicalSample)} registros com valor pago.</span>
+        <small>Não representa faturamento, antecipação de parcelas ou valor garantido de recebimento.</small>
+      </section>
+    </div>}
   </section>;
 }
-
 
 
 type QueueView = 'enviados' | 'pendentes';
@@ -509,21 +537,22 @@ function ClosingQueueDialog({carteira,onClose,onSent,posicao}: {carteira:string;
   </div>;
 }
 
-function AgingPanel({ dados, carteira, agingMensal }: {
-  dados: Dados | null; carteira:string; agingMensal:MonthlyAging|null;
+function AgingPanel({ dados, agingMensal }: {
+  dados: Dados | null; agingMensal:MonthlyAging|null;
 }) {
-  const regular = carteira === 'Agibank Regular';
+  const regular = dados?.carteira === 'Agibank Regular';
   const counts=regular ? agingMensal?.aging || [] : dados?.etapas?.aging || [];
   const total=regular ? valueOrZero(agingMensal?.total_elegivel) : valueOrZero(dados?.etapas?.total);
   const available=regular ? Boolean(agingMensal) : Boolean(dados?.etapas);
   const goals=regular?regularAgingGoals(counts,total):[];
   const summary=regularAgingSummary(goals);
+  const ranking=regular?regularAgingRanking(goals):null;
   const enterBands=['0–3 meses','4–10 meses','>10 meses'];
   const rows=regular?goals.map(goal=>({label:goal.label,atual:goal.atual,
-    meta:goal.meta,achieved:goal.atingidoPercent})):
+    meta:goal.meta,gap:goal.gap,achieved:goal.atingidoPercent})):
     enterBands.map(faixa=>{
       const atual=valueOrZero(counts.find(row=>row.faixa===faixa)?.quantidade);
-      return {label:faixa,atual,meta:0,achieved:total?atual/total*100:0};
+      return {label:faixa,atual,meta:0,gap:0,achieved:total?atual/total*100:0};
     });
   const achievement=summary.meta>0?summary.atual/summary.meta*100:0;
   return <section id="closing-aging-target" className="closing-surface closing-aging" aria-label="Meta de aging">
@@ -532,7 +561,7 @@ function AgingPanel({ dados, carteira, agingMensal }: {
       {regular && available && <div className="closing-goal-summary" aria-label="Cumprimento da meta">
         <strong>{num(summary.atual)} <span>/ {num(summary.meta)}</span></strong>
         <b>{percent(achievement)}</b>
-
+        <span className="closing-goal-gap">Faltam {num(summary.gap)}</span>
       </div>}
     </header>
     {!available?<p className="closing-nodata">{regular?'Meta mensal consolidada temporariamente indisponível.':'Dados indisponíveis.'}</p>:
@@ -541,11 +570,17 @@ function AgingPanel({ dados, carteira, agingMensal }: {
         <div className="closing-aging-card-value"><strong>{num(row.atual)}</strong>
           {regular&&<span>/ {num(row.meta)}</span>}</div>
         <div className="closing-rail closing-progress"><i style={{width:Math.max(0,Math.min(100,row.achieved))+'%'}}/></div>
+        {regular&&<span className={'closing-aging-card-gap'+(row.gap===0?' is-complete':'')}>
+          {row.gap===0?'Faixa atingida':'Faltam '+num(row.gap)}
+        </span>}
       </article>)}</div>}
-    {regular && agingMensal && <span className="closing-goal-context"
-      title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' outros registros do mês; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
-      {num(agingMensal.total_elegivel)} encerramentos únicos no mês · {num(agingMensal.sem_tag)} sem faixa de aging
-    </span>}
+    {regular && agingMensal && <div className="closing-goal-footer">
+      <span className="closing-goal-context"
+        title={num(agingMensal.origens.validacoes_do_mes)+' validados; '+num(agingMensal.origens.herdados_adicionais)+' herdados; '+num(agingMensal.origens.do_mes_adicionais)+' outros registros do mês; '+num(agingMensal.origens.sobreposicoes_deduplicadas)+' sobreposições deduplicadas.'}>
+        {num(agingMensal.total_elegivel)} encerramentos únicos no mês · {num(agingMensal.sem_tag)} sem faixa de aging
+      </span>
+      {ranking&&<strong>{ranking.faixasAtingidas} de {ranking.totalFaixas} faixas atingidas</strong>}
+    </div>}
   </section>;
 }
 
@@ -598,11 +633,12 @@ function CompositionPanel({ dados, carteira, agingMensal, isNubank, onOpenTipo }
     </div> : <p className="closing-nodata">{carteira==='Agibank Regular' && !agingMensal
       ? 'Classificação mensal consolidada indisponível. Exibindo apenas os validados do período, quando disponíveis.'
       : 'Sem encerramentos classificados no recorte.'}</p>}
-    {carteira==='Agibank Regular'&&<p className="closing-card-foot">
-      {consolidated
+    {carteira==='Agibank Regular'&&<div className="closing-source-context">
+      <span>{consolidated ? 'Consolidado mensal · independe dos filtros acima' : 'Visão parcial · conciliação indisponível'}</span>
+      <details className="mba-help-disclosure"><summary>Critérios</summary><p>{consolidated
         ? 'Mês vigente: '+agingMensal!.periodo+' · '+num(agingMensal!.origens.validacoes_do_mes)+' validados + '+num(agingMensal!.origens.historico_adicional)+' adicionais do Benner, com CNJ deduplicado. Este consolidado mensal independe dos filtros de período e tipo acima.'
-        : 'Visão parcial: somente validações da plataforma. A reconciliação mensal com o Benner não está disponível.'}
-    </p>}
+        : 'Visão parcial: somente validações da plataforma. A reconciliação mensal com o Benner não está disponível.'}</p></details>
+    </div>}
   </section>;
 }
 
@@ -843,13 +879,9 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const shown = loadedKey === filterKey ? dados : null;
   const analysts = blockKeys.analises===filterKey && analises ? analises.analistas : [];
 
-  return <div className="closing-page-v2" aria-busy={pending}>
+  return <div className="closing-page-v2" role="region" aria-label="Encerramentos">
     {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
-    <div className="closing-heading"><h1>Encerramentos</h1><span role="status" style={{fontSize:12}}>{pending?'Atualizando…':''}</span></div>
     <div className="closing-filter-row">
-      <label><span>Carteira</span><select value={carteira} disabled aria-label="Carteira atual autorizada">
-        <option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option>
-      </select></label>
       <label><span>Tipo</span><select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>
         {visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}
       </select></label>
@@ -863,10 +895,10 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
     {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
     {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
-    <Metrics dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null} analises={blockKeys.analises===filterKey?analises:null}
+    <Metrics dados={shown} agingMensal={blockKeys.aging===filterKey?agingMensal:null} analises={blockKeys.analises===filterKey?analises:null}
       posicaoBenner={blockKeys.benner===filterKey?posicaoBenner:null}
       motivosPendentes={motivosPendentes} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
-    {!isNubank && <AgingPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
+    {!isNubank && <AgingPanel dados={shown} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}
         isNubank={isNubank} onOpenTipo={t=>{
@@ -885,7 +917,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
         classification={agingMensal.classificacoes} onClose={()=>setConsolidatedType(null)}/>}
     {activeCard==='benner'
       ? <ClosingQueueDialog key={carteira+filterKey} carteira={carteira}
-          posicao={blockKeys.benner===filterKey?posicaoBenner:null}
+          posicao={loadedKey===filterKey?posicaoBenner:null}
           onClose={()=>setActiveCard(null)}
           onSent={()=>{void refresh(true);setSnapshotRevision(x=>x+1);}}/>
       : activeCard && <ClosingDetailsDialog key={activeCard+filterKey+(tipoRecorte||"")} kind={activeCard} inicio={inicio} fim={fim} tipo={tipo} tipoRecorte={tipoRecorte} onClose={()=>{setActiveCard(null);setTipoRecorte(null);}}/>}

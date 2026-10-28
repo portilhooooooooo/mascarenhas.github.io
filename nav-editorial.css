@@ -1,0 +1,198 @@
+/* MBA Backoffice — editorial navigation, dev/tasks-workspace.
+   Brand retains the serif treatment of the login. Operational UI remains Inter.
+   No external data/authorization is modified by this stylesheet. */
+:root { --mba-sidebar-width:216px; }
+
+.app-shell > .sidebar {
+  left:0;
+  top:0;
+  bottom:0;
+  height:100dvh;
+  width:var(--mba-sidebar-width);
+  border:0 !important;
+  border-right:1px solid #36393b !important;
+  border-radius:0 !important;
+  overflow-x:hidden;
+  overflow-y:auto;
+  box-shadow:none !important;
+}
+
+.app-shell > .main-area > .topbar {
+  top:0;
+  height:46px;
+  min-height:46px;
+  width:100%;
+  margin-bottom:0;
+  border:0 !important;
+  border-bottom:1px solid var(--mba-border) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  background:var(--mba-surface) !important;
+  padding:0 15px;
+}
+.app-shell > .main-area > .topbar .top-actions { margin-left:auto; }
+.app-shell > .main-area > .topbar .mba-shell-tabs:empty { display:none; }
+.app-shell > .main-area > .topbar .mba-shell-tabs {
+  display:flex;
+  align-items:center;
+  flex:1 1 auto;
+  min-width:0;
+  height:44px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.app-shell > .main-area > .topbar .mba-shell-tabs::-webkit-scrollbar { display:none; }
+
+/* The original Mascarenhas mark stays inline; navigation uses one sans family. */
+.sidebar .brand {
+  display:flex;
+  align-items:center;
+  min-width:0;
+  gap:7px !important;
+  font-family:"Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  font-size:15px !important;
+  font-weight:600 !important;
+  letter-spacing:-.025em !important;
+  color:#f4f1ee !important;
+}
+.sidebar .brand .brand-symbol {
+  display:block;
+  flex:0 0 27px;
+  width:27px;
+  height:27px;
+  filter:brightness(0) invert(1);
+}
+.sidebar .brand .brand-word {
+  font:600 15px/1.1 "Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  color:#f4f1ee !important;
+}
+.sidebar .sidebar-head { min-height:50px; }
+
+/* High-ticket nav: Instrument Sans only for chrome, not data tables. */
+.app-shell .sidebar .main-nav {
+  display:flex;
+  flex-direction:column;
+  gap:4px !important;
+  padding-top:15px;
+}
+.app-shell .sidebar .main-nav .nav-item,
+.app-shell .sidebar .sidebar-bottom .sidebar-users-button,
+.app-shell .sidebar .sidebar-bottom .sidebar-logout {
+  height:40px;
+  min-height:40px;
+  padding:0 10px;
+  gap:9px;
+  align-items:center;
+  border-radius:7px;
+  border:0;
+  font-family:"Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  font-size:13px !important;
+  font-weight:500 !important;
+  line-height:1.25 !important;
+  letter-spacing:-.012em !important;
+  text-align:left;
+}
+.app-shell .sidebar .main-nav .nav-item.active,
+.app-shell .sidebar .sidebar-bottom .sidebar-users-button.active {
+  font-weight:600 !important;
+  color:#fff !important;
+  background:#37302d !important;
+}
+.app-shell .sidebar .main-nav .nav-item svg,
+.app-shell .sidebar .sidebar-bottom .sidebar-users-button svg,
+.app-shell .sidebar .sidebar-bottom .sidebar-logout svg {
+  width:16px;
+  height:16px;
+  flex:0 0 16px;
+}
+/* Users is a real guarded navigation action, before Sign out. */
+.app-shell .sidebar .sidebar-bottom .sidebar-users-button {
+  display:flex;
+  width:100%;
+  margin:4px 0 0;
+  background:transparent;
+  color:#aeb6bc;
+  cursor:pointer;
+}
+.app-shell .sidebar .sidebar-bottom .sidebar-users-button[hidden] { display:none !important; }
+.app-shell .sidebar .sidebar-bottom .sidebar-users-button:hover { background:#2a292b;color:#fff; }
+.app-shell .sidebar .sidebar-bottom .sidebar-logout { margin-top:4px; }
+.app-shell .sidebar .sidebar-portfolio-trigger { min-height:38px;height:38px;border-radius:7px; }
+
+/* Card geometry from Carteiras: seven-pixel corners, quiet inactive state.
+   No boxed border around each nav item. */
+.app-shell .sidebar .main-nav .nav-item:not(.active) {
+  background:transparent !important;
+  border-color:transparent !important;
+}
+.app-shell .sidebar .main-nav .nav-item:not(.active):hover { background:#2b292b !important; }
+
+/* Real React operation tabs portaled to shell; keep the module's click handlers. */
+.app-shell .topbar .mba-operation-subnav {
+  height:44px;
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  gap:22px;
+  margin:0;
+  padding:0;
+  border:0 !important;
+  background:transparent !important;
+}
+.app-shell .topbar .mba-operation-subnav button {
+  height:44px;
+  padding:0 1px;
+  font-family:"Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  font-size:13px !important;
+  line-height:1.25;
+  font-weight:500 !important;
+  letter-spacing:-.012em;
+  white-space:nowrap;
+}
+.app-shell .topbar .mba-operation-subnav button.active { font-weight:600 !important; }
+.app-shell .topbar .mba-theme-switch {
+  font-family:"Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  font-size:12px !important;
+}
+/* No duplicate theme toggle in the sidebar. */
+.app-shell .sidebar .mba-theme-switch { display:none !important; }
+
+html[data-mba-theme="lua"] .app-shell > .main-area > .topbar {
+  background:#1c1f22 !important;
+  border-color:#353b40 !important;
+}
+
+/* Collapsed shell keeps the same separation without covering module content. */
+.app-shell.sidebar-collapsed > .sidebar {
+  left:0;
+  width:var(--mba-sidebar-collapsed);
+  border-radius:0 !important;
+}
+
+@media(max-width:820px) {
+  .app-shell.sidebar-collapsed > .sidebar{left:0;width:var(--mba-sidebar-collapsed);border-radius:0 !important}
+  .app-shell > .sidebar { left:0;top:0;bottom:0;height:100dvh;width:var(--mba-sidebar-collapsed);border-radius:0 !important; }
+  .app-shell > .main-area > .topbar {top:0;width:100%;margin-bottom:0;border-radius:0 !important;}
+}
+@media(prefers-reduced-motion:reduce){
+  .app-shell .sidebar,.app-shell .topbar {transition:none;}
+}
+
+
+/* Tarefas uses the same portaled tabs as Operação; no second navbar. */
+.app-shell .topbar .mba-shell-tabs .tasks-react-subnav {
+  display:flex !important; align-items:center !important; gap:22px !important;
+  width:auto !important; height:44px !important; min-height:44px !important;
+  margin:0 !important; padding:0 !important;
+  border:0 !important; background:transparent !important;
+}
+.app-shell .topbar .mba-shell-tabs .tasks-react-subnav button {
+  height:44px !important; min-height:44px !important;
+  font-family:"Instrument Sans",Inter,system-ui,sans-serif !important;
+  font-size:13px !important; letter-spacing:-.012em !important;
+  font-weight:500 !important;
+}
+.app-shell .topbar .mba-shell-tabs .tasks-react-subnav button.active { font-weight:600 !important; }
+html[data-mba-theme="lua"] .app-shell > .main-area > .topbar {
+  border-bottom-color:#353b40 !important;
+}

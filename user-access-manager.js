@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const modules = [
-    ['Tarefas','tasks.view',['tasks.execute','tasks.view_others','tasks.execute_others','tasks.create','tasks.assign','tasks.manage']],
+    ['Tarefas','tasks.view',['tasks.execute','tasks.view_others','tasks.create','tasks.assign','tasks.manage']],
     ['Pagamentos','pagamentos.view',['pagamentos.import']],
     ['Tutelas','tutelas.view',['tutelas.import']],
     ['Encerramentos','encerramentos.view',[]],
@@ -15,7 +15,6 @@
   const descriptions = {
     'tasks.execute':'Executar processos atribuídos',
     'tasks.view_others':'Visualizar tarefas de outros analistas',
-    'tasks.execute_others':'Executar e concluir tarefas de outros analistas',
     'tasks.create':'Criar tarefas', 'tasks.assign':'Atribuir tarefas',
     'tasks.manage':'Gerenciar tarefas', 'pagamentos.import':'Importar pagamentos',
     'tutelas.import':'Importar processos', 'agreements.export':'Exportar acordos',
@@ -79,13 +78,6 @@
       const master = [...card.querySelectorAll('[data-module-view]')].find(row => row.dataset.moduleView === input.dataset.actionOf);
       input.disabled = !enabled || !master?.checked;
       if (!master?.checked) input.checked = false;
-      if (input.dataset.accessPermission === 'tasks.execute_others') {
-        const hasPrerequisites = ['tasks.execute', 'tasks.view_others'].every(key =>
-          [...card.querySelectorAll('[data-access-permission]')]
-            .some(item => item.dataset.accessPermission === key && item.checked));
-        input.disabled = input.disabled || !hasPrerequisites;
-        if (!hasPrerequisites) input.checked = false;
-      }
     });
   }
 
