@@ -176,3 +176,16 @@ test('subabas de Operação sincronizam a rota em vez de alterar apenas o estado
   assert.match(source, /mba:route-changed/);
   assert.match(source, /operationModuleFromLocation/);
 });
+
+test('Resultados / Pagamentos exige administração e permissão financeira', () => {
+  const e = environment('/analytics/pagamentos', {allowed:['dashboard'],permissions:{'pagamentos.view':true}});
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('sem-acesso'), true);
+  e.window.MBA_CURRENT_USER.is_master_admin = true;
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('dashboard'), true);
+  assert.equal(e.location.pathname, '/analytics/pagamentos');
+  e.window.MBA_CURRENT_USER.permissions['pagamentos.view'] = false;
+  assert.equal(e.window.MBA_NAVIGATE('analytics/pagamentos'), false);
+  assert.equal(e.active.get('sem-acesso'), true);
+});

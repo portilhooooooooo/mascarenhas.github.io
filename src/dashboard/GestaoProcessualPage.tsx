@@ -5,17 +5,19 @@ import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
 import { DefesasResultadosPage } from './DefesasResultadosPage';
 import { ProtocolosResultadosPage } from './ProtocolosResultadosPage';
+import { PagamentosResultadosPage } from './PagamentosResultadosPage';
 import { BaseGeralPage } from './BaseGeralPage';
 import { RankingPage } from '../ranking/RankingPage';
 import './gestaoMetabase.css';
 
-type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking' | 'defesas' | 'protocolos';
+type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking' | 'defesas' | 'protocolos' | 'pagamentos';
 
 function currentAnalyticsTab(): AnalyticsTab {
   const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
   if (path === 'analytics/ranking') return 'ranking';
   if (path === 'analytics/defesas') return 'defesas';
   if (path === 'analytics/protocolos') return 'protocolos';
+  if (path === 'analytics/pagamentos') return 'pagamentos';
   return path === 'analytics/encerramentos' ? 'encerramentos' : 'geral';
 }
 function navigateAnalytics(route: string) {
@@ -40,6 +42,7 @@ export function GestaoProcessualPage() {
   const portfolio = (window as Window & {MBA_API?: {getPortfolioId?: () => string}}).MBA_API?.getPortfolioId?.();
   const canViewEnterDefenses = canViewAnalytics && permissions['tasks.view'] === true && portfolio === 'agibank_enter';
   const canViewEnterProtocols = canViewEnterDefenses;
+  const canViewPayments = canViewAnalytics && permissions['pagamentos.view'] === true && (window as Window & {MBA_CURRENT_USER?:{is_master_admin?:boolean}}).MBA_CURRENT_USER?.is_master_admin === true;
 
   useEffect(() => {
     const sync = (event: Event) => {
@@ -72,7 +75,9 @@ export function GestaoProcessualPage() {
   }, []);
   // Mantém a intenção de navegação entre trocas de carteira.
   // Enquanto a permissão não existir, exibe apenas a visão autorizada.
-  const displayedTab: AnalyticsTab = activeTab === 'protocolos' && canViewEnterProtocols
+  const displayedTab: AnalyticsTab = activeTab === 'pagamentos' && canViewPayments
+    ? 'pagamentos'
+    : activeTab === 'protocolos' && canViewEnterProtocols
     ? 'protocolos'
     : activeTab === 'defesas' && canViewEnterDefenses
     ? 'defesas'
@@ -96,6 +101,7 @@ export function GestaoProcessualPage() {
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
       {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
       {canViewEnterProtocols && <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/protocolos')}>Protocolos</button>}
+      {canViewPayments && <button type="button" className={displayedTab === 'pagamentos' ? 'active' : ''} aria-current={displayedTab === 'pagamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/pagamentos')}>Pagamentos</button>}
     </nav>;
 
   return <div className="gestao-metabase-page gestao-processual-react">
@@ -105,5 +111,6 @@ export function GestaoProcessualPage() {
     {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage key={runtimeScope()}/></div> : null}
     {canViewEnterDefenses && visitedTabs.includes('defesas') ? <div style={{display: displayedTab === 'defesas' ? 'contents' : 'none'}}><DefesasResultadosPage key={runtimeScope()} visible={visible && displayedTab==='defesas'}/></div> : null}
     {canViewEnterProtocols && visitedTabs.includes('protocolos') ? <div style={{display: displayedTab === 'protocolos' ? 'contents' : 'none'}}><ProtocolosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='protocolos'}/></div> : null}
+    {canViewPayments && visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null}
   </div>;
 }
