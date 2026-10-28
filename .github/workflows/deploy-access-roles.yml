@@ -15,6 +15,8 @@ on:
       - src/tasks/TaskResults.tsx
       - src/tasks/ClosingAnalysisFlow.tsx
       - src/tasks/renderers.tsx
+      - src/tasks/closingEvidence.ts
+      - tests/closing-evidence-source.test.mjs
       - tests/closing-classification-first.test.mjs
       - tests/closing-preliminary-evidence.test.mjs
       - src/tasks/TasksApp.tsx
@@ -44,6 +46,7 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - run: node tests/closing-evidence-source.test.mjs
       - run: node tests/closing-classification-first.test.mjs
       - run: node tests/closing-preliminary-evidence.test.mjs
       - run: node tests/closing-appeal-regression.test.mjs

@@ -2,6 +2,7 @@ import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { SelectMenu } from '../dashboard/SelectMenu';
 import { OptionGroup as QaOptionGroup, TaskActionBar, TaskForm, TaskQuestion } from './TaskQuestion';
 import type { Task, TaskProcess } from './model';
+import { closingClassifierEvidence } from './closingEvidence';
 import { DefenseAnalysisFlow, type DefenseAnalysisDraft } from './DefenseAnalysisFlow';
 import { ClosingAnalysisFlow, type ClosingAnalysisDraft, type ClosingPrefill } from './ClosingAnalysisFlow';
 import type { ApiRequest } from './renderersLegacy';
@@ -108,10 +109,7 @@ function closingClassifierClassification(process: TaskProcess) {
 
 
 function closingClassifierReason(process: TaskProcess): string | null {
-  const metadata = process.source_metadata && typeof process.source_metadata === 'object' ? process.source_metadata : {};
-  const values = [metadata.review_reason, metadata.indicio_movimentacao, metadata.datajud_tipo, process.reason_label];
-  const reason = values.find(value => typeof value === 'string' && value.trim().length > 0);
-  return typeof reason === 'string' ? reason.trim().slice(0, 280) : null;
+  return closingClassifierEvidence(process.source_metadata, process.reason_label);
 }
 
 function closingSentenceHint(process: TaskProcess): string | undefined {
