@@ -170,9 +170,13 @@
     const initials = name.trim().split(/\s+/).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || 'U';
     const roleLabels = { admin: 'Administrador', user: 'Usuário' };
 
-    document.getElementById('profile-name').textContent = name;
-    document.getElementById('profile-role').textContent = roleLabels[user.role] || 'Usuário';
-    document.getElementById('profile-avatar').textContent = initials;
+    // Topbar intentionally has no user identity; the sidebar owns account actions.
+    const profileName = document.getElementById('profile-name');
+    const profileRole = document.getElementById('profile-role');
+    const profileAvatar = document.getElementById('profile-avatar');
+    if (profileName) profileName.textContent = name;
+    if (profileRole) profileRole.textContent = roleLabels[user.role] || 'Usuário';
+    if (profileAvatar) profileAvatar.textContent = initials;
     const welcomeName = document.getElementById('welcome-name');
     if (welcomeName) welcomeName.textContent = firstName;
 

@@ -39,7 +39,7 @@ function DataField({ active }: { active: boolean }) {
       const rows = Math.max(10, Math.min(20, Math.floor(height / 14)));
       const dx = width / (columns + 1);
       const dy = height / (rows + 1);
-      const time = motion.matches ? 0 : ms / 1000;
+      const time = motion.matches ? 0 : ms / 1000 * 1.7;
       for (let y = 0; y < rows; y++) for (let x = 0; x < columns; x++) {
         const seed = (x * 17 + y * 31) % 97;
         const wave = (Math.sin(x * .36 + time * .75 - y * .28) + 1) / 2;
@@ -104,6 +104,7 @@ function AuthTransition({ visible }: { visible: boolean }) {
     role="status" aria-live="polite" aria-hidden={!visible} data-testid="auth-transition">
     <div className="mba-auth-transition-content">
       <DataField active={visible}/>
+      <div className="mba-auth-loading-indicator" aria-hidden="true"/>
       <p>Preparando seu espaço.</p>
     </div>
   </div>;
@@ -174,7 +175,7 @@ function LoginPage() {
       </header>
       <main className="react-login-main">
         <section className="react-login-access" aria-labelledby="react-login-title">
-          <h1 id="react-login-title">Acesse o Backoffice.</h1>
+          <h1 id="react-login-title">Explore como estamos trabalhando</h1>
           <div className="react-login-form">
             <button className="react-login-corporate" type="button"
               onClick={() => void startMicrosoftLogin()} disabled={authState.busy} aria-busy={authState.busy}>
@@ -206,10 +207,6 @@ function LoginPage() {
             aria-label="Vídeo institucional do escritório Mascarenhas Barbosa">
             <source src="/assets/mascarenhas-login.mp4?v=20261027-a2690cd3" type="video/mp4"/>
           </video>
-          <div className="react-login-visual-caption">
-            <span>MASCARENHAS BARBOSA · DESDE 1968</span>
-            <strong>Transformando ideias em produção.</strong>
-          </div>
         </aside>
       </main>
     </div>

@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Search, Trash2, UserPlus } from 'lucide-react';
 import {
   TASK_STATE_META,
@@ -802,12 +803,14 @@ export function TasksApp() {
 
   const activeState = activeItem ? taskState(activeItem.task) : null;
 
+  const shellTabs = document.getElementById('mba-shell-tabs');
+  const tasksTabs = <nav className="analytics-subnav tasks-react-subnav" aria-label="Seções de Tarefas">
+    <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setSelectedType('all'); navigateTaskTab('tarefas'); }}>Tarefas</button>
+    <button type="button" disabled={!(manager || canViewOtherTasks)} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
+    <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Produtividade</button>
+  </nav>;
   return <div ref={stationRef} className={`tasks-react-root ${tab === 'execution' ? 'task-station' : ''}`}>
-    <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas">
-      <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setSelectedType('all'); navigateTaskTab('tarefas'); }}>Tarefas</button>
-      <button type="button" disabled={!(manager || canViewOtherTasks)} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
-      <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Produtividade</button>
-    </nav>
+    {shellTabs ? (pageVisible ? createPortal(tasksTabs,shellTabs) : null) : tasksTabs}
     {visitedTabs.has('results') ? <div hidden={tab !== 'results'}><TaskResults key={runtimeScope()} api={apiRequest} visible={pageVisible && tab === 'results'} canViewOthers={isMaster || (user?.role === "legal_leader" && canViewOtherTasks)} userId={user?.id} userName={(user as MbaUser & {name?:string;nome?:string}|undefined)?.name || (user as MbaUser & {nome?:string}|undefined)?.nome} /></div> : null}
 
     {visitedTabs.has('management') && (manager || canViewOtherTasks) ? <div hidden={tab !== 'management'}><AssignmentsBoard key={runtimeScope()} tasks={allVisibleTasks} api={apiRequest} visible={pageVisible && tab === 'management'} canAssign={isMaster || user?.permissions?.['tasks.assign'] === true} /></div> : null}

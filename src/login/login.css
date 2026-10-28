@@ -263,3 +263,25 @@ body.mba-auth-transition-hold .login-screen {visibility:hidden!important}
 @media(prefers-reduced-motion:reduce){
   #login-transition-root .mba-auth-transition{transition:none}
 }
+
+
+/* Login hierarchy: editorial heading centered on its own access card. */
+#login-view .react-login-access { width:min(420px,100%); padding:10px 0 28px; }
+#login-view .react-login-access h1 {
+  width:100%; max-width:420px; margin:0 0 25px;
+  font:400 clamp(29px,2.35vw,36px)/1.16 Georgia,"Times New Roman",serif;
+  letter-spacing:-.039em; text-align:center; text-wrap:balance;
+}
+#login-transition-root .mba-auth-transition-content { gap:13px; }
+#login-transition-root .mba-auth-loading-indicator {
+  width:19px; height:19px; border:2px solid rgba(255,255,255,.18);
+  border-top-color:#e7b799; border-radius:50%;
+  animation:mba-loading-rotate .95s linear infinite;
+}
+@keyframes mba-loading-rotate { to { transform:rotate(360deg); } }
+@media(max-width:480px) {
+  #login-view .react-login-access h1 { font-size:29px; margin-bottom:22px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #login-transition-root .mba-auth-loading-indicator { animation:none; border-top-color:#e7b799; }
+}
