@@ -4,10 +4,9 @@ import {CheckCircle2,Clock3,FileX2,ReceiptText,Wallet,X} from 'lucide-react';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import {paymentList,paymentSnapshot,type Snapshot} from './pagamentosSnapshot';
 import {PagamentosTypePie} from './PagamentosTypePie';
-import {PagamentosKanban} from './PagamentosKanban';
 import './pagamentosResultados.css';
 
-type Environment=Window&{MBA_CURRENT_USER?:{is_master_admin?:boolean;permissions?:Record<string,boolean>}};
+type Environment=Window&{MBA_CURRENT_USER?:{id?:string;is_master_admin?:boolean;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
 type Detail='total'|'paid'|'approval'|null;
 const amount=(n?:number|null)=>n===null||n===undefined?'—':new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(n));
 const count=(n?:number|null)=>n===null||n===undefined?'—':new Intl.NumberFormat('pt-BR').format(n);
@@ -21,7 +20,8 @@ const month=(period?:string)=>{
 const approvalStates=['Em aprovação (Valores)','Em aprovação (Técnica)'];
 export function PagamentosResultadosPage({visible}:{visible:boolean}){
  const user=(window as Environment).MBA_CURRENT_USER;
- const allowed=Boolean(user?.is_master_admin&&user?.permissions?.['dashboard.view']&&user?.permissions?.['pagamentos.view']);
+ const byancaRegular=user?.id==='bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e'&&(window as Environment).MBA_API?.getPortfolioId?.()==='agibank_mba';
+ const allowed=Boolean(user?.permissions?.['dashboard.view']&&(user?.is_master_admin&&user?.permissions?.['pagamentos.view']||byancaRegular));
  const scope=runtimeScope();
  const [office,setOffice]=useState('');
  const [situation,setSituation]=useState('');
@@ -51,7 +51,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
  const cards=[
    {title:'Pagamentos',value:count(data?.cards.total),kind:'total' as Detail,icon:ReceiptText},
    {title:'Liquidados',value:count(data?.cards.paid),kind:'paid' as Detail,icon:CheckCircle2},
-   {title:'Sem comprovante',value:count(data?.cards.no_receipt),kind:null,icon:FileX2},
+   {title:'Em retificação',value:count(data?.cards.retification),kind:null,icon:FileX2},
    {title:'Em aprovação',value:count(data?.cards.approval),kind:'approval' as Detail,icon:Clock3},
    {title:'Ticket médio',value:amount(data?.cards.ticket_median),kind:'paid' as Detail,icon:Wallet},
  ];
@@ -82,7 +82,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
    <div className="payments-results-kpis">
      {cards.map(({title,value,kind,icon:Icon})=>{
        const disabled=!kind||snapshot.isPending||(kind==='paid'&&!!situation&&situation!=='Liquidado')||(kind==='approval'&&!!situation&&!approvalStates.includes(situation));
-       return <button type="button" key={title} className="payments-results-kpi mba-metric-card" disabled={disabled} onClick={()=>{if(kind){setDetail(kind);setPage(1)}}} aria-label={title+': '+value} title={title==='Sem comprovante'?'Conciliação por pagamento indisponível':''}>
+       return <button type="button" key={title} className="payments-results-kpi mba-metric-card" disabled={disabled} onClick={()=>{if(kind){setDetail(kind);setPage(1)}}} aria-label={title+': '+value} title={title==='Em retificação'?'Itens ativos em retificação na operação de pagamentos':''}>
          <span className="payments-results-kpi-title">{title}<Icon size={15} strokeWidth={1.6}/></span>
          <strong>{snapshot.isPending?'…':value}</strong>
        </button>;
@@ -108,7 +108,6 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        <PagamentosTypePie types={data?.types}/>
      </section>
    </div>
-   <PagamentosKanban enabled={enabled} loading={snapshot.isPending} office={office} situation={situation} stages={data?.stages}/>
    {detail&&enabled?<div className="payments-results-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setDetail(null)}}>
      <section className="payments-results-dialog" role="dialog" aria-modal="true" aria-label="Detalhamento de pagamentos">
        <header><div><h2>{detail==='total'?'Pagamentos':detail==='paid'?'Liquidados':'Em aprovação'}</h2><span>{office||'Todos os escritórios'}</span></div><button type="button" aria-label="Fechar" onClick={()=>setDetail(null)}><X size={17}/></button></header>

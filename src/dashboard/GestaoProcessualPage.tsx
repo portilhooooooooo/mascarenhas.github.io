@@ -7,14 +7,12 @@ import { DefesasResultadosPage } from './DefesasResultadosPage';
 import { ProtocolosResultadosPage } from './ProtocolosResultadosPage';
 import { PagamentosResultadosPage } from './PagamentosResultadosPage';
 import { BaseGeralPage } from './BaseGeralPage';
-import { RankingPage } from '../ranking/RankingPage';
 import './gestaoMetabase.css';
 
-type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking' | 'defesas' | 'protocolos' | 'pagamentos';
+type AnalyticsTab = 'geral' | 'encerramentos' | 'defesas' | 'protocolos' | 'pagamentos';
 
 function currentAnalyticsTab(): AnalyticsTab {
   const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
-  if (path === 'analytics/ranking') return 'ranking';
   if (path === 'analytics/defesas') return 'defesas';
   if (path === 'analytics/protocolos') return 'protocolos';
   if (path === 'analytics/pagamentos') return 'pagamentos';
@@ -38,11 +36,11 @@ export function GestaoProcessualPage() {
   const policy = (window as Window & { MBA_PORTFOLIO_POLICY?: { canAccess: (page: string) => boolean } }).MBA_PORTFOLIO_POLICY;
   const canViewAnalytics = permissions['dashboard.view'] === true && policy?.canAccess('dashboard') === true;
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
-  const canViewRanking = canViewAnalytics && policy?.canAccess('ranking') === true;
   const portfolio = (window as Window & {MBA_API?: {getPortfolioId?: () => string}}).MBA_API?.getPortfolioId?.();
   const canViewEnterDefenses = canViewAnalytics && permissions['tasks.view'] === true && portfolio === 'agibank_enter';
   const canViewEnterProtocols = canViewEnterDefenses;
-  const canViewPayments = canViewAnalytics && permissions['pagamentos.view'] === true && (window as Window & {MBA_CURRENT_USER?:{is_master_admin?:boolean}}).MBA_CURRENT_USER?.is_master_admin === true;
+  const profile=(window as Window & {MBA_CURRENT_USER?:{id?:string;is_master_admin?:boolean}}).MBA_CURRENT_USER;
+  const canViewPayments=canViewAnalytics && ((profile?.is_master_admin===true && permissions['pagamentos.view'] === true) || (profile?.id==='bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && portfolio==='agibank_mba'));
 
   useEffect(() => {
     const sync = (event: Event) => {
@@ -81,8 +79,6 @@ export function GestaoProcessualPage() {
     ? 'protocolos'
     : activeTab === 'defesas' && canViewEnterDefenses
     ? 'defesas'
-    : activeTab === 'ranking' && canViewRanking
-    ? 'ranking'
     : (activeTab === 'encerramentos' || !canViewAnalytics) && canViewClosing
       ? 'encerramentos'
       : 'geral';
@@ -98,7 +94,6 @@ export function GestaoProcessualPage() {
   const resultsTabs = <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Base Geral</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
-      {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
       {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
       {canViewEnterProtocols && <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/protocolos')}>Protocolos</button>}
       {canViewPayments && <button type="button" className={displayedTab === 'pagamentos' ? 'active' : ''} aria-current={displayedTab === 'pagamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/pagamentos')}>Pagamentos</button>}
@@ -108,7 +103,6 @@ export function GestaoProcessualPage() {
     {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
     {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
-    {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage key={runtimeScope()}/></div> : null}
     {canViewEnterDefenses && visitedTabs.includes('defesas') ? <div style={{display: displayedTab === 'defesas' ? 'contents' : 'none'}}><DefesasResultadosPage key={runtimeScope()} visible={visible && displayedTab==='defesas'}/></div> : null}
     {canViewEnterProtocols && visitedTabs.includes('protocolos') ? <div style={{display: displayedTab === 'protocolos' ? 'contents' : 'none'}}><ProtocolosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='protocolos'}/></div> : null}
     {canViewPayments && visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null}

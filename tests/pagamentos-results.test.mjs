@@ -5,41 +5,38 @@ const root=new URL('../',import.meta.url);
 const source=path=>readFileSync(new URL(path,root),'utf8');
 const config=source('src/dashboard/pagamentosSnapshot.ts');
 const page=source('src/dashboard/PagamentosResultadosPage.tsx');
-const board=source('src/dashboard/PagamentosKanban.tsx');
 const css=source('src/dashboard/pagamentosResultados.css');
 const pie=source('src/dashboard/PagamentosTypePie.tsx');
 
-test('four disjoint statuses groups and no manual state mutation',()=>{
- const rows=[...config.matchAll(/\{id:'(?:aprovacao|aberto|liquidado|interrompido)',title:'[^']+',statuses:\[([^\]]+)\]/g)];
- assert.equal(rows.length,4);
- const all=rows.flatMap(m=>[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]));
- assert.equal(all.length,new Set(all).size);
- for(const s of ['Em aprovação (Valores)','Em aprovação (Técnica)','Liquidado','Pagamento cancelado'])assert.ok(all.includes(s));
- assert.doesNotMatch(board,/onDrop=|onDragStart=|method:'PATCH'|draggable/);
+test('kanban removed, retification metric remains',()=>{
+ assert.doesNotMatch(page,/PagamentosKanban|Sem comprovante/);
+ assert.match(page,/Em retificação/);
+ assert.doesNotMatch(css,/payments-results-board-grid/);
+ assert.doesNotMatch(config,/stages:Record/);
 });
 test('single compact endpoint and browser fallback only for 404',()=>{
  assert.match(config,/\/api\/resultados\/pagamentos\?/);
  assert.match(config,/typed\?\.status!==404/);
  assert.match(page,/queryFn:\(\{signal\}\)=>paymentSnapshot\(office,situation,signal\)/);
- assert.doesNotMatch(board,/useQueries|readStage|monthlyLiquidated/);
- assert.match(board,/enabled:enabled&&!!selected&&!!status/);
+ assert.doesNotMatch(page,/PagamentosKanban/);
+ assert.match(config,/resultados\/pagamentos\/itens/);
 });
 test('minimal UI: no repeated heading, supporting slogans or loose captions',()=>{
  assert.doesNotMatch(page,/payments-results-top|payments-results-eyebrow|<h1>|payments-results-note|results-period/);
- assert.doesNotMatch(board,/payments-results-board-head|board-caption|stage-mode|Visão por situação/);
+ assert.doesNotMatch(page,/PagamentosKanban|payments-results-board/);
  assert.match(page,/className="base-geral-filters payments-results-filters-standard"/);
  assert.match(page,/className="base-geral-filter"/);
- assert.ok(page.indexOf('<PagamentosTypePie') < page.indexOf('<PagamentosKanban'), 'kanban must render after analytics and pie');
+ assert.ok(page.includes('<PagamentosTypePie'), 'payment nature remains a pie chart');
  assert.match(css,/\.payments-results \.payments-results-filters-standard\{/);
  assert.match(css,/\.payments-results-kpi\{[^}]*height:100px/);
- assert.match(css,/\.payments-results-board-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(page,/Sem comprovante/);
 });
 test('non-authoritative payment type and receipts never invent values',()=>{
  assert.match(page,/<option value="acordo" disabled>/);
- assert.match(page,/data\?\.cards\.no_receipt/);
+ assert.match(page,/data\?\.cards\.retification/);
  assert.match(pie,/Distribuição indisponível/);
  assert.match(pie,/conic-gradient/);
- assert.match(config,/no_receipt:null/);
+ assert.match(config,/retification:null/);
  assert.match(config,/types:null/);
  assert.match(config,/types:PaymentTypeBreakdown\|null/);
 });

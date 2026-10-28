@@ -3,7 +3,6 @@
   'use strict';
   const PAGE_PERMISSIONS = Object.freeze({
     dashboard: 'dashboard.view',
-    ranking: 'dashboard.view',
     processos: 'processos.view',
     tarefas: 'tasks.view',
     'tarefa-analise': 'tasks.view',
@@ -20,7 +19,7 @@
   });
   const ENTER_ONLY = new Set(['protocolo']);
   const GLOBAL_PAGES = new Set(['usuarios', 'configuracoes']);
-  const SHARED_PAGES = new Set(['processos', 'dashboard', 'ranking', 'tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'acordos', 'pagamentos', 'tutelas', 'encerramentos']);
+  const SHARED_PAGES = new Set(['processos', 'dashboard', 'tarefas', 'tarefa-analise', 'comprovante-execucao', 'acordo-execucao', 'acordos', 'pagamentos', 'tutelas', 'encerramentos']);
   const canonical = value => String(value || '').trim().toLowerCase();
   const getPortfolio = user => {
     const rows = Array.isArray(user?.portfolios) ? user.portfolios : [];
@@ -44,12 +43,10 @@
     if (GLOBAL_PAGES.has(pageId)) return true;
     const portfolio = getPortfolio(user);
     if (!portfolio) return false;
-    if (pageId === 'ranking' && !/^agibank(?:_|$)/.test(canonical(portfolio.id))) return false; // Never infer entitlements from a stale or missing portfolio.
     const modules = declaredModules(portfolio);
     const moduleAliases = {
       processos: ['processos'],
       dashboard: ['dashboard', 'analytics', 'gestao_processual'],
-      ranking: ['ranking', 'dashboard', 'analytics', 'gestao_processual'],
       tarefas: ['tarefas', 'tasks'],
       'tarefa-analise': ['tarefas', 'tasks'],
       'comprovante-execucao': ['tarefas', 'tasks'],

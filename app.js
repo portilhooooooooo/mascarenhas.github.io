@@ -37,7 +37,6 @@ const nestedPageRoutes = Object.freeze({
   'analytics/defesas': 'dashboard',
   'analytics/protocolos': 'dashboard',
   'analytics/pagamentos': 'dashboard',
-  'analytics/ranking': 'dashboard',
   'operacao/pagamentos': 'acordos',
   'operacao/liminar': 'acordos',
   'operacao/encerramentos': 'acordos',
@@ -50,7 +49,8 @@ const nestedPageRoutes = Object.freeze({
 });
 const routeAliases = Object.freeze({
   dashboard: 'analytics',
-  ranking: 'analytics/ranking',
+  ranking: 'analytics',
+  'analytics/ranking': 'analytics',
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
@@ -107,8 +107,7 @@ function canAccessRoute(pageId, route) {
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
-  if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
-  if (route === 'analytics/pagamentos' && (window.MBA_CURRENT_USER?.is_master_admin !== true || window.MBA_CURRENT_USER?.permissions?.['pagamentos.view'] !== true)) return false;
+  if (route === 'analytics/pagamentos' && !(window.MBA_CURRENT_USER?.is_master_admin === true && window.MBA_CURRENT_USER?.permissions?.['pagamentos.view'] === true || window.MBA_CURRENT_USER?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && window.MBA_API?.getPortfolioId?.() === 'agibank_mba' && window.MBA_CURRENT_USER?.permissions?.['dashboard.view'] === true)) return false;
   if (route === 'analytics/defesas' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
   if (route === 'analytics/protocolos' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
   if (route === 'tarefas/atribuicoes') {

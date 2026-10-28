@@ -19,7 +19,8 @@ function environment(initialPath = '/tarefas', options = {}) {
   const events = [];
   const listeners = new Map();
   const window = {
-    MBA_CURRENT_USER: { permissions: options.permissions || { 'tasks.manage': true }, is_master_admin: false },
+    MBA_CURRENT_USER: { id: options.userId || 'default', permissions: options.permissions || { 'tasks.manage': true }, is_master_admin: Boolean(options.master) },
+    MBA_API: {getPortfolioId:()=>options.portfolio || 'agibank_enter'},
     MBA_PORTFOLIO_POLICY: { canAccess: id => allowed.has(id) },
     MBA_LOCAL_PREVIEW: Boolean(options.preview), MBA_REACT_TASKS: true,
     addEventListener(name, callback) { listeners.set(name, callback); },
@@ -49,17 +50,13 @@ test('navbar muda a URL ao navegar para automações e analytics', () => {
   e.window.showPage('dashboard');
   assert.equal(e.location.pathname, '/analytics');
 });
-test('aba de produção preserva a rota legada e exige autorização da carteira', () => {
-  const enabled = environment('/analytics/ranking');
-  assert.equal(enabled.window.restorePageRoute(), true);
-  assert.equal(enabled.active.get('dashboard'), true);
-  assert.equal(enabled.location.pathname, '/analytics/ranking');
-  assert.equal(enabled.window.MBA_NAVIGATE('ranking'), true);
-  assert.equal(enabled.location.pathname, '/analytics/ranking');
-  const denied = environment('/analytics/ranking', { allowed: ['dashboard'] });
-  assert.equal(denied.window.restorePageRoute(), true);
-  assert.equal(denied.active.get('sem-acesso'), true);
-  assert.equal(denied.location.pathname, '/analytics/ranking');
+test('ranking retired: legacy links redirect to Base Geral', () => {
+  const e = environment('/analytics/ranking');
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('dashboard'), true);
+  assert.equal(e.location.pathname, '/analytics');
+  assert.equal(e.window.MBA_NAVIGATE('ranking'), true);
+  assert.equal(e.location.pathname, '/analytics');
 });
 
 test('links diretos e aliases antigos são restaurados sem recarregar', () => {
@@ -177,7 +174,7 @@ test('subabas de Operação sincronizam a rota em vez de alterar apenas o estado
   assert.match(source, /operationModuleFromLocation/);
 });
 
-test('Resultados / Pagamentos exige administração e permissão financeira', () => {
+test('Resultados / Pagamentos exige perfil autorizado e carteira regular', () => {
   const e = environment('/analytics/pagamentos', {allowed:['dashboard'],permissions:{'pagamentos.view':true}});
   assert.equal(e.window.restorePageRoute(), true);
   assert.equal(e.active.get('sem-acesso'), true);
@@ -188,4 +185,13 @@ test('Resultados / Pagamentos exige administração e permissão financeira', ()
   e.window.MBA_CURRENT_USER.permissions['pagamentos.view'] = false;
   assert.equal(e.window.MBA_NAVIGATE('analytics/pagamentos'), false);
   assert.equal(e.active.get('sem-acesso'), true);
+});
+
+test('Byanca vê resultados Regular sem acesso de Pagamentos global', () => {
+  const e = environment('/analytics/pagamentos', {allowed:['dashboard'],permissions:{'dashboard.view':true,'pagamentos.view':false,'faturamento.view':false}, userId:'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e',portfolio:'agibank_mba'});
+  assert.equal(e.window.restorePageRoute(), true);
+  assert.equal(e.active.get('dashboard'), true);
+  assert.equal(e.location.pathname,'/analytics/pagamentos');
+  e.window.MBA_API.getPortfolioId=()=> 'agibank_enter';
+  assert.equal(e.window.MBA_NAVIGATE('analytics/pagamentos'),false);
 });
