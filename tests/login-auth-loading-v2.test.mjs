@@ -12,6 +12,8 @@ assert.match(login,/aria-label="Preparando seu espaço…"/);
 assert.match(login,/className="mba-auth-loading-ellipsis" aria-hidden="true"/);
 assert.match(login,/<span>\.<\/span><span>\.<\/span><span>\.<\/span>/);
 assert.doesNotMatch(login,/fillText\(|fillStroke\(|\['01', '08', '16', '24', '32'\]/);
+assert.match(login,/seed % 9 === 0 \? 2\.4 : 1\.75, 0, Math\.PI \* 2/);
+assert.match(style,/flex:0 0 6px;\s*width:6px;\s*height:6px;\s*border-radius:50%/);
 assert.match(style,/@keyframes mba-auth-dot-wave/);
 assert.match(style,/\.mba-auth-loading-ellipsis span:nth-child\(2\)\{animation-delay:\.2s\}/);
 assert.match(style,/\.mba-auth-loading-ellipsis span:nth-child\(3\)\{animation-delay:\.4s\}/);

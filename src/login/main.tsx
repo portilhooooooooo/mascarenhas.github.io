@@ -48,7 +48,7 @@ function DataField({ active }: { active: boolean }) {
         ctx.fillStyle = (x * 7 + y * 11) % 13 < 3 ? '#C38B6B' : '#929898';
         ctx.beginPath();
         ctx.arc(dx * (x + 1), dy * (y + 1) + (motion.matches ? 0 : Math.sin(time * .6 + x * .24) * 1.2),
-          seed % 9 === 0 ? 1.5 : 1.05, 0, Math.PI * 2);
+          seed % 9 === 0 ? 2.4 : 1.75, 0, Math.PI * 2);
         ctx.fill();
       }
       // Only animated pixels — no digits, simulated statistics or progress counters.
