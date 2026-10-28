@@ -2,6 +2,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {ArrowUpRight, CheckCircle2, Clock3, FileX2, ListFilter, ReceiptText, Wallet, X} from 'lucide-react';
 import {runtimeQueries, runtimeScope} from '../tasks/runtimeQueries';
+import {PagamentosKanban} from './PagamentosKanban';
 import './pagamentosResultados.css';
 
 type Payment = {
@@ -161,6 +162,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}) {
         <strong>{busy?'…':value}</strong><small>{hint}</small>
       </button>)}
     </div>
+    <PagamentosKanban visible={active} office={office} situation={situation} disabled={typed}/>
     <div className="payments-results-lower">
       <section className="payments-results-panel">
         <div className="payments-results-panel-heading"><div><h2>Credenciados</h2><span>Pagamentos liquidados · {period.label}</span></div><strong>{typed?'—':number(month.data?.reduce((acc,row)=>acc+row.count,0))}</strong></div>
