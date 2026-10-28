@@ -51,13 +51,7 @@ function DataField({ active }: { active: boolean }) {
           seed % 9 === 0 ? 1.5 : 1.05, 0, Math.PI * 2);
         ctx.fill();
       }
-      ctx.font = '10px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ['01', '08', '16', '24', '32'].forEach((value, i) => {
-        ctx.globalAlpha = .17 + (motion.matches ? 0 : (Math.sin(time * .35 + i) + 1) * .09);
-        ctx.fillStyle = '#C38B6B';
-        ctx.fillText(value, dx * (((i * 7 + 5) % columns) + 1), dy * (((i * 4 + 2) % rows) + 1) - 8);
-      });
+      // Only animated pixels — no digits, simulated statistics or progress counters.
       ctx.globalAlpha = 1;
     };
 
@@ -104,7 +98,11 @@ function AuthTransition({ visible }: { visible: boolean }) {
     role="status" aria-live="polite" aria-hidden={!visible} data-testid="auth-transition">
     <div className="mba-auth-transition-content">
       <DataField active={visible}/>
-      <p>Preparando seu espaço.</p>
+      <p aria-label="Preparando seu espaço…">
+        Preparando seu espaço<span className="mba-auth-loading-ellipsis" aria-hidden="true">
+          <span>.</span><span>.</span><span>.</span>
+        </span>
+      </p>
     </div>
   </div>;
 }

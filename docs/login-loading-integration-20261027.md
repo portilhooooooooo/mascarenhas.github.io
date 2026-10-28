@@ -1,11 +1,11 @@
 # Loading do Backoffice — animação de dados
 
-A experiência de Sol/Lua e vídeo sem legenda da branch de prévia foi preservada. A camada de carregamento é independente e ocupa a viewport inteira, com fundo `#141414`, Canvas 2D de pontos/números abstratos e a única mensagem `Preparando seu espaço.`.
+A experiência de Sol/Lua e vídeo sem legenda da branch de prévia foi preservada. A camada de carregamento é independente e ocupa a viewport inteira, com fundo `#141414`, Canvas 2D apenas de pixels/pontos animados, sem números, e o texto `Preparando seu espaço…` com os três pontos pulsando sequencialmente.
 
 - O clique de login aciona a camada visual sem criar um método de autenticação novo.
 - O retorno OAuth válido mantém a animação por pelo menos 5.000ms **após a confirmação de perfil/sessão**. A aplicação protegida permanece oculta durante esse intervalo. Erros não têm espera artificial.
 - O F5 com sessão pré-existente não sofre atraso de 5 segundos.
-- A animação limita a taxa de quadros a 30 FPS, o device pixel ratio a 2, pausa em aba oculta e respeita `prefers-reduced-motion`.
+- A animação limita a taxa de quadros a 30 FPS, o device pixel ratio a 2, pausa em aba oculta e respeita `prefers-reduced-motion`; nesse modo, a matriz e os três pontos permanecem estáticos.
 - A metrificação `visualHoldMs` é separada da latência de API.
 - Não foram feitas mudanças em endpoints, regras de autenticação ou permissões.
 

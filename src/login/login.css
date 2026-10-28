@@ -239,6 +239,29 @@ html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-logi
   margin:0;text-align:center;color:#f3f1ee;font-size:17px;
   font-weight:500;line-height:1.5;letter-spacing:-.02em;
 }
+#login-transition-root .mba-auth-loading-ellipsis{
+  display:inline-flex;
+  white-space:nowrap;
+  letter-spacing:0;
+}
+#login-transition-root .mba-auth-loading-ellipsis span{
+  display:inline-block;
+  opacity:.2;
+  animation:mba-auth-dot-wave 1.2s ease-in-out infinite;
+}
+#login-transition-root .mba-auth-loading-ellipsis span:nth-child(2){animation-delay:.2s}
+#login-transition-root .mba-auth-loading-ellipsis span:nth-child(3){animation-delay:.4s}
+@keyframes mba-auth-dot-wave{
+  0%,60%,100%{opacity:.2;transform:translateY(0)}
+  30%{opacity:1;transform:translateY(-2px)}
+}
+@media(prefers-reduced-motion:reduce){
+  #login-transition-root .mba-auth-loading-ellipsis span{
+    opacity:1;
+    animation:none;
+    transform:none;
+  }
+}
 body.mba-auth-transition-hold .app-shell {visibility:hidden!important;pointer-events:none!important}
 body.mba-auth-transition-hold .login-screen {visibility:hidden!important}
 
