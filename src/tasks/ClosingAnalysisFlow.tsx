@@ -184,7 +184,11 @@ export function ClosingAnalysisFlow({
   cnj, classifierClassification, classifierReason, prefill, draftKey = '', busy = false, error = null,
   onSubmit, onSkip, onPhaseEntered,
 }: Props) {
-  const preliminaryAvailable = ['Vitória', 'Derrota', 'Derrota voluntária', 'Acordo', 'Extinção'].includes(classifierClassification || '');
+  // Um rótulo isolado não é evidência: não pedir concordância sobre uma
+  // classificação sem fundamento apresentado ao analista. O questionário
+  // jurídico completo continua obrigatório e define o resultado final.
+  const preliminaryAvailable = ['Vitória', 'Derrota', 'Derrota voluntária', 'Acordo', 'Extinção'].includes(classifierClassification || '')
+    && Boolean(classifierReason?.trim());
   const [preliminaryAgreed, setPreliminaryAgreed] = useQaField<YesNo>(draftKey, 'closing.preliminaryAgreed', null);
   const [sentence, setSentence] = useQaField<TrialResult | null>(draftKey, 'closing.sentence', null);
   const [hadAppeal, setHadAppeal] = useQaField<YesNo>(draftKey, 'closing.hadAppeal', null);
@@ -427,12 +431,11 @@ export function ClosingAnalysisFlow({
     onKeyDownCapture={() => { interactedBeforePrefill.current = true; }}>
 
     {preliminaryAvailable ? <TaskQuestion number={String(++questionNumber)} stage="Classificação preliminar"
-      question={classifierReason?.trim()
-        ? 'Identificamos que esse processo se enquadra como ' + classifierClassification + ' por ' + classifierReason.trim().slice(0, 280) + '. Você concorda?'
-        : 'Identificamos classificação preliminar de ' + classifierClassification + ', mas o motivo não está documentado. Você concorda?'} >
+      question={'O classificador sugeriu ' + classifierClassification + ' com base no indício: ' +
+        classifierReason?.trim().slice(0, 280) + '. Esse indício corresponde ao que consta nos autos?'} >
       <BinaryChoice name="closing-preliminary-agreement" value={preliminaryAgreed} disabled={busy}
         onChange={value => { setPreliminaryAgreed(value); setLocalError(null); }} />
-      <p className="closing-inline-note">Todas as etapas jurídicas aplicáveis serão verificadas, independentemente da resposta.</p>
+      <p className="closing-inline-note">A resposta valida apenas a evidência apresentada. A aptidão ao encerramento será definida após as etapas jurídicas.</p>
     </TaskQuestion> : null}
 
     <TaskQuestion number={String(++questionNumber)} stage="Cadastro de Sentença" question="Qual foi o resultado da sentença?">
