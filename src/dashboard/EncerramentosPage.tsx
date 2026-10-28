@@ -37,7 +37,7 @@ type Dados = {
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
 type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; classificacao_validada:string|null; concorda:boolean|null };
-type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
+type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{metodologia?:string;confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
 type ClosingClassificationRow = { cnj: string; tipo: string; origem: 'validado' | 'benner_adicional' };
 type ClosingClassification = {
   total: number; tipos: TipoRow[]; itens: ClosingClassificationRow[];
@@ -260,6 +260,7 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
+  const accuracyReady=accuracy?.metodologia==='classificacao_validada_v2';
   const goals=agingMensal && dados?.carteira==='Agibank Regular'
     ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
@@ -269,7 +270,7 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
   const expectedTicket = typeof historicalTicket === 'number' && Number.isFinite(historicalTicket) && historicalTicket >= 0 && historicalSample > 0 ? historicalTicket : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
-    {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
+    {key:'acuracia',icon:Target,value:accuracyReady && accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.total_em_acompanhamento):'—'},
     {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
@@ -289,8 +290,10 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
           <strong className="closing-gauge-value">{card.value}</strong>
         </button>
       : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"
-          key={card.key} onClick={()=>onOpen(card.key)}
-          title={card.key==='acuracia'?'Acertos do classificador entre '+num(accuracy?.avaliados??0)+' análises com resultado jurídico comparável; '+num(accuracy?.nao_avaliados??0)+' sem comparação válida.':
+          key={card.key} disabled={card.key==='acuracia'&&!accuracyReady}
+          onClick={()=>onOpen(card.key)}
+          title={card.key==='acuracia'&&!accuracyReady?'Acurácia indisponível até o backend publicar a metodologia V2.':
+            card.key==='acuracia'?'Acertos do classificador entre '+num(accuracy?.avaliados??0)+' análises com resultado jurídico comparável; '+num(accuracy?.nao_avaliados??0)+' sem comparação válida.':
             card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
             card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' :
             card.key==='aptidoes' ? 'Validações auditadas na plataforma. A meta de aging também considera registros Benner reconciliados e o saldo anterior sem baixa.' : undefined}

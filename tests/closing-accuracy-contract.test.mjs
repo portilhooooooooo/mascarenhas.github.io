@@ -15,3 +15,9 @@ test('drilldown displays the classifier, the legal result and their comparison',
   assert.match(source,/Não comparável/);
   assert.doesNotMatch(source,/concordância declarada pelo analista/);
 });
+
+test('não mostra a antiga acurácia antes de o backend sinalizar metodologia V2',()=>{
+  assert.match(source,/accuracy\?\.metodologia==='classificacao_validada_v2'/);
+  assert.match(source,/disabled=\{card.key==='acuracia'&&!accuracyReady\}/);
+  assert.match(source,/value:accuracyReady && accuracy\?\.percentual!=null/);
+});
