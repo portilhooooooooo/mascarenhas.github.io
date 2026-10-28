@@ -20,9 +20,9 @@ assert.match(login, /<source src="\/assets\/mascarenhas-login.mp4\?v=20261027-3b
 assert.match(login, /poster="\/assets\/mascarenhas-login-poster.jpg\?v=20261027-3b74ad84"/);
 assert.match(css, /aspect-ratio:7 \/ 5/);
 assert.match(css, /object-fit:cover;object-position:34% center/);
-assert.match(css, /react-login-visual-caption \{[\s\S]*position:absolute;z-index:2/);
-assert.match(css, /left:clamp\(24px,3vw,38px\);width:47%/);
-assert.match(css, /react-login-visual::after \{[\s\S]*linear-gradient/);
+assert.doesNotMatch(login, /react-login-visual-caption/);
+assert.match(css, /aspect-ratio:7 \/ 5/);
+assert.match(css, /react-login-visual:after \{[\s\S]*linear-gradient/);
 assert.doesNotMatch(css, /react-login-visual::before/);
 assert.doesNotMatch(css, /react-login-visual video \{[^}]*object-fit:contain/s);
 assert.doesNotMatch(css, /filter:contrast\(1\.08\) saturate\(\.88\) brightness\(\.79\)/);

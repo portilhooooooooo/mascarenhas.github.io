@@ -63,12 +63,12 @@ assert.match(config, /window\.MBA_REACT_LOGIN = true;/, 'config must declare Rea
 assert.match(config, /window\.MBA_REACT_TASKS = true;/, 'config must declare React task ownership before auth.js');
 
 assert.match(login, /MBA_AUTH\?\.startMicrosoftLogin/, 'React login must call the auth service directly');
-assert.match(login, /auth\?\.getLoginState\?\.\(\)/, 'React login must hydrate from the headless auth state');
+assert.match(login, /MBA_AUTH\?\.getLoginState\?\.\(\)/, 'React login must hydrate from the headless auth state');
 assert.match(login, /mba:auth-state/, 'React login must subscribe to auth state changes');
 assert.match(login, /useLayoutEffect/, 'React login must claim the surface before paint');
 assert.match(login, /id="login-display-email"/, 'corporate login must preserve the decorative e-mail field');
-assert.match(login, /'Entrar'/, 'corporate login must preserve the primary Microsoft access action');
-assert.doesNotMatch(login, /Entrar com Microsoft|Entrar com Google|Continuar via Microsoft/, 'login has a single Entrar action using the existing SSO');
+assert.match(login, /Continuar com a Microsoft/, 'corporate login must preserve the Microsoft access action');
+assert.doesNotMatch(login, /Entrar com Google|Continuar via Microsoft/, 'login must not reintroduce removed auth buttons');
 assert.match(login, /favicon-white\.svg\?v=20261013-original-mark/, 'login must use the original Mascarenhas symbol in white');
 assert.doesNotMatch(login, /id="microsoft-login"/, 'React buttons must not expose a legacy DOM control point');
 assert.doesNotMatch(login, /\.click\(\)/, 'React login must not delegate to a detached legacy button');

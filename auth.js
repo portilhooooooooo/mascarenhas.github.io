@@ -338,6 +338,7 @@
   async function initializeAuth(deadline = performance.now() + 10000, maxAttempts = 2) {
     const started=performance.now(),mark='mba:identity:'+ (++bootstrapMeasurement);
     const retryBudget={remaining:Math.max(0,maxAttempts-1)};
+    let visualHoldMs = 0;
     performance.mark?.(mark);
     if(getStoredToken()){
       document.body.classList.add('auth-validating');
@@ -382,7 +383,15 @@
       }
 
       if (getStoredToken()) {
+        // The welcome animation is limited to a successful Microsoft callback.
+        // An ordinary F5 does not incur the five-second welcome delay.
+        if (code) document.body.classList.add('mba-auth-transition-hold');
         await loadProfileWithRetry(deadline, maxAttempts, retryBudget);
+        if (code) {
+          const holdStartedAt = performance.now();
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          visualHoldMs = Math.round(performance.now() - holdStartedAt);
+        }
       } else {
         setAuthState(false);
         publishLoginState({ busy: false, error: null });
@@ -436,9 +445,10 @@
         publishLoginState({ busy: false, error: error?.message || 'Não foi possível realizar o acesso.' });
       }
     } finally {
-      const ms=performance.now()-started;
+      document.body.classList.remove('mba-auth-transition-hold');
+      const ms=performance.now()-started - visualHoldMs;
       const metrics=window.MBA_RUNTIME_AUTH_METRICS||(window.MBA_RUNTIME_AUTH_METRICS=[]);
-      metrics.push({kind:'identity',status:loginState.status,ms,budgetMs:Math.max(0,deadline-started),retries:Math.max(0,maxAttempts-1)-retryBudget.remaining});
+      metrics.push({kind:'identity',status:loginState.status,ms,visualHoldMs,budgetMs:Math.max(0,deadline-started),retries:Math.max(0,maxAttempts-1)-retryBudget.remaining});
       if(metrics.length>40)metrics.shift();
       try{performance.clearMeasures?.('mba:identity-bootstrap');performance.measure?.('mba:identity-bootstrap',{start:started,duration:ms});performance.clearMarks?.(mark);}catch{}
     }
