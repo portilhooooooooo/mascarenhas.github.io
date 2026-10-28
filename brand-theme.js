@@ -1,4 +1,4 @@
-/* Mascarenhas Barbosa — seleção Sol / Lua.
+/* Mascarenhas Barbosa — seletor de destino Claro / Escuro.
  * Executado no <head> para aplicar a preferência antes da primeira pintura.
  * Independente de React, da autenticação e dos módulos operacionais.
  */
@@ -20,12 +20,14 @@
   };
 
   function decorate(button) {
-    const selected = root.getAttribute('data-mba-theme') === 'lua' ? 'lua' : 'sol';
-    const next = selected === 'sol' ? 'Lua' : 'Sol';
-    button.innerHTML = glyph[selected] + '<span>' + (selected === 'sol' ? 'Sol' : 'Lua') + '</span>';
-    button.setAttribute('aria-label', 'Tema ' + (selected === 'sol' ? 'Sol (claro)' : 'Lua (escuro)') + '. Alternar para ' + next);
-    button.setAttribute('title', 'Tema: ' + (selected === 'sol' ? 'Sol — claro' : 'Lua — escuro') + '. Mudar para ' + next);
-    button.setAttribute('aria-pressed', selected === 'lua' ? 'true' : 'false');
+    const current = root.getAttribute('data-mba-theme') === 'lua' ? 'lua' : 'sol';
+    // This is an action button: its icon/text describe the destination theme,
+    // not the active theme. Preserve the internal sol/lua IDs and saved preference.
+    const destination = current === 'sol' ? 'lua' : 'sol';
+    const label = destination === 'lua' ? 'Escuro' : 'Claro';
+    button.innerHTML = glyph[destination] + '<span>' + label + '</span>';
+    button.setAttribute('aria-label', 'Ativar tema ' + label);
+    button.setAttribute('title', 'Mudar para tema ' + label);
   }
 
   function setTheme(next) {
