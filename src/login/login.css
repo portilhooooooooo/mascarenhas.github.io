@@ -213,9 +213,11 @@ body[data-react-login="true"] #login-error { display:none!important; }
 #login-view .react-login-field input{
   height:44px;background:#202022;border:1px solid #393739;color:#fff8f3;
 }
-/* Institutional copper primary action: match the main branch. */
+/* Institutional copper primary action, with exactly the same text style as Microsoft SSO. */
 #login-view .react-login-primary{
-  margin:0;background:#b97a58;color:#fff;border:1px solid #b97a58;font-weight:600;
+  margin:0;background:#b97a58;color:#fff;border:1px solid #b97a58;
+  font-family:Inter,system-ui,sans-serif;font-size:12.5px;font-weight:500;
+  line-height:1;letter-spacing:normal;
 }
 #login-view .react-login-primary:hover:not(:disabled){
   background:#c38b69;border-color:#c38b69;
@@ -268,8 +270,8 @@ body.mba-auth-transition-hold .login-screen {visibility:hidden!important}
 #login-view .react-login-access { width:min(420px,100%); padding:10px 0 28px; }
 #login-view .react-login-access h1 {
   width:100%; max-width:420px; margin:0 0 25px;
-  font:400 clamp(29px,2.35vw,36px)/1.16 Georgia,"Times New Roman",serif;
-  letter-spacing:-.039em; text-align:center; text-wrap:balance;
+  font:400 clamp(36px,3vw,46px)/1.13 Georgia,"Times New Roman",serif;
+  letter-spacing:-.042em; text-align:center; text-wrap:balance;
 }
 #login-transition-root .mba-auth-transition-content { gap:13px; }
 #login-transition-root .mba-auth-loading-indicator {
@@ -279,7 +281,7 @@ body.mba-auth-transition-hold .login-screen {visibility:hidden!important}
 }
 @keyframes mba-loading-rotate { to { transform:rotate(360deg); } }
 @media(max-width:480px) {
-  #login-view .react-login-access h1 { font-size:29px; margin-bottom:22px; }
+  #login-view .react-login-access h1 { font-size:34px; margin-bottom:24px; }
 }
 @media(prefers-reduced-motion:reduce) {
   #login-transition-root .mba-auth-loading-indicator { animation:none; border-top-color:#e7b799; }
