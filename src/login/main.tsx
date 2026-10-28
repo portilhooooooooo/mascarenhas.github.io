@@ -84,7 +84,6 @@ function LoginPage() {
           aria-label="Vídeo institucional do escritório Mascarenhas Barbosa">
           <source src="/assets/mascarenhas-login.mp4?v=20261027-3b74ad84" type="video/mp4"/>
         </video>
-        <div className="react-login-visual-caption"><span>MASCARENHAS BARBOSA · DESDE 1968</span><strong>Transformando ideias em produção.</strong></div>
       </aside>
     </main>
   </div>;

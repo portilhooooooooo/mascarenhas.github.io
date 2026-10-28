@@ -56,7 +56,7 @@ body[data-react-login="true"] #login-error { display:none!important; }
   align-items:stretch;
 }
 #login-view .react-login-access {
-  width:min(520px,100%);align-self:center;justify-self:center;
+  width:min(465px,100%);align-self:center;justify-self:center;
   padding:24px 0 48px;
 }
 #login-view .react-login-access h1 {
@@ -144,19 +144,6 @@ body[data-react-login="true"] #login-error { display:none!important; }
   content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
   background:linear-gradient(0deg,rgba(12,12,14,.93) 0%,rgba(12,12,14,.65) 21%,rgba(12,12,14,.18) 48%,transparent 70%);
 }
-#login-view .react-login-visual-caption {
-  position:absolute;z-index:2;bottom:clamp(24px,3vw,38px);
-  right:clamp(24px,3vw,38px);width:47%;
-  display:grid;gap:9px;justify-items:start;text-align:left;
-}
-#login-view .react-login-visual-caption span {
-  font-size:10px;letter-spacing:.19em;font-weight:650;color:#e4b294;
-}
-#login-view .react-login-visual-caption strong {
-  display:block;max-width:min(540px,100%);text-wrap:balance;
-  font:400 clamp(21px,1.9vw,30px)/1.16 Georgia,serif;
-  letter-spacing:-.02em;color:#fff6ef;
-}
 @media(max-width:880px) {
   #login-view .react-login-view { grid-template-rows:72px minmax(0,1fr); }
   #login-view .react-login-header { height:72px;padding-inline:24px; }
@@ -179,5 +166,52 @@ body[data-react-login="true"] #login-error { display:none!important; }
 /* The separator keeps the original minimal form layout. */
 #login-view .react-login-divider{text-transform:none;}
 
-/* Center the editorial heading over the original 465px form. */
-#login-view .react-login-access h1{max-width:465px;margin-inline:auto;text-align:center}
+/* Exact horizontal alignment: heading and the form share the same 465px box. */
+#login-view .react-login-access h1{width:100%;max-width:100%;margin-inline:0;text-align:center}
+
+
+/* Solar mode uses the existing application-level Sol/Lua preference.
+   Video and crop are identical in both themes. */
+html[data-mba-theme="sol"] body[data-react-login="true"] .login-screen,
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-view,
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-header{
+  background:#f7f7f5;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-brand,
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-access h1{
+  color:#272422;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-brand img{
+  filter:brightness(0);
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-form{
+  background:#ffffff;
+  border-color:#e5dfdb;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-corporate{
+  background:#f1f1ef;
+  border-color:#e6e2de;
+  color:#252321;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-corporate:hover:not(:disabled){
+  background:#eae7e4;
+  border-color:#d6d0cb;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-divider{
+  color:#807a76;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-divider::before,
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-divider::after{
+  background:#e4ded9;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-field{
+  color:#615c57;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-field input{
+  background:#f9f9f8;
+  color:#252321;
+  border-color:#e5e0dc;
+}
+html[data-mba-theme="sol"] body[data-react-login="true"] #login-view .react-login-field input::placeholder{
+  color:#86817e;
+}

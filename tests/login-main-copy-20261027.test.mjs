@@ -7,11 +7,11 @@ assert.doesNotMatch(login,/Boa noite|Boa tarde|Bom dia|react-login-subtitle/);
 assert.match(login,/Continuar via Microsoft/);
 assert.match(login,/onClick=\{\(\) => void startMicrosoftLogin\(\)\}/);
 assert.match(login,/<div className="react-login-divider" aria-hidden="true">ou<\/div>/);
-assert.match(login,/Transformando ideias em produção\./);
-assert.match(login,/MASCARENHAS BARBOSA · DESDE 1968/);
+assert.doesNotMatch(login,/Transformando ideias em produção\./);
+assert.doesNotMatch(login,/MASCARENHAS BARBOSA · DESDE 1968/);
 assert.match(login,/<source src="\/assets\/mascarenhas-login.mp4\?v=20261027-3b74ad84"/);
 assert.match(css,/object-fit:cover;object-position:34% center/);
-assert.match(css,/right:clamp\(24px,3vw,38px\);width:47%/);
-assert.doesNotMatch(css,/left:clamp\(24px,3vw,38px\);width:47%/);
+assert.doesNotMatch(css,/react-login-visual-caption/);
+
 assert.match(css,/font:400 clamp\(37px,3\.35vw,61px\)\/1\.08 Georgia/);
-console.log('Main login: original video and title font, left caption, Microsoft button and divider.');
+console.log('Login: original video and title font, balanced centered caption, Microsoft button and divider.');
