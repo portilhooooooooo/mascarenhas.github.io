@@ -41,16 +41,16 @@
 }
 .app-shell > .main-area > .topbar .mba-shell-tabs::-webkit-scrollbar { display:none; }
 
-/* The real Mascarenhas mark is inline with the editorial brand. */
+/* The original Mascarenhas mark stays inline; navigation uses one sans family. */
 .sidebar .brand {
   display:flex;
   align-items:center;
   min-width:0;
   gap:7px !important;
-  font-family:Georgia,"Times New Roman",serif !important;
-  font-size:17px !important;
-  font-weight:400 !important;
-  letter-spacing:-.035em !important;
+  font-family:"Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  font-size:15px !important;
+  font-weight:600 !important;
+  letter-spacing:-.025em !important;
   color:#f4f1ee !important;
 }
 .sidebar .brand .brand-symbol {
@@ -61,7 +61,7 @@
   filter:none;
 }
 .sidebar .brand .brand-word {
-  font:400 17px/1.1 Georgia,"Times New Roman",serif !important;
+  font:600 15px/1.1 "Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
   color:#f4f1ee !important;
 }
 .sidebar .sidebar-head { min-height:50px; }

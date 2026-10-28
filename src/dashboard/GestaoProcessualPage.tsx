@@ -1,4 +1,5 @@
 import {runtimeScope} from '../tasks/runtimeQueries';
+import {createPortal} from 'react-dom';
 import { useModuleVisible } from './useModuleVisible';
 import { useEffect, useState } from 'react';
 import { EncerramentosPage } from './EncerramentosPage';
@@ -88,14 +89,17 @@ export function GestaoProcessualPage() {
 
   if (!canViewAnalytics && !canViewClosing) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
 
-  return <div className="gestao-metabase-page gestao-processual-react">
-    <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
+  const shellTabs = document.getElementById('mba-shell-tabs');
+  const resultsTabs = <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Base Geral</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
       {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
       {canViewEnterProtocols && <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/protocolos')}>Protocolos</button>}
-    </nav>
+    </nav>;
+
+  return <div className="gestao-metabase-page gestao-processual-react">
+    {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
     {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
     {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage key={runtimeScope()}/></div> : null}
