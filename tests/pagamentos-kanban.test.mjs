@@ -1,25 +1,39 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const root = new URL('../', import.meta.url);
-const kanban = readFileSync(new URL('src/dashboard/PagamentosKanban.tsx',root),'utf8');
-const page = readFileSync(new URL('src/dashboard/PagamentosResultadosPage.tsx',root),'utf8');
-const style = readFileSync(new URL('src/dashboard/pagamentosResultados.css',root),'utf8');
-test('kanban uses four disjoint business stages',()=>{
-  const stages=[...kanban.matchAll(/\{id:'[^']+',title:'[^']+',statuses:\[([^\]]+)\]/g)];
-  assert.equal(stages.length,4);
-  const statuses=stages.flatMap(stage=>[...stage[1].matchAll(/'([^']+)'/g)].map(m=>m[1]));
-  assert.equal(new Set(statuses).size,statuses.length,'a situation must never be counted twice');
-  for(const situation of ['Liquidado','Em aprovação (Valores)','Em aprovação (Técnica)','Em aberto','Aguardando pagamento','Pagamento cancelado','Recusado (Valores)'])assert.ok(statuses.includes(situation),situation);
+const root=new URL('../',import.meta.url);
+const source=path=>readFileSync(new URL(path,root),'utf8');
+const config=source('src/dashboard/pagamentosSnapshot.ts');
+const page=source('src/dashboard/PagamentosResultadosPage.tsx');
+const board=source('src/dashboard/PagamentosKanban.tsx');
+const css=source('src/dashboard/pagamentosResultados.css');
+
+test('four disjoint statuses groups and no manual state mutation',()=>{
+ const rows=[...config.matchAll(/\{id:'(?:aprovacao|aberto|liquidado|interrompido)',title:'[^']+',statuses:\[([^\]]+)\]/g)];
+ assert.equal(rows.length,4);
+ const all=rows.flatMap(m=>[...m[1].matchAll(/'([^']+)'/g)].map(x=>x[1]));
+ assert.equal(all.length,new Set(all).size);
+ for(const s of ['Em aprovação (Valores)','Em aprovação (Técnica)','Liquidado','Pagamento cancelado'])assert.ok(all.includes(s));
+ assert.doesNotMatch(board,/onDrop=|onDragStart=|method:'PATCH'|draggable/);
 });
-test('kanban is read-only, paginated and isolated by session / office',()=>{
-  assert.match(kanban,/readPayments\(office,status,page,25,signal\)/);
-  assert.match(kanban,/params\.set\('credenciado',office\)/);
-  assert.match(kanban,/scope,'pagamentos-kanban',office,situation,stage\.id/);
-  assert.doesNotMatch(kanban,/draggable=|onDragStart=|onDrop=|method:'POST'|method:'PATCH'/);
-  assert.match(page,/<PagamentosKanban visible=\{active\} office=\{office\} situation=\{situation\} disabled=\{typed\}\/>/);
+test('single compact endpoint and browser fallback only for 404',()=>{
+ assert.match(config,/\/api\/resultados\/pagamentos\?/);
+ assert.match(config,/typed\?\.status!==404/);
+ assert.match(page,/queryFn:\(\{signal\}\)=>paymentSnapshot\(office,situation,signal\)/);
+ assert.doesNotMatch(board,/useQueries|readStage|monthlyLiquidated/);
+ assert.match(board,/enabled:enabled&&!!selected&&!!status/);
 });
-test('KPIs preserve 100px height and board uses four columns at desktop',()=>{
-  assert.match(style,/\.payments-results-kpi\{height:100px;min-height:100px;/);
-  assert.match(style,/\.payments-results-board-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+test('minimal UI: no repeated heading, supporting slogans or loose captions',()=>{
+ assert.doesNotMatch(page,/payments-results-top|payments-results-eyebrow|<h1>|payments-results-note|results-period/);
+ assert.doesNotMatch(board,/payments-results-board-head|board-caption|stage-mode|Visão por situação/);
+ assert.match(page,/payments-results-filters--compact/);
+ assert.match(css,/\.payments-results-kpi\{[^}]*height:100px/);
+ assert.match(css,/\.payments-results-board-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+});
+test('non-authoritative payment type and receipts never invent values',()=>{
+ assert.match(page,/<option value="acordo" disabled>/);
+ assert.match(page,/data\?\.cards\.no_receipt/);
+ assert.match(page,/Indisponível/);
+ assert.match(config,/no_receipt:null/);
+ assert.match(config,/types:null/);
 });
