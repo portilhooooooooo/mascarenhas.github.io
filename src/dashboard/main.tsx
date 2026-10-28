@@ -221,6 +221,14 @@ function configureApplicationShell() {
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
     });
+    const footerUsers = document.querySelector<HTMLElement>('.sidebar-bottom .sidebar-users-button');
+    if (footerUsers) {
+      const authorized = mayOpen('usuarios') &&
+        (window as DashboardWindow).MBA_CURRENT_USER?.permissions?.['users.view'] === true;
+      footerUsers.hidden = !authorized;
+      footerUsers.dataset.mbaHidden = String(!authorized);
+      if (!authorized) footerUsers.classList.remove('active');
+    }
     const current = document.querySelector<HTMLElement>('main .page.active');
     if ((window as DashboardWindow).MBA_CURRENT_USER && current?.id && current.id !== 'sem-acesso' && !mayOpen(current.id)) {
       const fallback = [...visiblePages].find(page => mayOpen(page));
@@ -238,11 +246,11 @@ function configureApplicationShell() {
   });
 
   const orderedItems: Array<HTMLElement | null> = [
+    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
     nav.querySelector<HTMLElement>('[data-page="processos"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
-    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
-    nav.querySelector<HTMLElement>('[data-page="dashboard"]'),
+    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
     nav.querySelector<HTMLElement>('[data-page="banco-dados"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });

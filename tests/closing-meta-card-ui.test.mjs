@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const page=readFileSync(new URL('../src/dashboard/EncerramentosPage.tsx',import.meta.url),'utf8');
+const style=readFileSync(new URL('../src/dashboard/encerramentos.css',import.meta.url),'utf8');
+const metric=page.slice(page.indexOf("function Metrics("),page.indexOf("type QueueView"));
+assert.match(metric,/closing-kpi closing-kpi-button closing-goal-kpi"/);
+assert.doesNotMatch(metric,/closing-goal-kpi mba-metric-card/);
+assert.match(metric,/closing-goal-kpi-title">Meta<\/span>[\s\S]*?<svg viewBox="0 0 104 57" className="closing-gauge"/);
+assert.match(metric,/<strong className="closing-gauge-value">\{card.value\}<\/strong>/);
+assert.doesNotMatch(metric,/className="closing-goal-kpi-body"/);
+assert.match(metric,/goalPercent!==null\?percent\(goalPercent\):'—'/);
+assert.match(metric,/document\.getElementById\('closing-aging-target'\)/);
+assert.match(metric,/strokeDashoffset=\{\(1-\(goalPercent\?\?0\)\/100\)\*Math\.PI\*43\}/);
+assert.match(style,/\.closing-kpis-main \.closing-goal-kpi \.closing-gauge-value \{[\s\S]*?position:absolute/);
+assert.match(style,/\.closing-kpis-main \.closing-goal-kpi \.closing-gauge \{/);
+console.log('Meta card: main semicircle restored, accessible drill-down and unchanged calculation.');

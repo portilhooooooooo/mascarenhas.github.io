@@ -51,7 +51,7 @@ assert.doesNotMatch(html, /nav-badge">23<\/em>/, 'task badge must not be hardcod
 assert.match(html, /id="tasks-nav-count"[^>]*hidden/, 'task badge must start empty');
 assert.match(html, /portfolio-policy\.js/, 'portfolio policy must be loaded for classic navigation');
 assert.match(shell, /dashboard: 'Resultados'/, 'Resultados must be the primary module label');
-assert.match(shell, /new Set\(\['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard', 'banco-dados'\]\)/, 'primary navbar must expose six operational destinations');
+assert.match(shell, /new Set\(\['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard'\]\)/, 'primary navbar must expose five operational destinations');
 assert.doesNotMatch(html, /id="mba-active-module"|class="mba-context-label"/, 'redundant breadcrumb removed; functional titles preserved');
 assert.match(html, /href="reimagined-workspace.css"/, 'reimagined styles must load after existing themes');
 assert.match(shell, /mayOpen\('protocolo'\)/, 'Controladoria lifecycle must enforce the portfolio');

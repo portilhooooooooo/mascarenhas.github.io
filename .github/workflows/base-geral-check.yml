@@ -1,0 +1,28 @@
+name: Base Geral Frontend Checks
+on:
+  push:
+    branches: [dev/tasks-workspace]
+    paths:
+      - 'src/dashboard/BaseGeralPage.tsx'
+      - 'src/dashboard/baseGeral.css'
+      - 'src/dashboard/GestaoProcessualPage.tsx'
+      - 'tests/base-geral-ui.test.mjs'
+      - '.github/workflows/base-geral-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Base Geral UI tests
+        run: node --test tests/base-geral-ui.test.mjs
+      - name: TypeScript and production build
+        run: npm run build

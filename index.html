@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-white.svg?v=20261013-original">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="agreements.css">
   <link rel="stylesheet" href="payment-receipt.css?v=20260917-task-lobby-v2">
@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="brand-themes.css">
   <link rel="stylesheet" href="design-system-v2.css">
   <link rel="stylesheet" href="reimagined-workspace.css">
+  <link rel="stylesheet" href="nav-editorial.css">
 </head>
 <body class="auth-loading">
   <section class="login-screen" id="login-screen" aria-label="Login Mascarenhas Backoffice">
@@ -28,21 +29,21 @@
       </div>
     </div>
   </section>
+  <div id="login-transition-root"></div>
 
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-head">
-        <div class="brand"><span>MBA</span> <span class="brand-word">Backoffice</span></div>
+        <div class="brand"><img class="brand-symbol" src="/favicon-white.svg?v=20261013-original-mark" alt="Mascarenhas Barbosa"><span class="brand-word">Backoffice</span></div>
         <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="Recolher menu" aria-expanded="true"><i data-lucide="panel-left-close"></i></button>
       </div>
       <p class="brand-caption">Hub de Gestão</p>
       <nav class="main-nav" aria-label="Navegação principal">
+        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view" type="button"><i data-lucide="chart-no-axes-combined"></i><span>Resultados</span></button>
         <button class="nav-item" data-page="processos" data-permission="processos.view" type="button" hidden><i data-lucide="files"></i><span>Processos</span></button>
         <button class="nav-item" data-page="tarefas" data-permission="tasks.view" type="button"><i data-lucide="list-checks"></i><span>Tarefas</span><em class="nav-badge" id="tasks-nav-count" aria-label="Pendências" hidden></em></button>
-        <button class="nav-item" data-page="acordos" type="button"><i data-lucide="layers-3"></i><span>Operação</span></button>
         <button class="nav-item" data-page="automacoes" data-permission="automations.view" type="button"><i data-lucide="workflow"></i><span>Automações</span></button>
-        <button class="nav-item active" data-page="dashboard" data-permission="dashboard.view" type="button"><i data-lucide="chart-no-axes-combined"></i><span>Resultados</span></button>
-        <button class="nav-item" data-page="banco-dados" data-permission="dashboard.view" type="button" hidden><i data-lucide="database"></i><span>Banco de Dados</span></button>
+        <button class="nav-item" data-page="acordos" type="button"><i data-lucide="layers-3"></i><span>Operação</span></button>
         <!-- Rotas legadas: a policy e o shell mantêm acessos existentes sem duplicar a navegação. -->
         <button class="nav-item" data-page="protocolo" data-permission="automations.view" type="button" hidden><i data-lucide="send"></i><span>Protocolos</span></button>
         <button class="nav-item" data-page="pagamentos" data-permission="pagamentos.view" type="button" hidden><i data-lucide="wallet-cards"></i><span>Pagamentos</span></button>
@@ -54,21 +55,18 @@
 
       <div class="sidebar-bottom">
         <div id="portfolio-switcher" aria-label="Seleção de carteira"></div>
+        <button class="nav-item sidebar-users-button" data-page="usuarios" data-permission="users.view" type="button" hidden><i data-lucide="users"></i><span>Usuários</span></button>
         <button class="sidebar-logout" id="logout-button" type="button"><i data-lucide="log-out"></i><span>Sair</span></button>
       </div>
     </aside>
 
     <div class="main-area">
       <header class="topbar">
+        <div id="mba-shell-tabs" class="mba-shell-tabs" aria-label="Submódulos"></div>
         <span class="local-preview-badge" id="local-preview-badge" hidden>Prévia local</span>
         <div class="top-actions">
           <button class="icon-button notification-button" aria-label="Notificações"><i data-lucide="bell"></i><span>3</span></button>
           <button class="icon-button" aria-label="Ajuda"><i data-lucide="circle-help"></i></button>
-          <div class="profile" aria-label="Usuário autenticado">
-            <span class="avatar" id="profile-avatar">UU</span>
-            <span class="profile-copy"><strong id="profile-name">Usuário de Usuário</strong><small id="profile-role">Padrão</small></span>
-            <i class="profile-chevron" data-lucide="chevron-down"></i>
-          </div>
         </div>
       </header>
 
@@ -78,7 +76,6 @@
           <div id="dashboard-root"><p role="status" class="mba-results-boot-placeholder">Carregando Resultados… Se continuar vazio, atualize a página.</p></div>
         </section>
 
-        <section class="page banco-dados-page" id="banco-dados" data-permission="dashboard.view" aria-label="Banco de Dados" hidden></section>
 
         <section class="page list-page" id="automacoes" data-permission="automations.view">
           <div class="page-title"><div><h1>Integrações</h1><p>Execute e acompanhe as APIs operacionais do MBA Backoffice.</p></div></div>
@@ -104,8 +101,8 @@
 
             <article class="automation-card" data-integration-card="benner-andamentos">
               <div class="module-icon blue"><i data-lucide="file-plus-2"></i></div>
-              <div class="module-copy"><div class="module-title-row"><h2>Andamentos no Benner</h2><span class="status-badge" id="benner-andamentos-health">Verificando</span></div><p>Importa planilhas e lança andamentos nas pastas do Benner com validação de registro.</p><div class="module-meta"><span><small>Execução atual</small><strong id="benner-andamentos-job-status">—</strong></span><span><small>Progresso</small><strong id="benner-andamentos-job-progress">—</strong></span></div></div>
-              <div class="module-actions"><button class="primary-button integration-run-button" type="button" data-integration="benner-andamentos" data-permission="automations.run"><i data-lucide="play"></i>Executar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="benner-andamentos"><i data-lucide="list-checks"></i>Consultar jobs</button></div>
+              <div class="module-copy"><div class="module-title-row"><h2>Andamentos no Benner</h2><span class="status-badge" id="benner-andamentos-health">Verificando</span></div><p>Lança andamentos e confirma o registro no Benner.</p><div class="module-meta"><span><small>Execução atual</small><strong id="benner-andamentos-job-status">—</strong></span><span><small>Progresso</small><strong id="benner-andamentos-job-progress">—</strong></span><span><small>Motivo derrota · último envio</small><strong id="benner-andamentos-validation">Não consultado</strong></span></div></div>
+              <div class="module-actions"><button class="primary-button" type="button" data-benner-launch data-permission="encerramentos.view"><i data-lucide="play"></i>Lançar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="benner-andamentos"><i data-lucide="list-checks"></i>Consultar envios</button></div>
             </article>
 
           </div>

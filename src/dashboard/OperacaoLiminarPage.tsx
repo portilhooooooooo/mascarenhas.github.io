@@ -88,7 +88,6 @@ export function OperacaoLiminarPage() {
   if(!canView&&!loading)return <div className="protocolos-empty"><strong>Sem acesso a Operação / Liminar</strong></div>;
 
   return <div className="protocolos-page-react operacao-pagamentos-page operacao-liminar-page">
-    <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Liminar</h1></div></header>
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
     <section className="protocolos-session-bar" aria-label="Status do backend">
       <div className="protocolos-session-copy">

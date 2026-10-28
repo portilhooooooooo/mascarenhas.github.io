@@ -180,7 +180,7 @@ export function RankingPage({visible=true}:{visible?:boolean}) {
   if (!portfolio) return <section className="ranking-screen" role="status">O Ranking é restrito às carteiras Agibank.</section>;
   return <section className="ranking-screen" aria-label="Projeção gerencial do Ranking Agibank">
     <div className="ranking-topline">
-      <div><h1>Ranking</h1><p>Nota projetada, desvios de meta e pontos recuperáveis · Agibank {portfolio === 'agibank_enter' ? 'Enter' : 'MBA'}</p></div>
+      <div><p>Nota projetada, desvios de meta e pontos recuperáveis · Agibank {portfolio === 'agibank_enter' ? 'Enter' : 'MBA'}</p></div>
       <button className="ranking-refresh" type="button" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} className={loading ? 'ranking-spin' : ''}/> Atualizar</button>
     </div>
     {error && <div className="ranking-error" role="alert"><AlertCircle size={16}/><span>Não foi possível carregar a projeção: {error}. {data ? 'Os últimos dados válidos foram mantidos.' : 'Tente novamente.'}</span><button type="button" onClick={() => void refresh()}>Tentar novamente</button></div>}

@@ -106,7 +106,7 @@ export function ProtocolosPage() {
   const state=startBusy?'starting':summary?.session?.state||'unknown';
   const busy=['starting','authenticating','connected','in_use'].includes(state);
   return <div className="protocolos-page-react" ref={visibleRoot}>
-    <header className="protocolos-header"><div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Protocolos</h1></div></header>
+
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
     <section className="protocolos-session-bar" aria-label="Status da automação"><div className="protocolos-session-copy"><span>Status da automação</span><strong className={`protocolos-session-state ${state}`} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong></div><button type="button" className="protocolos-button primary protocolos-start-button" disabled={!canRun||startBusy||busy||loading} onClick={()=>void start()}>{startBusy?<LoaderCircle className="spin" size={15}/>:<Play size={15}/>}Iniciar</button></section>
     <div className="protocolos-intake-grid-react">

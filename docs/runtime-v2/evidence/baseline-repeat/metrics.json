@@ -1,0 +1,398 @@
+{
+  "timestamp": "2026-10-24T01:46:35.468Z",
+  "commit": "11a17cf58d2afcacbd90f2c92c7cd11591386793",
+  "fixture": true,
+  "results": [
+    {
+      "id": "A01",
+      "status": "FALHOU",
+      "ms": 191.50968399999965,
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    'dashboard.view': true,\n    'encerramentos.view': true,\n    'tasks.assign': true,\n    'tasks.execute': true,\n+   'tasks.view': false,\n-   'tasks.view': true,\n    'tasks.view_others': true\n  }\n"
+    },
+    {
+      "id": "A02",
+      "status": "FALHOU",
+      "ms": 670.7143480000004,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ null\n- 'baseline-node'\n"
+    },
+    {
+      "id": "A03",
+      "status": "FALHOU",
+      "ms": 607.3260660000005,
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ null\n- 'subtab-node'\n"
+    },
+    {
+      "id": "A04",
+      "status": "FALHOU",
+      "ms": 578.7916240000004,
+      "error": "Expected values to be strictly equal:\n\n0 !== 4\n"
+    },
+    {
+      "id": "A05",
+      "status": "FALHOU",
+      "ms": 375.335376,
+      "error": "Expected values to be strictly equal:\n\n0 !== 4\n"
+    },
+    {
+      "id": "A06",
+      "status": "FALHOU",
+      "ms": 17551.598408,
+      "error": "Expected values to be strictly equal:\n\n'30' !== '7'\n"
+    },
+    {
+      "id": "A08",
+      "status": "FALHOU",
+      "ms": 11372.206799000003,
+      "error": "page.waitForFunction: Timeout 10500ms exceeded."
+    }
+  ],
+  "calls": [
+    {
+      "t": 1792806360529,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806360562,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806360569,
+      "path": "/api/tasks",
+      "query": ""
+    },
+    {
+      "t": 1792806360750,
+      "path": "/api/base-geral/summary",
+      "query": ""
+    },
+    {
+      "t": 1792806360876,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806360878,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806360882,
+      "path": "/api/tasks",
+      "query": "?scope=mine"
+    },
+    {
+      "t": 1792806360883,
+      "path": "/api/tasks",
+      "query": "?scope=all"
+    },
+    {
+      "t": 1792806360899,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=APTOS&limit=10&offset=0&enviado_benner=nao"
+    },
+    {
+      "t": 1792806361009,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806361186,
+      "path": "/api/integrations/encerramentos/jobs",
+      "query": ""
+    },
+    {
+      "t": 1792806361192,
+      "path": "/api/tasks",
+      "query": ""
+    },
+    {
+      "t": 1792806361276,
+      "path": "/api/operacao/encerramentos/summary",
+      "query": ""
+    },
+    {
+      "t": 1792806361277,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=PENDENTES&limit=10&offset=0"
+    },
+    {
+      "t": 1792806362122,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806362155,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806362158,
+      "path": "/api/tasks",
+      "query": ""
+    },
+    {
+      "t": 1792806362222,
+      "path": "/api/base-geral/summary",
+      "query": ""
+    },
+    {
+      "t": 1792806362281,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806362292,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806362294,
+      "path": "/api/tasks",
+      "query": "?scope=mine"
+    },
+    {
+      "t": 1792806362296,
+      "path": "/api/tasks",
+      "query": "?scope=all"
+    },
+    {
+      "t": 1792806362403,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806362503,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=APTOS&limit=10&offset=0&enviado_benner=nao"
+    },
+    {
+      "t": 1792806363012,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806363013,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806363189,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806364065,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806364066,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806364206,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806364866,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806365215,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806365395,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806366421,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806367961,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806367968,
+      "path": "/api/tasks",
+      "query": ""
+    },
+    {
+      "t": 1792806368004,
+      "path": "/api/base-geral/summary",
+      "query": ""
+    },
+    {
+      "t": 1792806368039,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792806368039,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806368040,
+      "path": "/api/tasks",
+      "query": "?scope=mine"
+    },
+    {
+      "t": 1792806368044,
+      "path": "/api/tasks",
+      "query": "?scope=all"
+    },
+    {
+      "t": 1792806368074,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=APTOS&limit=10&offset=0&enviado_benner=nao"
+    },
+    {
+      "t": 1792806368101,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792806369022,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806370029,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806371036,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806372045,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806373052,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806374066,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806375075,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806376084,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806377091,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806378099,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806379106,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806380113,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806381120,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806382128,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806383134,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792806384332,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806386099,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806387966,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806389727,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806392024,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792806393791,
+      "path": "/api/me",
+      "query": ""
+    }
+  ],
+  "errors": [],
+  "performance": {
+    "shifts": [
+      {
+        "t": 764.1999998092651,
+        "value": 0.3576388888888889,
+        "duration": 0
+      },
+      {
+        "t": 11802.299999713898,
+        "value": 0.004908714849108368,
+        "duration": 0
+      }
+    ],
+    "long": [
+      {
+        "t": 495.69999980926514,
+        "duration": 54
+      }
+    ],
+    "marks": [],
+    "auth": [
+      {
+        "t": 11757.299999713898
+      }
+    ]
+  }
+}

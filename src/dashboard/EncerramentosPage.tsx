@@ -36,8 +36,8 @@ type Dados = {
     mapa?: Uf[]; comarcas?: Comarca[]; ticket_medio?: Numero; ticket_amostra?: number; aging_medio?: Numero; analistas?: Analista[] };
 };
 type BackofficeApi = { request: <T = unknown>(path: string, options?: RequestInit) => Promise<T> };
-type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; concorda:boolean|null };
-type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
+type AnalysisEntry = { id:string; cnj:string; analista:string; analista_id:string; tipo:string|null; resultado:string|null; analisado_em:string; classificador_originario:string|null; classificacao_validada:string|null; concorda:boolean|null };
+type AnalysisResult = { total:number; rows:AnalysisEntry[]; analistas:Analista[]; limit:number; offset:number; acuracia_originaria?:{metodologia?:string;confirmados:number;divergentes:number;avaliados:number;nao_avaliados:number;percentual:number|null} };
 type ClosingClassificationRow = { cnj: string; tipo: string; origem: 'validado' | 'benner_adicional' };
 type ClosingClassification = {
   total: number; tipos: TipoRow[]; itens: ClosingClassificationRow[];
@@ -174,7 +174,8 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
           portfolio_id:'',cnj:row.cnj,analista_id:row.analista,
           tipo_validado:row.tipo,validacao_decisao:null,analisado_em:row.analisado_em,
           validado_em:row.analisado_em,status_envio:undefined,
-          classificador_originario:row.classificador_originario, concorda_originario:row.concorda,
+          classificador_originario:row.classificador_originario, classificacao_validada:row.classificacao_validada,
+          concorda_originario:row.concorda,
         } as ClosingCase))
       }))
       : getClosingCases(listStatus!,pageSize,(page-1)*pageSize,search,kind==='motivo'?'nao':'todos',
@@ -202,8 +203,8 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
       {!hasDetails ? <div className="closing-dialog-empty" role="status">
         A relação de CNJs deste indicador ainda não é disponibilizada pela API de Resultados.
       </div> : <>
-        {kind==='acuracia' && <div className="closing-accuracy-tabs" role="group" aria-label="Concordância com o classificador">
-          {([{key:'todos',label:'Todos'},{key:'sim',label:'Concordantes'},{key:'nao',label:'Divergentes'},{key:'nao_avaliados',label:'Não avaliados'}] as const).map(item=>
+        {kind==='acuracia' && <div className="closing-accuracy-tabs" role="group" aria-label="Comparação de classificação original e validada">
+          {([{key:'todos',label:'Todos'},{key:'sim',label:'Correspondentes'},{key:'nao',label:'Divergentes'},{key:'nao_avaliados',label:'Não comparáveis'}] as const).map(item=>
             <button key={item.key} type="button" aria-pressed={concordancia===item.key}
               className={concordancia===item.key?'active':''} onClick={()=>{setConcordancia(item.key);setPage(1);}}>{item.label}</button>)}
         </div>}
@@ -217,17 +218,21 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte}: {kind:
             <Download size={15}/>CSV
           </button>
         </div>
-        <p className="closing-dialog-source">{kind==='acuracia'?'Classificação sugerida antes da tarefa × concordância declarada pelo analista':
+        <p className="closing-dialog-source">{kind==='acuracia'?'Classificação original × resultado jurídico validado. Revisões e categorias não comparáveis não entram no percentual.':
           kind==='analisados' ? 'Análises humanas do período selecionado' : 'Relação da fila operacional · os totais podem diferir dos indicadores do período.'}</p>
         {error && <p className="closing-error" role="alert">{error}</p>}
         <div className="closing-dialog-table-wrap">
           <table className="closing-dialog-table">
-            <thead><tr><th>CNJ</th><th>{kind==='acuracia'?'Classificador':'Pasta'}</th><th>{kind==='acuracia'?'Concordância':'Classificação'}</th><th>Analista</th><th>{kind==='analisados'||kind==='acuracia'?'Analisado em':'Benner'}</th></tr></thead>
+            <thead><tr><th>CNJ</th><th>{kind==='acuracia'?'Classificador':'Pasta'}</th>{kind==='acuracia'&&<th>Validado</th>}<th>{kind==='acuracia'?'Comparação':'Classificação'}</th><th>Analista</th><th>{kind==='analisados'||kind==='acuracia'?'Analisado em':'Benner'}</th></tr></thead>
             <tbody>{items.map(row=><tr key={row.cnj}>
               <td><strong>{closingCnj(row.cnj)}</strong></td>
               <td>{kind==='acuracia'?(row as ClosingCase & {classificador_originario?:string|null}).classificador_originario||'—':row.pasta||'—'}</td>
-              <td>{kind==='acuracia'?((row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===true?'Concorda':
-                (row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===false?'Diverge':'Não avaliado'):row.tipo_validado||'—'}</td>
+              {kind==='acuracia'&&<td>{({
+                VITORIA:'Vitória',DERROTA:'Derrota',DERROTA_VOLUNTARIA:'Derrota voluntária',
+                ACORDO:'Acordo',EXTINCAO:'Extinção',
+              } as Record<string,string>)[(row as ClosingCase & {classificacao_validada?:string|null}).classificacao_validada||'']||'—'}</td>}
+              <td>{kind==='acuracia'?((row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===true?'Corresponde':
+                (row as ClosingCase & {concorda_originario?:boolean|null}).concorda_originario===false?'Diverge':'Não comparável'):row.tipo_validado||'—'}</td>
               <td>{row.analista_id || '—'}</td>
               <td>{kind==='analisados'||kind==='acuracia'?(row.analisado_em ? new Date(row.analisado_em).toLocaleDateString('pt-BR') : '—') : (row.status_envio || '—')}</td>
             </tr>)}</tbody>
@@ -254,12 +259,13 @@ function Metrics({ dados, carteira, agingMensal, analises, posicaoBenner, motivo
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
+  const accuracyReady=accuracy?.metodologia==='classificacao_validada_v2';
   const goals=agingMensal && carteira==='Agibank Regular'
     ? regularAgingSummary(regularAgingGoals(agingMensal.aging,agingMensal.total_elegivel)):null;
   const goalPercent=goals && goals.meta > 0 ? Math.max(0,Math.min(100,goals.atual / goals.meta * 100)) : null;
   const cards: Array<{key:ClosingCard;icon:typeof UsersRound;value:string}> = [
     {key:'analisados',icon:UsersRound,value:analises ? num(analises.total):'—'},
-    {key:'acuracia',icon:Target,value:accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
+    {key:'acuracia',icon:Target,value:accuracyReady && accuracy?.percentual!=null ? percent(accuracy.percentual):'—'},
     {key:'aptidoes',icon:CheckCircle2,value:aptos == null ? '—':num(aptos)},
     {key:'benner',icon:Send,value:posicaoBenner ? num(posicaoBenner.total_em_acompanhamento):'—'},
     {key:'meta',icon:Target,value:goalPercent!==null?percent(goalPercent):'—'},
@@ -279,8 +285,11 @@ function Metrics({ dados, carteira, agingMensal, analises, posicaoBenner, motivo
           <strong className="closing-gauge-value">{card.value}</strong>
         </button>
       : <button className="closing-kpi closing-kpi-button" type="button"
-          key={card.key} onClick={()=>onOpen(card.key)}
-          title={card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
+          key={card.key} disabled={card.key==='acuracia'&&!accuracyReady}
+          onClick={()=>onOpen(card.key)}
+          title={card.key==='acuracia'&&!accuracyReady?'Acurácia indisponível até o backend publicar a metodologia V2.':
+            card.key==='acuracia'?'Acertos do classificador entre '+num(accuracy?.avaliados??0)+' análises com resultado jurídico comparável; '+num(accuracy?.nao_avaliados??0)+' sem comparação válida.':
+            card.key==='motivo'?'Derrotas aptas com motivo não cadastrado':
             card.key==='benner' ? 'Andamentos em acompanhamento: enviados no mês + saldo sem baixa anterior, incluindo lançamentos externos reconciliados.' :
             card.key==='aptidoes' ? 'Validações auditadas na plataforma. A meta de aging também considera registros Benner reconciliados e o saldo anterior sem baixa.' : undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
@@ -845,7 +854,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
 
   return <div className="closing-page-v2" aria-busy={pending}>
     {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
-    <div className="closing-heading"><h1>Encerramentos</h1><span role="status" style={{fontSize:12}}>{pending?'Atualizando…':''}</span></div>
+    <div className="closing-heading"><span role="status" style={{fontSize:12}}>{pending?'Atualizando…':''}</span></div>
     <div className="closing-filter-row">
       <label><span>Carteira</span><select value={carteira} disabled aria-label="Carteira atual autorizada">
         <option value="Agibank Regular">Agibank · MBA</option><option value="Agibank Enter">Agibank · Enter</option><option value="Nubank">Nubank · MBA</option>

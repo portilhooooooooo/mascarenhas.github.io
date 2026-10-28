@@ -1,0 +1,19 @@
+✔ all module reads terminate on API with bearer and no cookies (43.605225ms)
+✔ 401 invalidates cached session before the next request (5.308048ms)
+✔ client refuses external or protocol-relative path (2.633899ms)
+✔ Base Geral navigation and exact eight compact cards (4.019241ms)
+✔ unified process directory API serves the summary, products and category drilldown (0.324898ms)
+✔ filters for period, product, UF, situation and resolution propagate to drilldown and export (0.20346ms)
+✔ tutela popup toggles Deferidas and Indeferidas with independent counts (0.300141ms)
+✔ CSV exports the whole available filtered relation and rejects partial exports (0.213695ms)
+✔ 18-calendar-month operational aging rule is preserved and closing stays separate (0.176537ms)
+Assignment and fail-closed identity checks passed
+✔ tests/task-access.test.mjs (789.575384ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 813.476284

@@ -6,7 +6,7 @@
   const tbody = document.getElementById('jobs-table-body');
   let activeIntegration = null;
 
-  const integrationLabel = (key) => key === 'liminar' ? 'API de Liminar' : key === 'datajud' ? 'CNJ / DataJud' : 'Automação';
+  const integrationLabel = (key) => key === 'liminar' ? 'API de Liminar' : key === 'datajud' ? 'CNJ / DataJud' : key === 'benner-andamentos' ? 'Andamentos no Benner' : 'Automação';
   const close = () => dialog?.close();
   document.getElementById('jobs-dialog-close')?.addEventListener('click', close);
   document.getElementById('jobs-dialog-footer-close')?.addEventListener('click', close);
@@ -14,7 +14,7 @@
   document.querySelectorAll('[data-integration-jobs]').forEach((button) => {
     button.addEventListener('click', () => {
       activeIntegration = button.dataset.integrationJobs;
-      title.textContent = `Jobs · ${integrationLabel(activeIntegration)}`;
+      title.textContent = `${activeIntegration === 'benner-andamentos' ? 'Envios' : 'Jobs'} · ${integrationLabel(activeIntegration)}`;
       tbody.innerHTML = '';
       tableWrap.hidden = true;
       state.hidden = false;
@@ -30,6 +30,12 @@
     if (!dialog?.open || detail.integration !== activeIntegration) return;
     const jobs = Array.isArray(detail.jobs) ? detail.jobs : [];
     tbody.innerHTML = '';
+    if (detail.error) {
+      tableWrap.hidden = true;
+      state.hidden = false;
+      state.textContent = 'Não foi possível consultar as execuções. Tente novamente.';
+      return;
+    }
     if (!jobs.length) {
       tableWrap.hidden = true;
       state.hidden = false;
@@ -42,9 +48,10 @@
     for (const job of jobs) {
       const tr = document.createElement('tr');
       const id = String(job.id ?? job.job_id ?? '—');
-      const status = String(job.status ?? '—');
-      const statusKey = status.toUpperCase();
-      const statusClass = statusKey.startsWith('CONCLU') || statusKey === 'DONE' ? 'done'
+      const rawStatus = String(job.status ?? '—');
+      const status = ({ENVIADO:'Lançado',NA_FILA:'Na fila',PROCESSANDO:'Lançando',ERRO:'Falha no lançamento'})[rawStatus] || rawStatus;
+      const statusKey = rawStatus.toUpperCase();
+      const statusClass = statusKey.startsWith('CONCLU') || (statusKey === 'DONE' || statusKey === 'ENVIADO') ? 'done'
         : statusKey.startsWith('ERRO') || statusKey === 'ERROR' ? 'error'
         : statusKey ? 'running' : '';
       const done = job.done ?? job.processed ?? '—';

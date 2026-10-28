@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const s=readFileSync(new URL('../src/dashboard/BaseGeralPage.tsx',import.meta.url),'utf8');
+assert.match(s,/runtimeQueries\.fetchQuery/);
+assert.match(s,/staleTime:75000/);
+assert.match(s,/invalidateQueries/);
+assert.match(s,/shown\?\._read_status==='stale'/);
+assert.match(s,/getClosingCases\('APTOS'/);
+assert.match(s,/mba:portfolio-changed/);
+assert.match(s,/\/api\/base-geral\/processos\?/);
+assert.doesNotMatch(s,/\/api\/base-geral\/export\?/);
+console.log('Base Geral cache, automatic revalidation and drilldown contracts verified.');

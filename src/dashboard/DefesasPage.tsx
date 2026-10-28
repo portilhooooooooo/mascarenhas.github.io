@@ -157,7 +157,7 @@ export function DefesasPage() {
 
   return <section className="defesas-batch-page" aria-label="Defesas em lote">
     <header className="protocolos-header">
-      <div><span className="protocolos-eyebrow">CONTROLADORIA</span><h1>Defesas</h1><p>Confira os prazos e o destino de cada defesa. Os casos que exigem validação individual seguem para Tarefas.</p></div>
+      <p>Confira os prazos e o destino de cada defesa. Os casos que exigem validação individual seguem para Tarefas.</p>
       <div className="protocolos-header-actions"><button className="protocolos-button secondary" type="button" disabled={loading} onClick={() => void load()}><RefreshCw size={14}/>{loading ? 'Atualizando…' : 'Atualizar'}</button></div>
     </header>
 

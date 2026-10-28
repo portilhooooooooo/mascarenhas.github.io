@@ -1,0 +1,1605 @@
+{
+  "timestamp": "2026-10-24T03:05:07.783Z",
+  "commit": "e643f7bd747573de093f599ad367c8a56b0f6b6c",
+  "fixture": true,
+  "results": [
+    {
+      "id": "A01",
+      "status": "PASSOU",
+      "ms": 130.07154500000024
+    },
+    {
+      "id": "A02",
+      "status": "PASSOU",
+      "ms": 1518.9327030000004
+    },
+    {
+      "id": "A03",
+      "status": "PASSOU",
+      "ms": 944.2799949999999
+    },
+    {
+      "id": "A04",
+      "status": "PASSOU",
+      "ms": 15629.560075999998
+    },
+    {
+      "id": "A05",
+      "status": "PASSOU",
+      "ms": 15522.254252000002
+    },
+    {
+      "id": "A06",
+      "status": "PASSOU",
+      "ms": 17946.686904000002
+    },
+    {
+      "id": "A07",
+      "status": "PASSOU",
+      "ms": 4381.383883000002
+    },
+    {
+      "id": "A07-quota",
+      "status": "PASSOU",
+      "ms": 2723.098393
+    },
+    {
+      "id": "A10",
+      "status": "PASSOU",
+      "ms": 1554.9605289999963,
+      "detail": {
+        "coverage": "Duas abas sem OAuth; substituição em outro navegador e Admin SQL não exercitados"
+      }
+    },
+    {
+      "id": "A11",
+      "status": "PASSOU",
+      "ms": 930.9792430000089
+    },
+    {
+      "id": "A13",
+      "status": "PASSOU",
+      "ms": 15436.43591500001,
+      "detail": {
+        "kpiMs": 381.83642799999507,
+        "detailDelayMs": 15000
+      }
+    },
+    {
+      "id": "A14",
+      "status": "PASSOU",
+      "ms": 1816.6143529999972,
+      "detail": [
+        {
+          "t": 1792811047055,
+          "path": "/api/me",
+          "query": ""
+        },
+        {
+          "t": 1792811047173,
+          "path": "/api/events/stream",
+          "query": ""
+        },
+        {
+          "t": 1792811047484,
+          "path": "/api/tasks/results",
+          "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+        }
+      ]
+    },
+    {
+      "id": "A17",
+      "status": "PASSOU",
+      "ms": 1959.98057900001,
+      "detail": {
+        "statuses": [
+          429,
+          502,
+          503,
+          504
+        ],
+        "mutationInvalidation": true
+      }
+    },
+    {
+      "id": "A18",
+      "status": "PASSOU",
+      "ms": 22048.39463400001,
+      "detail": {
+        "roundTripsMs": [
+          327,
+          349.5,
+          288.2999997138977,
+          356.19999980926514,
+          329.30000019073486,
+          262.5,
+          412.69999980926514,
+          414,
+          306.90000009536743,
+          309.2000002861023,
+          380,
+          389.2000002861023,
+          395.30000019073486,
+          302.5,
+          409.2999997138977,
+          402.7000002861023,
+          451.19999980926514,
+          264.30000019073486,
+          332.09999990463257,
+          436.80000019073486,
+          277.5,
+          333.69999980926514,
+          394,
+          422.30000019073486,
+          446.5,
+          321.59999990463257,
+          419.40000009536743,
+          424.2000002861023,
+          285.09999990463257,
+          494.90000009536743,
+          424.2999997138977,
+          355.1000003814697,
+          275,
+          380.59999990463257,
+          325.7999997138977,
+          291.90000009536743,
+          380.7000002861023,
+          409.59999990463257,
+          423.8999996185303,
+          296.7999997138977,
+          366.3999996185303,
+          367.5,
+          441.7999997138977,
+          381.19999980926514,
+          296.5,
+          405.7999997138977,
+          370.5,
+          317.7999997138977,
+          327.69999980926514,
+          336.7999997138977
+        ],
+        "before": {
+          "heap": 24500000,
+          "listeners": {
+            "window": 122,
+            "document": 16,
+            "connectedDOM": 702
+          },
+          "intervals": 2,
+          "dom": 2160
+        },
+        "after": {
+          "heap": 24500000,
+          "listeners": {
+            "window": 122,
+            "document": 16,
+            "connectedDOM": 702
+          },
+          "intervals": 2,
+          "dom": 2160
+        },
+        "checkpoints": [
+          {
+            "listeners": {
+              "window": 122,
+              "document": 16,
+              "connectedDOM": 702
+            },
+            "intervals": 2,
+            "heap": 24500000
+          },
+          {
+            "listeners": {
+              "window": 122,
+              "document": 16,
+              "connectedDOM": 702
+            },
+            "intervals": 2,
+            "heap": 24500000
+          },
+          {
+            "listeners": {
+              "window": 122,
+              "document": 16,
+              "connectedDOM": 702
+            },
+            "intervals": 2,
+            "heap": 24500000
+          },
+          {
+            "listeners": {
+              "window": 122,
+              "document": 16,
+              "connectedDOM": 702
+            },
+            "intervals": 2,
+            "heap": 24500000
+          },
+          {
+            "listeners": {
+              "window": 122,
+              "document": 16,
+              "connectedDOM": 702
+            },
+            "intervals": 2,
+            "heap": 24500000
+          }
+        ],
+        "navigation": [
+          {
+            "kind": "navigation",
+            "route": "analytics/encerramentos",
+            "ms": 8.700000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 13.300000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.899999618530273
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 17.299999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 14.299999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 44.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 47
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 24
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 12.200000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 44.30000019073486
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 69.30000019073486
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 22.5
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 39.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 18.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 11.800000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 48.60000038146973
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 41.30000019073486
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 24.59999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 57.5
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 51.89999961853027
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 49.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 27.09999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 51.10000038146973
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 11.300000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 56.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 17.699999809265137
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 23.299999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.09999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 24.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 12.699999809265137
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 26
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 25.300000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 28.5
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 23.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 32.09999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 46
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 36.80000019073486
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 12
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 18.200000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 20
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 19.59999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 51.10000038146973
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 18.299999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 36.69999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 51.59999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 20.100000381469727
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 20.600000381469727
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 19.5
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 25.59999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.5
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 22.800000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 12.299999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 48
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 31.399999618530273
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 29.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 30.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 16.800000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 26.09999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 26.199999809265137
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 48.5
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 31.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 52.69999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 24.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 41.59999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.899999618530273
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 19.700000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 24.59999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 13.599999904632568
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 51.19999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 55.09999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 44.5
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 13.599999904632568
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 25.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 24
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 35.69999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 23.700000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 25.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 16.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 30.800000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 15.200000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 42.09999990463257
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 21
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 62.69999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 54.80000019073486
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 47.69999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 21.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 32.30000019073486
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 26.40000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 16.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 24.5
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 48.60000038146973
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 36.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 27.200000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 24.799999713897705
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 42.69999980926514
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 18.90000009536743
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 49.5
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 40.5
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 26.800000190734863
+          },
+          {
+            "kind": "navigation",
+            "route": "analytics",
+            "ms": 44.200000286102295
+          },
+          {
+            "kind": "navigation",
+            "route": "tarefas/resultados",
+            "ms": 41.60000038146973
+          }
+        ],
+        "coverage": "50 navegações, DOM, requests, listeners e intervals; heap observado sem certificação de leak"
+      }
+    },
+    {
+      "id": "A19",
+      "status": "PASSOU",
+      "ms": 377.94465400000627
+    },
+    {
+      "id": "A12",
+      "status": "PASSOU",
+      "ms": 14487.03109399999,
+      "detail": {
+        "coverage": "9 combinações com autorização fixture; não comprova RLS/SQL",
+        "states": [
+          {
+            "role": "admin",
+            "portfolio": "agibank_enter",
+            "count": 10
+          },
+          {
+            "role": "admin",
+            "portfolio": "agibank_mba",
+            "count": 11
+          },
+          {
+            "role": "admin",
+            "portfolio": "nubank_mba",
+            "count": 12
+          },
+          {
+            "role": "legal_leader",
+            "portfolio": "agibank_enter",
+            "count": 13
+          },
+          {
+            "role": "legal_leader",
+            "portfolio": "agibank_mba",
+            "count": 14
+          },
+          {
+            "role": "legal_leader",
+            "portfolio": "nubank_mba",
+            "count": 15
+          },
+          {
+            "role": "analyst",
+            "portfolio": "agibank_enter",
+            "count": 16
+          },
+          {
+            "role": "analyst",
+            "portfolio": "agibank_mba",
+            "count": 17
+          },
+          {
+            "role": "analyst",
+            "portfolio": "nubank_mba",
+            "count": 18
+          }
+        ]
+      }
+    },
+    {
+      "id": "A20",
+      "status": "PASSOU",
+      "ms": 1808.9848870000133
+    },
+    {
+      "id": "A08",
+      "status": "PASSOU",
+      "ms": 2181.4141789999994,
+      "detail": {
+        "observedMs": 2142.177079000001,
+        "auth": [
+          {
+            "t": 1626.6999998092651,
+            "status": "temporarily_unavailable"
+          },
+          {
+            "t": 1626.7999997138977,
+            "status": "temporarily_unavailable"
+          }
+        ]
+      }
+    },
+    {
+      "id": "A08-timeout",
+      "status": "PASSOU",
+      "ms": 11068.38837900001,
+      "detail": {
+        "states": [
+          {
+            "t": 10887.699999809265,
+            "status": "temporarily_unavailable"
+          },
+          {
+            "t": 10887.799999713898,
+            "status": "temporarily_unavailable"
+          }
+        ],
+        "attempts": 2
+      }
+    },
+    {
+      "id": "A09",
+      "status": "PASSOU",
+      "ms": 2711.7681919999886,
+      "detail": {
+        "statuses": [
+          401,
+          403
+        ]
+      }
+    }
+  ],
+  "calls": [
+    {
+      "t": 1792810965225,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792810965374,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792810965751,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792810966405,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792810966537,
+      "path": "/api/tasks/results",
+      "query": "?period=90&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792810967104,
+      "path": "/api/base-geral/summary",
+      "query": ""
+    },
+    {
+      "t": 1792810967193,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=APTOS&limit=10&offset=0&enviado_benner=nao"
+    },
+    {
+      "t": 1792810968440,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792810968587,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792810968595,
+      "path": "/api/tasks",
+      "query": "?scope=mine"
+    },
+    {
+      "t": 1792810968601,
+      "path": "/api/tasks",
+      "query": "?scope=all"
+    },
+    {
+      "t": 1792810968656,
+      "path": "/api/tasks/assignments",
+      "query": "?view=task&status=all&page=1&page_size=100"
+    },
+    {
+      "t": 1792810968689,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792810969706,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792810972455,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792810980466,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792810985455,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792810996475,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811001989,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811003526,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811003573,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811004563,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811006576,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811010584,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811018608,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811020424,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811020545,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811020811,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811021804,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811021955,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811022032,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811023192,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811023250,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811023395,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811024299,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811024944,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811025017,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811025175,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811026347,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811026463,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811026534,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811027556,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811028071,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811028187,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811028522,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811029503,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811029567,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811029634,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811029808,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811029882,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811029944,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811030055,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811030699,
+      "path": "/api/operacao/encerramentos/dashboard",
+      "query": "?carteira=Agibank+Enter&tipo=TODOS&etapa=validados&inicio=2026-10-01&fim=2026-10-24"
+    },
+    {
+      "t": 1792811030707,
+      "path": "/api/operacao/encerramentos/analises",
+      "query": "?tipo=TODOS&limit=20&offset=0&inicio=2026-10-01&fim=2026-10-24"
+    },
+    {
+      "t": 1792811030707,
+      "path": "/api/operacao/encerramentos/consolidado-mensal",
+      "query": ""
+    },
+    {
+      "t": 1792811030709,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=DERROTA&limit=1&offset=0&motivo_derrota=nao&tipo_validado=DERROTA"
+    },
+    {
+      "t": 1792811037940,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811047055,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811047173,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811047484,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811048517,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811048739,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811048950,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811049191,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811049344,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811049512,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811049693,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811049884,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811049983,
+      "path": "/api/task-processes/fixture/activity",
+      "query": ""
+    },
+    {
+      "t": 1792811049999,
+      "path": "/api/tasks/results",
+      "query": "?period=7&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811050693,
+      "path": "/api/base-geral/summary",
+      "query": ""
+    },
+    {
+      "t": 1792811050728,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=APTOS&limit=10&offset=0&enviado_benner=nao"
+    },
+    {
+      "t": 1792811053953,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811072965,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792811072966,
+      "path": "/api/tasks",
+      "query": "?scope=mine"
+    },
+    {
+      "t": 1792811072969,
+      "path": "/api/tasks",
+      "query": "?scope=all"
+    },
+    {
+      "t": 1792811073037,
+      "path": "/api/tasks/assignments",
+      "query": "?view=task&status=all&page=1&page_size=100"
+    },
+    {
+      "t": 1792811073055,
+      "path": "/api/tasks/queue-assignees",
+      "query": ""
+    },
+    {
+      "t": 1792811074232,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811074311,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811074501,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811075000,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811075079,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811075151,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811075802,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811075857,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811075974,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811076384,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811077149,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811077200,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811077465,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811077761,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811077827,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811077973,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811078850,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811079015,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811079068,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811079565,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811079665,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811079693,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811080295,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811080432,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811080608,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811080884,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811080943,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811080958,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811081716,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811081843,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811081909,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811082315,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811082384,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811082470,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811083135,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811083200,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811083311,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811083730,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811083846,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811084552,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811084704,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811084961,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811085252,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811085333,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811086160,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811086218,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811086383,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811086645,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811086737,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811087369,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811087492,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811087711,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811088437,
+      "path": "/api/operacao/encerramentos/summary",
+      "query": ""
+    },
+    {
+      "t": 1792811088438,
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=PENDENTES&limit=10&offset=0"
+    },
+    {
+      "t": 1792811088551,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811089428,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811089563,
+      "path": "/api/events/stream",
+      "query": ""
+    },
+    {
+      "t": 1792811089649,
+      "path": "/api/tasks/results",
+      "query": "?period=30&deadline=all&person=all&duration=all&include_pending=0&include_growth=0"
+    },
+    {
+      "t": 1792811091486,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811092066,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811094126,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811098973,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811105271,
+      "path": "/api/me",
+      "query": ""
+    },
+    {
+      "t": 1792811106675,
+      "path": "/api/me",
+      "query": ""
+    }
+  ],
+  "errors": [],
+  "performance": {
+    "shifts": [
+      {
+        "t": 896.7000002861023,
+        "value": 0.3576388888888889,
+        "duration": 0
+      }
+    ],
+    "long": [
+      {
+        "t": 479.2000002861023,
+        "duration": 61
+      }
+    ],
+    "marks": [],
+    "auth": [
+      {
+        "t": 699.7000002861023,
+        "status": "forbidden"
+      },
+      {
+        "t": 700.2000002861023,
+        "status": "forbidden"
+      }
+    ]
+  }
+}
