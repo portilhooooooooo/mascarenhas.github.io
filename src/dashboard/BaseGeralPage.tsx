@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getClosingCases } from './operacaoEncerramentosService';
 import './baseGeral.css';
+import {DateRangePicker} from './DateRangePicker';
 
 type Row = { label: string; value: number };
 type Summary = {
@@ -52,7 +53,6 @@ type ProcessRow = { id: number | string; cnj: string; state?: string; situation?
 type Paged = { rows: ProcessRow[]; total: number; page: number; page_size: number };
 type Api = { request: <T>(path: string, options?: RequestInit) => Promise<T>; getPortfolioId?: () => string };
 type Env = Window & { MBA_API?: Api; MBA_AUTOMATION_API?: Api; MBA_NAVIGATE?: (route: string) => boolean };
-type Period = 'all' | 'month' | '90' | '365';
 type Category = 'active' | 'prescribed' | 'closing' | 'suspended' | 'dismissed' | 'extinct' | 'upheld' | 'injunction';
 const catalog: Array<{ key: Category; label: string; subtitle: string; icon: LucideIcon }> = [
   { key: 'active', label: 'Base ativa', subtitle: 'Aging até 18 meses comprovado', icon: FolderOpen },
@@ -70,16 +70,10 @@ const validNumber = (value: unknown): number | null => typeof value === 'number'
 const money = (value: number | null) => value === null ? '—' : new Intl.NumberFormat('pt-BR', {
   style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0,
 }).format(value);
-const dateStart = (period: Period) => {
-  if (period === 'all') return '';
-  const d = new Date();
-  if (period === 'month') d.setDate(1);
-  else d.setDate(d.getDate() - (period === '90' ? 89 : 364));
-  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
-};
-const queryFor = (period: Period, uf: string, product: string, situation: string, resolution: string) => {
+const queryFor = (entryStart: string, entryEnd: string, uf: string, product: string, situation: string, resolution: string) => {
   const params = new URLSearchParams();
-  if (period !== 'all') params.set('entry_start', dateStart(period));
+  if (entryStart) params.set('entry_start', entryStart);
+  if (entryEnd) params.set('entry_end', entryEnd);
   if (uf) params.set('uf', uf);
   if (product) params.set('product', product);
   if (situation) params.set('situation', situation);
@@ -125,7 +119,8 @@ const fromValues = (values: string[]) => [
 export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [portfolio, setPortfolio] = useState(() => (window as Env).MBA_API?.getPortfolioId?.() || '');
   const [revision, setRevision] = useState(0);
-  const [period, setPeriod] = useState<Period>('all');
+  const [entryStart, setEntryStart] = useState('');
+  const [entryEnd, setEntryEnd] = useState('');
   const [uf, setUf] = useState('');
   const [product, setProduct] = useState('');
   const [situation, setSituation] = useState('');
@@ -152,10 +147,10 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const [detailError, setDetailError] = useState('');
   const requestSequence = useRef(0);
 
-  const filterKey = [portfolio, revision, period, uf, product, situation, resolution].join('|');
-  const filterQuery = useMemo(() => queryFor(period, uf, product, situation, resolution), [period, uf, product, situation, resolution]);
+  const filterKey = [portfolio, revision, entryStart, entryEnd, uf, product, situation, resolution].join('|');
+  const filterQuery = useMemo(() => queryFor(entryStart, entryEnd, uf, product, situation, resolution), [entryStart, entryEnd, uf, product, situation, resolution]);
   // A API de Processos suporta apenas UF, situação e movimentação.
-  const comparable = period === 'all' && !product && !situation && !resolution;
+  const comparable = !entryStart && !entryEnd && !product && !situation && !resolution;
   const canSeeClosings = ['agibank_enter','agibank_mba','nubank_mba'].includes(portfolio)
     && (window as Window & { MBA_CURRENT_USER?: { permissions?: Record<string, boolean> } }).MBA_CURRENT_USER?.permissions?.['encerramentos.view'] === true;
   const closingComparable = comparable && !uf && canSeeClosings;
@@ -335,10 +330,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
 
   return <section className="base-geral-page" aria-label="Base Geral da carteira processual">
     <div className="base-geral-filters">
-      <Select label="Período da entrada" value={period} onChange={value => setPeriod(value as Period)} options={[
-        {value:'all',label:'Todo o histórico'}, {value:'month',label:'Mês atual'},
-        {value:'90',label:'Últimos 90 dias'}, {value:'365',label:'Últimos 12 meses'},
-      ]}/>
+      <DateRangePicker label="Período da entrada" start={entryStart} end={entryEnd} onChange={(start,end)=>{setEntryStart(start);setEntryEnd(end)}}/>
       <Select label="Situação" value={situation} onChange={setSituation} options={[
         {value:'',label:'Todas'}, {value:'active',label:'Em andamento'},
         {value:'closed',label:'Encerrados'}, {value:'unknown',label:'Não informada'},
@@ -364,9 +356,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         onClick={() => setRevenueOpen(true)}>
         <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={15} strokeWidth={1.7}/></span>
         <strong>{money(estimatedRevenue)}</strong>
-        <span className="base-geral-revenue-note">{currentBilling
-          ? 'Projetado · ' + currentBilling.billing_month.slice(5) + '/' + currentBilling.billing_month.slice(0,4)
-          : billingPending ? 'Calculando…' : billingError ? 'Consulta indisponível' : '18 × R$ 35'}</span>
+
       </button>}
     </div>
     <div className="base-geral-kpis base-geral-kpis-status">
