@@ -15,7 +15,7 @@
 .gestao-processual-react .payments-results{
   box-sizing:border-box;
   width:100%;
-  max-width:1480px;
+  max-width:1200px;
   min-width:0;
   margin-left:auto;
   margin-right:auto;
@@ -62,7 +62,7 @@
 .gestao-processual-react .payments-results-kpis{
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:9px;
+  gap:10px;
   margin:0 0 12px;
 }
 .gestao-processual-react .payments-results-kpis .payments-results-kpi{
