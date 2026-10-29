@@ -812,7 +812,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     const run=<T,>(name:string,load:(signal:AbortSignal)=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
       queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],
       queryFn:({signal})=>analyticalRead(load,{signal,priority:name==='resumo'?0:name==='analises'?1:2,isCurrent:()=>scope===runtimeScope()&&visibleRef.current&&filterKeyRef.current===filterKey}),staleTime:force?0:60000,
-    }).then(value=>{if(valid()){apply(value);setBlockKeys(previous=>({...previous,[name]:filterKey}));}}).catch(cause=>{if(valid())setBlockErrors(previous=>({...previous,[name]:(cause instanceof Error?cause.message:'Consulta indisponível')+(blockKeysRef.current[name]===filterKey?' Exibindo o último resultado deste filtro.':'')}));});
+    }).then(value=>{if(valid()){apply(value);setBlockKeys(previous=>({...previous,[name]:filterKey}));}}).catch(cause=>{\n      const message=cause instanceof Error?cause.message:String(cause);\n      // Navigations, portfolio changes and TanStack Query cancellations are not read failures.\n      if(cause instanceof Error && (cause.name==='AbortError'||cause.name==='CanceledError') || /(?:signal|request|operation).*abort(?:ed)?/i.test(message))return;\n      if(valid())setBlockErrors(previous=>({...previous,[name]:message+(blockKeysRef.current[name]===filterKey?' Exibindo o último resultado deste filtro.':'')}));\n    });
     await Promise.allSettled([
       run('resumo',signal=>loadDashboard(carteira,tipo,inicio,fim,analista,etapa,signal),painel=>{setDados(painel);setLoadedKey(filterKey);}),
       run('analises',signal=>loadClosingAnalyses(inicio,fim,tipo,20,0,'','todos',signal),setAnalises),
