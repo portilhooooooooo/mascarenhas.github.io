@@ -18,6 +18,7 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   processos: 'processos',
   dashboard: 'analytics',
+  'banco-dados': 'banco-dados',
   acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
   automacoes: 'automacoes',
@@ -34,14 +35,8 @@ const pageRoutes = Object.freeze({
 });
 const nestedPageRoutes = Object.freeze({
   'analytics/encerramentos': 'dashboard',
-  'analytics/defesas': 'dashboard',
-  'analytics/protocolos': 'dashboard',
   'analytics/pagamentos': 'dashboard',
-  'operacao/pagamentos': 'acordos',
-  'operacao/liminar': 'acordos',
-  'operacao/encerramentos': 'acordos',
-  'operacao/protocolos': 'acordos',
-  'operacao/defesas': 'acordos',
+  'analytics/ranking': 'dashboard',
   'controladoria/defesas': 'protocolo',
   'controladoria/indicadores': 'protocolo',
   'tarefas/atribuicoes': 'tarefas',
@@ -49,17 +44,10 @@ const nestedPageRoutes = Object.freeze({
 });
 const routeAliases = Object.freeze({
   dashboard: 'analytics',
-  ranking: 'analytics',
-  'analytics/ranking': 'analytics',
+  ranking: 'analytics/ranking',
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
-  pagamentos: 'operacao/pagamentos',
-  'operacao/liminares': 'operacao/liminar',
-  'operacao/tutelas': 'operacao/liminar',
-  'operacao/encerramento': 'operacao/encerramentos',
-  'operacao/protocolo': 'operacao/protocolos',
-  'operacao/defesa': 'operacao/defesas',
   protocolo: 'controladoria/protocolos',
   controladoria: 'controladoria/protocolos',
   'automacoes/protocolos': 'controladoria/protocolos',
@@ -74,25 +62,8 @@ function routeFromLocation() {
 function routeUrl(route) {
   return window.MBA_LOCAL_PREVIEW ? '#/' + route : '/' + route;
 }
-const operationRoutePermissions = Object.freeze({
-  'operacao/pagamentos': 'pagamentos',
-  'operacao/liminar': 'tutelas',
-  'operacao/encerramentos': 'encerramentos',
-  'operacao/protocolos': 'protocolo',
-  'operacao/defesas': 'protocolo',
-});
-let lastOperationRoute = 'operacao/pagamentos';
-function preferredOperationRoute() {
-  const policy = window.MBA_PORTFOLIO_POLICY;
-  if (policy?.canAccess(operationRoutePermissions[lastOperationRoute]) === true) return lastOperationRoute;
-  return Object.keys(operationRoutePermissions)
-    .find(route => policy?.canAccess(operationRoutePermissions[route]) === true)
-    || 'operacao/pagamentos';
-}
 function resolvePageRoute(route) {
-  const canonical = (route === 'operacao' || route === 'acordos')
-    ? preferredOperationRoute()
-    : (routeAliases[route] || route);
+  const canonical = routeAliases[route] || route;
   if (/^processos\/[^/]+$/.test(canonical)) return {pageId: 'processos', canonical};
   if (/^tarefas\/item\/[a-f0-9-]{36}\/[a-f0-9-]{36}$/.test(canonical)) return {pageId: 'tarefas', canonical};
   if (window.MBA_REACT_TASKS && (canonical === 'tarefas/acordos' || canonical === 'tarefas/comprovante-pagamento')) {
@@ -104,54 +75,38 @@ function resolvePageRoute(route) {
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
-  const operationPageId = operationRoutePermissions[route];
-  if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
-  if (route === 'analytics/pagamentos' && !(window.MBA_CURRENT_USER?.is_master_admin === true && window.MBA_CURRENT_USER?.permissions?.['pagamentos.view'] === true || window.MBA_CURRENT_USER?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && window.MBA_API?.getPortfolioId?.() === 'agibank_mba' && window.MBA_CURRENT_USER?.permissions?.['dashboard.view'] === true)) return false;
-  if (route === 'analytics/defesas' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
-  if (route === 'analytics/protocolos' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
+  if (route === 'analytics/ranking') return false;
+  if (route === 'analytics/pagamentos') {
+    const u=window.MBA_CURRENT_USER;
+    return u?.permissions?.['dashboard.view'] === true && ((u?.is_master_admin === true && u?.permissions?.['pagamentos.view'] === true) || (u?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && window.MBA_API?.getPortfolioId?.() === 'agibank_mba'));
+  }
   if (route === 'tarefas/atribuicoes') {
     const user = window.MBA_CURRENT_USER;
     return user?.is_master_admin === true || user?.permissions?.['tasks.manage'] === true;
   }
   return true;
 }
-const routeScrollPositions=new Map();
-const preferredModuleRoutes=new Map();
-let lastViewRoute=(window.MBA_LOCAL_PREVIEW?location.hash.replace(/^#\//,''):location.pathname.replace(/^\//,'')).replace(/\/$/,'');
-function rememberRouteScroll(){if(lastViewRoute)routeScrollPositions.set(lastViewRoute,Number(window.scrollY||0));}
 function publishRoute(route, pageId, replace = false) {
-  lastViewRoute=route;
-  preferredModuleRoutes.set(pageId,route);
-  if (operationRoutePermissions[route]) lastOperationRoute = route;
   const target = routeUrl(route);
   const current = window.MBA_LOCAL_PREVIEW ? location.hash : location.pathname;
   if (current !== target) history[replace ? 'replaceState' : 'pushState']({ pageId }, '', target);
   window.dispatchEvent(new CustomEvent('mba:route-changed', { detail: { route, pageId } }));
-  if(routeScrollPositions.has(route))requestAnimationFrame(()=>requestAnimationFrame(()=>{if(lastViewRoute===route)window.scrollTo({top:routeScrollPositions.get(route)||0,behavior:'instant'});}));
 }
 function authorizedPageId(pageId) {
   if (pageId === 'sem-acesso') return pageId;
   if (!document.getElementById(pageId) || window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return 'sem-acesso';
   return pageId;
 }
-const moduleScrollPositions = new Map();
 function showPage(pageId, updateRoute = true) {
-  rememberRouteScroll();
-  const previous = document.querySelector('main .page.active')?.id;
-  if(previous && previous!==pageId)moduleScrollPositions.set(previous,window.scrollY);
   pageId = authorizedPageId(pageId);
   pages.forEach(page => page.classList.toggle('active', page.id === pageId));
   navItems.forEach(item => item.classList.toggle('active', item.dataset.page === pageId));
-  if (updateRoute) {
-    const preferred=preferredModuleRoutes.get(pageId);
-    publishRoute(preferred && canAccessRoute(pageId,preferred) ? preferred : pageId==='acordos' ? preferredOperationRoute() : (pageRoutes[pageId]||'sem-acesso'),pageId);
-  }
-  if(previous!==pageId) window.scrollTo({top:moduleScrollPositions.get(pageId)||0,behavior:'instant'});
+  if (updateRoute) publishRoute(pageRoutes[pageId] || 'sem-acesso', pageId);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 window.showPage = showPage;
 function navigateRoute(route) {
-  const navigationStarted = performance.now();
   const match = resolvePageRoute(String(route || '').replace(/^\/+|\/+$/g, ''));
   if (!match || !window.MBA_CURRENT_USER) return false;
   if (!canAccessRoute(match.pageId, match.canonical)) {
@@ -160,7 +115,6 @@ function navigateRoute(route) {
   }
   showPage(match.pageId, false);
   publishRoute(match.canonical, match.pageId);
-  requestAnimationFrame(()=>{const list=window.MBA_RUNTIME_METRICS || (window.MBA_RUNTIME_METRICS=[]);list.push({kind:'navigation',route:match.canonical.replace(/item\/.*/, 'item/:id').replace(/^processos\/.+/,'processos/:id'),ms:performance.now()-navigationStarted});if(list.length>200)list.shift();});
   return true;
 }
 window.MBA_NAVIGATE = navigateRoute;
@@ -671,41 +625,7 @@ function setResourceBusy(name, busy) {
   if (name === 'encerramentos') setIntegrationBusy('liminar', busy);
 }
 
-let bennerLaunchPollTimer;
-async function loadBennerLaunchHealth() {
-  clearTimeout(bennerLaunchPollTimer);
-  // This consumer reports launches; legal validation has its own state.
-  const portfolio = window.MBA_API?.getPortfolioId?.();
-  const stale = () => portfolio !== window.MBA_API?.getPortfolioId?.();
-  const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-  try {
-    const result = await window.MBA_AUTOMATION_API.request('/api/integrations/benner-andamentos/status');
-    if (stale()) return;
-    setIntegrationHealth('benner-andamentos', result.online === true);
-    const c = result.launch?.counts || {};
-    put('benner-andamentos-job-status', Number(c.PROCESSANDO) ? 'Lançando' : Number(c.NA_FILA) ? 'Na fila' : 'Sem envios pendentes');
-    put('benner-andamentos-job-progress', `${Number(c.ENVIADO || 0)} confirmados · ${Number(c.NA_FILA || 0)} na fila · ${Number(c.ERRO || 0)} falhas`);
-    put('benner-andamentos-validation', ({
-      VALIDADO: 'Validado', AUSENTE: 'Ausente', INCONCLUSIVO: 'Inconclusivo',
-      PENDENTE: 'Pendente', NAO_APLICAVEL: 'Não se aplica',
-    })[result.validation?.state] || 'Pendente');
-  } catch (_error) {
-    if (stale()) return;
-    const badge = document.getElementById('benner-andamentos-health');
-    if (badge) { badge.textContent = 'Sem consulta'; badge.className = 'status-badge planned'; }
-    put('benner-andamentos-job-status', 'Consulta indisponível');
-    put('benner-andamentos-job-progress', '—');
-    put('benner-andamentos-validation', 'Não consultado');
-  } finally {
-    if (document.getElementById('automacoes')?.classList.contains('active')
-        && window.MBA_CURRENT_USER?.permissions?.['automations.view']) {
-      bennerLaunchPollTimer = setTimeout(() => void loadBennerLaunchHealth(), 15000);
-    }
-  }
-}
-
 async function loadIntegrationHealth() {
-  void loadBennerLaunchHealth();
   try {
     const health = await window.MBA_AUTOMATION_API.request('/api/integrations/health');
     setIntegrationHealth('liminar', Boolean(health.liminar?.online));
@@ -714,11 +634,14 @@ async function loadIntegrationHealth() {
     setIntegrationBusy('liminar', Boolean(health.liminar?.busy));
     setIntegrationBusy('encerramentos', Boolean(health.encerramentos?.busy));
     setIntegrationBusy('datajud', Boolean(health.datajud?.busy));
-
+    window.MBA_AUTOMATION_API.request('/api/automations/benner-andamentos/reasons')
+      .then(() => setIntegrationHealth('benner-andamentos', true))
+      .catch(() => setIntegrationHealth('benner-andamentos', false));
   } catch (_error) {
     setIntegrationHealth('liminar', false);
     setIntegrationHealth('datajud', false);
     setIntegrationHealth('encerramentos', false);
+    setIntegrationHealth('benner-andamentos', false);
   }
 }
 
@@ -804,8 +727,6 @@ document.querySelector('#integration-template-download')?.addEventListener('clic
     box.hidden = false;
   }
 });
-
-document.querySelector('[data-benner-launch]')?.addEventListener('click', () => navigateRoute('operacao/encerramentos'));
 
 document.querySelectorAll('.integration-run-button').forEach((button) => button.addEventListener('click', async () => {
   const type = button.dataset.integration;
@@ -928,7 +849,7 @@ document.querySelector('#reset-task-otp')?.addEventListener('click', async () =>
 });
 
 async function loadIntegrationJobs(type) {
-  const path = type === 'benner-andamentos' ? '/api/integrations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
+  const path = type === 'benner-andamentos' ? '/api/automations/benner-andamentos/jobs' : `/api/integrations/${type}/jobs`;
   const jobs = await window.MBA_AUTOMATION_API.request(path);
   window.dispatchEvent(new CustomEvent('mba:jobs-loaded', { detail: { integration: type, jobs } }));
   return jobs;
@@ -1165,17 +1086,15 @@ document.querySelector('#pagamentos-acp-export')?.addEventListener('click', asyn
   try { const response = await window.MBA_AUTOMATION_API.fetch('/api/pagamentos/validacao/exportar', { method: 'POST', body: JSON.stringify({ rows: lastAcpRows }) }); if (!response.ok) throw new Error('Não foi possível exportar a validação.'); const url = URL.createObjectURL(await response.blob()); const link = document.createElement('a'); link.href = url; link.download = 'validacao_acp.xlsx'; link.click(); URL.revokeObjectURL(url); } catch (error) { window.alert(error.message); }
 });
 
-window.addEventListener('mba:authenticated', event => { authenticatedUser = event.detail; });
-window.addEventListener('mba:module-activated', event => {
-  const { pageId, user } = event.detail;
-  authenticatedUser = user;
-  const grants = user.permissions || {};
-  if (pageId === 'automacoes' && grants['automations.view']) loadIntegrationHealth();
-  if (pageId === 'encerramentos' && grants['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
-  if (pageId === 'tutelas' && grants['tutelas.view']) loadTutelaCases().catch(() => {});
-  if (pageId === 'pagamentos' && grants['pagamentos.view']) loadPagamentos(true).catch(() => {});
-  if (pageId === 'acordos' && grants['agreements.view'] && !document.getElementById('acordos')?.dataset.reactMounted) window.loadAgreements?.(true);
-  if (pageId === 'tarefas' && grants['tasks.view'] && window.MBA_REACT_TASKS !== true) loadTasks();
+window.addEventListener('mba:authenticated', (event) => {
+  authenticatedUser = event.detail;
+  // A gestão de usuários é carregada pelo módulo React somente quando a página é aberta.
+  if (event.detail.permissions?.['automations.view']) loadIntegrationHealth();
+  if (event.detail.permissions?.['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
+  if (event.detail.permissions?.['tutelas.view'] || event.detail.permissions?.['automations.view']) loadTutelaCases().catch(() => {});
+  if (event.detail.permissions?.['pagamentos.view']) loadPagamentos(true).catch(() => {});
+  if (event.detail.permissions?.['agreements.view']) window.loadAgreements?.(true);
+  if (event.detail.permissions?.['tasks.view']) loadTasks();
 });
 
 document.addEventListener('keydown', (event) => {
@@ -1197,13 +1116,3 @@ for (const [selector, action] of [['#unlock-user', 'unlock'], ['#revoke-user-ses
     } catch (error) { window.alert(error.message); }
   });
 }
-
-let navigationOwner='';
-for(const event of ['mba:logged-out','mba:session-expired','mba:portfolio-changed','mba:authenticated'])window.addEventListener(event,()=>{
-  const user=window.MBA_CURRENT_USER;
-  const owner=user?JSON.stringify([user.id,user.role,window.MBA_SESSION_GENERATION,window.MBA_API?.getPortfolioId?.(),Object.entries(user.permissions||{}).sort()]):'';
-  if(event==='mba:authenticated' && owner===navigationOwner)return;
-  navigationOwner=owner;moduleScrollPositions.clear();routeScrollPositions.clear();preferredModuleRoutes.clear();
-  const pageId=document.querySelector('main .page.active')?.id;
-  if(event==='mba:authenticated' && pageId && canAccessRoute(pageId,lastViewRoute))preferredModuleRoutes.set(pageId,lastViewRoute);
-});
