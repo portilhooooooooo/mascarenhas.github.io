@@ -102,7 +102,7 @@ export function GestaoProcessualPage() {
   return <div className="gestao-metabase-page gestao-processual-react">
     {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
-    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
+    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()}/></div> : null}
     {canViewPayments && visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null}
     {canViewEnterDefenses && visitedTabs.includes('defesas') ? <div style={{display: displayedTab === 'defesas' ? 'contents' : 'none'}}><DefesasResultadosPage key={runtimeScope()} visible={visible && displayedTab==='defesas'}/></div> : null}
     {canViewEnterProtocols && visitedTabs.includes('protocolos') ? <div style={{display: displayedTab === 'protocolos' ? 'contents' : 'none'}}><ProtocolosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='protocolos'}/></div> : null}
