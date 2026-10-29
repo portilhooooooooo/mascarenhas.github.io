@@ -79,7 +79,7 @@
 .payments-results .payments-results-lower--compact{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
 .payments-results .payments-results-lower--compact>.payments-results-panel{min-height:300px;display:flex;flex-direction:column}
 .payments-results-firms{max-height:none;overflow:visible;flex:1;align-content:start}
-.payments-results-kpi{min-height:105px;height:105px;gap:5px;padding:14px 16px}
+.payments-results-kpi{min-height:100px;height:100px;gap:7px;padding:13px 14px;justify-content:flex-start}
 .payments-results-kpi small{margin-top:auto;font-size:10px;font-weight:400;color:var(--mba-text-2,#63758c);line-height:1.4}
 .payments-results-kpi:disabled{opacity:1;cursor:default}
 .payments-firms-pagination{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:auto;padding-top:11px;font-size:11px;color:var(--mba-text-2,#63758c)}
