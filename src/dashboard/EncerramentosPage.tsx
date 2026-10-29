@@ -888,10 +888,10 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   return <div className="closing-page-v2" role="region" aria-label="Encerramentos">
     {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
     <div className="closing-filter-row">
+      <div className="closing-date-range"><DateRangePicker start={inicio} end={fim} onChange={(start,end)=>{setInicio(start);setFim(end)}}/></div>
       <label><span>Tipo</span><select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>
         {visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}
       </select></label>
-      <div className="closing-date-range"><DateRangePicker start={inicio} end={fim} onChange={(start,end)=>{setInicio(start);setFim(end)}}/></div>
     </div>
     {invalidRange && <p className="closing-error" role="alert">A data inicial não pode ser posterior à data final.</p>}
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
