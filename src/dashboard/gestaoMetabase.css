@@ -9,25 +9,96 @@
 .gestao-metabase-state button{min-height:34px;display:inline-flex;align-items:center;gap:7px;padding:0 12px;border:1px solid var(--mba-border-strong,#ccd7e4);border-radius:7px;background:#fff;color:var(--mba-text,#0f1f3d);font:600 11.5px/1 Inter,sans-serif;cursor:pointer}
 @media(max-width:820px){.gestao-metabase-page{padding:14px}.gestao-metabase-shell,.gestao-metabase-mount,.gestao-metabase-mount metabase-dashboard{min-height:680px}}
 
-/* Keep common lateral alignment and range picker without overriding main KPI sizing. */
-.gestao-processual-react .base-geral-page,
+/* Resultados — o mesmo contrato geométrico de Encerramentos (main). */
 .gestao-processual-react .closing-page-v2,
-.gestao-processual-react .payments-results{max-width:1640px;width:100%;margin-inline:auto;box-sizing:border-box;padding-inline:0}
-.gestao-processual-react .mba-date-range{align-self:stretch;min-width:0}
-.gestao-processual-react .closing-date-range{display:block;flex:1.75 1 0;min-width:0;border:0;padding:0;margin:0}
-.gestao-processual-react .payments-results-kpi small{display:none}
-
-/* Equal internal gutters across Results; cards follow the same content inset. */
+.gestao-processual-react .base-geral-page,
+.gestao-processual-react .payments-results{
+  box-sizing:border-box;
+  width:100%;
+  max-width:1480px;
+  min-width:0;
+  margin-left:auto;
+  margin-right:auto;
+  padding-left:10px;
+  padding-right:10px;
+}
+/* A borda do filtro e as bordas dos cards respeitam a mesma linha vertical. */
 .gestao-processual-react .base-geral-filters,
 .gestao-processual-react .closing-filter-row,
-.gestao-processual-react .payments-results-filters-standard{padding:10px 12px;margin-bottom:12px;border:1px solid var(--mba-border,#dfe5ec);border-radius:9px;background:var(--mba-surface,#fff)}
-.gestao-processual-react .base-geral-page,
-.gestao-processual-react .closing-page-v2,
-.gestao-processual-react .payments-results{padding-left:10px;padding-right:10px;max-width:none;box-sizing:border-box}
-.gestao-processual-react .closing-filter-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
-.gestao-processual-react .closing-filter-row .closing-date-range{width:100%;flex:none}
+.gestao-processual-react .payments-results-filters-standard{
+  box-sizing:border-box;
+  width:100%;
+  padding:10px 12px;
+  margin:0 0 12px;
+  border:1px solid var(--mba-border,#dfe5ec);
+  border-radius:9px;
+  background:var(--mba-surface,#fff);
+}
+.gestao-processual-react .mba-date-range{align-self:stretch;min-width:0}
+.gestao-processual-react .closing-date-range{
+  display:block;
+  width:100%;
+  min-width:0;
+  flex:none;
+  border:0;
+  padding:0;
+  margin:0;
+}
+.gestao-processual-react .closing-filter-row{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  align-items:end;
+}
 .gestao-processual-react .closing-filter-row>label{width:100%;min-width:0}
-.gestao-processual-react .payments-results-filters-standard{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.gestao-processual-react .payments-results-kpi{justify-content:flex-start;gap:12px;min-height:100px;height:100px}
-.gestao-processual-react .payments-results-kpi>strong{margin:0;line-height:1.1}
-@media(max-width:760px){.gestao-processual-react .closing-filter-row,.gestao-processual-react .payments-results-filters-standard{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.gestao-processual-react .payments-results-filters-standard{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  align-items:end;
+}
+/* Os 3 módulos usam quatro colunas e cartões 100px × largura da coluna.
+   O valor aparece logo abaixo do título, não colado ao rodapé. */
+.gestao-processual-react .payments-results-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:9px;
+  margin:0 0 12px;
+}
+.gestao-processual-react .payments-results-kpis .payments-results-kpi{
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  width:100%;
+  min-width:0;
+  height:100px;
+  min-height:100px;
+  gap:7px;
+  padding:13px 14px;
+  border:1px solid var(--mba-border,#e3eaf2);
+  border-radius:9px;
+}
+.gestao-processual-react .payments-results-kpis .payments-results-kpi>strong{
+  flex:0 0 auto;
+  align-self:stretch;
+  margin:0;
+  padding:0;
+  font-size:25px;
+  line-height:1.1;
+  letter-spacing:-.045em;
+}
+.gestao-processual-react .payments-results-kpi small{display:none}
+@media(max-width:1000px){
+  .gestao-processual-react .payments-results-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .gestao-processual-react .closing-filter-row,
+  .gestao-processual-react .payments-results-filters-standard{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:480px){
+  .gestao-processual-react .closing-page-v2,
+  .gestao-processual-react .base-geral-page,
+  .gestao-processual-react .payments-results{padding-left:8px;padding-right:8px}
+}
