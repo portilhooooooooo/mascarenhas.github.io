@@ -10,7 +10,7 @@ export type PaymentTypeBreakdown={acordo:number;condenacao:number};
 export type Snapshot = {
  version:number;source:{import_id:string;updated_at?:string|null}|null;
  cards:{total:number;paid:number;approval:number;retification:number|null;ticket_median:number|null};
- monthly:{period:string;total:number;firms:Array<{credenciado:string;quantidade:number}>};
+ monthly:{period:string;total:number;firms:Array<{credenciado:string;quantidade?:number;valor:number}>};
  filters:{offices:string[];situations:string[]};
  types:PaymentTypeBreakdown|null;
 };
@@ -76,7 +76,7 @@ async function fallback(office:string,situation:string,signal?:AbortSignal):Prom
      const name=row.credenciado?.trim()||'Não identificado';
      counts.set(name,(counts.get(name)||0)+1);
    }
-   monthly={period:period.period,total:rows.length,firms:[...counts].map(([credenciado,quantidade])=>({credenciado,quantidade})).sort((a,b)=>b.quantidade-a.quantidade||a.credenciado.localeCompare(b.credenciado,'pt-BR'))};
+   monthly={period:period.period,total:rows.length,firms:[...counts].map(([credenciado,quantidade])=>({credenciado,quantidade,valor:quantidade})).sort((a,b)=>b.quantidade-a.quantidade||a.credenciado.localeCompare(b.credenciado,'pt-BR'))};
  }
  return {
    version:1,source:overview.importacao?{import_id:overview.importacao.id,updated_at:overview.importacao.completed_at}:null,
@@ -86,9 +86,9 @@ async function fallback(office:string,situation:string,signal?:AbortSignal):Prom
    types:null,
  };
 }
-export async function paymentSnapshot(office:string,situation:string,signal?:AbortSignal):Promise<Snapshot>{
+export async function paymentSnapshot(office:string,situation:string,signal?:AbortSignal,extra:Record<string,string>={}):Promise<Snapshot>{
  try{
-   const data=await api().request<Snapshot>('/api/resultados/pagamentos?'+paymentParams(office,situation),{signal});
+   const data=await api().request<Snapshot>('/api/resultados/pagamentos?'+paymentParams(office,situation,extra),{signal});
    if(data?.version!==2||!data.cards||!data.monthly||!data.filters)throw Error('Snapshot inválido.');
    return data;
  }catch(error){
