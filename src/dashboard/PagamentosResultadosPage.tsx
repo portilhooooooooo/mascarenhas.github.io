@@ -68,6 +68,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
  if(!allowed)return <div className="payments-results"><p role="alert" className="payments-results-error">Acesso financeiro restrito.</p></div>;
  return <section className="payments-results" aria-label="Resultados de pagamentos">
    <div className="base-geral-filters payments-results-filters-standard" aria-label="Filtros de pagamentos">
+     <DateRangePicker start={dateStart} end={dateEnd} onChange={(start,end)=>{setDateStart(start);setDateEnd(end)}}/>
      <label className="base-geral-filter"><span>Escritório</span>
        <select aria-label="Escritório" value={office} onChange={e=>setOffice(e.target.value)}>
          <option value="">Todos</option>
@@ -87,7 +88,6 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
          <option value="condenacao" disabled>Condenação (indisponível)</option>
        </select>
      </label>
-     <DateRangePicker start={dateStart} end={dateEnd} onChange={(start,end)=>{setDateStart(start);setDateEnd(end)}}/>
    </div>
    {invalidDates?<p role="alert" className="payments-results-error">A data final deve ser igual ou posterior à inicial.</p>:null}
    {snapshot.error?<div role="alert" className="payments-results-error">Falha ao consultar pagamentos. <button type="button" onClick={()=>void snapshot.refetch()}>Tentar novamente</button></div>:null}
