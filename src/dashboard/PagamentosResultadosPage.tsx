@@ -48,7 +48,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
    queryKey:['runtime-v2',scope,'pagamentos-results-detail',office,situation,dateStart,dateEnd,detail,approvalState,page],
    enabled:enabled&&!invalidDates&&!!detail,
    staleTime:45000,retry:false,refetchOnWindowFocus:false,
-   queryFn:({signal})=>paymentList(office,detail==='paid'?'Liquidado':detail==='approval'?(approvalStates.includes(situation)?situation:approvalState):detail==='retification'?'Em retificação':situation,page,25,signal,dates),
+   queryFn:({signal})=>paymentList(office,detail==='paid'?'Liquidado':detail==='approval'?(approvalStates.includes(situation)?situation:approvalState):detail==='retification'?'Em retificação':situation,page,25,signal,detail==='retification'?{}:dates),
  },runtimeQueries);
  useEffect(()=>{setDetail(null);setPage(1);setFirmPage(1)},[office,situation,dateStart,dateEnd]);
  useEffect(()=>{
