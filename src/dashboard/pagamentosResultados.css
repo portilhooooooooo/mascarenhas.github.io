@@ -73,3 +73,20 @@
 
 /* Same KPI rhythm as Entradas and Encerramentos. */
 .payments-results-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 12px}.payments-results-kpi{min-height:92px;height:92px}.payments-results-filters-standard{grid-template-columns:repeat(5,minmax(0,1fr));align-items:end}.payments-results-filters-standard input[type=date]{width:100%;min-width:0;height:34px;border:1px solid var(--mba-border,#dfe5ec);border-radius:7px;background:var(--mba-surface,#fff);color:inherit;padding:0 8px;font:inherit;font-size:11px}@media(max-width:1100px){.payments-results-filters-standard{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:900px){.payments-results-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:580px){.payments-results-filters-standard{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Payment Results aligned to Base Geral/Encerramentos */
+.payments-results .payments-results-filters-standard{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:end;gap:10px}
+.payments-results .payments-results-lower--compact{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+.payments-results .payments-results-lower--compact>.payments-results-panel{min-height:300px;display:flex;flex-direction:column}
+.payments-results-firms{max-height:none;overflow:visible;flex:1;align-content:start}
+.payments-results-kpi{min-height:105px;height:105px;gap:5px;padding:14px 16px}
+.payments-results-kpi small{margin-top:auto;font-size:10px;font-weight:400;color:var(--mba-text-2,#63758c);line-height:1.4}
+.payments-results-kpi:disabled{opacity:1;cursor:default}
+.payments-firms-pagination{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:auto;padding-top:11px;font-size:11px;color:var(--mba-text-2,#63758c)}
+.payments-firms-pagination button,.payments-period-popover button{background:transparent;border:1px solid var(--mba-border,#dfe5ec);border-radius:6px;color:inherit;padding:6px 10px;cursor:pointer;font:inherit}
+.payments-firms-pagination button:disabled{opacity:.35;cursor:default}
+.payments-period-field{position:relative}.payments-period-trigger{height:33px;width:100%;display:flex;align-items:center;gap:8px;background:var(--mba-surface,#fff);border:1px solid var(--mba-border,#dfe5ec);border-radius:7px;color:inherit;padding:0 10px;font:inherit;font-size:11px;cursor:pointer;text-align:left}
+.payments-period-popover{position:absolute;z-index:25;top:calc(100% + 6px);right:0;min-width:290px;padding:14px;border-radius:9px;background:var(--mba-surface,#fff);border:1px solid var(--mba-border,#dfe5ec);box-shadow:0 12px 32px #0b193025}
+.payments-period-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}.payments-period-fields label{display:grid;gap:5px;font-size:10px}.payments-period-fields input{width:100%;font:inherit;color:inherit;background:transparent;border:1px solid var(--mba-border,#dfe5ec);border-radius:6px;padding:7px 4px}
+.payments-period-popover footer{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+@media(max-width:900px){.payments-results .payments-results-filters-standard{grid-template-columns:repeat(2,minmax(0,1fr))}.payments-results .payments-results-lower--compact{grid-template-columns:1fr}}
