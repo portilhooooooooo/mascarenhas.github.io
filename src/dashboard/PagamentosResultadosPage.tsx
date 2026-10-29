@@ -13,6 +13,7 @@ const count=(n?:number|null)=>n===null||n===undefined?'—':new Intl.NumberForma
 const formatDate=(s?:string|null)=>s?s.slice(0,10).split('-').reverse().join('/'):'—';
 const month=(period?:string)=>{
  if(!period)return 'Mês atual';
+ if(period.includes(' até '))return period.split(' até ').map(value=>value?value.split('-').reverse().join('/'):'…').join(' a ');
  const [y,m]=period.split('-').map(Number);
  if(!y||!m)return 'Mês atual';
  return new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(y,m-1,1));
@@ -25,23 +26,33 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
  const scope=runtimeScope();
  const [office,setOffice]=useState('');
  const [situation,setSituation]=useState('');
+ const [dateStart,setDateStart]=useState('');
+ const [dateEnd,setDateEnd]=useState('');
+ const dates=dateStart||dateEnd?{...(dateStart?{data_inicio:dateStart}:{}),...(dateEnd?{data_fim:dateEnd}:{})}:{};
+ const invalidDates=Boolean(dateStart&&dateEnd&&dateStart>dateEnd);
  const [detail,setDetail]=useState<Detail>(null);
  const [approvalState,setApprovalState]=useState(approvalStates[0]);
  const [page,setPage]=useState(1);
+ const [tablePage,setTablePage]=useState(1);
  const enabled=visible&&allowed;
  const snapshot=useQuery({
-   queryKey:['runtime-v2',scope,'pagamentos-results-v2',office,situation],
-   enabled,staleTime:45000,gcTime:300000,refetchOnWindowFocus:false,retry:false,
-   queryFn:({signal})=>paymentSnapshot(office,situation,signal),
+   queryKey:['runtime-v2',scope,'pagamentos-results-v2',office,situation,dateStart,dateEnd],
+   enabled:enabled&&!invalidDates,staleTime:45000,gcTime:300000,refetchOnWindowFocus:false,retry:false,
+   queryFn:({signal})=>paymentSnapshot(office,situation,signal,dates),
  },runtimeQueries);
  const data=snapshot.data;
- const listing=useQuery({
-   queryKey:['runtime-v2',scope,'pagamentos-results-detail',office,situation,detail,approvalState,page],
-   enabled:enabled&&!!detail,
-   staleTime:45000,retry:false,refetchOnWindowFocus:false,
-   queryFn:({signal})=>paymentList(office,detail==='paid'?'Liquidado':detail==='approval'?(approvalStates.includes(situation)?situation:approvalState):situation,page,25,signal),
+ const allPayments=useQuery({
+   queryKey:['runtime-v2',scope,'pagamentos-results-all',office,situation,dateStart,dateEnd,tablePage],
+   enabled:enabled&&!invalidDates,staleTime:45000,gcTime:300000,refetchOnWindowFocus:false,retry:false,
+   queryFn:({signal})=>paymentList(office,situation,tablePage,50,signal,dates),
  },runtimeQueries);
- useEffect(()=>{setDetail(null);setPage(1)},[office,situation]);
+ const listing=useQuery({
+   queryKey:['runtime-v2',scope,'pagamentos-results-detail',office,situation,dateStart,dateEnd,detail,approvalState,page],
+   enabled:enabled&&!invalidDates&&!!detail,
+   staleTime:45000,retry:false,refetchOnWindowFocus:false,
+   queryFn:({signal})=>paymentList(office,detail==='paid'?'Liquidado':detail==='approval'?(approvalStates.includes(situation)?situation:approvalState):situation,page,25,signal,dates),
+ },runtimeQueries);
+ useEffect(()=>{setDetail(null);setPage(1);setTablePage(1)},[office,situation,dateStart,dateEnd]);
  useEffect(()=>{
    if(!detail)return;
    const handle=(event:KeyboardEvent)=>{if(event.key==='Escape')setDetail(null)};
@@ -77,7 +88,10 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
          <option value="condenacao" disabled>Condenação (indisponível)</option>
        </select>
      </label>
+     <label className="base-geral-filter"><span>Data inicial</span><input type="date" aria-label="Data inicial de pagamento" value={dateStart} onChange={e=>setDateStart(e.target.value)} /></label>
+     <label className="base-geral-filter"><span>Data final</span><input type="date" aria-label="Data final de pagamento" value={dateEnd} onChange={e=>setDateEnd(e.target.value)} /></label>
    </div>
+   {invalidDates?<p role="alert" className="payments-results-error">A data final deve ser igual ou posterior à inicial.</p>:null}
    {snapshot.error?<div role="alert" className="payments-results-error">Falha ao consultar pagamentos. <button type="button" onClick={()=>void snapshot.refetch()}>Tentar novamente</button></div>:null}
    <div className="payments-results-kpis">
      {cards.map(({title,value,kind,icon:Icon})=>{
@@ -90,14 +104,14 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
    </div>
    <div className="payments-results-lower payments-results-lower--compact">
      <section className="payments-results-panel">
-       <header className="payments-results-panel-heading"><h2>Liquidados por escritório <span className="payments-results-month-inline">· {month(data?.monthly.period)}</span></h2><strong>{count(data?.monthly.total)}</strong></header>
+       <header className="payments-results-panel-heading"><h2>Liquidados por escritório <span className="payments-results-month-inline">· {month(data?.monthly.period)}</span></h2><strong>{amount(data?.monthly.total)}</strong></header>
        <div className="payments-results-firms">
          {(data?.monthly.firms||[]).map(item=>{
-           const max=data?.monthly.firms[0]?.quantidade||1;
+           const max=data?.monthly.firms[0]?.valor||1;
            return <button key={item.credenciado} className="payments-results-firm payments-results-firm--bar" type="button" disabled={item.credenciado==='Não identificado'} onClick={()=>setOffice(item.credenciado)}>
              <span className="payments-results-firm-name">{item.credenciado}</span>
-             <span className="payments-results-firm-bar"><span style={{width:Math.round(item.quantidade/max*100)+'%'}}/></span>
-             <strong>{count(item.quantidade)}</strong>
+             <span className="payments-results-firm-bar"><span style={{width:Math.round(item.valor/max*100)+'%'}}/></span>
+             <strong>{amount(item.valor)}</strong>
            </button>;
          })}
          {!snapshot.isPending&&!data?.monthly.firms.length?<span className="payments-results-minor">Sem liquidações</span>:null}
@@ -108,6 +122,20 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        <PagamentosTypePie types={data?.types}/>
      </section>
    </div>
+   <section className="payments-results-panel payments-results-all-table" aria-label="Todos os pagamentos da base">
+     <header className="payments-results-panel-heading"><h2>Todos os pagamentos</h2><strong>{count(allPayments.data?.total)}</strong></header>
+     <div className="payments-results-tablewrap"><table><thead><tr><th>Pasta</th><th>Escritório</th><th>Situação</th><th>Valor</th><th>Pagamento</th></tr></thead><tbody>
+       {(allPayments.data?.rows||[]).map(row=><tr key={row.id}><td>{row.pasta}</td><td>{row.credenciado||'—'}</td><td>{row.situacao||'—'}</td><td>{amount(row.valor)}</td><td>{formatDate(row.data_pagamento)}</td></tr>)}
+     </tbody></table>
+     {allPayments.isPending?<div className="payments-results-minor">Carregando pagamentos…</div>:null}
+     {allPayments.error?<div role="alert" className="payments-results-error">Não foi possível consultar os registros. <button type="button" onClick={()=>void allPayments.refetch()}>Tentar novamente</button></div>:null}
+     {!allPayments.isPending&&!allPayments.error&&!allPayments.data?.rows.length?<div className="payments-results-minor">Nenhum pagamento encontrado.</div>:null}</div>
+     <footer className="payments-results-table-pagination"><span>{count(allPayments.data?.total)} registros · 50 por página</span><div>
+       <button type="button" disabled={tablePage===1||allPayments.isFetching} onClick={()=>setTablePage(v=>v-1)}>Anterior</button>
+       <span>{tablePage} / {Math.max(1,allPayments.data?.total_pages||1)}</span>
+       <button type="button" disabled={tablePage>=(allPayments.data?.total_pages||1)||allPayments.isFetching} onClick={()=>setTablePage(v=>v+1)}>Próxima</button>
+     </div></footer>
+   </section>
    {detail&&enabled?<div className="payments-results-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setDetail(null)}}>
      <section className="payments-results-dialog" role="dialog" aria-modal="true" aria-label="Detalhamento de pagamentos">
        <header><div><h2>{detail==='total'?'Pagamentos':detail==='paid'?'Liquidados':'Em aprovação'}</h2><span>{office||'Todos os escritórios'}</span></div><button type="button" aria-label="Fechar" onClick={()=>setDetail(null)}><X size={17}/></button></header>
