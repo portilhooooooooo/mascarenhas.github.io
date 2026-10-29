@@ -1,3 +1,4 @@
+import {SelectMenu} from './SelectMenu';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -106,11 +107,8 @@ function Select({ label, value, options, onChange }: {
   label: string; value: string; options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
 }) {
-  return <label className="base-geral-filter"><span>{label}</span>
-    <select value={value} onChange={event => onChange(event.target.value)}>
-      {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select>
-  </label>;
+  return <SelectMenu label={label} value={value} onChange={onChange}
+    options={options} searchable={options.length > 8} className="base-geral-filter" />;
 }
 const fromValues = (values: string[]) => [
   { value: '', label: 'Todos' }, ...values.map(value => ({ value, label: value })),

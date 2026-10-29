@@ -240,3 +240,10 @@
 .protocolos-page-react .protocolos-intake-grid-react{align-items:start}
 .protocolos-session-state.error,.protocolos-session-state.lost{color:var(--mba-red,#ef4444)}
 .protocolos-session-state.error i,.protocolos-session-state.lost i{background:var(--mba-red,#ef4444)}
+
+/* Filtros de listas operacionais: seletor React, sem abrir o menu nativo. */
+.protocolos-page-size.mba-react-select.protocolos-react-menu{position:relative;display:flex;flex-direction:row;align-items:center;gap:7px;height:34px;padding:0 7px 0 9px}
+.protocolos-react-menu .mba-react-select-label{font-size:10px;color:var(--mba-muted);font-weight:500}
+.protocolos-react-menu .mba-react-select-trigger{width:auto;min-width:46px;height:26px;font-size:10.5px;font-weight:550;color:var(--mba-text-2)}
+.protocolos-react-menu .mba-react-select-trigger>span{font-size:10.5px;font-weight:550;color:var(--mba-text-2)}
+.protocolos-react-menu .mba-react-select-options{top:calc(100% + 4px);min-width:100%;max-width:min(270px,90vw)}

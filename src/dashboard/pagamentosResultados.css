@@ -90,3 +90,33 @@
 .payments-period-fields{display:grid;grid-template-columns:1fr 1fr;gap:9px}.payments-period-fields label{display:grid;gap:5px;font-size:10px}.payments-period-fields input{width:100%;font:inherit;color:inherit;background:transparent;border:1px solid var(--mba-border,#dfe5ec);border-radius:6px;padding:7px 4px}
 .payments-period-popover footer{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 @media(max-width:900px){.payments-results .payments-results-filters-standard{grid-template-columns:repeat(2,minmax(0,1fr))}.payments-results .payments-results-lower--compact{grid-template-columns:1fr}}
+
+/* Padronização React Select da barra de Pagamentos. */
+.payments-results .payments-results-filters-standard .mba-react-select {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.payments-results .payments-results-filters-standard .mba-react-select-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--mba-text-2);
+}
+.payments-results .payments-results-filters-standard .mba-react-select-trigger {
+  height: 33px;
+  border: 1px solid var(--mba-border-strong);
+  border-radius: 7px;
+  padding: 0 10px;
+  background: var(--mba-surface, #fff);
+  font-size: 11px;
+  font-weight: 500;
+}
+.payments-results .payments-results-filters-standard .mba-react-select-trigger > span {
+  color: var(--mba-text);
+  font-size: 11px;
+  font-weight: 500;
+}
+.payments-results .payments-results-filters-standard .mba-react-select-options {
+  min-width: 100%;
+  max-width: min(360px, 90vw);
+}

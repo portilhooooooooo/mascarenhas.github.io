@@ -17,7 +17,7 @@ test('kanban removed, retification metric remains',()=>{
 test('single compact endpoint and browser fallback only for 404',()=>{
  assert.match(config,/\/api\/resultados\/pagamentos\?/);
  assert.match(config,/typed\?\.status!==404/);
- assert.match(page,/queryFn:\(\{signal\}\)=>paymentSnapshot\(office,situation,signal\)/);
+ assert.match(page,/queryFn:\(\{signal\}\)=>paymentSnapshot\(office,situation,signal,dates\)/);
  assert.doesNotMatch(page,/PagamentosKanban/);
  assert.match(config,/resultados\/pagamentos\/itens/);
 });
@@ -32,7 +32,8 @@ test('minimal UI: no repeated heading, supporting slogans or loose captions',()=
  assert.doesNotMatch(page,/Sem comprovante/);
 });
 test('non-authoritative payment type and receipts never invent values',()=>{
- assert.match(page,/<option value="acordo" disabled>/);
+ assert.match(page,/<SelectMenu label="Tipo" value="todos" onChange=\{\(\)=>\{\}\} disabled/);
+ assert.doesNotMatch(page,/<select[^>]*aria-label="Tipo de pagamento"/);
  assert.match(page,/data\?\.cards\.retification/);
  assert.match(pie,/Distribuição indisponível/);
  assert.match(pie,/conic-gradient/);

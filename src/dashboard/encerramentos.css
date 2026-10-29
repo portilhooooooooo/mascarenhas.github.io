@@ -491,3 +491,58 @@
   letter-spacing:normal;
   white-space:nowrap;
 }
+
+/* Encerramentos: mesmos filtros compactos de Pagamentos, com seletores React. */
+.closing-filter-row.closing-filter-row--standard {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(170px, 1fr));
+  align-items: end;
+  gap: 11px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  min-height: 0;
+  overflow: visible;
+  background: var(--mba-surface, #fff);
+}
+.closing-filter-row--standard > .mba-react-select {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.closing-filter-row--standard .mba-react-select-label {
+  font-size: 10px;
+  color: var(--mba-text-2);
+}
+.closing-filter-row--standard .mba-react-select-trigger {
+  border: 1px solid var(--mba-border-strong);
+  border-radius: 7px;
+  height: 33px;
+  padding: 0 10px;
+  background: var(--mba-surface, #fff);
+  font-size: 11px;
+  font-weight: 500;
+}
+.closing-filter-row--standard .mba-react-select-trigger > span {
+  color: var(--mba-text);
+  font-size: 11px;
+  font-weight: 500;
+}
+.closing-filter-row--standard .closing-date-range {
+  min-width: 0;
+  align-self: end;
+  flex: none;
+}
+.closing-filter-row--standard .mba-react-select-options {
+  min-width: 100%;
+  max-width: min(360px, 90vw);
+}
+@media (max-width: 850px) {
+  .closing-filter-row.closing-filter-row--standard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .closing-filter-row--standard .closing-date-range { grid-column: 1 / -1; grid-row: auto; }
+}
+@media (max-width: 560px) {
+  .closing-filter-row.closing-filter-row--standard { grid-template-columns: minmax(0,1fr); }
+  .closing-filter-row--standard .closing-date-range { grid-column: auto; }
+}

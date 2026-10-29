@@ -1,3 +1,4 @@
+import {SelectMenu} from './SelectMenu';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
@@ -199,20 +200,18 @@ export function OperacaoEncerramentosPage() {
           <Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Buscar processo ou pasta…" aria-label="Buscar encerramentos"/>
         </form>
         <div className="protocolos-toolbar-actions">
-          <label className="protocolos-page-size"><span>Indício</span><select aria-label="Filtrar por tipo de indício DataJud" value={indicioFiltro} onChange={event=>{setIndicioFiltro(event.target.value as ClosingIndicioFilter);setPage(1);}}>
-            <option value="todos">Todos</option>
-            <option value="INDETERMINADO">Indeterminado</option>
-            <option value="DERROTA">Derrota</option>
-            {!isNubank && <option value="DERROTA_VOLUNTARIA">Derrota voluntária</option>}
-            <option value="VITORIA">Vitória</option>
-            <option value="ACORDO">Acordo</option>
-            <option value="EXTINCAO">Extinção</option>
-          </select></label>
-          <label className="protocolos-page-size"><span>Tem motivo derrota?</span><select aria-label="Filtrar por motivo derrota" value={motivoFiltro} onChange={event=>{setMotivoFiltro(event.target.value as MotivoDerrotaFilter);setPage(1);}}>
-            <option value="todos">Todos</option><option value="sim">Sim</option><option value="nao">Não</option><option value="nao_verificado">Não verificado</option>
-          </select></label>
+          <SelectMenu label="Indício" className="protocolos-page-size protocolos-react-menu" value={indicioFiltro}
+            onChange={value=>{setIndicioFiltro(value as ClosingIndicioFilter);setPage(1);}}
+            options={[{value:'todos',label:'Todos'},{value:'INDETERMINADO',label:'Indeterminado'},
+              {value:'DERROTA',label:'Derrota'},...(!isNubank?[{value:'DERROTA_VOLUNTARIA',label:'Derrota voluntária'}]:[]),
+              {value:'VITORIA',label:'Vitória'},{value:'ACORDO',label:'Acordo'},{value:'EXTINCAO',label:'Extinção'}]}/>
+          <SelectMenu label="Tem motivo derrota?" className="protocolos-page-size protocolos-react-menu" value={motivoFiltro}
+            onChange={value=>{setMotivoFiltro(value as MotivoDerrotaFilter);setPage(1);}}
+            options={[{value:'todos',label:'Todos'},{value:'sim',label:'Sim'},{value:'nao',label:'Não'},{value:'nao_verificado',label:'Não verificado'}]}/>
           <button type="button" className="protocolos-button secondary operacao-download-button" disabled={loading||!rows.length} onClick={()=>exportRows(rows)}><Download size={14}/>Baixar</button>
-          <label className="protocolos-page-size"><span>Exibir</span><select value={pageSize} onChange={event=>{setPageSize(Number(event.target.value));setPage(1);}}>{[10,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
+          <SelectMenu label="Exibir" className="protocolos-page-size protocolos-react-menu" value={String(pageSize)}
+            onChange={value=>{setPageSize(Number(value));setPage(1);}}
+            options={[10,50,100].map(n=>({value:String(n),label:String(n)}))}/>
         </div>
       </div>
       <div className="protocolos-table-wrap">

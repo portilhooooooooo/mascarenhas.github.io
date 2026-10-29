@@ -432,3 +432,10 @@
 .base-geral-product-share-track>span{
   background:var(--base-geral-orange-primary);
 }
+
+/* Seletores React compartilham os mesmos tokens dos filtros nativos. */
+.base-geral-filters .mba-react-select.base-geral-filter{display:grid;gap:4px}
+.base-geral-filters .mba-react-select-label{font-size:10px;font-weight:600;color:var(--mba-text-2)}
+.base-geral-filters .mba-react-select-trigger{height:33px;padding:0 10px;background:var(--mba-surface);border:1px solid var(--mba-border-strong);border-radius:7px;font-size:11px;font-weight:500}
+.base-geral-filters .mba-react-select-trigger>span{font-size:11px;font-weight:500;color:var(--mba-text)}
+.base-geral-filters .mba-react-select-options{min-width:100%;max-width:min(360px,90vw)}
