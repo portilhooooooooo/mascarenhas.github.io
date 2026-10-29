@@ -4,6 +4,7 @@ import {CalendarDays,CheckCircle2,Clock3,FileX2,ReceiptText,Wallet,X} from 'luci
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import {paymentList,paymentSnapshot,type Snapshot} from './pagamentosSnapshot';
 import {PagamentosTypePie} from './PagamentosTypePie';
+import {DateRangePicker} from './DateRangePicker';
 import './pagamentosResultados.css';
 
 type Environment=Window&{MBA_CURRENT_USER?:{id?:string;is_master_admin?:boolean;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
@@ -86,9 +87,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
          <option value="condenacao" disabled>Condenação (indisponível)</option>
        </select>
      </label>
-     <div className="base-geral-filter payments-period-field"><span>Período</span><button type="button" className="payments-period-trigger" aria-expanded={periodOpen} onClick={()=>{setDraftStart(dateStart);setDraftEnd(dateEnd);setPeriodOpen(v=>!v)}}><CalendarDays size={14}/>{dateStart||dateEnd ? `${dateStart?formatDate(dateStart):'Início'} — ${dateEnd?formatDate(dateEnd):'Fim'}` : 'Selecionar intervalo'}</button>
-       {periodOpen?<div className="payments-period-popover" role="group" aria-label="Selecionar intervalo de datas"><div className="payments-period-fields"><label>De<input type="date" value={draftStart} onChange={e=>setDraftStart(e.target.value)}/></label><label>Até<input type="date" min={draftStart||undefined} value={draftEnd} onChange={e=>setDraftEnd(e.target.value)}/></label></div><footer><button type="button" onClick={()=>{setDateStart('');setDateEnd('');setPeriodOpen(false)}}>Limpar</button><button type="button" disabled={!!(draftStart&&draftEnd&&draftStart>draftEnd)} onClick={()=>{setDateStart(draftStart);setDateEnd(draftEnd);setPeriodOpen(false)}}>Aplicar</button></footer></div>:null}
-     </div>
+     <DateRangePicker start={dateStart} end={dateEnd} onChange={(start,end)=>{setDateStart(start);setDateEnd(end)}}/>
    </div>
    {invalidDates?<p role="alert" className="payments-results-error">A data final deve ser igual ou posterior à inicial.</p>:null}
    {snapshot.error?<div role="alert" className="payments-results-error">Falha ao consultar pagamentos. <button type="button" onClick={()=>void snapshot.refetch()}>Tentar novamente</button></div>:null}
@@ -97,7 +96,7 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        const disabled=snapshot.isPending||(kind==='paid'&&!!situation&&situation!=='Liquidado')||(kind==='approval'&&!!situation&&!approvalStates.includes(situation));
        return <button type="button" key={title} className="payments-results-kpi mba-metric-card" disabled={disabled} onClick={()=>{if(kind){setDetail(kind);setPage(1)}}} aria-label={title+': '+value} title={title==='Em retificação'?'Itens ativos em retificação na operação de pagamentos':''}>
          <span className="payments-results-kpi-title">{title}<Icon size={15} strokeWidth={1.6}/></span>
-         <strong>{snapshot.isPending?'…':value}</strong><small>{subtitle}</small>
+         <strong>{snapshot.isPending?'…':value}</strong>
        </button>;
      })}
    </div>
