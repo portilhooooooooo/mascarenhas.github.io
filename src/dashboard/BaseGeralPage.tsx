@@ -340,7 +340,6 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
     {error && <div className="base-geral-error" role="alert">{shown?'Atualização indisponível. Últimos dados preservados.':error} <button type="button" onClick={() => void refresh(true)}>Tentar novamente</button></div>}
-    {shown?._read_status==='stale' && <div className="base-geral-warning" role="status">Exibindo último consolidado disponível. A consulta será revalidada automaticamente.</div>}
     <div className={'base-geral-kpi-layout' + (portfolio === 'agibank_mba' && canViewBilling ? ' with-billing' : '')}>
     <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
       {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
