@@ -16,3 +16,18 @@
 .gestao-processual-react .mba-date-range{align-self:stretch;min-width:0}
 .gestao-processual-react .closing-date-range{display:block;flex:1.75 1 0;min-width:0;border:0;padding:0;margin:0}
 .gestao-processual-react .payments-results-kpi small{display:none}
+
+/* Equal internal gutters across Results; cards follow the same content inset. */
+.gestao-processual-react .base-geral-filters,
+.gestao-processual-react .closing-filter-row,
+.gestao-processual-react .payments-results-filters-standard{padding:10px 12px;margin-bottom:12px;border:1px solid var(--mba-border,#dfe5ec);border-radius:9px;background:var(--mba-surface,#fff)}
+.gestao-processual-react .base-geral-page,
+.gestao-processual-react .closing-page-v2,
+.gestao-processual-react .payments-results{padding-left:10px;padding-right:10px;max-width:none;box-sizing:border-box}
+.gestao-processual-react .closing-filter-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+.gestao-processual-react .closing-filter-row .closing-date-range{width:100%;flex:none}
+.gestao-processual-react .closing-filter-row>label{width:100%;min-width:0}
+.gestao-processual-react .payments-results-filters-standard{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.gestao-processual-react .payments-results-kpi{justify-content:flex-start;gap:12px;min-height:100px;height:100px}
+.gestao-processual-react .payments-results-kpi>strong{margin:0;line-height:1.1}
+@media(max-width:760px){.gestao-processual-react .closing-filter-row,.gestao-processual-react .payments-results-filters-standard{grid-template-columns:repeat(2,minmax(0,1fr))}}
