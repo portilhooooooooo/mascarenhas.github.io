@@ -4,6 +4,7 @@ import {CheckCircle2,Clock3,FileX2,ReceiptText,Wallet,X} from 'lucide-react';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import {paymentList,paymentSnapshot,type Snapshot} from './pagamentosSnapshot';
 import {PagamentosTypePie} from './PagamentosTypePie';
+import {SelectMenu} from './SelectMenu';
 import './pagamentosResultados.css';
 
 type Environment=Window&{MBA_CURRENT_USER?:{id?:string;is_master_admin?:boolean;permissions?:Record<string,boolean>};MBA_API?:{getPortfolioId?:()=>string}};
@@ -58,25 +59,12 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
  if(!allowed)return <div className="payments-results"><p role="alert" className="payments-results-error">Acesso financeiro restrito.</p></div>;
  return <section className="payments-results" aria-label="Resultados de pagamentos">
    <div className="base-geral-filters payments-results-filters-standard" aria-label="Filtros de pagamentos">
-     <label className="base-geral-filter"><span>Escritório</span>
-       <select aria-label="Escritório" value={office} onChange={e=>setOffice(e.target.value)}>
-         <option value="">Todos</option>
-         {(data?.filters.offices||[]).map(item=><option key={item} value={item}>{item}</option>)}
-       </select>
-     </label>
-     <label className="base-geral-filter"><span>Situação</span>
-       <select aria-label="Situação" value={situation} onChange={e=>setSituation(e.target.value)}>
-         <option value="">Todas</option>
-         {(data?.filters.situations||[]).map(item=><option key={item} value={item}>{item}</option>)}
-       </select>
-     </label>
-     <label className="base-geral-filter"><span>Tipo</span>
-       <select aria-label="Tipo de pagamento" value="todos" onChange={()=>{}}>
-         <option value="todos">Todos</option>
-         <option value="acordo" disabled>Acordo (indisponível)</option>
-         <option value="condenacao" disabled>Condenação (indisponível)</option>
-       </select>
-     </label>
+     <SelectMenu label="Escritório" value={office} onChange={setOffice} searchable
+       className="base-geral-filter" options={[{value:'',label:'Todos'},...(data?.filters.offices||[]).map(value=>({value,label:value}))]}/>
+     <SelectMenu label="Situação" value={situation} onChange={setSituation} searchable
+       className="base-geral-filter" options={[{value:'',label:'Todas'},...(data?.filters.situations||[]).map(value=>({value,label:value}))]}/>
+     <SelectMenu label="Tipo" value="todos" onChange={()=>{}} disabled className="base-geral-filter"
+       options={[{value:'todos',label:'Todos'}]}/>
    </div>
    {snapshot.error?<div role="alert" className="payments-results-error">Falha ao consultar pagamentos. <button type="button" onClick={()=>void snapshot.refetch()}>Tentar novamente</button></div>:null}
    <div className="payments-results-kpis">

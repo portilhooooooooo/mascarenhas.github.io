@@ -1,3 +1,4 @@
+import {SelectMenu} from './SelectMenu';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, CheckCircle2, Clock3, FileCheck2, FolderOpen, Layers3, RefreshCw, Scale, SearchCheck, ShieldAlert } from 'lucide-react';
 import './visaoGeral.css';
@@ -37,11 +38,9 @@ const portfolioLabel = (id: string) => ({
 }[id] || id.replace(/_/g,' '));
 
 function Filter({ title, value, onChange, choices }: { title: string; value: string; onChange: (value: string) => void; choices: Array<{value: string; text: string}> }) {
-  return <label className="overview-filter"><span>{title}</span>
-    <select value={value} onChange={event => onChange(event.target.value)}>
-      {choices.map(option => <option key={option.value} value={option.value}>{option.text}</option>)}
-    </select>
-  </label>;
+  return <SelectMenu label={title} value={value} onChange={onChange}
+    searchable={choices.length>8} className="overview-filter"
+    options={choices.map(option=>({value:option.value,label:option.text}))}/>;
 }
 function Metric({ label, value, sub, icon: Icon }: {label: string; value: string; sub: string; icon: typeof Layers3}) {
   return <article className="overview-metric">
