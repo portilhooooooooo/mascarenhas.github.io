@@ -1,0 +1,68 @@
+[
+  {
+    "arquivo": "01-fundo-mascarenhas-1920x1080.jpg",
+    "campo_entra": "Imagem de plano de fundo",
+    "dimensoes": [
+      1920,
+      1080
+    ],
+    "bytes": 136466,
+    "limite_bytes": 307200,
+    "valido": true
+  },
+  {
+    "arquivo": "02-logo-cabecalho-branco-245x36.png",
+    "campo_entra": "Logotipo do cabeçalho",
+    "dimensoes": [
+      245,
+      36
+    ],
+    "bytes": 2850,
+    "limite_bytes": 10240,
+    "valido": true
+  },
+  {
+    "arquivo": "03-logo-formulario-escuro-245x36.png",
+    "campo_entra": "Logotipo do banner",
+    "dimensoes": [
+      245,
+      36
+    ],
+    "bytes": 3184,
+    "limite_bytes": 51200,
+    "valido": true
+  },
+  {
+    "arquivo": "04-logo-quadrado-tema-claro-240x240.png",
+    "campo_entra": "Logotipo quadrado tema claro",
+    "dimensoes": [
+      240,
+      240
+    ],
+    "bytes": 18098,
+    "limite_bytes": 51200,
+    "valido": true
+  },
+  {
+    "arquivo": "05-logo-quadrado-tema-escuro-240x240.png",
+    "campo_entra": "Logotipo quadrado tema escuro",
+    "dimensoes": [
+      240,
+      240
+    ],
+    "bytes": 17371,
+    "limite_bytes": 51200,
+    "valido": true
+  },
+  {
+    "arquivo": "06-favicon-32x32.png",
+    "campo_entra": "Favicon",
+    "dimensoes": [
+      32,
+      32
+    ],
+    "bytes": 1238,
+    "limite_bytes": 5120,
+    "valido": true
+  }
+]
