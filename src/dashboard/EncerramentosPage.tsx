@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Download, Searc
 import { getClosingCases, sendClosingsToBenner, type ClosingCase, type ClosingStatus, type ClosingValidatedFilter } from './operacaoEncerramentosService';
 import { regularAgingGoals, regularAgingRanking, regularAgingSummary } from './closingAgingGoals';
 import './encerramentos.css';
+import {DateRangePicker} from './DateRangePicker';
 
 type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
 type Etapa = 'validados' | 'enviados_benner';
@@ -890,11 +891,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
       <label><span>Tipo</span><select value={tipo} onChange={e=>setTipo(e.target.value as Tipo)}>
         {visibleTypes.map(t=><option key={t.value} value={t.value}>{t.label}</option>)}
       </select></label>
-      <fieldset className="closing-date-range"><legend>Período</legend>
-        <input type="date" aria-label="Data inicial" value={inicio} max={fim || undefined} onChange={e=>setInicio(e.target.value)}/>
-        <span>até</span>
-        <input type="date" aria-label="Data final" value={fim} min={inicio || undefined} onChange={e=>setFim(e.target.value)}/>
-      </fieldset>
+      <div className="closing-date-range"><DateRangePicker start={inicio} end={fim} onChange={(start,end)=>{setInicio(start);setFim(end)}}/></div>
     </div>
     {invalidRange && <p className="closing-error" role="alert">A data inicial não pode ser posterior à data final.</p>}
     {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
