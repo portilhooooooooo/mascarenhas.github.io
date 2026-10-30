@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import {chromium} from 'playwright';
+import {spawn} from 'node:child_process';
+import {mkdir,writeFile} from 'node:fs/promises';
+const port=5201,base='http://127.0.0.1:'+port,out='docs/stability-evolution-20261030';
+const server=spawn(process.execPath,['node_modules/vite/bin/vite.js','preview','--outDir','dist','--host','127.0.0.1','--port',String(port),'--strictPort']);
+let browser;const calls=[],errors=[];let enterDelay=0;
+const profile={id:'closing-fixture',name:'Fixture',email:'fixture@example.invalid',role:'legal_leader',authorization_version:'fixture-1',permissions:Object.fromEntries(['dashboard.view','encerramentos.view','tasks.view','tasks.execute'].map(key=>[key,true])),portfolios:[{id:'agibank_mba',display_name:'Regular'},{id:'agibank_enter',display_name:'Enter'}],default_portfolio_id:'agibank_mba'};
+try{
+ for(let i=0;i<100;i++){try{if((await fetch(base)).ok)break;}catch{}await new Promise(resolve=>setTimeout(resolve,100));}
+ browser=await chromium.launch({headless:true,args:['--no-sandbox']});const context=await browser.newContext();
+ await context.addInitScript(()=>{localStorage.setItem('mba_session_token','fixture-token');localStorage.setItem('mba_portfolio_id','agibank_mba');});
+ await context.route('https://api.portilhobackoffice.site/**',async route=>{
+  const req=route.request(),url=new URL(req.url()),wallet=req.headers()['x-portfolio-id']||'agibank_mba';calls.push({path:url.pathname,query:url.search,wallet});
+  const send=async(data,status=200)=>{try{await route.fulfill({status,json:data});}catch{}};
+  if(url.pathname==='/api/me')return send(profile);
+  if(url.pathname==='/api/me/state')return send({id:profile.id,policy_epoch:'fixture-1'});
+  if(url.pathname==='/api/events/stream')return send({code:'REALTIME_PAUSED'},403);
+  if(url.pathname.endsWith('/escritorios'))return send({offices:['Office A','Office B']});
+  const n=(wallet==='agibank_enter'?222:111)+(url.searchParams.get('tipo')==='VITORIA'?1:0)+(url.searchParams.has('escritorio')?10:0);
+  if(wallet==='agibank_enter'&&enterDelay)await new Promise(resolve=>setTimeout(resolve,enterDelay));
+  if(url.pathname.endsWith('/dashboard'))return send({carteira:wallet==='agibank_enter'?'Agibank Enter':'Agibank Regular',tipo:null,indicadores:{consultados:n,encontrados:n,analisados:n,ticket_amostra:0},aging:[],estados:[],analistas:[],classificacoes:[],distribuicao_tipos:[],etapas:{etapa:'validados',total:n,tipos:[],aging:[],matriz:[],mapa:[],comarcas:[],fonte:'fixture',mensagem:''}});
+  if(url.pathname.endsWith('/analises'))return send({total:n,rows:[],analistas:[],limit:20,offset:0});
+  if(url.pathname.endsWith('/meta-aging-mensal'))return send({periodo:'2026-10',total_elegivel:0,total_com_faixa:0,sem_tag:0,aging:[],origens:{}});
+  if(url.pathname.endsWith('/consolidado-mensal'))return send({periodo:'2026-10',mes_vigente:{enviados:0,sem_baixa:0,com_baixa:0},saldo_mes_anterior:{periodo:'2026-09',pendentes:0},total_em_acompanhamento:0,total_sem_baixa:0,total_com_baixa_no_mes_vigente:0});
+  if(url.pathname==='/api/base-geral/summary')return send({summary:{total:0,active:0,closed:0,unknown:0},charts:{por_produto:[]},filters:{states:[],products:[],resolutions:[]}});
+  return send({rows:[],total:0});
+ });
+ const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));
+ await page.goto(base+'/analytics/encerramentos');await page.locator('body.auth-signed-in').waitFor();
+ const value=page.locator('.closing-kpi').filter({hasText:'Analisados'}).locator('strong');
+ await value.filter({hasText:/^111$/}).waitFor();await page.waitForTimeout(400);
+ const monthly=()=>calls.filter(call=>/meta-aging-mensal|consolidado-mensal/.test(call.path)).length;
+ const before=monthly();assert.equal(before,2);
+ await page.getByRole('button',{name:'Tipo',exact:true}).click();await page.getByRole('option',{name:'Vitória',exact:true}).click();
+ await value.filter({hasText:/^112$/}).waitFor();assert.equal(monthly(),before,'Type changes reuse month-scoped reads');
+ await page.getByRole('button',{name:'Escritório',exact:true}).click();await page.getByRole('option',{name:'Office A',exact:true}).click();
+ await value.filter({hasText:/^122$/}).waitFor();assert.equal(monthly(),before);
+ assert.ok(calls.some(call=>call.path.endsWith('/analises')&&call.query.includes('escritorio=Office+A')&&call.query.includes('tipo=VITORIA')));
+ enterDelay=700;await page.evaluate(()=>window.MBA_API.setPortfolioId('agibank_enter'));
+ await value.filter({hasText:/^122$/}).waitFor({state:'hidden'});
+ await page.locator('.closing-kpi').filter({hasText:'Analisados'}).locator('strong').filter({hasText:/^222$/}).waitFor();
+ assert.equal(await page.locator('.closing-page-v2').getByRole('alert').count(),0,'Portfolio cancellation is not a visible read failure');
+ await page.evaluate(()=>{for(let i=0;i<4;i++)window.dispatchEvent(new Event('mba:profile-ready'));});await page.waitForTimeout(250);
+ assert.equal(calls.filter(call=>call.path==='/api/events/stream').length,1);
+ assert.deepEqual(errors,[]);
+ await mkdir(out,{recursive:true});await writeFile(out+'/closing-browser.json',JSON.stringify({status:'passed',fixture:true,tests:['combined office/type','monthly cache reuse','portfolio isolation','cancellation','paused SSE'],calls,errors},null,2));
+ await page.screenshot({path:out+'/closing-browser.png',fullPage:true});
+ console.log('Closing browser passed: combined filters, monthly reuse, portfolio isolation, abort handling, paused SSE.');
+}finally{await browser?.close();server.kill();}
