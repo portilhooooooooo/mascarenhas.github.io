@@ -493,9 +493,9 @@
 }
 
 /* Encerramentos: mesmos filtros compactos de Pagamentos, com seletores React. */
-.closing-filter-row.closing-filter-row--standard {
+.closing-page-v2 > .closing-filter-row.closing-filter-row--standard {
   display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(170px, 1fr));
+  grid-template-columns: minmax(250px, 1.15fr) minmax(180px, 1fr) minmax(180px, 1fr);
   align-items: end;
   gap: 11px;
   padding: 10px 12px;
@@ -531,18 +531,27 @@
   min-width: 0;
   align-self: end;
   flex: none;
+  grid-column: auto;
+  grid-row: auto;
+}
+.closing-filter-row--standard .mba-date-range {
+  min-width: 0;
+  width: 100%;
+}
+.closing-filter-row--standard .mba-date-range-trigger {
+  width: 100%;
 }
 .closing-filter-row--standard .mba-react-select-options {
   min-width: 100%;
   max-width: min(360px, 90vw);
 }
 @media (max-width: 850px) {
-  .closing-filter-row.closing-filter-row--standard {
+  .closing-page-v2 > .closing-filter-row.closing-filter-row--standard {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .closing-filter-row--standard .closing-date-range { grid-column: 1 / -1; grid-row: auto; }
 }
 @media (max-width: 560px) {
-  .closing-filter-row.closing-filter-row--standard { grid-template-columns: minmax(0,1fr); }
+  .closing-page-v2 > .closing-filter-row.closing-filter-row--standard { grid-template-columns: minmax(0,1fr); }
   .closing-filter-row--standard .closing-date-range { grid-column: auto; }
 }

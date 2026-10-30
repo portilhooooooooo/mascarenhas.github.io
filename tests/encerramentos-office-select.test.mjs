@@ -20,3 +20,9 @@ test('all dashboard filter bars use the same React dropdown control',()=>{
     assert.match(read(name),/SelectMenu/,name);
   }
 });
+
+test('closing filters stay on one desktop row and date span overrides are reset',()=>{
+  const css=read('encerramentos.css');
+  assert.match(css,/\.closing-page-v2 > \.closing-filter-row\.closing-filter-row--standard \{[\s\S]*?grid-template-columns:\s*minmax\(250px, 1\.15fr\) minmax\(180px, 1fr\) minmax\(180px, 1fr\)/);
+  assert.match(css,/\.closing-filter-row--standard \.closing-date-range \{[^}]*grid-column:\s*auto;[^}]*grid-row:\s*auto;/);
+});
