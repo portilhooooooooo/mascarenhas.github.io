@@ -815,7 +815,12 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     if (!visible) return;
     const controller = new AbortController();
     setOfficesError('');
-    void loadOffices(controller.signal)
+    const scope=runtimeScope();
+    void runtimeQueries.fetchQuery({
+      queryKey:['runtime-v2',scope,'encerramentos-offices'],
+      queryFn:({signal})=>analyticalRead(loadOffices,{signal,priority:0,isCurrent:()=>scope===runtimeScope()}),
+      staleTime:60000,
+    })
       .then(items => { if (!controller.signal.aborted) setOffices(items); })
       .catch(() => { if (!controller.signal.aborted) { setOffices([]); setOfficesError('Não foi possível consultar os escritórios.'); } });
     return () => controller.abort();
@@ -835,15 +840,17 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
     activeRequest.current={key:filterKey,sequence};
     setPending(true);setError('');setBlockErrors({});
     // Each block renders only its matching key; a failed summary must not clear valid siblings.
-    const run=<T,>(name:string,load:(signal:AbortSignal)=>Promise<T>,apply:(data:T)=>void)=>runtimeQueries.fetchQuery({
-      queryKey:['runtime-v2',scope,'encerramentos',filterKey,name],
-      queryFn:({signal})=>analyticalRead(load,{signal,priority:name==='resumo'?0:name==='analises'?1:2,isCurrent:()=>scope===runtimeScope()&&visibleRef.current&&filterKeyRef.current===filterKey}),staleTime:force?0:60000,
+    const run=<T,>(name:string,load:(signal:AbortSignal)=>Promise<T>,apply:(data:T)=>void)=>{
+      const monthly=name==='aging'||name==='benner';
+      return runtimeQueries.fetchQuery({
+      queryKey:['runtime-v2',scope,'encerramentos',monthly?'monthly:'+carteira+':'+portfolioRevision:filterKey,name],
+      queryFn:({signal})=>analyticalRead(load,{signal,priority:name==='resumo'?0:name==='analises'?1:2,isCurrent:()=>scope===runtimeScope()&&visibleRef.current&&(monthly||filterKeyRef.current===filterKey)}),staleTime:force?0:60000,
     }).then(value=>{if(valid()){apply(value);setBlockKeys(previous=>({...previous,[name]:filterKey}));}}).catch(cause=>{
       const message=cause instanceof Error?cause.message:String(cause);
       // Navigations, portfolio changes and TanStack Query cancellations are not read failures.
       if(cause instanceof Error && (cause.name==='AbortError'||cause.name==='CanceledError') || /(?:signal|request|operation).*abort(?:ed)?/i.test(message))return;
       if(valid())setBlockErrors(previous=>({...previous,[name]:message+(blockKeysRef.current[name]===filterKey?' Exibindo o último resultado deste filtro.':'')}));
-    });
+    });};
     await Promise.allSettled([
       run('resumo',signal=>loadDashboard(carteira,tipo,inicio,fim,analista,etapa,signal,escritorio),painel=>{setDados(painel);setLoadedKey(filterKey);}),
       run('analises',signal=>loadClosingAnalyses(inicio,fim,tipo,20,0,'','todos',signal,escritorio),setAnalises),

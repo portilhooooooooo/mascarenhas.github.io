@@ -47,7 +47,7 @@ export function retryAfterMs(value:string|null|undefined,now=Date.now()):number{
 function retryable(error:unknown):error is ApiError{
   if(!(error instanceof Error)||error.name==='AbortError')return false;
   const api=error as ApiError;
-  if(['AUTH_TEMPORARILY_UNAVAILABLE','AUTH_DEPENDENCY_UNAVAILABLE','STALE_IDENTITY','STALE_ANALYTICS_SCOPE'].includes(api.code||''))return false;
+  if(['AUTH_TEMPORARILY_UNAVAILABLE','AUTH_DEPENDENCY_UNAVAILABLE','STALE_IDENTITY','STALE_ANALYTICS_SCOPE','ANALYTICS_TIMEOUT'].includes(api.code||''))return false;
   return [429,502,503,504].includes(api.status||0)||error instanceof TypeError;
 }
 function pause(ms:number,signal:AbortSignal):Promise<void>{
@@ -69,7 +69,8 @@ export async function analyticalRead<T>(load:(signal:AbortSignal)=>Promise<T>,op
   options.signal?.addEventListener('abort',externalAbort,{once:true});
   if(options.signal?.aborted)controller.abort();
   const budget=options.budgetMs??20000,deadline=Date.now()+budget;
-  const timeout=setTimeout(()=>controller.abort(),budget);
+  let timedOut=false;
+  const timeout=setTimeout(()=>{timedOut=true;controller.abort();},budget);
   const current=()=>{
     if(controller.signal.aborted)throw aborted();
     if(options.isCurrent&&!options.isCurrent())throw Object.assign(new Error('Consulta de contexto anterior descartada.'),{code:'STALE_ANALYTICS_SCOPE'});
@@ -92,6 +93,9 @@ export async function analyticalRead<T>(load:(signal:AbortSignal)=>Promise<T>,op
       if(Date.now()+delay>=deadline)throw failure;
       await pause(delay,controller.signal);
     }
+  }catch(error){
+    if(timedOut&&!options.signal?.aborted)throw Object.assign(new Error('A consulta excedeu o orçamento de leitura.'),{code:'ANALYTICS_TIMEOUT',status:504});
+    throw error;
   }finally{
     clearTimeout(timeout);
     options.signal?.removeEventListener('abort',externalAbort);
