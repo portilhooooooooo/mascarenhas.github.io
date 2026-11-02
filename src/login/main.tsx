@@ -1,17 +1,14 @@
 import { type FormEvent, StrictMode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { Moon, Sun } from 'lucide-react';
 import './login.css';
 
 type LoginState = { busy: boolean; error: string | null; status?: string };
-type LoginTheme = 'sol' | 'lua';
 type AuthWindow = Window & typeof globalThis & {
   MBA_AUTH?: {
     startMicrosoftLogin?: () => Promise<void> | void;
     getLoginState?: () => LoginState;
   };
-  MBA_THEME?: { getTheme: () => LoginTheme; setTheme: (value: LoginTheme) => void };
 };
 
 function transitionIsActive(): boolean {
@@ -20,7 +17,7 @@ function transitionIsActive(): boolean {
     || document.body.classList.contains('mba-auth-transition-hold');
 }
 
-function DataField({ active, theme }: { active: boolean; theme: LoginTheme }) {
+function DataField({ active }: { active: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (!active) return;
@@ -36,7 +33,7 @@ function DataField({ active, theme }: { active: boolean; theme: LoginTheme }) {
     let cancelled = false;
 
     const paint = (ms: number) => {
-      ctx.fillStyle = theme === 'sol' ? '#f7f6f2' : '#141414';
+      ctx.fillStyle = '#f7f6f2';
       ctx.fillRect(0, 0, width, height);
       const columns = Math.max(16, Math.min(42, Math.floor(width / 14)));
       const rows = Math.max(10, Math.min(20, Math.floor(height / 14)));
@@ -47,12 +44,8 @@ function DataField({ active, theme }: { active: boolean; theme: LoginTheme }) {
         const seed = (x * 17 + y * 31) % 97;
         const wave = (Math.sin(x * .36 + time * .75 - y * .28) + 1) / 2;
         const pulse = (Math.sin(time * (.65 + seed / 90) + seed * .65) + 1) / 2;
-        ctx.globalAlpha = theme === 'sol'
-          ? .19 + wave * .28 + pulse * .18
-          : .13 + wave * .32 + pulse * .24;
-        ctx.fillStyle = (x * 7 + y * 11) % 13 < 3
-          ? (theme === 'sol' ? '#9c694b' : '#C38B6B')
-          : (theme === 'sol' ? '#788087' : '#929898');
+        ctx.globalAlpha = .19 + wave * .28 + pulse * .18;
+        ctx.fillStyle = (x * 7 + y * 11) % 13 < 3 ? '#9c694b' : '#788087';
         ctx.beginPath();
         ctx.arc(dx * (x + 1), dy * (y + 1) + (motion.matches ? 0 : Math.sin(time * .6 + x * .24) * 1.2),
           seed % 9 === 0 ? 1.5 : 1.05, 0, Math.PI * 2);
@@ -62,7 +55,7 @@ function DataField({ active, theme }: { active: boolean; theme: LoginTheme }) {
       ctx.textAlign = 'center';
       ['01', '08', '16', '24', '32'].forEach((value, i) => {
         ctx.globalAlpha = .17 + (motion.matches ? 0 : (Math.sin(time * .35 + i) + 1) * .09);
-        ctx.fillStyle = theme === 'sol' ? '#98694d' : '#C38B6B';
+        ctx.fillStyle = '#98694d';
         ctx.fillText(value, dx * (((i * 7 + 5) % columns) + 1), dy * (((i * 4 + 2) % rows) + 1) - 8);
       });
       ctx.globalAlpha = 1;
@@ -102,15 +95,15 @@ function DataField({ active, theme }: { active: boolean; theme: LoginTheme }) {
       document.removeEventListener('visibilitychange', watchVisibility);
       motion.removeEventListener('change', watchMotion);
     };
-  }, [active, theme]);
+  }, [active]);
   return <canvas className="mba-auth-data-canvas" ref={canvasRef} aria-hidden="true"/>;
 }
 
-function AuthTransition({ visible, theme }: { visible: boolean; theme: LoginTheme }) {
+function AuthTransition({ visible }: { visible: boolean }) {
   return <div className={'mba-auth-transition' + (visible ? ' is-visible' : '')}
     role="status" aria-live="polite" aria-hidden={!visible} data-testid="auth-transition">
     <div className="mba-auth-transition-content">
-      <DataField active={visible} theme={theme}/>
+      <DataField active={visible}/>
       <div className="mba-auth-loading-dots" aria-hidden="true"><span/><span/><span/></div>
       <p>Preparando seu espaço…</p>
     </div>
@@ -119,9 +112,6 @@ function AuthTransition({ visible, theme }: { visible: boolean; theme: LoginThem
 
 function LoginPage() {
   const [email, setEmail] = useState('');
-  const [theme, setTheme] = useState<LoginTheme>(() =>
-    document.documentElement.dataset.mbaTheme === 'lua' ? 'lua' : 'sol'
-  );
   const [authState, setAuthState] = useState<LoginState>(() =>
     (window as AuthWindow).MBA_AUTH?.getLoginState?.() || { busy: false, error: null }
   );
@@ -151,25 +141,6 @@ function LoginPage() {
       delete document.body.dataset.reactLogin;
     };
   }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const observer = new MutationObserver(() => setTheme(root.dataset.mbaTheme === 'lua' ? 'lua' : 'sol'));
-    observer.observe(root, { attributes: true, attributeFilter: ['data-mba-theme'] });
-    return () => observer.disconnect();
-  }, []);
-
-  const toggleTheme = () => {
-    const next: LoginTheme = theme === 'sol' ? 'lua' : 'sol';
-    const controller = (window as AuthWindow).MBA_THEME;
-    if (controller) controller.setTheme(next);
-    else {
-      document.documentElement.dataset.mbaTheme = next;
-      document.documentElement.style.colorScheme = next === 'lua' ? 'dark' : 'light';
-      try { window.localStorage.setItem('mba-backoffice-theme-v1', next); } catch { /* Storage may be unavailable. */ }
-    }
-    setTheme(next);
-  };
 
   const startMicrosoftLogin = async () => {
     if (authState.busy || inFlight.current) return;
@@ -201,12 +172,6 @@ function LoginPage() {
           <img src="/favicon-white.svg?v=20261013-original-mark" alt="" aria-hidden="true"/>
           <span>Mascarenhas Barbosa<small>BACKOFFICE</small></span>
         </div>
-        <button className="react-login-theme-toggle" type="button" onClick={toggleTheme}
-          aria-label={theme === 'sol' ? 'Tema Sol ativo. Alternar para Lua' : 'Tema Lua ativo. Alternar para Sol'}
-          title={theme === 'sol' ? 'Alternar para modo Lua' : 'Alternar para modo Sol'}>
-          {theme === 'sol' ? <Sun size={17} strokeWidth={1.8} aria-hidden="true"/> : <Moon size={17} strokeWidth={1.8} aria-hidden="true"/>}
-          <span>{theme === 'sol' ? 'Sol' : 'Lua'}</span>
-        </button>
       </header>
       <main className="react-login-main">
         <section className="react-login-access" aria-labelledby="react-login-title">
@@ -245,7 +210,7 @@ function LoginPage() {
         </aside>
       </main>
     </div>
-    {overlayRoot ? createPortal(<AuthTransition visible={preparing} theme={theme}/>, overlayRoot) : null}
+    {overlayRoot ? createPortal(<AuthTransition visible={preparing}/>, overlayRoot) : null}
   </>;
 }
 
