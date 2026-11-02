@@ -286,3 +286,131 @@ body.mba-auth-transition-hold .login-screen {visibility:hidden!important}
 @media(prefers-reduced-motion:reduce) {
   #login-transition-root .mba-auth-loading-indicator { animation:none; border-top-color:#e7b799; }
 }
+
+
+/* LOGIN_SOL_MODE_20261102
+ * Sol / Lua login and transition. Only the unauthenticated UI is themed;
+ * the corporate video, auth providers and app-shell remain unchanged.
+ */
+#login-view .react-login-header { justify-content:space-between; }
+#login-view .react-login-theme-toggle {
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-width:88px;height:36px;padding:0 13px;
+  border:1px solid #414043;border-radius:10px;
+  background:#29292c;color:#f3f1ed;
+  font:500 12px/1 Inter,ui-sans-serif,system-ui,sans-serif;
+  cursor:pointer;
+  transition:background-color .25s,border-color .25s,color .25s,transform .25s;
+}
+#login-view .react-login-theme-toggle:hover {background:#38373a;border-color:#70625a;}
+#login-view .react-login-theme-toggle:active {transform:scale(.97);}
+#login-view .react-login-theme-toggle:focus-visible {
+  outline:2px solid #ba8060;outline-offset:3px;
+}
+#login-view .react-login-view,
+#login-view .react-login-header,
+#login-view .react-login-brand,
+#login-view .react-login-access h1,
+#login-view .react-login-form,
+#login-view .react-login-corporate,
+#login-view .react-login-field,
+#login-view .react-login-field input,
+#login-view .react-login-divider,
+#login-view .react-login-divider::before,
+#login-view .react-login-divider::after {
+  transition:background-color .3s ease,color .3s ease,border-color .3s ease,box-shadow .3s ease;
+}
+/* Current global theme is read from the head-loaded brand-theme.js to avoid a dark-mode flash. */
+html[data-mba-theme="sol"] body[data-react-login="true"] .login-screen {
+  background:#f7f6f2;
+}
+html[data-mba-theme="sol"] #login-view .react-login-view,
+html[data-mba-theme="sol"] #login-view .react-login-header {
+  background:#f7f6f2;color:#282827;
+}
+html[data-mba-theme="sol"] #login-view .react-login-brand { color:#282827; }
+html[data-mba-theme="sol"] #login-view .react-login-brand img {
+  filter:brightness(0) saturate(100%) opacity(.82);
+}
+html[data-mba-theme="sol"] #login-view .react-login-brand small {color:#a36b4e;}
+html[data-mba-theme="sol"] #login-view .react-login-access h1 { color:#282827; }
+html[data-mba-theme="sol"] #login-view .react-login-form {
+  background:#fff;border-color:#e3dfd8;
+  box-shadow:0 12px 34px rgba(45,37,28,.045);
+}
+html[data-mba-theme="sol"] #login-view .react-login-corporate {
+  background:#f7f6f3;border-color:#dedbd6;color:#282827;
+}
+html[data-mba-theme="sol"] #login-view .react-login-corporate:hover:not(:disabled) {
+  background:#f0efeb;border-color:#c9beb6;
+}
+html[data-mba-theme="sol"] #login-view .react-login-divider {color:#86817d;}
+html[data-mba-theme="sol"] #login-view .react-login-divider::before,
+html[data-mba-theme="sol"] #login-view .react-login-divider::after {
+  background:#e2dfda;
+}
+html[data-mba-theme="sol"] #login-view .react-login-field {color:#5b5754;}
+html[data-mba-theme="sol"] #login-view .react-login-field input {
+  background:#fff;border-color:#dcd9d4;color:#292827;color-scheme:light;
+}
+html[data-mba-theme="sol"] #login-view .react-login-field input::placeholder {color:#96918c;}
+html[data-mba-theme="sol"] #login-view .react-login-field input:focus {
+  border-color:#b97a58;box-shadow:0 0 0 3px rgba(185,122,88,.14);
+}
+html[data-mba-theme="sol"] #login-view .react-login-primary {
+  background:#b97a58;border-color:#b97a58;color:#fff;
+}
+html[data-mba-theme="sol"] #login-view .react-login-primary:hover:not(:disabled) {
+  background:#a96747;border-color:#a96747;
+}
+html[data-mba-theme="sol"] #login-view .react-login-theme-toggle {
+  background:#fff;border-color:#dedbd6;color:#393632;
+}
+html[data-mba-theme="sol"] #login-view .react-login-theme-toggle:hover {
+  background:#f1efe9;border-color:#c8bdb2;
+}
+html[data-mba-theme="sol"] #login-view .react-login-error {
+  background:#fff5f2;border-color:#edc6bd;color:#8f3d33;
+}
+
+/* Theme-aware authentication transition; the pixel field is painted in React. */
+#login-transition-root .mba-auth-transition {
+  transition:opacity .28s ease,visibility .28s,background-color .34s ease,color .34s ease;
+}
+html[data-mba-theme="sol"] #login-transition-root .mba-auth-transition {
+  background:#f7f6f2;color:#292827;
+}
+html[data-mba-theme="sol"] #login-transition-root .mba-auth-transition-content p {
+  color:#34302d;
+}
+#login-transition-root .mba-auth-loading-dots {
+  display:flex;align-items:center;justify-content:center;gap:8px;min-height:20px;
+}
+#login-transition-root .mba-auth-loading-dots span {
+  width:7px;height:7px;border-radius:50%;background:#c38b69;
+  animation:mba-login-dot-pulse 1.15s ease-in-out infinite;
+}
+#login-transition-root .mba-auth-loading-dots span:nth-child(2) { animation-delay:.17s; }
+#login-transition-root .mba-auth-loading-dots span:nth-child(3) { animation-delay:.34s; }
+html[data-mba-theme="sol"] #login-transition-root .mba-auth-loading-dots span {
+  background:#a36d4e;
+}
+@keyframes mba-login-dot-pulse {
+  0%,65%,100% { opacity:.34;transform:translateY(0) scale(.86); }
+  30% { opacity:1;transform:translateY(-4px) scale(1); }
+}
+#login-view .react-login-access {animation:mba-login-entrance .5s ease-out both;}
+#login-view .react-login-visual {animation:mba-login-entrance .65s ease-out both;}
+@keyframes mba-login-entrance {
+  from {opacity:0;transform:translateY(9px);}
+  to {opacity:1;transform:translateY(0);}
+}
+@media(max-width:480px) {
+  #login-view .react-login-theme-toggle {min-width:38px;width:38px;padding:0;}
+  #login-view .react-login-theme-toggle span {display:none;}
+}
+@media(prefers-reduced-motion:reduce) {
+  #login-view .react-login-access,#login-view .react-login-visual {animation:none!important;}
+  #login-view .react-login-theme-toggle {transition:none!important;}
+  #login-transition-root .mba-auth-loading-dots span {animation:none!important;opacity:1;}
+}
