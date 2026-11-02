@@ -52,6 +52,12 @@
     else actions.appendChild(button);
   }
 
+  // Public theme API shared by the app shell and the unauthenticated React login.
+  window.MBA_THEME = Object.freeze({
+    getTheme: function () { return root.getAttribute('data-mba-theme') === 'lua' ? 'lua' : 'sol'; },
+    setTheme: setTheme
+  });
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount, { once: true });
   else mount();
 
