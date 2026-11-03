@@ -101,9 +101,21 @@ export function PortfolioSwitcher() {
     if (!authorized.has(nextId) || !options.some(option => option.id === nextId)) return;
     setOpen(false);
     if (nextId === active.id) return;
-    shellWindow.MBA_API?.setPortfolioId?.(nextId);
-    // Reloads all modules, permissions and API caches in the new portfolio context.
-    window.location.reload();
+    const setPortfolioId = shellWindow.MBA_API?.setPortfolioId;
+    if (!setPortfolioId) return;
+    // The next page load shows a random institutional scene while the new
+    // portfolio's permissions and data are revalidated. No extra network call.
+    try { window.sessionStorage.setItem('mba-institutional-portfolio-switch-v1', '1'); }
+    catch { /* Storage may be unavailable; switching must still work. */ }
+    try {
+      setPortfolioId(nextId);
+      // Existing reload clears all module state and API caches across portfolios.
+      window.location.reload();
+    } catch (error) {
+      try { window.sessionStorage.removeItem('mba-institutional-portfolio-switch-v1'); }
+      catch { /* No persisted marker to clean. */ }
+      throw error;
+    }
   };
 
   return (

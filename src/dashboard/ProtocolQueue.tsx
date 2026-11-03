@@ -1,3 +1,4 @@
+import {SelectMenu} from './SelectMenu';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {AlertTriangle,CheckCircle2,ChevronLeft,ChevronRight,Clock3,ExternalLink,FileCheck2,Files,LoaderCircle,RotateCcw,Search} from 'lucide-react';
 import {protocolDetail,protocolStage} from './protocoloPresentation';
@@ -228,12 +229,8 @@ return (
           >
             {retryBusy ? <LoaderCircle className="spin" size={14}/> : <RotateCcw size={14}/>} Tentar novamente ({number(selectedRetryIds.size)})
           </button>}
-          <label className="protocolos-page-size">
-            <span>Exibir</span>
-            <select value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>
-              {PAGE_SIZES.map(size => <option key={size} value={size}>{size}</option>)}
-            </select>
-          </label>
+          <SelectMenu label="Exibir" value={String(pageSize)} onChange={value=>setPageSize(Number(value))}
+            className="protocolos-page-size protocolos-react-menu" options={PAGE_SIZES.map(size=>({value:String(size),label:String(size)}))}/>
         </div>
       </div>
 

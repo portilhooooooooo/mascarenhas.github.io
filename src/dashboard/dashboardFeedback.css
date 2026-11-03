@@ -1,0 +1,54 @@
+/* Standardized compact feedback for dashboard KPIs, without layout jumps. */
+.mba-metric-dots {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  vertical-align:middle;
+  min-width:40px;
+  height:1.1em;
+  gap:5px;
+  font-size:inherit;
+}
+.mba-metric-dots i {
+  display:block;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#b57a55;
+  animation:mba-metric-dot 1.15s ease-in-out infinite;
+}
+.mba-metric-dots i:nth-child(2) { animation-delay:.15s; }
+.mba-metric-dots i:nth-child(3) { animation-delay:.3s; }
+@keyframes mba-metric-dot {
+  0%,65%,100% { opacity:.32;transform:translateY(0) scale(.84); }
+  30% { opacity:1;transform:translateY(-3px) scale(1); }
+}
+.mba-dashboard-recovery {
+  display:flex;
+  gap:14px;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  margin:9px 0 13px;
+  padding:10px 13px;
+  background:var(--mba-subtle, #f7f7f6);
+  border:1px solid var(--mba-border, #e5e4e0);
+  border-radius:8px;
+  font:500 12px/1.5 Inter,ui-sans-serif,system-ui,sans-serif;
+  color:var(--mba-muted, #6a6e70);
+}
+.mba-dashboard-recovery button {
+  appearance:none;
+  background:transparent;
+  border:0;
+  padding:0;
+  font:600 12px/1.5 Inter,ui-sans-serif,system-ui,sans-serif;
+  color:var(--mba-blue, #1d5c81);
+  cursor:pointer;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.mba-dashboard-recovery button:disabled {opacity:.7;cursor:wait;}
+.mba-dashboard-recovery button:focus-visible {outline:2px solid currentColor;outline-offset:3px;}
+.mba-dashboard-recovery .mba-metric-dots {height:14px;}
+@media(prefers-reduced-motion:reduce){.mba-metric-dots i{animation:none;opacity:1;transform:none}}

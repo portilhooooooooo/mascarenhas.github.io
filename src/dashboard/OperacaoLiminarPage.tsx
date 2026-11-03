@@ -1,3 +1,4 @@
+import {SelectMenu} from './SelectMenu';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Download, FileSpreadsheet, FileText, LoaderCircle, RefreshCcw, Search, UploadCloud, X} from 'lucide-react';
 import {
@@ -131,7 +132,8 @@ export function OperacaoLiminarPage() {
         </form>
         <div className="protocolos-toolbar-actions">
           <button type="button" className="protocolos-button secondary operacao-download-button" disabled={!summary?.importacao||busy||loading} onClick={()=>void exportarLiminar(status).catch(e=>setError(e instanceof Error?e.message:'Erro ao exportar.'))}><Download size={14}/>Baixar</button>
-          <label className="protocolos-page-size"><span>Exibir</span><select value={pageSize} onChange={event=>{setPageSize(Number(event.target.value));setPage(1);}}>{[10,50,100].map(n=><option key={n} value={n}>{n}</option>)}</select></label>
+          <SelectMenu label="Exibir" value={String(pageSize)} onChange={value=>{setPageSize(Number(value));setPage(1);}}
+          className="protocolos-page-size protocolos-react-menu" options={[10,50,100].map(n=>({value:String(n),label:String(n)}))}/>
         </div>
       </div>
       <div className="protocolos-table-wrap">
