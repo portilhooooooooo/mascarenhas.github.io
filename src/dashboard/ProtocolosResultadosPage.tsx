@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Clock3, FileX2, Send, RefreshCw, Search, X, type LucideIcon } from 'lucide-react';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
+import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import './defesasResultados.css';
 
 type Kind = 'no_documents' | 'processing' | 'sent' | 'human';
@@ -89,19 +90,16 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>
     </div>
-    {summary.error&&<div className="defense-results-error" role="alert">
-      Indicadores indisponíveis. {(summary.error as Error).message}
-      <button type="button" onClick={()=>void summary.refetch()}>Tentar novamente</button>
-    </div>}
+    {summary.error&&<DashboardRecovery hasSnapshot={Boolean(summary.data)} retrying={summary.isFetching} onRetry={()=>void summary.refetch()}/>} 
     <div className="defense-results-grid">
       {cards.map(({kind:cardKind,title,icon:Icon})=><button key={cardKind} type="button"
         className="defense-results-card mba-metric-card" onClick={()=>open(cardKind)}
         aria-label={title+': '+count(summary.data?.[cardKind])+'. Abrir processos'}>
         <span className="defense-results-card-heading"><span>{title}</span><Icon size={17} strokeWidth={1.7}/></span>
-        <strong>{count(summary.data?.[cardKind])}</strong>
+        <strong>{summary.isPending && !summary.data?<MetricDots/>:count(summary.data?.[cardKind])}</strong>
       </button>)}
     </div>
-    {summary.isFetching&&<span role="status" className="defense-results-status">{summary.data?'Atualizando indicadores…':'Consultando indicadores…'}</span>}
+    {summary.isFetching&&!summary.data&&<span role="status" className="defense-results-status"><MetricDots label="Consultando indicadores"/></span>}
     {kind&&<div className="defense-results-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setKind(null)}}>
       <section className="defense-results-dialog" role="dialog" aria-modal="true" aria-labelledby={id+'-title'}>
         <header className="defense-results-dialog-header">
@@ -109,7 +107,7 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
           <button type="button" aria-label="Fechar relação" onClick={()=>setKind(null)}><X size={18}/></button>
         </header>
         <div className="defense-results-dialog-toolbar"><label><Search size={15}/><input aria-label="Buscar CNJ" placeholder="Buscar CNJ" value={search} onChange={event=>setSearch(event.target.value)}/></label></div>
-        {detail.error&&<p className="defense-results-error" role="alert">Não foi possível consultar os processos. {(detail.error as Error).message} <button type="button" onClick={()=>void detail.refetch()}>Tentar novamente</button></p>}
+        {detail.error&&<DashboardRecovery hasSnapshot={Boolean(detail.data)} retrying={detail.isFetching} onRetry={()=>void detail.refetch()}/>}
         <div className="defense-results-table-wrap"><table className="defense-results-table">
           <thead><tr><th>CNJ</th><th>Responsável</th><th>Situação</th><th>Prazo</th><th>Atualização</th></tr></thead>
           <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
@@ -122,7 +120,7 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
             <td>{formatDate(row.updated_at)}</td>
           </tr>)}</tbody>
         </table>
-        {detail.isFetching&&!detail.data&&<p className="defense-results-empty" role="status">Carregando processos…</p>}
+        {detail.isFetching&&!detail.data&&<p className="defense-results-empty" role="status"><MetricDots label="Consultando processos"/></p>}
         {!detail.isFetching&&detail.data&&!detail.data.rows.length&&<p className="defense-results-empty">Nenhum processo encontrado.</p>}
         </div>
         <footer className="defense-results-pagination">
