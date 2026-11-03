@@ -35,6 +35,8 @@ assert.match(auth, /INSTITUTIONAL_WELCOME_MS = 6000/);
 assert.match(auth, /setTimeout\(resolve, INSTITUTIONAL_WELCOME_MS\)/);
 assert.match(auth, /await loadProfileWithRetry\([\s\S]*?advanceInstitutionalScene\(\)/);
 assert.match(auth, /window\.MBA_INSTITUTIONAL_LOGIN_SCENE = institutionalScene/);
+assert.match(auth, /MBA_INSTITUTIONAL_LOGIN_OFFICE_START = institutionalOfficeStart/);
+assert.match(storyboard, /useState\(readOfficeStart\)/);
 assert.match(login, /createPortal\(<InstitutionalLoading visible=\{preparing\}\/>/);
 assert.doesNotMatch(login, /DataField|react-login-theme-toggle/);
 assert.match(styles, /\.mba-storyboard-vision h1\s*\{[\s\S]*?font-size:clamp\(58px,7\.2vw,120px\)/);
@@ -57,19 +59,24 @@ const localStorage = {
   getItem: key => stored.has(key) ? stored.get(key) : null,
   setItem: (key, value) => stored.set(key, String(value)),
 };
+const officeStarts = [];
 const openPage = successfulLogin => {
   const window = {};
   vm.runInNewContext(rotationCode + (successfulLogin ? '\nadvanceInstitutionalScene();' : ''), { localStorage, window });
+  officeStarts.push(window.MBA_INSTITUTIONAL_LOGIN_OFFICE_START);
   return window.MBA_INSTITUTIONAL_LOGIN_SCENE;
 };
 assert.equal(openPage(false), 0, 'Initial page shows history without consuming a scene');
 assert.equal(openPage(true), 0, 'First login shows history');
 assert.equal(openPage(false), 1, 'Refresh does not consume another scene');
 assert.equal(openPage(true), 1, 'Second login shows presence');
+assert.equal(officeStarts.at(-1), 0, 'First presence login starts with Campo Grande');
 assert.equal(openPage(true), 2, 'Third login shows Backoffice');
 assert.equal(openPage(true), 3, 'Fourth login shows product vision');
 assert.equal(openPage(true), 0, 'Fifth login loops to history');
 stored.set('mba-institutional-scene-next-v1', 'invalid');
 assert.equal(openPage(true), 0, 'Invalid index safely resets to history');
+assert.equal(openPage(false), 1, 'Next staged login shows presence again');
+assert.equal(officeStarts.at(-1), 3, 'Next presence login starts with the remaining three offices');
 
 console.log('PASS: one scene per login; 6-second hold; 2-second city rotation; presence layout.');
