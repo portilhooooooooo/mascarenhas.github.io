@@ -175,7 +175,7 @@ test('subabas de Operação sincronizam a rota em vez de alterar apenas o estado
 });
 
 test('Resultados / Pagamentos exige perfil autorizado e carteira regular', () => {
-  const e = environment('/analytics/pagamentos', {allowed:['dashboard'],permissions:{'pagamentos.view':true}});
+  const e = environment('/analytics/pagamentos', {allowed:['dashboard'],permissions:{'dashboard.view':true,'pagamentos.view':true}});
   assert.equal(e.window.restorePageRoute(), true);
   assert.equal(e.active.get('sem-acesso'), true);
   e.window.MBA_CURRENT_USER.is_master_admin = true;

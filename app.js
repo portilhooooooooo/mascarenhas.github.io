@@ -50,7 +50,8 @@ const nestedPageRoutes = Object.freeze({
 });
 const routeAliases = Object.freeze({
   dashboard: 'analytics',
-  ranking: 'analytics/ranking',
+  ranking: 'analytics',
+  'analytics/ranking': 'analytics',
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
@@ -107,7 +108,6 @@ function canAccessRoute(pageId, route) {
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
-  if (route === 'analytics/ranking') return false;
   if (route === 'analytics/pagamentos') {
     const user = window.MBA_CURRENT_USER;
     return user?.permissions?.['dashboard.view'] === true && ((user?.is_master_admin === true && user?.permissions?.['pagamentos.view'] === true) || (user?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && window.MBA_API?.getPortfolioId?.() === 'agibank_mba'));
