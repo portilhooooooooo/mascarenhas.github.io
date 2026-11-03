@@ -151,14 +151,17 @@
 #login-transition-root .mba-storyboard-presence p {
   max-width:425px;
 }
+#login-transition-root .mba-storyboard-presence-meta {
+  width:100%;
+  max-width:420px;
+  margin-top:clamp(42px,6.5vh,78px);
+  padding-top:16px;
+  border-top:1px solid #ded9d1;
+}
 #login-transition-root .mba-storyboard-presence-stat {
   display:flex;
   align-items:center;
   gap:15px;
-  margin-top:29px;
-  padding-top:16px;
-  border-top:1px solid #ded9d1;
-  max-width:420px;
   color:#625b54;
 }
 #login-transition-root .mba-storyboard-presence-stat strong {
@@ -177,16 +180,14 @@
   display:flex;
   justify-content:center;
   align-items:center;
-  flex-direction:column;
   min-width:0;
-  gap:8px;
 }
 #login-transition-root .mba-storyboard-map-frame {
   position:relative;
   width:100%;
-  max-width:510px;
+  max-width:570px;
   min-height:0;
-  flex:1;
+  height:100%;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -194,7 +195,7 @@
 #login-transition-root .mba-storyboard-brazil-svg {
   width:100%;
   height:100%;
-  max-height:min(51vh,460px);
+  max-height:min(62vh,515px);
   overflow:visible;
   filter:drop-shadow(0 3px 1px rgba(40,27,17,.025));
 }
@@ -238,11 +239,10 @@
   transform:scale(1.32);
 }
 #login-transition-root .mba-storyboard-location-label {
-  position:absolute;
-  right:0;
-  bottom:8%;
-  min-width:152px;
-  padding:12px 15px;
+  position:relative;
+  width:100%;
+  margin-top:14px;
+  padding:13px 15px;
   border-radius:8px;
   border:1px solid #e3dbd2;
   background:rgba(255,255,255,.97);
@@ -272,10 +272,9 @@
 #login-transition-root .mba-storyboard-offices {
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:6px 15px;
+  gap:6px 12px;
   width:100%;
-  max-width:520px;
-  padding-bottom:14px;
+  margin-top:12px;
 }
 #login-transition-root .mba-storyboard-office {
   display:flex;
@@ -455,13 +454,13 @@
   #login-transition-root .mba-storyboard-presence,
   #login-transition-root .mba-storyboard-scale {grid-template-columns:1fr;gap:4px;}
   #login-transition-root .mba-storyboard-presence h1 {font-size:clamp(42px,8.2vw,65px);}
-  #login-transition-root .mba-storyboard-presence-stat {margin-top:13px;padding-top:7px;}
+  #login-transition-root .mba-storyboard-presence-meta {margin-top:17px;padding-top:11px;}
   #login-transition-root .mba-storyboard-presence-stat strong {font-size:30px;}
-  #login-transition-root .mba-storyboard-map-layout {gap:0;min-height:260px;}
-  #login-transition-root .mba-storyboard-map-frame {height:auto;min-height:190px;max-height:260px;}
-  #login-transition-root .mba-storyboard-brazil-svg {max-height:255px;}
-  #login-transition-root .mba-storyboard-offices {padding-bottom:0;grid-template-columns:repeat(3,minmax(0,1fr));}
-  #login-transition-root .mba-storyboard-location-label {right:0;bottom:0;padding:8px 10px;min-width:130px;}
+  #login-transition-root .mba-storyboard-map-layout {min-height:210px;}
+  #login-transition-root .mba-storyboard-map-frame {height:auto;min-height:190px;max-height:280px;}
+  #login-transition-root .mba-storyboard-brazil-svg {max-height:270px;}
+  #login-transition-root .mba-storyboard-offices {grid-template-columns:repeat(3,minmax(0,1fr));margin-top:7px;gap:3px 8px;}
+  #login-transition-root .mba-storyboard-location-label {margin-top:7px;padding:9px 11px;}
   #login-transition-root .mba-storyboard-location-label strong {font-size:12px;}
   #login-transition-root .mba-storyboard-office {font-size:10px;padding-block:3px;}
   #login-transition-root .mba-storyboard-scale-number {font-size:clamp(65px,12vw,95px);}
@@ -483,7 +482,7 @@
   #login-transition-root .mba-storyboard-slide p {margin-top:15px;}
   #login-transition-root .mba-storyboard-history-visual {min-height:190px;}
   #login-transition-root .mba-storyboard-map-frame {max-height:245px;}
-  #login-transition-root .mba-storyboard-offices {padding-bottom:0;}
+  #login-transition-root .mba-storyboard-presence-meta {margin-top:clamp(20px,3vh,36px);}
   #login-transition-root .mba-storyboard-journey-step {min-height:60px;}
 }
 @media(prefers-reduced-motion:reduce) {
