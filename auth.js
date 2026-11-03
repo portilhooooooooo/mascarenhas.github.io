@@ -9,7 +9,8 @@
   // Last displayed scene is tracked to avoid back-to-back repetition, not to cycle.
   const institutionalSwitchKey = 'mba-institutional-portfolio-switch-v1';
   const institutionalLastSceneKey = 'mba-institutional-last-scene-v1';
-  const INSTITUTIONAL_WELCOME_MS = 6000;
+  const INSTITUTIONAL_LOGIN_MS = 6000;
+  const INSTITUTIONAL_PORTFOLIO_MS = 3000;
   const institutionalPortfolioSwitch = (() => {
     try {
       const requested = sessionStorage.getItem(institutionalSwitchKey) === '1';
@@ -435,7 +436,7 @@
         if (showInstitutionalWelcome) {
           rememberInstitutionalScene();
           const holdStartedAt = performance.now();
-          await new Promise(resolve => setTimeout(resolve, INSTITUTIONAL_WELCOME_MS));
+          await new Promise(resolve => setTimeout(resolve, institutionalPortfolioSwitch && !code ? INSTITUTIONAL_PORTFOLIO_MS : INSTITUTIONAL_LOGIN_MS));
           visualHoldMs = Math.round(performance.now() - holdStartedAt);
         }
       } else {
