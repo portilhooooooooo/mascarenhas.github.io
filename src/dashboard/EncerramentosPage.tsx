@@ -767,6 +767,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const [escritorio,setEscritorio] = useState('');
   const [offices,setOffices] = useState<string[]>([]);
   const [officesError,setOfficesError] = useState('');
+  const [officesRetry,setOfficesRetry] = useState(0);
   const [inicio,setInicio] = useState(() => { const now = new Date(); return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),'01'].join('-'); });
   const [fim,setFim] = useState(() => localISO(0));
   const analista = 'todos';
@@ -825,7 +826,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
       .then(items => { if (!controller.signal.aborted) setOffices(items); })
       .catch(() => { if (!controller.signal.aborted) { setOffices([]); setOfficesError('Não foi possível consultar os escritórios.'); } });
     return () => controller.abort();
-  }, [portfolioRevision, carteira, visible]);
+  }, [portfolioRevision, carteira, visible, officesRetry]);
   const isNubank = carteira === 'Nubank';
   const visibleTypes = isNubank ? TIPOS.filter(item => item.value !== 'DERROTA_VOLUNTARIA') : TIPOS;
   useEffect(() => { if (isNubank && tipo === 'DERROTA_VOLUNTARIA') setTipo('TODOS'); }, [isNubank, tipo]);
@@ -922,7 +923,7 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   return <div className="closing-page-v2" role="region" aria-label="Encerramentos">
     {(Object.keys(blockErrors).length > 0 || Boolean(error)) &&
       <DashboardRecovery hasSnapshot={Boolean(shown)} retrying={pending} onRetry={()=>void refresh(true)}/>}
-    {officesError && <DashboardRecovery hasSnapshot={offices.length>0} onRetry={()=>setPortfolioRevision(value=>value+1)}/>} 
+    {officesError && <DashboardRecovery hasSnapshot={offices.length>0} onRetry={()=>setOfficesRetry(value=>value+1)}/>} 
     <div className="base-geral-filters closing-filter-row closing-filter-row--standard" aria-label="Filtros de encerramentos">
       <div className="closing-date-range"><DateRangePicker start={inicio} end={fim} onChange={(start,end)=>{setInicio(start);setFim(end)}}/></div>
       <SelectMenu label="Escritório" className="base-geral-filter" value={escritorio}
