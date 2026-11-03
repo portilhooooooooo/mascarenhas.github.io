@@ -5,6 +5,19 @@
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
   const oauthStartedAtKey = 'mba_oauth_started_at';
+  const institutionalNextSceneKey = 'mba-institutional-scene-next-v1';
+  const INSTITUTIONAL_WELCOME_MS = 6000;
+  // Advances only once after a successful new OAuth login (not on refresh or failed login).
+  const advanceInstitutionalScene = () => {
+    try {
+      const value = localStorage.getItem(institutionalNextSceneKey);
+      const index = value === null ? 0 : Number(value);
+      const safeIndex = Number.isInteger(index) && index >= 0 && index < 4 ? index : 0;
+      localStorage.setItem(institutionalNextSceneKey, String((safeIndex + 1) % 4));
+    } catch (_) {
+      // Private browsing/storage restrictions must never prevent authentication.
+    }
+  };
   const moduleActivationAt = new Map();
   const MODULE_REVALIDATE_MS = 30000;
   let microsoftLoginInFlight = false;
@@ -387,14 +400,14 @@
       }
 
       if (getStoredToken()) {
-        // A new Microsoft OAuth callback shows four institutional scenes after
-        // successful profile validation. Ordinary F5/session refresh does not.
-        // The final scene remains visible until the post-login hold completes.
+        // Show one institutional message per successful Microsoft login.
+        // Ordinary F5/session refresh never consumes a scene or adds an artificial hold.
         if (code) document.body.classList.add('mba-auth-transition-hold');
         await loadProfileWithRetry(deadline, maxAttempts, retryBudget);
         if (code) {
+          advanceInstitutionalScene();
           const holdStartedAt = performance.now();
-          await new Promise(resolve => setTimeout(resolve, 9200));
+          await new Promise(resolve => setTimeout(resolve, INSTITUTIONAL_WELCOME_MS));
           visualHoldMs = Math.round(performance.now() - holdStartedAt);
         }
       } else {
