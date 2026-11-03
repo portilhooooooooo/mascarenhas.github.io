@@ -5,39 +5,44 @@
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
   const oauthStartedAtKey = 'mba_oauth_started_at';
-  const institutionalNextSceneKey = 'mba-institutional-scene-next-v1';
-  const institutionalNextOfficeKey = 'mba-institutional-presence-office-next-v1';
+  // One random institutional scene per new login or explicit portfolio change.
+  // Last displayed scene is tracked to avoid back-to-back repetition, not to cycle.
+  const institutionalSwitchKey = 'mba-institutional-portfolio-switch-v1';
+  const institutionalLastSceneKey = 'mba-institutional-last-scene-v1';
   const INSTITUTIONAL_WELCOME_MS = 6000;
-  // Lock the selected scene before asynchronous OAuth exchange and React hydration,
-  // so a fast callback cannot cause React to render the next login's message.
-  const institutionalScene = (() => {
+  const institutionalPortfolioSwitch = (() => {
     try {
-      const value = localStorage.getItem(institutionalNextSceneKey);
-      const index = value === null ? 0 : Number(value);
-      return Number.isInteger(index) && index >= 0 && index < 4 ? index : 0;
-    } catch (_) { return 0; }
+      const requested = sessionStorage.getItem(institutionalSwitchKey) === '1';
+      sessionStorage.removeItem(institutionalSwitchKey);
+      return requested;
+    } catch (_) { return false; }
   })();
-  window.MBA_INSTITUTIONAL_LOGIN_SCENE = institutionalScene;
-  // At six seconds per login and two seconds per city, alternate three offices
-  // on successive visits to the presence scene so all six are eventually shown.
-  const institutionalOfficeStart = (() => {
+  const institutionalRandomIndex = max => {
+    if (max <= 1) return 0;
     try {
-      const value = localStorage.getItem(institutionalNextOfficeKey);
-      const index = value === null ? 0 : Number(value);
-      return Number.isInteger(index) && index >= 0 && index < 6 ? index : 0;
-    } catch (_) { return 0; }
-  })();
-  window.MBA_INSTITUTIONAL_LOGIN_OFFICE_START = institutionalOfficeStart;
-  // Advances only once after a successful new OAuth login (not on refresh or failed login).
-  const advanceInstitutionalScene = () => {
-    try {
-      localStorage.setItem(institutionalNextSceneKey, String((institutionalScene + 1) % 4));
-      if (institutionalScene === 1) {
-        localStorage.setItem(institutionalNextOfficeKey, String((institutionalOfficeStart + 3) % 6));
-      }
+      const value = new Uint32Array(1);
+      window.crypto.getRandomValues(value);
+      return value[0] % max;
     } catch (_) {
-      // Private browsing/storage restrictions must never prevent authentication.
+      return Math.floor(Math.random() * max);
     }
+  };
+  const institutionalScene = (() => {
+    let previous = -1;
+    try {
+      const raw = localStorage.getItem(institutionalLastSceneKey);
+      const parsed = raw === null ? -1 : Number(raw);
+      if (Number.isInteger(parsed) && parsed >= 0 && parsed < 4) previous = parsed;
+    } catch (_) { /* Fallback without browser storage. */ }
+    const choices = [0, 1, 2, 3].filter(index => index !== previous);
+    return choices[institutionalRandomIndex(choices.length)];
+  })();
+  // Read by the React overlay so the selected scene stays stable during OAuth.
+  window.MBA_INSTITUTIONAL_LOGIN_SCENE = institutionalScene;
+  window.MBA_INSTITUTIONAL_LOGIN_OFFICE_START = institutionalRandomIndex(6);
+  const rememberInstitutionalScene = () => {
+    try { localStorage.setItem(institutionalLastSceneKey, String(institutionalScene)); }
+    catch (_) { /* Storage restrictions must not prevent sign-in. */ }
   };
   const moduleActivationAt = new Map();
   const MODULE_REVALIDATE_MS = 30000;
@@ -421,12 +426,14 @@
       }
 
       if (getStoredToken()) {
-        // Show one institutional message per successful Microsoft login.
-        // Ordinary F5/session refresh never consumes a scene or adds an artificial hold.
-        if (code) document.body.classList.add('mba-auth-transition-hold');
+        // Display a random message on new Microsoft sign-in or a deliberate
+        // portfolio change. A normal F5, background revalidation or failed login
+        // must not impose the six-second welcome.
+        const showInstitutionalWelcome = Boolean(code || institutionalPortfolioSwitch);
+        if (showInstitutionalWelcome) document.body.classList.add('mba-auth-transition-hold');
         await loadProfileWithRetry(deadline, maxAttempts, retryBudget);
-        if (code) {
-          advanceInstitutionalScene();
+        if (showInstitutionalWelcome) {
+          rememberInstitutionalScene();
           const holdStartedAt = performance.now();
           await new Promise(resolve => setTimeout(resolve, INSTITUTIONAL_WELCOME_MS));
           visualHoldMs = Math.round(performance.now() - holdStartedAt);
