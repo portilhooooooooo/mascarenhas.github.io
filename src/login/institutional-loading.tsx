@@ -1,27 +1,23 @@
 import { useEffect, useState } from 'react';
-import { BRAZIL_STATES, BRAZIL_VIEWBOX, OFFICE_CITIES } from './brazil-geography';
+import { BRAZIL_STATES, BRAZIL_VIEWBOX, OFFICE_CITIES, type OfficeCity } from './brazil-geography';
 
-/** Each scene is long enough to read while Microsoft OAuth completes. */
-export const STORYBOARD_SCENE_MS = 2300;
+/** Only one scene is shown per successful Microsoft login. */
+export const OFFICE_SWITCH_MS = 2000;
 const LAST_SCENE = 3;
+const NEXT_SCENE_KEY = 'mba-institutional-scene-next-v1';
 
-function BrazilPresence({ active }: { active: boolean }) {
-  const [cityIndex, setCityIndex] = useState(0);
+/** Stored index is advanced only after the backend validates a new login. */
+function readNextScene(): number {
+  try {
+    const stored = window.localStorage.getItem(NEXT_SCENE_KEY);
+    const index = stored === null ? 0 : Number(stored);
+    return Number.isInteger(index) && index >= 0 && index <= LAST_SCENE ? index : 0;
+  } catch {
+    return 0;
+  }
+}
 
-  useEffect(() => {
-    if (!active) {
-      setCityIndex(0);
-      return;
-    }
-    // Automatically visit all six locations: this is a loading experience, not a map dashboard.
-    const ticker = window.setInterval(() => {
-      setCityIndex(index => (index + 1) % OFFICE_CITIES.length);
-    }, 420);
-    return () => window.clearInterval(ticker);
-  }, [active]);
-
-  const city = OFFICE_CITIES[cityIndex];
-
+function BrazilPresence({ city }: { city: OfficeCity }) {
   return (
     <div className="mba-storyboard-map-layout">
       <div className="mba-storyboard-map-frame">
@@ -46,18 +42,6 @@ function BrazilPresence({ active }: { active: boolean }) {
             ))}
           </g>
         </svg>
-        <div className="mba-storyboard-location-label" aria-hidden="true">
-          <span>{city.kind} · {city.uf}</span>
-          <strong>{city.name}</strong>
-          <small>{city.region}</small>
-        </div>
-      </div>
-      <div className="mba-storyboard-offices" aria-label="Localidades">
-        {OFFICE_CITIES.map(office => (
-          <span key={office.id} className={'mba-storyboard-office' + (office.id === city.id ? ' is-selected' : '')}>
-            {office.name}<small>{office.uf}</small>
-          </span>
-        ))}
       </div>
     </div>
   );
@@ -85,23 +69,20 @@ function ProcessJourney() {
 }
 
 export function InstitutionalLoading({ visible }: { visible: boolean }) {
-  const [scene, setScene] = useState(0);
+  // Freeze one scene for the whole login attempt. Never cycle through four texts.
+  const [scene] = useState(readNextScene);
+  const [cityIndex, setCityIndex] = useState(0);
 
   useEffect(() => {
-    if (!visible) {
-      setScene(0);
-      return;
-    }
-    setScene(0);
-    let next = 0;
-    const interval = window.setInterval(() => {
-      next = Math.min(next + 1, LAST_SCENE);
-      setScene(next);
-      // Hold the final message until the login is actually ready.
-      if (next === LAST_SCENE) window.clearInterval(interval);
-    }, STORYBOARD_SCENE_MS);
-    return () => window.clearInterval(interval);
-  }, [visible]);
+    if (!visible || scene !== 1) return;
+    setCityIndex(0);
+    const timer = window.setInterval(() => {
+      setCityIndex(index => (index + 1) % OFFICE_CITIES.length);
+    }, OFFICE_SWITCH_MS);
+    return () => window.clearInterval(timer);
+  }, [visible, scene]);
+
+  const city = OFFICE_CITIES[cityIndex];
 
   return (
     <div className={'mba-auth-transition' + (visible ? ' is-visible' : '')}
@@ -135,9 +116,23 @@ export function InstitutionalLoading({ visible }: { visible: boolean }) {
               <div className="mba-storyboard-copy">
                 <h1>Presença nacional.</h1>
                 <p>Estamos distribuídos em diferentes regiões do Brasil.</p>
-                <div className="mba-storyboard-presence-stat"><strong>06</strong><span>localidades no Brasil</span></div>
+                <div className="mba-storyboard-presence-meta">
+                  <div className="mba-storyboard-presence-stat"><strong>06</strong><span>localidades no Brasil</span></div>
+                  <div className="mba-storyboard-location-label" aria-live="off">
+                    <span>{city.kind} · {city.uf}</span>
+                    <strong>{city.name}</strong>
+                    <small>{city.region}</small>
+                  </div>
+                  <div className="mba-storyboard-offices" aria-label="Localidades">
+                    {OFFICE_CITIES.map(office => (
+                      <span key={office.id} className={'mba-storyboard-office' + (office.id === city.id ? ' is-selected' : '')}>
+                        {office.name}<small>{office.uf}</small>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <BrazilPresence active={visible} />
+              <BrazilPresence city={city} />
             </section>
           )}
 
