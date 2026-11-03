@@ -7,13 +7,20 @@
   const oauthStartedAtKey = 'mba_oauth_started_at';
   const institutionalNextSceneKey = 'mba-institutional-scene-next-v1';
   const INSTITUTIONAL_WELCOME_MS = 6000;
-  // Advances only once after a successful new OAuth login (not on refresh or failed login).
-  const advanceInstitutionalScene = () => {
+  // Lock the selected scene before asynchronous OAuth exchange and React hydration,
+  // so a fast callback cannot cause React to render the next login's message.
+  const institutionalScene = (() => {
     try {
       const value = localStorage.getItem(institutionalNextSceneKey);
       const index = value === null ? 0 : Number(value);
-      const safeIndex = Number.isInteger(index) && index >= 0 && index < 4 ? index : 0;
-      localStorage.setItem(institutionalNextSceneKey, String((safeIndex + 1) % 4));
+      return Number.isInteger(index) && index >= 0 && index < 4 ? index : 0;
+    } catch (_) { return 0; }
+  })();
+  window.MBA_INSTITUTIONAL_LOGIN_SCENE = institutionalScene;
+  // Advances only once after a successful new OAuth login (not on refresh or failed login).
+  const advanceInstitutionalScene = () => {
+    try {
+      localStorage.setItem(institutionalNextSceneKey, String((institutionalScene + 1) % 4));
     } catch (_) {
       // Private browsing/storage restrictions must never prevent authentication.
     }
