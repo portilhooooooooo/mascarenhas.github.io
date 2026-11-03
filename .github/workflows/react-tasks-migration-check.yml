@@ -32,6 +32,9 @@ jobs:
       - name: Automation runtime syntax
         run: node --check app.js
 
+      - name: Institutional login storyboard regression
+        run: node tests/institutional-login.test.mjs
+
       - name: Hardening checks
         run: npm run test:hardening
 
