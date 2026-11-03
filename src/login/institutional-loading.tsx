@@ -1,32 +1,21 @@
 import { useEffect, useState } from 'react';
 import { BRAZIL_STATES, BRAZIL_VIEWBOX, OFFICE_CITIES, type OfficeCity } from './brazil-geography';
 
-/** Only one scene is shown per successful Microsoft login. */
+/** Full-screen institutional experience shared by login and portfolio-switch reload. */
 export const OFFICE_SWITCH_MS = 2000;
 const LAST_SCENE = 3;
-const NEXT_SCENE_KEY = 'mba-institutional-scene-next-v1';
 
-/** Stored index is advanced only after the backend validates a new login. */
-function readNextScene(): number {
+/** Auth bootstrap freezes a random scene before React is mounted. */
+function readSelectedScene(): number {
   const current = (window as Window & { MBA_INSTITUTIONAL_LOGIN_SCENE?: number }).MBA_INSTITUTIONAL_LOGIN_SCENE;
-  if (Number.isInteger(current) && current! >= 0 && current! <= LAST_SCENE) return current!;
-  try {
-    const stored = window.localStorage.getItem(NEXT_SCENE_KEY);
-    const index = stored === null ? 0 : Number(stored);
-    return Number.isInteger(index) && index >= 0 && index <= LAST_SCENE ? index : 0;
-  } catch {
-    return 0;
-  }
+  if (typeof current === 'number' && Number.isInteger(current) && current >= 0 && current <= LAST_SCENE) return current;
+  return Math.floor(Math.random() * (LAST_SCENE + 1));
 }
 
 function readOfficeStart(): number {
   const current = (window as Window & { MBA_INSTITUTIONAL_LOGIN_OFFICE_START?: number }).MBA_INSTITUTIONAL_LOGIN_OFFICE_START;
   if (typeof current === 'number' && Number.isInteger(current) && current >= 0 && current < OFFICE_CITIES.length) return current;
-  try {
-    const value = window.localStorage.getItem('mba-institutional-presence-office-next-v1');
-    const index = value === null ? 0 : Number(value);
-    return Number.isInteger(index) && index >= 0 && index < OFFICE_CITIES.length ? index : 0;
-  } catch { return 0; }
+  return Math.floor(Math.random() * OFFICE_CITIES.length);
 }
 
 function BrazilPresence({ city }: { city: OfficeCity }) {
@@ -81,8 +70,8 @@ function ProcessJourney() {
 }
 
 export function InstitutionalLoading({ visible }: { visible: boolean }) {
-  // Freeze one scene for the whole login attempt. Never cycle through four texts.
-  const [scene] = useState(readNextScene);
+  // Keep a single, randomly chosen scene for the entire loading event.
+  const [scene] = useState(readSelectedScene);
   const [cityIndex, setCityIndex] = useState(readOfficeStart);
 
   useEffect(() => {
