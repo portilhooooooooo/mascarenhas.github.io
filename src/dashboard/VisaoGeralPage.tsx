@@ -1,4 +1,5 @@
 import {SelectMenu} from './SelectMenu';
+import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, CheckCircle2, Clock3, FileCheck2, FolderOpen, Layers3, RefreshCw, Scale, SearchCheck, ShieldAlert } from 'lucide-react';
 import './visaoGeral.css';
@@ -42,10 +43,10 @@ function Filter({ title, value, onChange, choices }: { title: string; value: str
     searchable={choices.length>8} className="overview-filter"
     options={choices.map(option=>({value:option.value,label:option.text}))}/>;
 }
-function Metric({ label, value, sub, icon: Icon }: {label: string; value: string; sub: string; icon: typeof Layers3}) {
+function Metric({ label, value, sub, icon: Icon, loading=false }: {label: string; value: string; sub: string; icon: typeof Layers3; loading?:boolean}) {
   return <article className="overview-metric">
     <div className="overview-metric-top"><span>{label}</span><Icon size={15} strokeWidth={1.6} aria-hidden="true"/></div>
-    <strong>{value}</strong><span className="overview-metric-sub">{sub}</span>
+    <strong>{loading?<MetricDots/>:value}</strong><span className="overview-metric-sub">{sub}</span>
   </article>;
 }
 
@@ -190,19 +191,19 @@ export function VisaoGeralPage() {
       <Filter title="Atenção" value={attention} onChange={setAttention} choices={[{value:'',text:'Todos'},...(!outdated ? [{value:'aging',text:'Aging crítico (+180 dias)'}] : []),{value:'divergent',text:'Divergência CPJ × Benner'},{value:'archive',text:'Aptos a arquivamento'}]}/>
       <Filter title="Encerramento" value={resolution} onChange={setResolution} choices={choices(allFilters?.resolutions || [])}/>
     </div>
-    {error && <div className="overview-error" role="alert">{shown?'Falha ao atualizar. Mantidos os últimos dados carregados. ':''}{error}<button type="button" onClick={()=>void refresh()}>Tentar novamente</button></div>}
-    {pending&&!shown && <p className="overview-loading" role="status">Carregando os indicadores da carteira...</p>}
+    {error && <DashboardRecovery hasSnapshot={Boolean(shown)} retrying={pending} onRetry={()=>void refresh()}/>}
+    {pending&&!shown && <span className="sr-only" role="status">Carregando indicadores da carteira</span>}
     {!pending&&!shown&&!error && <p className="overview-empty">Aguardando indicadores da carteira.</p>}
     {shown && !hasData && <div className="overview-notice" role="status">Nenhum processo encontrado nesta carteira e combinação de filtros. A Visão geral não utiliza dados de outras carteiras para completar os resultados.</div>}
     <div className="overview-kpis">
-      <Metric label="Processos" value={summary?integer(summary.total):'—'} sub="Total no recorte" icon={Layers3}/>
-      <Metric label="Ativos" value={summary?integer(summary.active):'—'} sub="Em andamento no Benner" icon={FolderOpen}/>
-      <Metric label="Encerrados" value={summary?integer(summary.closed):'—'} sub="Situação Benner encerrado" icon={CheckCircle2}/>
-      <Metric label="Aging médio" value={ageComputed && summary?.aging_mean!=null?summary.aging_mean.toFixed(1).replace('.',',')+' dias':'—'} sub={ageCaption} icon={Clock3}/>
-      <Metric label="Aptos ao encerramento" value={summary?integer(summary.eligible):'—'} sub="Com resolução preenchida" icon={FileCheck2}/>
-      <Metric label="Divergências" value={summary?integer(summary.divergent):'—'} sub="Situações CPJ × Benner" icon={Scale}/>
-      <Metric label="Aptos a arquivamento" value={summary?integer(summary.archive):'—'} sub="Encerrado no Benner, ativo no CPJ" icon={SearchCheck}/>
-      <Metric label="Aging crítico" value={ageComputed && summary?integer(summary.critical):'—'} sub={ageComputed?'Ativos com mais de 180 dias desde a entrada':'Aguardando cálculo pela data de entrada'} icon={ShieldAlert}/>
+      <Metric loading={pending&&!shown} label="Processos" value={summary?integer(summary.total):'—'} sub="Total no recorte" icon={Layers3}/>
+      <Metric loading={pending&&!shown} label="Ativos" value={summary?integer(summary.active):'—'} sub="Em andamento no Benner" icon={FolderOpen}/>
+      <Metric loading={pending&&!shown} label="Encerrados" value={summary?integer(summary.closed):'—'} sub="Situação Benner encerrado" icon={CheckCircle2}/>
+      <Metric loading={pending&&!shown} label="Aging médio" value={ageComputed && summary?.aging_mean!=null?summary.aging_mean.toFixed(1).replace('.',',')+' dias':'—'} sub={ageCaption} icon={Clock3}/>
+      <Metric loading={pending&&!shown} label="Aptos ao encerramento" value={summary?integer(summary.eligible):'—'} sub="Com resolução preenchida" icon={FileCheck2}/>
+      <Metric loading={pending&&!shown} label="Divergências" value={summary?integer(summary.divergent):'—'} sub="Situações CPJ × Benner" icon={Scale}/>
+      <Metric loading={pending&&!shown} label="Aptos a arquivamento" value={summary?integer(summary.archive):'—'} sub="Encerrado no Benner, ativo no CPJ" icon={SearchCheck}/>
+      <Metric loading={pending&&!shown} label="Aging crítico" value={ageComputed && summary?integer(summary.critical):'—'} sub={ageComputed?'Ativos com mais de 180 dias desde a entrada':'Aguardando cálculo pela data de entrada'} icon={ShieldAlert}/>
     </div>
     <div className="overview-main">
       <section className="overview-panel overview-evolution">
