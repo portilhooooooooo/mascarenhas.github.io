@@ -8,6 +8,8 @@ const NEXT_SCENE_KEY = 'mba-institutional-scene-next-v1';
 
 /** Stored index is advanced only after the backend validates a new login. */
 function readNextScene(): number {
+  const current = (window as Window & { MBA_INSTITUTIONAL_LOGIN_SCENE?: number }).MBA_INSTITUTIONAL_LOGIN_SCENE;
+  if (Number.isInteger(current) && current! >= 0 && current! <= LAST_SCENE) return current!;
   try {
     const stored = window.localStorage.getItem(NEXT_SCENE_KEY);
     const index = stored === null ? 0 : Number(stored);
