@@ -1,4 +1,5 @@
 import {SelectMenu} from './SelectMenu';
+import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -194,7 +195,8 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       setBilling(response); setBillingKey(filterKey); setBillingError('');
     } catch (cause) {
       if (serial === billingSequence.current) {
-        setBilling(null); setBillingKey(''); setBillingError(cause instanceof Error ? cause.message : 'Faturamento indisponível.');
+        // Keep the previous valid billing for this same authorized portfolio/filter.
+        setBillingError(cause instanceof Error ? cause.message : 'Faturamento indisponível.');
       }
     } finally {
       if (serial === billingSequence.current) setBillingPending(false);
@@ -337,13 +339,14 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       <Select label="Produto" value={product} onChange={setProduct} options={fromValues(data?.filters.products || [])}/>
       <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
     </div>
-    {error && <div className="base-geral-error" role="alert">{shown?'Atualização indisponível. Últimos dados preservados.':error} <button type="button" onClick={() => void refresh(true)}>Tentar novamente</button></div>}
+    {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
+    {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
     <div className={'base-geral-kpi-layout' + (portfolio === 'agibank_mba' && canViewBilling ? ' with-billing' : '')}>
     <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
       {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
         onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
-        <strong>{shown ? number(categories[key]) : <span className="base-geral-skeleton" aria-label="Carregando"/>}</strong>
+        <strong>{shown ? number(categories[key]) : (pending ? <MetricDots/> : '—')}</strong>
       </button>)}
       {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
         className="base-geral-card mba-metric-card base-geral-revenue-card"
@@ -352,7 +355,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         disabled={estimatedRevenue === null}
         onClick={() => setRevenueOpen(true)}>
         <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={15} strokeWidth={1.7}/></span>
-        <strong>{money(estimatedRevenue)}</strong>
+        <strong>{billingPending && !currentBilling ? <MetricDots/> : money(estimatedRevenue)}</strong>
 
       </button>}
     </div>
@@ -360,7 +363,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
       {catalog.slice(3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
         onClick={() => openDetail(key)} title={subtitle} aria-label={'Abrir relação: ' + label + '. ' + subtitle}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
-        <strong>{shown ? number(categories[key]) : <span className="base-geral-skeleton" aria-label="Carregando"/>}</strong>
+        <strong>{shown ? number(categories[key]) : (pending ? <MetricDots/> : '—')}</strong>
       </button>)}
     </div>
     </div>
