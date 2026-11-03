@@ -5,6 +5,7 @@ import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import {paymentList,paymentSnapshot,type Snapshot} from './pagamentosSnapshot';
 import {PagamentosTypePie} from './PagamentosTypePie';
 import {DateRangePicker} from './DateRangePicker';
+import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import {SelectMenu} from './SelectMenu';
 import './pagamentosResultados.css';
 
@@ -78,13 +79,13 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        options={[{value:'todos',label:'Todos'}]}/>
    </div>
    {invalidDates?<p role="alert" className="payments-results-error">A data final deve ser igual ou posterior à inicial.</p>:null}
-   {snapshot.error?<div role="alert" className="payments-results-error">Falha ao consultar pagamentos. <button type="button" onClick={()=>void snapshot.refetch()}>Tentar novamente</button></div>:null}
+   {snapshot.error?<DashboardRecovery hasSnapshot={Boolean(data)} retrying={snapshot.isFetching} onRetry={()=>void snapshot.refetch()}/>:null}
    <div className="payments-results-kpis">
      {cards.map(({title,value,kind,icon:Icon,subtitle})=>{
-       const disabled=snapshot.isPending||(kind==='paid'&&!!situation&&situation!=='Liquidado')||(kind==='approval'&&!!situation&&!approvalStates.includes(situation));
+       const disabled=!data||(kind==='paid'&&!!situation&&situation!=='Liquidado')||(kind==='approval'&&!!situation&&!approvalStates.includes(situation));
        return <button type="button" key={title} className="payments-results-kpi mba-metric-card" disabled={disabled} onClick={()=>{if(kind){setDetail(kind);setPage(1)}}} aria-label={title+': '+value} title={title==='Em retificação'?'Itens ativos em retificação na operação de pagamentos':''}>
          <span className="payments-results-kpi-title">{title}<Icon size={15} strokeWidth={1.6}/></span>
-         <strong>{snapshot.isPending?'…':value}</strong>
+         <strong>{snapshot.isPending && !data?<MetricDots/>:value}</strong>
        </button>;
      })}
    </div>
@@ -116,9 +117,9 @@ export function PagamentosResultadosPage({visible}:{visible:boolean}){
        <div className="payments-results-tablewrap"><table><thead><tr><th>Pasta</th><th>Escritório</th><th>Situação</th><th>Valor</th><th>Pagamento</th></tr></thead><tbody>
          {listing.data?.rows.map(row=><tr key={row.id}><td>{row.pasta}</td><td>{row.credenciado||'—'}</td><td>{row.situacao||'—'}</td><td>{amount(row.valor)}</td><td>{formatDate(row.data_pagamento)}</td></tr>)}
        </tbody></table>
-       {listing.isPending?<div className="payments-results-minor">Carregando…</div>:null}
-       {!listing.isPending&&!listing.data?.rows.length?<div className="payments-results-minor">Sem registros</div>:null}
-       {listing.error?<div role="alert" className="payments-results-error">Consulta indisponível.</div>:null}</div>
+       {listing.isPending?<div className="payments-results-minor"><MetricDots label="Consultando pagamentos"/></div>:null}
+       {!listing.isPending&&!listing.error&&listing.data&&!listing.data.rows.length?<div className="payments-results-minor">Sem registros</div>:null}
+       {listing.error?<DashboardRecovery hasSnapshot={Boolean(listing.data)} retrying={listing.isFetching} onRetry={()=>void listing.refetch()}/>:null}</div>
        <footer><span>{count(listing.data?.total)} registros</span><div><button type="button" disabled={page===1||listing.isFetching} onClick={()=>setPage(v=>v-1)}>Anterior</button><span>{page} / {Math.max(1,listing.data?.total_pages||1)}</span><button type="button" disabled={page>=(listing.data?.total_pages||1)||listing.isFetching} onClick={()=>setPage(v=>v+1)}>Próxima</button></div></footer>
      </section>
    </div>:null}
