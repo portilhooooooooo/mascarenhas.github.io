@@ -387,13 +387,14 @@
       }
 
       if (getStoredToken()) {
-        // A new Microsoft OAuth callback gets a five-second visual welcome
-        // after successful profile validation. Ordinary F5/session refresh does not.
+        // A new Microsoft OAuth callback shows four institutional scenes after
+        // successful profile validation. Ordinary F5/session refresh does not.
+        // The final scene remains visible until the post-login hold completes.
         if (code) document.body.classList.add('mba-auth-transition-hold');
         await loadProfileWithRetry(deadline, maxAttempts, retryBudget);
         if (code) {
           const holdStartedAt = performance.now();
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await new Promise(resolve => setTimeout(resolve, 9200));
           visualHoldMs = Math.round(performance.now() - holdStartedAt);
         }
       } else {
