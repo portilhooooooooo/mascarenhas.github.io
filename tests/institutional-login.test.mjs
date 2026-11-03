@@ -8,6 +8,7 @@ const styles = read('src/login/institutional-loading.css');
 const geography = read('src/login/brazil-geography.ts');
 const login = read('src/login/main.tsx');
 const auth = read('auth.js');
+const portfolioSwitcher = read('src/dashboard/PortfolioSwitcher.tsx');
 
 for (const name of [
   '58 anos de trajetória.',
@@ -26,16 +27,16 @@ for (const name of [
   assert.ok(storyboard.includes(name), `Missing institutional message: ${name}`);
 }
 assert.match(storyboard, /export const OFFICE_SWITCH_MS = 2000/);
-assert.match(storyboard, /useState\(readNextScene\)/);
+assert.match(storyboard, /useState\(readSelectedScene\)/);
 assert.doesNotMatch(storyboard, /STORYBOARD_SCENE_MS|setScene\(/);
 assert.match(storyboard, /mba-storyboard-presence-meta[\s\S]*mba-storyboard-presence-stat[\s\S]*mba-storyboard-location-label[\s\S]*mba-storyboard-offices[\s\S]*<BrazilPresence city=\{city\}\s*\/>/);
 assert.match(styles, /\.mba-storyboard-presence-meta\s*\{[\s\S]*?margin-top:clamp\(42px,6\.5vh,78px\)/);
 assert.match(styles, /\.mba-storyboard-location-label\s*\{[\s\S]*?position:relative/);
 assert.match(auth, /INSTITUTIONAL_WELCOME_MS = 6000/);
 assert.match(auth, /setTimeout\(resolve, INSTITUTIONAL_WELCOME_MS\)/);
-assert.match(auth, /await loadProfileWithRetry\([\s\S]*?advanceInstitutionalScene\(\)/);
+assert.match(auth, /await loadProfileWithRetry\([\s\S]*?rememberInstitutionalScene\(\)/);
 assert.match(auth, /window\.MBA_INSTITUTIONAL_LOGIN_SCENE = institutionalScene/);
-assert.match(auth, /MBA_INSTITUTIONAL_LOGIN_OFFICE_START = institutionalOfficeStart/);
+assert.match(auth, /window\.MBA_INSTITUTIONAL_LOGIN_OFFICE_START = institutionalRandomIndex\(6\)/);
 assert.match(storyboard, /useState\(readOfficeStart\)/);
 assert.match(login, /createPortal\(<InstitutionalLoading visible=\{preparing\}\/>/);
 assert.doesNotMatch(login, /DataField|react-login-theme-toggle/);
@@ -48,35 +49,54 @@ for (const name of ['Campo Grande', 'Cuiabá', 'Brasília', 'São Paulo', 'Rio d
 }
 assert.match(geography, /"name": "Campo Grande",\s*"uf": "MS",\s*"region": "Mato Grosso do Sul"/);
 assert.match(geography, /"name": "Brasília",\s*"uf": "DF"/);
-// Exercise the actual scene selection/advancement logic in a browser-like VM.
-// Refresh and failed authentication must never advance the sequence.
-const rotationStart = auth.indexOf("  const institutionalNextSceneKey = 'mba-institutional-scene-next-v1';");
-const rotationEnd = auth.indexOf('  const moduleActivationAt = new Map();', rotationStart);
-assert.ok(rotationStart > 0 && rotationEnd > rotationStart);
-const rotationCode = auth.slice(rotationStart, rotationEnd);
+// Test real random-selection code without coupling to the UI. Last shown scene is
+// tracked to avoid consecutive repetition, but order is not cyclic or predictable.
+const snippetStart = auth.indexOf("  const institutionalSwitchKey = 'mba-institutional-portfolio-switch-v1';");
+const snippetEnd = auth.indexOf('  const moduleActivationAt = new Map();', snippetStart);
+assert.ok(snippetStart > 0 && snippetEnd > snippetStart);
+const snippet = auth.slice(snippetStart, snippetEnd);
 const stored = new Map();
+const session = new Map();
 const localStorage = {
   getItem: key => stored.has(key) ? stored.get(key) : null,
   setItem: (key, value) => stored.set(key, String(value)),
 };
-const officeStarts = [];
-const openPage = successfulLogin => {
-  const window = {};
-  vm.runInNewContext(rotationCode + (successfulLogin ? '\nadvanceInstitutionalScene();' : ''), { localStorage, window });
-  officeStarts.push(window.MBA_INSTITUTIONAL_LOGIN_OFFICE_START);
-  return window.MBA_INSTITUTIONAL_LOGIN_SCENE;
+const sessionStorage = {
+  getItem: key => session.has(key) ? session.get(key) : null,
+  setItem: (key, value) => session.set(key, String(value)),
+  removeItem: key => session.delete(key),
 };
-assert.equal(openPage(false), 0, 'Initial page shows history without consuming a scene');
-assert.equal(openPage(true), 0, 'First login shows history');
-assert.equal(openPage(false), 1, 'Refresh does not consume another scene');
-assert.equal(openPage(true), 1, 'Second login shows presence');
-assert.equal(officeStarts.at(-1), 0, 'First presence login starts with Campo Grande');
-assert.equal(openPage(true), 2, 'Third login shows Backoffice');
-assert.equal(openPage(true), 3, 'Fourth login shows product vision');
-assert.equal(openPage(true), 0, 'Fifth login loops to history');
-stored.set('mba-institutional-scene-next-v1', 'invalid');
-assert.equal(openPage(true), 0, 'Invalid index safely resets to history');
-assert.equal(openPage(false), 1, 'Next staged login shows presence again');
-assert.equal(officeStarts.at(-1), 3, 'Next presence login starts with the remaining three offices');
+const simulate = (choice, success = false, switching = false) => {
+  if (switching) sessionStorage.setItem('mba-institutional-portfolio-switch-v1', '1');
+  const window = {
+    crypto: { getRandomValues: arr => { arr[0] = choice; return arr; } },
+  };
+  const script = snippet + '\nwindow.MBA_TEST_SWITCH = institutionalPortfolioSwitch;' +
+    (success ? '\nrememberInstitutionalScene();' : '');
+  vm.runInNewContext(script, { localStorage, sessionStorage, window });
+  return {scene:window.MBA_INSTITUTIONAL_LOGIN_SCENE,office:window.MBA_INSTITUTIONAL_LOGIN_OFFICE_START,switched:window.MBA_TEST_SWITCH};
+};
 
-console.log('PASS: one scene per login; 6-second hold; 2-second city rotation; presence layout.');
+const first = simulate(2);
+assert.equal(first.scene, 2, 'Random input chooses the Backoffice scene');
+assert.equal(stored.has('mba-institutional-last-scene-v1'), false, 'Refresh / failed login does not record a scene');
+const shown = simulate(2, true);
+assert.equal(shown.scene, 2, 'Successful login may display Backoffice');
+assert.equal(stored.get('mba-institutional-last-scene-v1'), '2');
+const next = simulate(2, true, true);
+assert.equal(next.switched, true, 'Portfolio switch marker recognized');
+assert.notEqual(next.scene, 2, 'Consecutive scenes must differ');
+assert.equal(session.has('mba-institutional-portfolio-switch-v1'), false, 'Switch marker consumed after reload');
+assert.equal(simulate(1).switched, false, 'Refresh does not replay portfolio welcome');
+const other = simulate(1, true);
+assert.notEqual(other.scene, next.scene, 'A subsequent successful login is not a repetition');
+assert.ok([0,1,2,3].includes(other.scene));
+assert.ok(other.office >= 0 && other.office < 6, 'Office start is randomly selected within valid bounds');
+
+assert.match(auth, /Boolean\(code \|\| institutionalPortfolioSwitch\)/);
+assert.match(auth, /if \(showInstitutionalWelcome\) \{/);
+assert.match(portfolioSwitcher, /sessionStorage\.setItem\('mba-institutional-portfolio-switch-v1', '1'\)/);
+assert.match(portfolioSwitcher, /setPortfolioId\(nextId\);[\s\S]*window\.location\.reload\(\)/);
+assert.match(storyboard, /Math\.floor\(Math\.random\(\) \* \(LAST_SCENE \+ 1\)\)/);
+
+console.log('PASS: random institutional scenes on login and portfolio switch, no consecutive repeats, 6s welcome, 2s city rotation.');
