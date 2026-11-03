@@ -143,7 +143,7 @@
     if (!baseUrl && !localHost) throw new Error('Endereço da API inválido.');
 
     const headers = new Headers(options.headers || {});
-    headers.set('Accept', 'application/json');
+    if (!headers.has('Accept')) headers.set('Accept', 'application/json');
     if (options.body !== undefined && !(options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
     const token = getStoredToken();
     if (token) headers.set('Authorization', `Bearer ${token}`);
@@ -321,6 +321,7 @@
   // One authenticated SSE stream per browser, shared by all modules.
   // There are no process details in these notifications: they invalidate
   // authorized views, which then fetch their own scoped data.
+  let realtimePaused = false;
   let eventController = null;
   let eventRetryTimer = null;
   let eventRetryDelay = 1000;
@@ -350,7 +351,10 @@
     });
     if (sequence !== eventSequence || controller.signal.aborted || portfolioId !== getPortfolioId()) return;
     if (!response.ok) {
+      let payload = null;
+      try { payload = await response.json(); } catch (_) {}
       const problem = new Error('Realtime indisponível (' + response.status + ')');
+      problem.code = payload?.code;
       problem.status = response.status;
       throw problem;
     }
@@ -407,14 +411,21 @@
 
   function startRealtime() {
     stopRealtime();
-    if (!getStoredToken() || !window.MBA_CURRENT_USER || document.hidden) return;
+    if (realtimePaused || !getStoredToken() || !window.MBA_CURRENT_USER || document.hidden) return;
     const current = eventSequence;
     const controller = new AbortController();
     eventController = controller;
     const portfolioId = getPortfolioId();
     let reconnectAllowed = true;
     void consumeRealtime(current, controller, portfolioId).catch(error => {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || current !== eventSequence) return;
+      if (error?.code === 'REALTIME_PAUSED' && error?.status === 403) {
+        realtimePaused = true;
+        reconnectAllowed = false;
+        window.dispatchEvent(new CustomEvent('mba:realtime-status', { detail: { status: 'paused' } }));
+        // Module revalidation and confirmed-mutation events remain active.
+        return;
+      }
       // 401/403: wait for refreshed profile rather than repeatedly requesting.
       if (error?.status === 401 || error?.status === 403) {
         reconnectAllowed = false;

@@ -1,3 +1,4 @@
+import {SelectMenu} from './SelectMenu';
 import {createPortal} from 'react-dom';
 import './operacao.css';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
@@ -215,7 +216,8 @@ function PagamentosQueue({summary,items,loading}:{summary:PagamentoOperacaoSumma
       <label className="protocolos-search"><Search size={15}/><input value={query} onChange={event=>setQuery(event.target.value)} aria-label="Buscar pagamentos" placeholder="Buscar por processo, pasta, identificador ou motivo..."/></label>
       <div className="protocolos-toolbar-actions">
         <button type="button" className="protocolos-button secondary operacao-download-button" disabled={loading||visible.length===0} onClick={()=>downloadVisibleRows(visible)}><Download size={14}/>Baixar</button>
-        <label className="protocolos-page-size"><span>Exibir</span><select value={pageSize} onChange={event=>setPageSize(Number(event.target.value))}>{PAGE_SIZES.map(size=><option key={size} value={size}>{size}</option>)}</select></label>
+        <SelectMenu label="Exibir" value={String(pageSize)} onChange={value=>setPageSize(Number(value))}
+          className="protocolos-page-size protocolos-react-menu" options={PAGE_SIZES.map(size=>({value:String(size),label:String(size)}))}/>
       </div>
     </div>
     <div className="protocolos-table-wrap">

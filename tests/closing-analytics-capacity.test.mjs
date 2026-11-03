@@ -42,3 +42,16 @@ assert.match(page,/closing-goal-kpi-title">Meta<\/span>/);
 assert.doesNotMatch(page,/Pontuação Aging/);
 assert.match(page,/runtimeQueries\.cancelQueries/);
 console.log('Analytical lane: 429 recovered, Retry-After forwarded, ACL nonretryable, abort safe, concurrency bounded, Meta preserved.');
+
+// Budget exhaustion is a visible failure; external cancellation remains silent.
+await assert.rejects(analyticalRead(signal=>new Promise((resolve,reject)=>{
+ signal.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError')),{once:true});
+}),{budgetMs:15}),error=>error.code==='ANALYTICS_TIMEOUT'&&error.status===504);
+const navigation=new AbortController();
+const pendingNavigation=analyticalRead(signal=>new Promise((resolve,reject)=>{
+ signal.addEventListener('abort',()=>reject(new DOMException('aborted','AbortError')),{once:true});
+}),{signal:navigation.signal,budgetMs:1000});
+setTimeout(()=>navigation.abort(),5);
+await assert.rejects(pendingNavigation,{name:'AbortError'});
+assert.equal(await analyticalRead(async()=>42),42,'Canceled reads release their lane');
+console.log('Read deadline and navigation cancellation have distinct outcomes.');

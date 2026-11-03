@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, Clock3, Download, FileCheck2, FileX2, RefreshCw, Search, X, type LucideIcon } from 'lucide-react';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
+import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import './defesasResultados.css';
 
 type Kind = 'apt' | 'inapt' | 'reschedule' | 'pending';
@@ -121,19 +122,15 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
         <RefreshCw size={14} className={summary.isFetching?'defense-results-spinning':''}/>Atualizar
       </button>
     </div>
-    {summary.error && <div className="defense-results-error" role="alert">
-      Indicadores indisponíveis. {(summary.error as Error).message}
-      <button type="button" onClick={()=>void summary.refetch()}>Tentar novamente</button>
-    </div>}
+    {summary.error && <DashboardRecovery hasSnapshot={Boolean(summary.data)} retrying={summary.isFetching} onRetry={()=>void summary.refetch()}/>} 
     <div className="defense-results-grid">
       {cards.map(({kind:cardKind,title,icon:Icon})=><button key={cardKind} type="button"
         className="defense-results-card mba-metric-card" onClick={()=>open(cardKind)}
         aria-label={title+': '+number(summary.data?.[cardKind])+'. Abrir processos'}>
         <span className="defense-results-card-heading"><span>{title}</span><Icon size={17} strokeWidth={1.7}/></span>
-        <strong>{number(summary.data?.[cardKind])}</strong>
+        <strong>{summary.isPending && !summary.data?<MetricDots/>:number(summary.data?.[cardKind])}</strong>
       </button>)}
     </div>
-    {summary.isFetching && <span role="status" className="defense-results-status">{summary.data?'Atualizando indicadores…':'Consultando indicadores…'}</span>}
     {kind && <div className="defense-results-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setKind(null)}}>
       <section className="defense-results-dialog" role="dialog" aria-modal="true" aria-labelledby={id+'-title'}>
         <header className="defense-results-dialog-header">
@@ -146,7 +143,7 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
           </button>}
         </div>
         {kind==='reschedule'&&exportError&&<p className="defense-results-error" role="alert">{exportError}</p>}
-        {detail.error && <p className="defense-results-error" role="alert">Não foi possível consultar os processos. {(detail.error as Error).message} <button type="button" onClick={()=>void detail.refetch()}>Tentar novamente</button></p>}
+        {detail.error && <DashboardRecovery hasSnapshot={Boolean(detail.data)} retrying={detail.isFetching} onRetry={()=>void detail.refetch()}/> }
         <div className="defense-results-table-wrap"><table className={'defense-results-table'+(kind==='reschedule'?' defense-results-table--reschedule':'')}>
           {kind==='reschedule'
           ? <>
