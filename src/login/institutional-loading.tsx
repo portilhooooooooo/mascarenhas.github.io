@@ -19,6 +19,16 @@ function readNextScene(): number {
   }
 }
 
+function readOfficeStart(): number {
+  const current = (window as Window & { MBA_INSTITUTIONAL_LOGIN_OFFICE_START?: number }).MBA_INSTITUTIONAL_LOGIN_OFFICE_START;
+  if (typeof current === 'number' && Number.isInteger(current) && current >= 0 && current < OFFICE_CITIES.length) return current;
+  try {
+    const value = window.localStorage.getItem('mba-institutional-presence-office-next-v1');
+    const index = value === null ? 0 : Number(value);
+    return Number.isInteger(index) && index >= 0 && index < OFFICE_CITIES.length ? index : 0;
+  } catch { return 0; }
+}
+
 function BrazilPresence({ city }: { city: OfficeCity }) {
   return (
     <div className="mba-storyboard-map-layout">
@@ -73,11 +83,11 @@ function ProcessJourney() {
 export function InstitutionalLoading({ visible }: { visible: boolean }) {
   // Freeze one scene for the whole login attempt. Never cycle through four texts.
   const [scene] = useState(readNextScene);
-  const [cityIndex, setCityIndex] = useState(0);
+  const [cityIndex, setCityIndex] = useState(readOfficeStart);
 
   useEffect(() => {
     if (!visible || scene !== 1) return;
-    setCityIndex(0);
+    setCityIndex(readOfficeStart());
     const timer = window.setInterval(() => {
       setCityIndex(index => (index + 1) % OFFICE_CITIES.length);
     }, OFFICE_SWITCH_MS);
