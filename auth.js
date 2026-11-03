@@ -6,6 +6,7 @@
   const oauthHandoffKey = 'mba_oauth_handoff';
   const oauthStartedAtKey = 'mba_oauth_started_at';
   const institutionalNextSceneKey = 'mba-institutional-scene-next-v1';
+  const institutionalNextOfficeKey = 'mba-institutional-presence-office-next-v1';
   const INSTITUTIONAL_WELCOME_MS = 6000;
   // Lock the selected scene before asynchronous OAuth exchange and React hydration,
   // so a fast callback cannot cause React to render the next login's message.
@@ -17,10 +18,23 @@
     } catch (_) { return 0; }
   })();
   window.MBA_INSTITUTIONAL_LOGIN_SCENE = institutionalScene;
+  // At six seconds per login and two seconds per city, alternate three offices
+  // on successive visits to the presence scene so all six are eventually shown.
+  const institutionalOfficeStart = (() => {
+    try {
+      const value = localStorage.getItem(institutionalNextOfficeKey);
+      const index = value === null ? 0 : Number(value);
+      return Number.isInteger(index) && index >= 0 && index < 6 ? index : 0;
+    } catch (_) { return 0; }
+  })();
+  window.MBA_INSTITUTIONAL_LOGIN_OFFICE_START = institutionalOfficeStart;
   // Advances only once after a successful new OAuth login (not on refresh or failed login).
   const advanceInstitutionalScene = () => {
     try {
       localStorage.setItem(institutionalNextSceneKey, String((institutionalScene + 1) % 4));
+      if (institutionalScene === 1) {
+        localStorage.setItem(institutionalNextOfficeKey, String((institutionalOfficeStart + 3) % 6));
+      }
     } catch (_) {
       // Private browsing/storage restrictions must never prevent authentication.
     }
