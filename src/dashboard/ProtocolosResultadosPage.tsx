@@ -99,7 +99,6 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
         <strong>{summary.isPending && !summary.data?<MetricDots/>:count(summary.data?.[cardKind])}</strong>
       </button>)}
     </div>
-    {summary.isFetching&&!summary.data&&<span role="status" className="defense-results-status"><MetricDots label="Consultando indicadores"/></span>}
     {kind&&<div className="defense-results-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setKind(null)}}>
       <section className="defense-results-dialog" role="dialog" aria-modal="true" aria-labelledby={id+'-title'}>
         <header className="defense-results-dialog-header">
