@@ -35,6 +35,9 @@ jobs:
       - name: Institutional login storyboard regression
         run: node tests/institutional-login.test.mjs
 
+      - name: Standardized dashboard loading and recovery
+        run: node tests/dashboard-feedback.test.mjs
+
       - name: Hardening checks
         run: npm run test:hardening
 
