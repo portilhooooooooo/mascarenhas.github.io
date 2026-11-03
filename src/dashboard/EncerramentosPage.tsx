@@ -7,6 +7,7 @@ import { regularAgingGoals, regularAgingRanking, regularAgingSummary } from './c
 import { SelectMenu } from './SelectMenu';
 import './encerramentos.css';
 import {DateRangePicker} from './DateRangePicker';
+import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 
 type Tipo = 'TODOS' | 'VITORIA' | 'DERROTA' | 'DERROTA_VOLUNTARIA' | 'ACORDO' | 'EXTINCAO';
 type Etapa = 'validados' | 'enviados_benner';
@@ -265,9 +266,9 @@ function ClosingDetailsDialog({kind,onClose,inicio,fim,tipo,tipoRecorte,escritor
   </div>;
 }
 
-function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes, escritorio, onOpen }: {
+function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes, escritorio, loading, onOpen }: {
   dados: Dados | null; agingMensal:MonthlyAging|null; analises: AnalysisResult | null; posicaoBenner: MonthlyBennerPosition | null;
-  motivosPendentes: number | null; escritorio:string; onOpen: (kind:ClosingCard)=>void;
+  motivosPendentes: number | null; escritorio:string; loading:boolean; onOpen: (kind:ClosingCard)=>void;
 }) {
   const aptos=dados?.etapas?.total;
   const accuracy=analises?.acuracia_originaria;
@@ -298,7 +299,7 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
             <path d="M 9 49 A 43 43 0 0 1 95 49" stroke="var(--closing-gauge-fill)" strokeWidth="9" strokeLinecap="round" fill="none"
               strokeDasharray={Math.PI*43} strokeDashoffset={(1-(goalPercent??0)/100)*Math.PI*43}/>
           </svg>
-          <strong className="closing-gauge-value">{card.value}</strong>
+          <strong className="closing-gauge-value">{loading && card.value==='—'?<MetricDots/>:card.value}</strong>
         </button>
       : <button className="closing-kpi closing-kpi-button mba-metric-card" type="button"
           key={card.key} disabled={(card.key==='acuracia'&&!accuracyReady)||(!!escritorio&&['benner','aptidoes','motivo'].includes(card.key))}
@@ -311,13 +312,13 @@ function Metrics({ dados, agingMensal, analises, posicaoBenner, motivosPendentes
             card.key==='aptidoes' ? 'Validações auditadas na plataforma. A meta de aging também considera registros Benner reconciliados e o saldo anterior sem baixa.' : undefined}
           aria-label={CARD_LABELS[card.key]+': '+card.value+'. Ver relação'}>
           <div className="closing-kpi-top"><span>{CARD_LABELS[card.key]}</span><card.icon size={15} strokeWidth={1.7}/></div>
-          <strong>{card.value}</strong>
+          <strong>{loading && card.value==='—'?<MetricDots/>:card.value}</strong>
         </button>)}
     <button className="closing-kpi closing-kpi-button mba-metric-card closing-ticket-kpi" type="button"
       onClick={()=>setTicketDetailsOpen(true)}
       aria-label={'Ticket médio esperado: '+(expectedTicket === null ? 'indisponível' : currency(expectedTicket))+'. Ver metodologia'}>
       <div className="closing-kpi-top"><span>Ticket médio esperado</span><Wallet size={15} strokeWidth={1.7}/></div>
-      <strong>{expectedTicket === null ? '—' : currency(expectedTicket)}</strong>
+      <strong>{expectedTicket === null ? (loading?<MetricDots/>:'—') : currency(expectedTicket)}</strong>
     </button>
     {ticketDetailsOpen && <div className="closing-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setTicketDetailsOpen(false);}}>
       <section className="closing-ticket-dialog" role="dialog" aria-modal="true" aria-label="Ticket médio esperado">
@@ -919,8 +920,9 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
   const analysts = blockKeys.analises===filterKey && analises ? analises.analistas : [];
 
   return <div className="closing-page-v2" role="region" aria-label="Encerramentos">
-    {Object.entries(blockErrors).map(([name,message])=><div key={name} role="alert" className="closing-error">{name}: {message}</div>)}
-    {officesError && <p className="closing-error" role="alert">{officesError}</p>}
+    {(Object.keys(blockErrors).length > 0 || Boolean(error)) &&
+      <DashboardRecovery hasSnapshot={Boolean(shown)} retrying={pending} onRetry={()=>void refresh(true)}/>}
+    {officesError && <DashboardRecovery hasSnapshot={offices.length>0} onRetry={()=>setPortfolioRevision(value=>value+1)}/>} 
     <div className="base-geral-filters closing-filter-row closing-filter-row--standard" aria-label="Filtros de encerramentos">
       <div className="closing-date-range"><DateRangePicker start={inicio} end={fim} onChange={(start,end)=>{setInicio(start);setFim(end)}}/></div>
       <SelectMenu label="Escritório" className="base-geral-filter" value={escritorio}
@@ -929,12 +931,12 @@ export function EncerramentosPage({visible=true}:{visible?:boolean}) {
         options={visibleTypes}/>
     </div>
     {invalidRange && <p className="closing-error" role="alert">A data inicial não pode ser posterior à data final.</p>}
-    {pending && !shown ? <p className="closing-stale-note" role="status">Carregando indicadores da carteira...</p> : null}
-    {error ? <p className="closing-error" role="alert">{shown ? 'Atualização temporariamente indisponível. Exibindo os últimos indicadores carregados.' : error}</p> : null}
-    {shown?._dashboard_stale && !error ? <p className="closing-stale-note" role="status">Exibindo os últimos indicadores disponíveis. A atualização automática tentará novamente.</p> : null}
+    {shown?._dashboard_stale && carteira!=='Agibank Enter' && !error && !Object.keys(blockErrors).length
+      ? <p className="closing-stale-note" role="status">Indicadores históricos · revalidação em andamento.</p>
+      : null}
     <Metrics dados={shown} agingMensal={blockKeys.aging===filterKey?agingMensal:null} analises={blockKeys.analises===filterKey?analises:null}
       posicaoBenner={blockKeys.benner===filterKey?posicaoBenner:null}
-      motivosPendentes={escritorio?null:motivosPendentes} escritorio={escritorio} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
+      motivosPendentes={escritorio?null:motivosPendentes} escritorio={escritorio} loading={pending && !shown} onOpen={kind=>{setTipoRecorte(null);setActiveCard(kind);}}/>
     {!isNubank && <AgingPanel dados={shown} agingMensal={blockKeys.aging===filterKey?agingMensal:null}/>}
     <div className="closing-secondary-grid">
       <CompositionPanel dados={shown} carteira={carteira} agingMensal={blockKeys.aging===filterKey?agingMensal:null}
