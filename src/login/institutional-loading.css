@@ -1,0 +1,497 @@
+/* MBA Backoffice institutional loading — isolated from the login form and app shell.
+ * Four full-screen editorial scenes, fixed Sol palette and no progress bar or dark-flow overlay.
+ */
+#login-transition-root .mba-auth-transition {
+  display:block;
+  background:#f7f6f2;
+  color:#171717;
+  color-scheme:light;
+}
+#login-transition-root .mba-storyboard {
+  position:relative;
+  width:100%;
+  height:100dvh;
+  min-height:100%;
+  overflow:hidden;
+  background:#f7f6f2;
+  color:#181818;
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+}
+#login-transition-root .mba-storyboard,
+#login-transition-root .mba-storyboard * {
+  box-sizing:border-box;
+}
+#login-transition-root .mba-storyboard-header {
+  position:absolute;
+  z-index:2;
+  top:0;
+  left:0;
+  right:0;
+  height:76px;
+  display:flex;
+  align-items:center;
+  width:100%;
+  padding:0 clamp(28px,5.2vw,90px);
+}
+#login-transition-root .mba-storyboard-brand strong {
+  display:block;
+  font-size:13px;
+  line-height:1.2;
+  letter-spacing:-.025em;
+  color:#262321;
+  font-weight:650;
+}
+#login-transition-root .mba-storyboard-brand small {
+  display:block;
+  margin-top:7px;
+  font-size:9px;
+  font-weight:650;
+  letter-spacing:.22em;
+  color:#a66e50;
+}
+#login-transition-root .mba-storyboard-main {
+  position:absolute;
+  inset:76px 0 64px;
+  width:100%;
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  overflow:auto;
+}
+#login-transition-root .mba-storyboard-slide {
+  width:100%;
+  max-width:1620px;
+  min-height:100%;
+  padding:20px clamp(30px,5.8vw,110px);
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  align-items:center;
+  column-gap:clamp(24px,4vw,85px);
+  animation:mba-storyboard-enter .6s cubic-bezier(.2,.7,.2,1) both;
+}
+#login-transition-root .mba-storyboard-copy {
+  min-width:0;
+  align-self:center;
+}
+#login-transition-root .mba-storyboard-slide h1 {
+  margin:0;
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+  color:#111;
+  font-weight:620;
+  letter-spacing:-.065em;
+  line-height:1.07;
+  text-wrap:balance;
+  font-size:clamp(50px,5.7vw,95px);
+}
+#login-transition-root .mba-storyboard-slide p {
+  margin:25px 0 0;
+  color:#65615c;
+  max-width:520px;
+  text-align:left;
+  font-size:clamp(13px,1.12vw,17px);
+  line-height:1.65;
+  letter-spacing:-.012em;
+  font-weight:400;
+}
+#login-transition-root .mba-storyboard-history-visual {
+  position:relative;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:260px;
+  height:70%;
+}
+#login-transition-root .mba-storyboard-year {
+  color:#141414;
+  font-size:clamp(112px,14vw,235px);
+  font-weight:640;
+  letter-spacing:-.095em;
+  line-height:1;
+  animation:mba-storyboard-up .8s ease-out both;
+}
+#login-transition-root .mba-storyboard-history-line {
+  position:absolute;
+  left:4%;
+  right:4%;
+  top:79%;
+  height:2px;
+  background:#d4cfc7;
+}
+#login-transition-root .mba-storyboard-history-line span {
+  display:block;
+  position:absolute;
+  left:0;
+  top:-3px;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#171717;
+  animation:mba-storyboard-timeline 2.7s ease-in-out both;
+}
+#login-transition-root .mba-storyboard-history-years {
+  position:absolute;
+  left:4%;
+  right:4%;
+  top:calc(79% + 16px);
+  display:flex;
+  justify-content:space-between;
+  color:#928a81;
+  font-size:11px;
+  letter-spacing:.08em;
+  font-variant-numeric:tabular-nums;
+}
+/* Presence: an actual map, office states, six city markers, compact labels. */
+#login-transition-root .mba-storyboard-presence {
+  grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);
+  column-gap:clamp(15px,3vw,50px);
+}
+#login-transition-root .mba-storyboard-presence h1 {
+  font-size:clamp(47px,5.3vw,85px);
+}
+#login-transition-root .mba-storyboard-presence p {
+  max-width:425px;
+}
+#login-transition-root .mba-storyboard-presence-stat {
+  display:flex;
+  align-items:center;
+  gap:15px;
+  margin-top:29px;
+  padding-top:16px;
+  border-top:1px solid #ded9d1;
+  max-width:420px;
+  color:#625b54;
+}
+#login-transition-root .mba-storyboard-presence-stat strong {
+  font-size:clamp(31px,3.25vw,52px);
+  font-weight:570;
+  letter-spacing:-.05em;
+  color:#a76d4c;
+  font-variant-numeric:tabular-nums;
+}
+#login-transition-root .mba-storyboard-presence-stat span {
+  font-size:12px;
+}
+#login-transition-root .mba-storyboard-map-layout {
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  min-width:0;
+  gap:8px;
+}
+#login-transition-root .mba-storyboard-map-frame {
+  position:relative;
+  width:100%;
+  max-width:510px;
+  min-height:0;
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+#login-transition-root .mba-storyboard-brazil-svg {
+  width:100%;
+  height:100%;
+  max-height:min(51vh,460px);
+  overflow:visible;
+  filter:drop-shadow(0 3px 1px rgba(40,27,17,.025));
+}
+#login-transition-root .mba-storyboard-state {
+  fill:#eae7e1;
+  stroke:#c5bdb2;
+  stroke-width:1;
+  stroke-linejoin:round;
+  vector-effect:non-scaling-stroke;
+  transition:fill .35s ease,stroke .35s ease;
+}
+#login-transition-root .mba-storyboard-state.has-office {
+  fill:#e3d0c0;
+  stroke:#bca797;
+}
+#login-transition-root .mba-storyboard-state.is-selected {
+  fill:#b87f5b;
+  stroke:#95664b;
+  stroke-width:1.5;
+}
+#login-transition-root .mba-storyboard-location .mba-storyboard-marker-halo {
+  fill:rgba(183,121,88,.18);
+  stroke:rgba(168,105,74,.38);
+  stroke-width:.7;
+  transition:fill .2s ease,opacity .2s ease;
+}
+#login-transition-root .mba-storyboard-location .mba-storyboard-marker-center {
+  fill:#9d6749;
+  stroke:#fff;
+  stroke-width:1.5;
+  transform-box:fill-box;
+  transform-origin:center;
+  transition:fill .2s ease,transform .2s ease;
+}
+#login-transition-root .mba-storyboard-location.is-selected .mba-storyboard-marker-halo {
+  fill:rgba(182,117,80,.36);
+  stroke:#9f6245;
+}
+#login-transition-root .mba-storyboard-location.is-selected .mba-storyboard-marker-center {
+  fill:#30241e;
+  transform:scale(1.32);
+}
+#login-transition-root .mba-storyboard-location-label {
+  position:absolute;
+  right:0;
+  bottom:8%;
+  min-width:152px;
+  padding:12px 15px;
+  border-radius:8px;
+  border:1px solid #e3dbd2;
+  background:rgba(255,255,255,.97);
+  box-shadow:0 5px 22px rgba(35,26,19,.04);
+}
+#login-transition-root .mba-storyboard-location-label span {
+  display:block;
+  color:#aa7355;
+  font-size:9px;
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+}
+#login-transition-root .mba-storyboard-location-label strong {
+  display:block;
+  color:#1e1b19;
+  font-size:14px;
+  margin-top:5px;
+  font-weight:620;
+}
+#login-transition-root .mba-storyboard-location-label small {
+  display:block;
+  color:#847d75;
+  font-size:10px;
+  margin-top:4px;
+}
+#login-transition-root .mba-storyboard-offices {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:6px 15px;
+  width:100%;
+  max-width:520px;
+  padding-bottom:14px;
+}
+#login-transition-root .mba-storyboard-office {
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  color:#716b64;
+  font-size:11px;
+  border-bottom:1px solid #e0dad2;
+  padding:5px 3px 7px;
+  transition:color .2s ease,border-color .2s ease;
+}
+#login-transition-root .mba-storyboard-office.is-selected {
+  color:#1e1a17;
+  border-bottom-color:#b77c58;
+  font-weight:620;
+}
+#login-transition-root .mba-storyboard-office small {
+  color:#a87d60;
+  font-size:9px;
+}
+/* Scale: 60k belongs to the Backoffice, not the law firm's total portfolio. */
+#login-transition-root .mba-storyboard-scale {
+  grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+}
+#login-transition-root .mba-storyboard-scale-number {
+  font-size:clamp(80px,10vw,168px);
+  line-height:1;
+  font-weight:620;
+  letter-spacing:-.09em;
+  color:#101010;
+  font-variant-numeric:tabular-nums;
+}
+#login-transition-root .mba-storyboard-scale-number span {
+  color:#b67b56;
+}
+#login-transition-root .mba-storyboard-scale h1 {
+  font-size:clamp(38px,4vw,72px);
+  margin-top:8px;
+}
+#login-transition-root .mba-storyboard-journey {
+  width:100%;
+  max-width:400px;
+  justify-self:center;
+  padding-left:8px;
+}
+#login-transition-root .mba-storyboard-journey-step {
+  display:flex;
+  align-items:flex-start;
+  gap:24px;
+  min-height:75px;
+  border-left:1px solid #d3c9bf;
+  padding:2px 0 17px 26px;
+  animation:mba-storyboard-up .55s ease-out both;
+}
+#login-transition-root .mba-storyboard-journey-step:last-child {
+  border-left-color:transparent;
+}
+#login-transition-root .mba-storyboard-journey-node {
+  width:10px;
+  height:10px;
+  flex:none;
+  margin-left:-32px;
+  margin-top:5px;
+  border-radius:50%;
+  background:#b97a58;
+  box-shadow:0 0 0 4px #eadfd4;
+}
+#login-transition-root .mba-storyboard-journey-step strong {
+  display:block;
+  color:#111;
+  font-size:clamp(18px,1.5vw,24px);
+  font-weight:650;
+  letter-spacing:-.025em;
+}
+#login-transition-root .mba-storyboard-journey-step small {
+  display:block;
+  color:#77716b;
+  margin-top:6px;
+  font-size:12px;
+  line-height:1.4;
+}
+/* Final manifesto deliberately uses no centered icon or map. The words are the hero. */
+#login-transition-root .mba-storyboard-slide.mba-storyboard-vision {
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  gap:27px;
+  padding:20px clamp(30px,6vw,110px);
+}
+#login-transition-root .mba-storyboard-vision h1 {
+  max-width:1150px;
+  margin:0 auto;
+  color:#090909;
+  font-size:clamp(58px,7.2vw,120px);
+  line-height:1.05;
+  font-weight:640;
+  letter-spacing:-.072em;
+  text-align:center;
+}
+#login-transition-root .mba-storyboard-vision h1 em {
+  font-style:normal;
+  color:#b2744f;
+}
+#login-transition-root .mba-storyboard-vision p {
+  margin:0 auto;
+  max-width:900px;
+  color:#272522;
+  font-size:clamp(19px,2.1vw,33px);
+  font-weight:400;
+  line-height:1.36;
+  letter-spacing:-.028em;
+  text-align:center;
+  animation:mba-storyboard-up .7s .2s both;
+}
+#login-transition-root .mba-storyboard-footer {
+  position:absolute;
+  z-index:2;
+  bottom:0;
+  left:0;
+  right:0;
+  height:64px;
+  display:flex;
+  gap:11px;
+  align-items:center;
+  justify-content:center;
+}
+#login-transition-root .mba-storyboard-footer p {
+  margin:0;
+  font-size:12px;
+  font-weight:400;
+  color:#726c65;
+  letter-spacing:-.015em;
+}
+/* Keep only the three quiet dots; no full-screen dark flow and no progress bar. */
+#login-transition-root .mba-storyboard-footer .mba-auth-loading-dots span {
+  width:7px;
+  height:7px;
+}
+@keyframes mba-storyboard-enter {
+  from {opacity:0;transform:translateY(12px);}
+  to {opacity:1;transform:translateY(0);}
+}
+@keyframes mba-storyboard-up {
+  from {opacity:0;transform:translateY(15px);}
+  to {opacity:1;transform:translateY(0);}
+}
+@keyframes mba-storyboard-timeline {
+  from {left:0;}
+  to {left:calc(100% - 8px);}
+}
+@media(max-width:960px) {
+  #login-transition-root .mba-storyboard-slide h1 {font-size:clamp(44px,6.1vw,70px);}
+  #login-transition-root .mba-storyboard-presence h1 {font-size:clamp(41px,5.5vw,67px);}
+  #login-transition-root .mba-storyboard-scale h1 {font-size:clamp(35px,4.2vw,57px);}
+  #login-transition-root .mba-storyboard-vision h1 {font-size:clamp(54px,7.1vw,92px);}
+  #login-transition-root .mba-storyboard-year {font-size:clamp(105px,15vw,165px);}
+  #login-transition-root .mba-storyboard-scale-number {font-size:clamp(75px,10vw,120px);}
+  #login-transition-root .mba-storyboard-journey-step {min-height:62px;}
+  #login-transition-root .mba-storyboard-map-frame {max-height:310px;}
+}
+@media(max-width:690px) {
+  #login-transition-root .mba-storyboard-header {height:66px;padding-inline:25px;}
+  #login-transition-root .mba-storyboard-main {inset:66px 0 60px;}
+  #login-transition-root .mba-storyboard-slide {
+    grid-template-columns:1fr;
+    grid-template-rows:auto minmax(0,1fr);
+    padding:20px 25px 12px;
+    gap:14px;
+    align-content:center;
+  }
+  #login-transition-root .mba-storyboard-slide h1 {font-size:clamp(42px,8.5vw,63px);}
+  #login-transition-root .mba-storyboard-slide p {font-size:13px;margin-top:13px;}
+  #login-transition-root .mba-storyboard-history-visual {height:100%;min-height:170px;}
+  #login-transition-root .mba-storyboard-year {font-size:clamp(100px,21vw,145px);}
+  #login-transition-root .mba-storyboard-presence,
+  #login-transition-root .mba-storyboard-scale {grid-template-columns:1fr;gap:4px;}
+  #login-transition-root .mba-storyboard-presence h1 {font-size:clamp(42px,8.2vw,65px);}
+  #login-transition-root .mba-storyboard-presence-stat {margin-top:13px;padding-top:7px;}
+  #login-transition-root .mba-storyboard-presence-stat strong {font-size:30px;}
+  #login-transition-root .mba-storyboard-map-layout {gap:0;min-height:260px;}
+  #login-transition-root .mba-storyboard-map-frame {height:auto;min-height:190px;max-height:260px;}
+  #login-transition-root .mba-storyboard-brazil-svg {max-height:255px;}
+  #login-transition-root .mba-storyboard-offices {padding-bottom:0;grid-template-columns:repeat(3,minmax(0,1fr));}
+  #login-transition-root .mba-storyboard-location-label {right:0;bottom:0;padding:8px 10px;min-width:130px;}
+  #login-transition-root .mba-storyboard-location-label strong {font-size:12px;}
+  #login-transition-root .mba-storyboard-office {font-size:10px;padding-block:3px;}
+  #login-transition-root .mba-storyboard-scale-number {font-size:clamp(65px,12vw,95px);}
+  #login-transition-root .mba-storyboard-scale h1 {font-size:clamp(33px,6.4vw,49px);}
+  #login-transition-root .mba-storyboard-journey {max-width:300px;}
+  #login-transition-root .mba-storyboard-journey-step {min-height:50px;padding-bottom:8px;}
+  #login-transition-root .mba-storyboard-journey-step strong {font-size:16px;}
+  #login-transition-root .mba-storyboard-journey-step small {font-size:10px;margin-top:3px;}
+  #login-transition-root .mba-storyboard-slide.mba-storyboard-vision {padding-inline:25px;gap:20px;}
+  #login-transition-root .mba-storyboard-vision h1 {font-size:clamp(49px,8.6vw,72px);}
+  #login-transition-root .mba-storyboard-vision p {font-size:clamp(17px,3.7vw,24px);}
+  #login-transition-root .mba-storyboard-footer {height:60px;}
+}
+@media(max-height:620px) and (min-width:691px) {
+  #login-transition-root .mba-storyboard-header {height:60px;}
+  #login-transition-root .mba-storyboard-main {inset:60px 0 54px;}
+  #login-transition-root .mba-storyboard-slide {padding-block:5px;}
+  #login-transition-root .mba-storyboard-footer {height:54px;}
+  #login-transition-root .mba-storyboard-slide p {margin-top:15px;}
+  #login-transition-root .mba-storyboard-history-visual {min-height:190px;}
+  #login-transition-root .mba-storyboard-map-frame {max-height:245px;}
+  #login-transition-root .mba-storyboard-offices {padding-bottom:0;}
+  #login-transition-root .mba-storyboard-journey-step {min-height:60px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  #login-transition-root .mba-storyboard *,
+  #login-transition-root .mba-storyboard *::before,
+  #login-transition-root .mba-storyboard *::after {
+    animation:none!important;
+    transition:none!important;
+  }
+  #login-transition-root .mba-storyboard-history-line span {left:calc(100% - 8px);}
+}
