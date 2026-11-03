@@ -37,7 +37,7 @@ assert.match(assignments, /assignments-group-row/);
 assert.doesNotMatch(assignments, /setView\('unassigned'\)|setView\('attention'\)/);
 
 // Indication filter must go to the backend, never filter one fetched page.
-assert.match(closePage, /Filtrar por tipo de indício DataJud/);
+assert.match(closePage, /<SelectMenu label="Indício"/);
 assert.match(closePage, /indicioFiltro/);
 assert.match(closeApi, /query\.set\('indicio', indicio\)/);
 assert.doesNotMatch(closePage, /rows\.filter\(row=>.*datajud_tipo/);
