@@ -9,5 +9,5 @@ rendering chunks...
 computing gzip size...
 ../.build/v3-preview/index.html                   0.37 kB │ gzip:  0.28 kB
 ../.build/v3-preview/assets/index-BPe6f6bT.css   47.00 kB │ gzip:  8.49 kB
-../.build/v3-preview/assets/index-sM32MvzW.js   203.26 kB │ gzip: 64.72 kB
-✓ built in 6.05s
+../.build/v3-preview/assets/index-tTC44_Bf.js   203.32 kB │ gzip: 64.73 kB
+✓ built in 13.03s
