@@ -14,7 +14,10 @@
     "build:ux": "vite build --config vite.ux.config.ts",
     "test:ux": "node tests/operational-ux.test.mjs",
     "test:processos": "node tests/processos-ui.mjs",
-    "test:runtime-v2": "PHASE=final node tests/runtime-v2/browser.mjs"
+    "test:runtime-v2": "PHASE=final node tests/runtime-v2/browser.mjs",
+    "dev:v3": "vite --config vite.v3.config.ts --host 127.0.0.1",
+    "build:v3": "tsc --noEmit && vite build --config vite.v3.config.ts",
+    "test:v3": "node tests/v3-read-browser.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
