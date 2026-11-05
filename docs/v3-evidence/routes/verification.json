@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-05",
+  "timezone": "America/Manaus",
+  "backend_code": "16dfdd78808ebea9900a07144728b68d3db3bf24",
+  "frontend_code": "38752712649e8a8283fd3a6bba45e1d4f2953360",
+  "adapter_tests": {
+    "passed": 27
+  },
+  "selected_regression": {
+    "passed": 70,
+    "skipped": 8,
+    "skip_reason": "RUNTIME_V2_TEST_DSN not configured"
+  },
+  "browser": {
+    "operational_checks": 23,
+    "preview_p6_checks": 23,
+    "operational_api_calls": 70,
+    "p6_api_calls": 43,
+    "page_errors": 0,
+    "external_writes": 0
+  },
+  "builds": {
+    "normal": "PASS",
+    "routes_testing": "PASS",
+    "p6_preview": "PASS",
+    "hardening": "PASS"
+  },
+  "foundation": {
+    "migrations": 32,
+    "migrations_changed": 0,
+    "existing_benner_states": 60221,
+    "existing_jobs": 31,
+    "external_actions": 0,
+    "new_provider_imports": 0
+  },
+  "additional_filters": [
+    {
+      "filters": [
+        "uf"
+      ],
+      "http_status": 200,
+      "rows": 50,
+      "ms": 392
+    },
+    {
+      "filters": [
+        "phase",
+        "product"
+      ],
+      "http_status": 200,
+      "rows": 50,
+      "ms": 1680
+    },
+    {
+      "filters": [
+        "q",
+        "uf",
+        "phase",
+        "product"
+      ],
+      "http_status": 200,
+      "rows": 1,
+      "ms": 1515
+    }
+  ],
+  "authority_transport": "EXPLICIT_FIXTURE_WITH_EXISTING_SESSION_SERVICE",
+  "live_hosted_login_verified": false,
+  "legacy_latency_comparable": false,
+  "production_deployed": false,
+  "synthetic_session_fixture_renewals": 2
+}

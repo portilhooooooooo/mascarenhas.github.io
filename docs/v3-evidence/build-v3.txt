@@ -1,0 +1,13 @@
+
+> mba-backoffice-frontend@1.0.0 build:v3
+> tsc --noEmit && vite build --config vite.v3.config.ts
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1625 modules transformed.
+rendering chunks...
+computing gzip size...
+../.build/v3-preview/index.html                   0.37 kB │ gzip:  0.28 kB
+../.build/v3-preview/assets/index-BPe6f6bT.css   47.00 kB │ gzip:  8.49 kB
+../.build/v3-preview/assets/index-tTC44_Bf.js   203.32 kB │ gzip: 64.73 kB
+✓ built in 13.03s

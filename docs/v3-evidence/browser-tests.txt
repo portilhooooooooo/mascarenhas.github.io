@@ -1,0 +1,5 @@
+
+> mba-backoffice-frontend@1.0.0 test:v3
+> node tests/v3-read-browser.mjs
+
+{"status":"PASS","checks":23,"api_calls":43}

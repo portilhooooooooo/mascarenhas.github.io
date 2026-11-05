@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "checks": [
+    "authenticated_synthetic_api",
+    "module_Cadastro",
+    "module_Andamentos",
+    "module_Encerramentos",
+    "module_Liminares",
+    "module_Pagamentos",
+    "module_Faturamento",
+    "module_Controladoria",
+    "module_Tarefas",
+    "module_Processos",
+    "module_Automações",
+    "keyset_pagination",
+    "combined_server_filters",
+    "reconciliation_detail",
+    "empty_state",
+    "canonical_detail_timeline",
+    "theme",
+    "failed_refresh_preserves_same_scope",
+    "portfolio_switch_late_response",
+    "limited_profile_no_financial_cache",
+    "process_financial_redaction",
+    "authentication_failure",
+    "no_external_calls_or_writes"
+  ],
+  "calls": 43,
+  "page_errors": [],
+  "external_calls": 0,
+  "writes": 0,
+  "api": "REAL_LOOPBACK_WSGI_POSTGRESQL_SYNTHETIC"
+}

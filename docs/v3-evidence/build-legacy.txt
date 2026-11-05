@@ -1,0 +1,15 @@
+
+> mba-backoffice-frontend@1.0.0 build
+> tsc --noEmit && vite build && node build-static.mjs
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1692 modules transformed.
+rendering chunks...
+computing gzip size...
+.build/react-dashboard/dashboard-react.css  270.37 kB │ gzip:  42.89 kB
+.build/react-dashboard/login-react.js         9.43 kB │ gzip:   3.01 kB
+.build/react-dashboard/index-rdbqkzZ-.js    213.21 kB │ gzip:  52.61 kB
+.build/react-dashboard/dashboard-react.js   727.30 kB │ gzip: 170.82 kB
+✓ built in 8.55s
+dist preparado para deploy e preview local (4d4360e).

@@ -1,3 +1,4 @@
+import {BackofficeRead,readSource} from '../v3/backoffice';
 import {runtimeScope} from '../tasks/runtimeQueries';
 import {createPortal} from 'react-dom';
 import { useModuleVisible } from './useModuleVisible';
@@ -9,10 +10,13 @@ import { BaseGeralPage } from './BaseGeralPage';
 import { PagamentosResultadosPage } from './PagamentosResultadosPage';
 import './gestaoMetabase.css';
 
-type AnalyticsTab = 'geral' | 'encerramentos' | 'pagamentos' | 'defesas' | 'protocolos';
+type AnalyticsTab = 'geral' | 'cadastro' | 'andamentos' | 'faturamento' | 'encerramentos' | 'pagamentos' | 'defesas' | 'protocolos';
 
 function currentAnalyticsTab(): AnalyticsTab {
   const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
+  if (path === 'analytics/cadastro') return 'cadastro';
+  if (path === 'analytics/andamentos') return 'andamentos';
+  if (path === 'analytics/faturamento') return 'faturamento';
   if (path === 'analytics/pagamentos') return 'pagamentos';
   if (path === 'analytics/defesas') return 'defesas';
   if (path === 'analytics/protocolos') return 'protocolos';
@@ -41,6 +45,10 @@ export function GestaoProcessualPage() {
   const canViewEnterDefenses = canViewAnalytics && permissions['tasks.view'] === true && portfolio === 'agibank_enter';
   const canViewEnterProtocols = canViewEnterDefenses;
   const canViewPayments = canViewAnalytics && ((profile?.is_master_admin === true && permissions['pagamentos.view'] === true) || (profile?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && portfolio === 'agibank_mba'));
+  // V3-only deep links, not extra tabs in the existing Results UI.
+  const canViewV3Cadastro = canViewAnalytics && readSource('cadastro') === 'V3';
+  const canViewV3Andamentos = canViewAnalytics && permissions['automations.view'] === true && readSource('andamentos') === 'V3';
+  const canViewV3Faturamento = canViewAnalytics && permissions['faturamento.view'] === true && readSource('faturamento') === 'V3';
 
   useEffect(() => {
     const sync = (event: Event) => {
@@ -73,7 +81,10 @@ export function GestaoProcessualPage() {
   }, []);
   // Mantém a intenção de navegação entre trocas de carteira.
   // Enquanto a permissão não existir, exibe apenas a visão autorizada.
-  const displayedTab: AnalyticsTab = activeTab === 'protocolos' && canViewEnterProtocols
+  const displayedTab: AnalyticsTab = activeTab === 'cadastro' && canViewV3Cadastro ? 'cadastro'
+    : activeTab === 'andamentos' && canViewV3Andamentos ? 'andamentos'
+    : activeTab === 'faturamento' && canViewV3Faturamento ? 'faturamento'
+    : activeTab === 'protocolos' && canViewEnterProtocols
     ? 'protocolos'
     : activeTab === 'defesas' && canViewEnterDefenses
     ? 'defesas'
@@ -102,8 +113,11 @@ export function GestaoProcessualPage() {
   return <div className="gestao-metabase-page gestao-processual-react">
     {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
-    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
-    {canViewPayments && visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null}
+    {canViewV3Cadastro && visible && displayedTab==='cadastro' && <BackofficeRead key={runtimeScope()} module="cadastro"/>}
+    {canViewV3Andamentos && visible && displayedTab==='andamentos' && <BackofficeRead key={runtimeScope()} module="andamentos"/>}
+    {canViewV3Faturamento && visible && displayedTab==='faturamento' && <BackofficeRead key={runtimeScope()} module="faturamento"/>}
+    {canViewClosing && (readSource('encerramentos') === 'V3' ? (visible && displayedTab === 'encerramentos' ? <BackofficeRead key={runtimeScope()} module="encerramentos"/> : null) : (visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null))}
+    {canViewPayments && (readSource('pagamentos') === 'V3' ? (visible && displayedTab === 'pagamentos' ? <BackofficeRead key={runtimeScope()} module="pagamentos"/> : null) : (visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null))}
     {canViewEnterDefenses && visitedTabs.includes('defesas') ? <div style={{display: displayedTab === 'defesas' ? 'contents' : 'none'}}><DefesasResultadosPage key={runtimeScope()} visible={visible && displayedTab==='defesas'}/></div> : null}
     {canViewEnterProtocols && visitedTabs.includes('protocolos') ? <div style={{display: displayedTab === 'protocolos' ? 'contents' : 'none'}}><ProtocolosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='protocolos'}/></div> : null}
   </div>;

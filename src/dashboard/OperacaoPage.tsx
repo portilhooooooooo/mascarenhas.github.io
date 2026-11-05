@@ -1,3 +1,4 @@
+import {BackofficeRead,readSource} from '../v3/backoffice';
 import {SelectMenu} from './SelectMenu';
 import {createPortal} from 'react-dom';
 import './operacao.css';
@@ -435,9 +436,9 @@ export function OperacaoPage() {
     </nav>;
   return <div className="operacao-module-shell">
     {shellTabs ? (operationVisible ? createPortal(operationTabs, shellTabs) : null) : operationTabs}
-    {allowed.pagamentos && visited.includes('pagamentos') ? <div style={{display: module === 'pagamentos' ? 'contents' : 'none'}}><PagamentosPage/></div> : null}
-    {allowed.liminar && visited.includes('liminar') ? <div style={{display: module === 'liminar' ? 'contents' : 'none'}}><OperacaoLiminarPage/></div> : null}
-    {allowed.encerramentos && visited.includes('encerramentos') ? <div style={{display: module === 'encerramentos' ? 'contents' : 'none'}}><OperacaoEncerramentosPage/></div> : null}
+    {allowed.pagamentos && (readSource('pagamentos')==='V3' ? (operationVisible && module==='pagamentos' ? <BackofficeRead module="pagamentos"/> : null) : (visited.includes('pagamentos') ? <div style={{display: module === 'pagamentos' ? 'contents' : 'none'}}><PagamentosPage/></div> : null))}
+    {allowed.liminar && (readSource('liminar')==='V3' ? (operationVisible && module==='liminar' ? <BackofficeRead module="liminar"/> : null) : (visited.includes('liminar') ? <div style={{display: module === 'liminar' ? 'contents' : 'none'}}><OperacaoLiminarPage/></div> : null))}
+    {allowed.encerramentos && (readSource('encerramentos')==='V3' ? (operationVisible && module==='encerramentos' ? <BackofficeRead module="encerramentos"/> : null) : (visited.includes('encerramentos') ? <div style={{display: module === 'encerramentos' ? 'contents' : 'none'}}><OperacaoEncerramentosPage/></div> : null))}
     {allowed.protocolos && visited.includes('protocolos') ? <div style={{display: module === 'protocolos' ? 'contents' : 'none'}}><ProtocolosPage/></div> : null}
     {allowed.defesas && visited.includes('defesas') ? <div style={{display: module === 'defesas' ? 'contents' : 'none'}}><DefesasPage/></div> : null}
     {!OPERATION_MODULES.some(key => allowed[key]) ? <div className="protocolos-empty">Nenhum fluxo autorizado nesta carteira.</div> : null}
