@@ -28,3 +28,5 @@ credentials/
 
 # Generated browser traces live in CI artifacts; curate review evidence explicitly.
 /docs/runtime-v2/evidence/
+
+!.env.routes-testing.example

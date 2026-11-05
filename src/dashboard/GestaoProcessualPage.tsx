@@ -1,3 +1,5 @@
+import {BackofficeRead,readSource} from '../v3/backoffice';
+import {LegacyAndamentos} from '../v3/legacy';
 import {runtimeScope} from '../tasks/runtimeQueries';
 import {createPortal} from 'react-dom';
 import { useModuleVisible } from './useModuleVisible';
@@ -9,10 +11,13 @@ import { BaseGeralPage } from './BaseGeralPage';
 import { RankingPage } from '../ranking/RankingPage';
 import './gestaoMetabase.css';
 
-type AnalyticsTab = 'geral' | 'encerramentos' | 'ranking' | 'defesas' | 'protocolos';
+type AnalyticsTab = 'geral' | 'faturamento' | 'cadastro' | 'andamentos' | 'encerramentos' | 'ranking' | 'defesas' | 'protocolos';
 
 function currentAnalyticsTab(): AnalyticsTab {
   const path = (window.location.hash.startsWith('#/') ? window.location.hash.slice(2) : window.location.pathname).replace(/^\/+|\/+$/g, '');
+  if (path === 'analytics/faturamento') return 'faturamento';
+  if (path === 'analytics/cadastro') return 'cadastro';
+  if (path === 'analytics/andamentos') return 'andamentos';
   if (path === 'analytics/ranking') return 'ranking';
   if (path === 'analytics/defesas') return 'defesas';
   if (path === 'analytics/protocolos') return 'protocolos';
@@ -72,7 +77,9 @@ export function GestaoProcessualPage() {
   }, []);
   // Mantém a intenção de navegação entre trocas de carteira.
   // Enquanto a permissão não existir, exibe apenas a visão autorizada.
-  const displayedTab: AnalyticsTab = activeTab === 'protocolos' && canViewEnterProtocols
+  const displayedTab: AnalyticsTab = activeTab==='faturamento' && canViewAnalytics && permissions['faturamento.view']===true ? 'faturamento' : activeTab === 'cadastro' && canViewAnalytics ? 'cadastro'
+    : activeTab === 'andamentos' && canViewAnalytics && permissions['automations.view'] === true ? 'andamentos'
+    : activeTab === 'protocolos' && canViewEnterProtocols
     ? 'protocolos'
     : activeTab === 'defesas' && canViewEnterDefenses
     ? 'defesas'
@@ -92,6 +99,9 @@ export function GestaoProcessualPage() {
   const shellTabs = document.getElementById('mba-shell-tabs');
   const resultsTabs = <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
       {canViewAnalytics && <button type="button" className={displayedTab === 'geral' ? 'active' : ''} aria-current={displayedTab === 'geral' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics')}>Base Geral</button>}
+      {canViewAnalytics && <button type="button" className={displayedTab==='cadastro'?'active':''} onClick={()=>navigateAnalytics('analytics/cadastro')}>Cadastro</button>}
+      {canViewAnalytics && permissions['automations.view']===true && <button type="button" className={displayedTab==='andamentos'?'active':''} onClick={()=>navigateAnalytics('analytics/andamentos')}>Andamentos</button>}
+      {canViewAnalytics && permissions['faturamento.view']===true && <button type="button" className={displayedTab==='faturamento'?'active':''} onClick={()=>navigateAnalytics('analytics/faturamento')}>Faturamento</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewRanking && <button type="button" className={displayedTab === 'ranking' ? 'active' : ''} aria-current={displayedTab === 'ranking' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/ranking')}>Ranking</button>}
       {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
@@ -101,7 +111,10 @@ export function GestaoProcessualPage() {
   return <div className="gestao-metabase-page gestao-processual-react">
     {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
     {canViewAnalytics && visitedTabs.includes('geral') ? <div style={{display: displayedTab === 'geral' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='geral'}/></div> : null}
-    {canViewClosing && visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null}
+    {canViewAnalytics && visible && displayedTab==='faturamento' && permissions['faturamento.view']===true && (readSource('faturamento')==='V3'?<BackofficeRead key={runtimeScope()} module="faturamento"/>:<BaseGeralPage key={runtimeScope()} visible={visible}/>)}
+    {canViewAnalytics && visible && displayedTab==='cadastro' && (readSource('cadastro')==='V3'?<BackofficeRead key={runtimeScope()} module="cadastro"/>:<BaseGeralPage key={runtimeScope()} visible={visible}/>)}
+    {canViewAnalytics && visible && displayedTab==='andamentos' && permissions['automations.view']===true && (readSource('andamentos')==='V3'?<BackofficeRead key={runtimeScope()} module="andamentos"/>:<LegacyAndamentos key={runtimeScope()}/>)}
+    {canViewClosing && (readSource('encerramentos')==='V3' ? (visible && displayedTab==='encerramentos' ? <BackofficeRead key={runtimeScope()} module="encerramentos"/> : null) : (visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null))}
     {canViewRanking && visitedTabs.includes('ranking') ? <div style={{display: displayedTab === 'ranking' ? 'contents' : 'none'}}><RankingPage key={runtimeScope()}/></div> : null}
     {canViewEnterDefenses && visitedTabs.includes('defesas') ? <div style={{display: displayedTab === 'defesas' ? 'contents' : 'none'}}><DefesasResultadosPage key={runtimeScope()} visible={visible && displayedTab==='defesas'}/></div> : null}
     {canViewEnterProtocols && visitedTabs.includes('protocolos') ? <div style={{display: displayedTab === 'protocolos' ? 'contents' : 'none'}}><ProtocolosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='protocolos'}/></div> : null}

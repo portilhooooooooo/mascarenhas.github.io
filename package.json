@@ -17,7 +17,9 @@
     "test:runtime-v2": "PHASE=final node tests/runtime-v2/browser.mjs",
     "dev:v3": "vite --config vite.v3.config.ts --host 127.0.0.1",
     "build:v3": "tsc --noEmit && vite build --config vite.v3.config.ts",
-    "test:v3": "node tests/v3-read-browser.mjs"
+    "test:v3": "node tests/v3-read-browser.mjs",
+    "build:routes-testing": "tsc --noEmit && vite build --mode routes-testing && node build-static.mjs",
+    "test:routes": "node tests/v3-backoffice-browser.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",

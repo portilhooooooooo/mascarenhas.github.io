@@ -1,6 +1,7 @@
 import { Component, StrictMode, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { ProcessosPage } from './ProcessosPage';
+import {BackofficeRead,readSource} from '../v3/backoffice';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
 import { OperacaoPage } from './OperacaoPage';
 import { ControladoriaPage } from './ControladoriaPage';
@@ -206,7 +207,7 @@ function mountProtocolosPage() {
   mount.className = 'protocolos-react-root';
   section.appendChild(mount);
   protocolosRoot = createRoot(mount);
-  protocolosRoot.render(<StrictMode><ControladoriaPage/></StrictMode>);
+  protocolosRoot.render(<StrictMode>{readSource('controladoria')==='V3'?<BackofficeRead module="controladoria"/>:<ControladoriaPage/>}</StrictMode>);
 }
 
 function unmountProtocolosPage() {
@@ -352,7 +353,7 @@ function syncProcessos() {
   if (!section || !mayOpen('processos')) { unmountProcessos(); return; }
   if (section.classList.contains('active') && !processosRoot) {
     processosRoot = createRoot(section);
-    processosRoot.render(<StrictMode><ProcessosPage/></StrictMode>);
+    processosRoot.render(<StrictMode>{readSource('processos')==='V3'?<BackofficeRead module="processos"/>:<ProcessosPage/>}</StrictMode>);
   }
 }
 const processosHost = document.getElementById('processos');
@@ -362,4 +363,20 @@ if (processosHost) {
   window.addEventListener('mba:portfolio-changed', () => { unmountProcessos(); syncProcessos(); });
   for (const event of ['mba:session-expired','mba:logged-out']) window.addEventListener(event,unmountProcessos);
   syncProcessos();
+}
+
+// The static automation shell retains all legacy commands in LEGACY builds.
+if (readSource('automacoes')==='V3') {
+ let root:Root|null=null;
+ const host=document.getElementById('automacoes');
+ const clear=()=>{root?.unmount();root=null;host?.replaceChildren();};
+ const sync=()=>{
+  if(!host||!mayOpen('automacoes')){clear();return;}
+  if(host.classList.contains('active')&&!root){host.replaceChildren();root=createRoot(host);root.render(<BackofficeRead module="automacoes"/>);}
+ };
+ if(host)new MutationObserver(sync).observe(host,{attributes:true,attributeFilter:['class']});
+ for(const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated'])window.addEventListener(event,sync);
+ window.addEventListener('mba:portfolio-changed',()=>{clear();sync();});
+ for(const event of ['mba:session-expired','mba:logged-out'])window.addEventListener(event,clear);
+ sync();
 }

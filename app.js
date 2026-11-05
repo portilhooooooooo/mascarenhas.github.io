@@ -33,6 +33,9 @@ const pageRoutes = Object.freeze({
   'sem-acesso': 'sem-acesso',
 });
 const nestedPageRoutes = Object.freeze({
+  'analytics/cadastro': 'dashboard',
+  'analytics/andamentos': 'dashboard',
+  'analytics/faturamento': 'dashboard',
   'analytics/encerramentos': 'dashboard',
   'analytics/defesas': 'dashboard',
   'analytics/protocolos': 'dashboard',
@@ -105,6 +108,8 @@ function canAccessRoute(pageId, route) {
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
+  if (route === 'analytics/faturamento' && window.MBA_CURRENT_USER?.permissions?.['faturamento.view'] !== true) return false;
+  if (route === 'analytics/andamentos' && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
   if (route === 'analytics/defesas' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
@@ -1169,7 +1174,7 @@ window.addEventListener('mba:module-activated', event => {
   const { pageId, user } = event.detail;
   authenticatedUser = user;
   const grants = user.permissions || {};
-  if (pageId === 'automacoes' && grants['automations.view']) loadIntegrationHealth();
+  if (pageId === 'automacoes' && grants['automations.view'] && window.MBA_V3_READ_SOURCE?.('automacoes') !== 'V3') loadIntegrationHealth();
   if (pageId === 'encerramentos' && grants['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
   if (pageId === 'tutelas' && grants['tutelas.view']) loadTutelaCases().catch(() => {});
   if (pageId === 'pagamentos' && grants['pagamentos.view']) loadPagamentos(true).catch(() => {});

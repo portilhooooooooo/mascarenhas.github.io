@@ -1,3 +1,5 @@
+import {useEffect,useState} from 'react';
+import {BackofficeRead,readSource} from '../v3/backoffice';
 import { createRoot, type Root } from 'react-dom/client';
 import { TasksApp } from './TasksApp';
 
@@ -14,5 +16,12 @@ export function mountTasksPage() {
   section.appendChild(mount);
 
   tasksRoot = createRoot(mount);
-  tasksRoot.render(<TasksApp />);
+  tasksRoot.render(<TasksReadRouter />);
+}
+
+// Execution and command routes keep their existing components and services.
+function TasksReadRouter(){
+ const [path,setPath]=useState(location.pathname);
+ useEffect(()=>{const sync=()=>setPath(location.pathname);window.addEventListener('mba:route-changed',sync);return()=>window.removeEventListener('mba:route-changed',sync);},[]);
+ return readSource('tarefas')==='V3'&&/^\/tarefas\/?$/.test(path)?<BackofficeRead module="tarefas"/>:<TasksApp/>;
 }
