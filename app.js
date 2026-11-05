@@ -37,6 +37,7 @@ const nestedPageRoutes = Object.freeze({
   'analytics/andamentos': 'dashboard',
   'analytics/faturamento': 'dashboard',
   'analytics/encerramentos': 'dashboard',
+  'analytics/pagamentos': 'dashboard',
   'analytics/defesas': 'dashboard',
   'analytics/protocolos': 'dashboard',
   'analytics/ranking': 'dashboard',
@@ -52,7 +53,8 @@ const nestedPageRoutes = Object.freeze({
 });
 const routeAliases = Object.freeze({
   dashboard: 'analytics',
-  ranking: 'analytics/ranking',
+  ranking: 'analytics',
+  'analytics/ranking': 'analytics',
   'gestao-processual': 'analytics',
   acordos: 'operacao/pagamentos',
   operacao: 'operacao/pagamentos',
@@ -111,7 +113,10 @@ function canAccessRoute(pageId, route) {
   if (route === 'analytics/faturamento' && window.MBA_CURRENT_USER?.permissions?.['faturamento.view'] !== true) return false;
   if (route === 'analytics/andamentos' && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
-  if (route === 'analytics/ranking' && window.MBA_PORTFOLIO_POLICY?.canAccess('ranking') !== true) return false;
+  if (route === 'analytics/pagamentos') {
+    const user = window.MBA_CURRENT_USER;
+    return user?.permissions?.['dashboard.view'] === true && ((user?.is_master_admin === true && user?.permissions?.['pagamentos.view'] === true) || (user?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && window.MBA_API?.getPortfolioId?.() === 'agibank_mba'));
+  }
   if (route === 'analytics/defesas' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
   if (route === 'analytics/protocolos' && (window.MBA_CURRENT_USER?.permissions?.['tasks.view'] !== true || window.MBA_API?.getPortfolioId?.() !== 'agibank_enter')) return false;
   if (route === 'tarefas/atribuicoes') {

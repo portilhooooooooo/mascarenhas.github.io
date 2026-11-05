@@ -107,3 +107,11 @@ Nenhuma nova importação Benner/CPJ, coleta DataJud, reprocessamento jurídico,
 Commits de implementação: backend `c0f956d0a00937a634230c6b3e9114db11945a09` e `16dfdd78808ebea9900a07144728b68d3db3bf24`; frontend `416eac1f5669749da1e57896e4da3c40d443ec53` e `38752712649e8a8283fd3a6bba45e1d4f2953360`. Relatório/evidências são publicados em commits posteriores nas mesmas branches. Os HEADs completos de entrega são confirmados depois do push e registrados no relatório final ao usuário.
 
 Pendências reais: validar transporte de sessão real em homologação autorizada; comparar legado e V3 em condições equivalentes; comprovar reconciliação CPJ/Benner, eventos, finanças e projeção humana antes de promover fontes; projetar tarefas próprias com autoridade confiável para perfis sem view_others; certificar capacidade/cobertura antes de liberação de usuários. Nenhum Nginx, DNS, Cloudflare, container, worker real ou rota produtiva foi modificado.
+
+## Alinhamento posterior com main (layout operacional)
+
+A branch de testes foi atualizada por merge não destrutivo de `main` (base `cc32e9c`), preservando o código de leitura V3 e as proteções R00–R07. O layout, login, Base Geral, Encerramentos, Pagamentos e estilos permanecem os componentes/bytes da `main`. A navegação visível de Resultados continua **Base Geral, Encerramentos, Pagamentos, Defesas e Protocolos**; não são criadas abas adicionais para Cadastro, Andamentos ou Faturamento. Os leitores V3 desses três módulos continuam acessíveis somente por deep link explícito, com ambiente/origem e permissões autorizadas, e não substituem a Base Geral normal.
+
+Testes: builds normal e routes-testing passaram, hardening da main passou; 23 checks do navegador V3 aprovados com transporte de autoridade fixture e backend isolado. O teste `tests/v3-main-shell.test.mjs` trava o layout. Um teste legado específico de títulos duplicados permanece falhando exatamente como na `main`, sem divergência nos arquivos envolvidos, e não constitui regressão desta integração.
+
+Produção, main, DNS e workers não foram alterados. A promoção de dados e o cutover da P7 continuam NO_GO; as flags default seguem LEGACY.

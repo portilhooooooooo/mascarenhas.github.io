@@ -1,0 +1,104 @@
+{
+  "status": "passed",
+  "fixture": true,
+  "tests": [
+    "combined office/type",
+    "monthly cache reuse",
+    "portfolio isolation",
+    "cancellation",
+    "paused SSE"
+  ],
+  "calls": [
+    {
+      "path": "/api/me",
+      "query": "",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/events/stream",
+      "query": "",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/escritorios",
+      "query": "",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/dashboard",
+      "query": "?carteira=Agibank+Regular&tipo=TODOS&etapa=validados&inicio=2026-10-01&fim=2026-10-30",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/analises",
+      "query": "?tipo=TODOS&limit=20&offset=0&inicio=2026-10-01&fim=2026-10-30",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/consolidado-mensal",
+      "query": "",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/meta-aging-mensal",
+      "query": "",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=DERROTA&limit=1&offset=0&motivo_derrota=nao&tipo_validado=DERROTA",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/dashboard",
+      "query": "?carteira=Agibank+Regular&tipo=VITORIA&etapa=validados&inicio=2026-10-01&fim=2026-10-30",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/analises",
+      "query": "?tipo=VITORIA&limit=20&offset=0&inicio=2026-10-01&fim=2026-10-30",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/dashboard",
+      "query": "?carteira=Agibank+Regular&tipo=VITORIA&etapa=validados&inicio=2026-10-01&fim=2026-10-30&escritorio=Office+A",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/operacao/encerramentos/analises",
+      "query": "?tipo=VITORIA&limit=20&offset=0&inicio=2026-10-01&fim=2026-10-30&escritorio=Office+A",
+      "wallet": "agibank_mba"
+    },
+    {
+      "path": "/api/me",
+      "query": "",
+      "wallet": "agibank_enter"
+    },
+    {
+      "path": "/api/operacao/encerramentos/escritorios",
+      "query": "",
+      "wallet": "agibank_enter"
+    },
+    {
+      "path": "/api/operacao/encerramentos/dashboard",
+      "query": "?carteira=Agibank+Enter&tipo=TODOS&etapa=validados&inicio=2026-10-01&fim=2026-10-30",
+      "wallet": "agibank_enter"
+    },
+    {
+      "path": "/api/operacao/encerramentos/analises",
+      "query": "?tipo=TODOS&limit=20&offset=0&inicio=2026-10-01&fim=2026-10-30",
+      "wallet": "agibank_enter"
+    },
+    {
+      "path": "/api/operacao/encerramentos/consolidado-mensal",
+      "query": "",
+      "wallet": "agibank_enter"
+    },
+    {
+      "path": "/api/operacao/encerramentos/items",
+      "query": "?status=DERROTA&limit=1&offset=0&motivo_derrota=nao&tipo_validado=DERROTA",
+      "wallet": "agibank_enter"
+    }
+  ],
+  "errors": []
+}

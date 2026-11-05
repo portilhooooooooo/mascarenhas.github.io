@@ -178,11 +178,6 @@
 @media(max-width:950px){.base-geral-kpis-primary,.base-geral-kpis-with-billing{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.base-geral-kpis-status{grid-template-columns:repeat(2,minmax(0,1fr))}.base-geral-bottom{gap:10px}.base-geral-panel{padding:15px;min-height:0}.base-geral-chart-area{flex-wrap:wrap;justify-content:center}.base-geral-product-legend{width:100%;flex-basis:100%}}
 
-/* Loading is contained inside the metrics instead of displacing the layout. */
-.base-geral-skeleton{display:inline-block;width:74px;height:23px;border-radius:5px;vertical-align:middle;background:var(--mba-subtle);animation:base-geral-shimmer 1.35s ease-in-out infinite}
-@keyframes base-geral-shimmer{0%,100%{opacity:.5}50%{opacity:.95}}
-@media(prefers-reduced-motion:reduce){.base-geral-skeleton{animation:none}}
-
 /* Cards follow the platform's 100px metric rhythm. Product is a table again. */
 .base-geral-kpis-primary .base-geral-card,.base-geral-kpis-status .base-geral-card{
   height:100px;min-height:100px;padding:13px 15px;
@@ -432,6 +427,13 @@
 .base-geral-product-share-track>span{
   background:var(--base-geral-orange-primary);
 }
+
+/* Seletores React compartilham os mesmos tokens dos filtros nativos. */
+.base-geral-filters .mba-react-select.base-geral-filter{display:grid;gap:4px}
+.base-geral-filters .mba-react-select-label{font-size:10px;font-weight:600;color:var(--mba-text-2)}
+.base-geral-filters .mba-react-select-trigger{height:33px;padding:0 10px;background:var(--mba-surface);border:1px solid var(--mba-border-strong);border-radius:7px;font-size:11px;font-weight:500}
+.base-geral-filters .mba-react-select-trigger>span{font-size:11px;font-weight:500;color:var(--mba-text)}
+.base-geral-filters .mba-react-select-options{min-width:100%;max-width:min(360px,90vw)}
 
 /* Faturamento: avoid shrinking/clipping the monetary value inside the 100px KPI.
  * The generic metric-card uses flex gap 12px, which collapses the strong to ~21px
