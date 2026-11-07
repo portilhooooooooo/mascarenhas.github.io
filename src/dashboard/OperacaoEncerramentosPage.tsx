@@ -1,4 +1,5 @@
 import {SelectMenu} from './SelectMenu';
+import {DataJudEvidencePanel} from './DataJudEvidencePanel';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {AlertTriangle, ChevronLeft, ChevronRight, Clock3, Download, LoaderCircle, RefreshCcw, Search, Send} from 'lucide-react';
 import {
@@ -179,6 +180,7 @@ export function OperacaoEncerramentosPage() {
       </div>
       <button className="protocolos-button secondary" type="button" onClick={()=>void refresh()} disabled={loading||submitting}><RefreshCcw size={14}/>Atualizar</button>
     </section>
+    <DataJudEvidencePanel portfolioId={portfolioId} canView={canView}/>
     <section className="protocolos-card protocolos-workspace operacao-workspace">
       <header className="protocolos-workspace-head">
         <div><h2>Base operacional</h2><p>{isNubank
