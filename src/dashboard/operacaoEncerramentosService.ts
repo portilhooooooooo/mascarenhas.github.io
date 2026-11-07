@@ -61,3 +61,60 @@ export function sendClosingsToBenner(items: {cnj: string; andamento: string}[]):
     method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({items}),
   });
 }
+
+
+/** Evidence-only DataJud V3 snapshots; NOT human-reviewed closing aptness. */
+export interface DataJudV3Snapshot {
+  state: 'PARTIAL' | 'COMPLETE' | 'NOT_IMPORTED';
+  source: 'DATAJUD_V3';
+  source_job_id?: string;
+  expected_total?: number;
+  captured_total?: number;
+  remaining_unchecked?: number;
+  succeeded?: number;
+  failed?: number;
+  not_found?: number;
+  verified_raw?: number;
+  matched_cases?: number;
+  unknown_cases?: number;
+  preliminary_candidates?: number;
+  preliminary_with_blocker?: number;
+  source_last_at?: string | null;
+  imported_at?: string | null;
+  requires_human_review?: boolean;
+}
+export interface DataJudV3ResultRow {
+  cnj: string;
+  source_capture_status: 'SUCESSO' | 'ERRO' | 'NAO_ENCONTRADO';
+  consultado_em?: string | null;
+  identity_state: 'MATCHED' | 'UNMATCHED' | 'AMBIGUOUS';
+  classificacao_preliminar?: string | null;
+  indicio_apto?: boolean | null;
+  evidencia_verificada: boolean;
+  bloqueio_reportado?: boolean | null;
+  ultima_movimentacao_em?: string | null;
+  validacao_humana: 'NAO_INFERIDA_DESTA_FONTE';
+  pode_enviar_benner: false;
+}
+export interface DataJudV3ResultList {
+  rows: DataJudV3ResultRow[];
+  total: number;
+  limit: number;
+  offset: number;
+  completion_state: 'PARTIAL' | 'COMPLETE';
+}
+
+export function getDataJudV3Snapshot(): Promise<DataJudV3Snapshot> {
+  return api().request('/api/operacao/encerramentos/datajud-v3');
+}
+
+export function getDataJudV3Results(
+  status: 'TODOS' | 'SUCESSO' | 'ERRO' | 'NAO_ENCONTRADO',
+  limit: number,
+  offset: number,
+  search = '',
+): Promise<DataJudV3ResultList> {
+  const query = new URLSearchParams({status,limit:String(limit),offset:String(offset)});
+  if (search.trim()) query.set('q',search.trim());
+  return api().request('/api/operacao/encerramentos/datajud-v3/items?' + query);
+}
