@@ -473,3 +473,10 @@
 .cadastro-cards .base-geral-card strong{margin-top:4px}
 @media(max-width:920px){.cadastro-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:550px){.cadastro-cards{grid-template-columns:1fr}}
+
+.cadastro-cpj-toolbar,.cadastro-cpj-note{grid-column:1/-1}
+.cadastro-cpj-toolbar{display:flex;align-items:center;gap:15px;flex-wrap:wrap}
+.cadastro-cpj-toolbar .base-geral-filter{width:min(270px,100%)}
+.cadastro-cpj-toolbar .base-geral-muted{padding:0;flex:1;min-width:220px}
+.cadastro-cpj-note:empty{display:none}
+.andamentos-office-filter{grid-template-columns:minmax(200px,280px)}

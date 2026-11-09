@@ -52,14 +52,16 @@ try{
   for(const label of ['Entradas','Para cadastro','Com citação','Suspenso','Desconsideração de patrocínio','Em arquivamento','Faturável','Prescrito'])
     assert.ok(await page.locator('section[aria-label="Cadastro no CPJ"] .cadastro-cards').getByText(label,{exact:true}).count()>0,label);
   assert.equal(await page.getByRole('button',{name:'Base Geral',exact:true}).count(),0);
+  assert.ok(await page.getByText('Escritório (CPJ)',{exact:true}).count()>0);
+  assert.ok(calls.some(c=>c.path==='/api/v3/cadastro/cards'));
  });
  await step('andamentos_semantic_cards',async()=>{
   await page.evaluate(()=>window.MBA_NAVIGATE('analytics/andamentos'));
   await page.locator('section[aria-label="Classificação semântica dos andamentos"]').waitFor();
-  for(const label of ['Sentenças','Acórdãos','Tutelas','Suspensões','Trânsito em julgado','Arquivamentos','Recursos','Não classificados'])
+  for(const label of ['Fase de conhecimento','Sentenças','Acórdãos','Tutelas','Suspensões','Trânsito em julgado','Arquivamentos','Recursos','Não classificados'])
     assert.ok(await page.locator('section[aria-label="Classificação semântica dos andamentos"]').getByText(label,{exact:true}).count()>0,label);
   await page.waitForTimeout(400);
-  assert.ok(calls.some(c=>c.path==='/api/v3/andamentos/summary'));
+  assert.ok(calls.some(c=>c.path==='/api/v3/andamentos/cards'));
  });
  await step('pagination',async()=>{await navigate('processos','processos');await surface().getByRole('button',{name:'Próxima página',exact:true}).click();await page.getByText('Página 2',{exact:true}).waitFor();await page.locator('[data-module="processos"] tbody tr').first().waitFor();await surface().getByRole('button',{name:'Anterior',exact:true}).click();});
  await step('detail_timeline',async()=>{await surface().getByRole('button',{name:/^Detalhes /}).first().click();await page.getByRole('dialog').waitFor();await surface().getByRole('button',{name:'Ver timeline',exact:true}).click();await page.locator('[role="dialog"] [aria-label="Carregando dados"]').waitFor({state:'detached'});await page.getByLabel('Fechar detalhe').click();});

@@ -1,4 +1,5 @@
 import {SelectMenu} from './SelectMenu';
+import {CadastroCpjCards} from './CadastroCpjCards';
 import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -327,20 +328,6 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', keydown); };
   }, [detail, revenueOpen]);
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
-  // Indicadores do CPJ: somente valores publicados explicitamente na origem.
-  // Prescrito e Faturamento conservam as consultas, regras e detalhes legados.
-  const cpj = (shown as Dashboard & {cpj_cards?: Record<string,number|null>} | null)?.cpj_cards;
-  const cadastroCards = [
-    {key:'entradas',label:'Entradas',icon:FolderOpen},
-    {key:'para_cadastro',label:'Para cadastro',icon:Clock3},
-    {key:'com_citacao',label:'Com citação',icon:FileCheck2},
-    {key:'suspenso',label:'Suspenso',icon:CirclePause},
-    {key:'desconsideracao_patrocinio',label:'Desconsideração de patrocínio',icon:ShieldAlert},
-    {key:'em_arquivamento',label:'Em arquivamento',icon:Hourglass},
-    {key:'faturavel',label:'Faturável',icon:CheckCircle2},
-  ] as const;
-
-
   return <section className="base-geral-page" aria-label={cardsOnly ? 'Cadastro no CPJ' : 'Base Geral da carteira processual'}>
     <div className="base-geral-filters">
       <DateRangePicker label="Período da entrada" start={entryStart} end={entryEnd} onChange={(start,end)=>{setEntryStart(start);setEntryEnd(end)}}/>
@@ -355,10 +342,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
     {cardsOnly ? <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
-      {cadastroCards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
-        <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
-        <strong>{shown ? number(validNumber(cpj?.[key])) : pending ? <MetricDots/> : '—'}</strong>
-      </article>)}
+      <CadastroCpjCards/>
       <button type="button" className="base-geral-card mba-metric-card" onClick={()=>openDetail('prescribed')} title="Aging superior a 18 meses"
         aria-label="Abrir relação: Base prescrita. Aging superior a 18 meses">
         <span className="base-geral-card-top"><span>Prescrito</span><Clock3 size={15} strokeWidth={1.7}/></span>
