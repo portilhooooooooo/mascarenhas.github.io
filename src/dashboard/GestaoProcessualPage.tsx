@@ -110,6 +110,7 @@ export function GestaoProcessualPage() {
       {canViewEnterProtocols && <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/protocolos')}>Protocolos</button>}
     </nav>;
 
+  (window as Window & {MBA_RESULT_TABS?: Record<string, boolean>}).MBA_RESULT_TABS = {pagamentos: canViewPayments, encerramentos: canViewClosing, defesas: canViewEnterDefenses, protocolos: canViewEnterProtocols};
   return <div className="gestao-metabase-page gestao-processual-react">
     {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
     {canViewAnalytics && visitedTabs.includes('cadastro') ? <div style={{display: displayedTab === 'cadastro' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='cadastro'} cardsOnly/></div> : null}

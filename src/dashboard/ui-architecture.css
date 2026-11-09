@@ -1,6 +1,6 @@
 :root {
   --mba-subnav-height: 38px;
-  --mba-subnav-font-size: 11.5px;
+  --mba-subnav-font-size: 12px;
   --mba-subnav-gap: 20px;
   --mba-page-x: 24px;
   --mba-page-y: 14px;
@@ -31,7 +31,7 @@ body :is(
   gap: var(--mba-subnav-gap) !important;
   border: 0 !important;
   border-bottom: 1px solid var(--mba-border) !important;
-  background: #fff !important;
+  background:var(--mba-surface,#fff) !important;
   box-sizing: border-box;
 }
 
@@ -174,7 +174,7 @@ body :is(
   body .analytics-page-header { margin-bottom: 12px; }
   body .protocolos-header { gap: 16px; }
   body .protocolos-header h1 { margin: 2px 0 4px; }
-  body .protocolos-eyebrow { font-size: 9px; letter-spacing: .1em; }
+  body .protocolos-eyebrow { font-size: 12px; letter-spacing: .1em; }
 
   body .primary-button,
   body .secondary-button,
@@ -183,7 +183,7 @@ body :is(
     min-height: 34px;
     height: 34px;
     border-radius: 7px;
-    font-size: 11.5px;
+    font-size: 12px;
   }
 
   body .primary-button svg,

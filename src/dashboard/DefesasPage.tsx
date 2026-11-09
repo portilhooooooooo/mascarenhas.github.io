@@ -175,7 +175,7 @@ export function DefesasPage() {
     </section>
 
     <section className="protocolos-card protocolos-workspace defesas-batch-workspace">
-      <header className="protocolos-workspace-head"><div><h2>Processos da Controladoria</h2><p>Fila ativa sincronizada pelo worker já existente.</p></div></header>
+      <header className="protocolos-workspace-head"><div><h2>Processos da Controladoria</h2><p>Fila ativa sincronizada automaticamente.</p></div></header>
       <div className="protocolos-status-strip-react">
         <button type="button" className={status === 'all' ? 'active' : ''} onClick={() => setStatus('all')}>Todos <strong>{counts.all}</strong></button>
         <button type="button" className={`success ${status === 'saneado' ? 'active' : ''}`} onClick={() => setStatus('saneado')}>Saneados <strong>{counts.saneado}</strong></button>

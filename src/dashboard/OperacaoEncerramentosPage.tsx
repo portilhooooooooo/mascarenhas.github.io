@@ -166,12 +166,12 @@ export function OperacaoEncerramentosPage() {
   const busy=backend?.state==='PROCESSANDO'||backend?.state==='NA_FILA';
 
   return <div className="protocolos-page-react operacao-pagamentos-page operacao-encerramentos-page">
-    <header className="protocolos-header"><div><span className="protocolos-eyebrow">OPERAÇÃO</span><h1>Encerramentos</h1></div></header>
+    
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
     {feedback?<p className="protocolos-feedback" role="status">{feedback}</p>:null}
-    <section className="protocolos-session-bar" aria-label="Status do backend">
+    <section className="protocolos-session-bar" aria-label="Situação do processamento">
       <div className="protocolos-session-copy">
-        <span>Status do backend</span>
+        <span>Situação do processamento</span>
         <strong className={'protocolos-session-state '+(busy?'in_use':error?'error':'connected')} aria-live="polite">
           <i aria-hidden="true"/>{loading?'Consultando…':backend?.state==='PROCESSANDO'?'Processando andamentos':backend?.state==='NA_FILA'?'Envios na fila':backend?.state==='ERRO'?'Falhas registradas':backend?.state==='INDISPONIVEL'?'Benner indisponível':'Fila de Encerramentos'}
         </strong>

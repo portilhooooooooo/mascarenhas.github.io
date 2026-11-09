@@ -109,7 +109,7 @@ html[data-mba-theme] #tarefas .tasks-renderer-card {
 html[data-mba-theme] #tarefas .tasks-process-title strong {color:var(--mba-ink)!important;font-size:12px;font-weight:600}
 html[data-mba-theme] #tarefas .tasks-process-title>span {color:var(--mba-text-2)!important;font-variant-numeric:tabular-nums}
 html[data-mba-theme] #tarefas .queue-station-filters {grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-label {font-size:10px;color:var(--mba-text-2)}
+html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-label {font-size:12px;color:var(--mba-text-2)}
 html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-trigger,
 html[data-mba-theme] #tarefas .tasks-process-search {
   background:var(--mba-surface-muted)!important;border:1px solid var(--mba-border-strong)!important;
@@ -119,7 +119,7 @@ html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-trigger {
 html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-trigger span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html[data-mba-theme] #tarefas .queue-station-filters .mba-react-select-options {z-index:120;min-width:135px;background:var(--mba-surface);border-color:var(--mba-border)}
 html[data-mba-theme] #tarefas .tasks-process-search input {background:transparent!important;color:var(--mba-ink)!important;border:0!important}
-html[data-mba-theme] #tarefas .tasks-process-item {min-height:60px;height:60px;border-radius:7px!important;padding:8px 10px;transition:background var(--mba-motion-fast)}
+html[data-mba-theme] #tarefas .tasks-process-item {min-height:52px;height:52px;border-radius:7px!important;padding:8px 10px;transition:background var(--mba-motion-fast)}
 html[data-mba-theme] #tarefas .tasks-process-item:hover {background:var(--mba-surface-muted)!important;border-color:var(--mba-border)!important}
 html[data-mba-theme] #tarefas .tasks-process-item.selected {background:var(--mba-accent-soft)!important;border-color:var(--mba-border-strong)!important;box-shadow:inset 2px 0 var(--mba-accent)!important}
 html[data-mba-theme] #tarefas .tasks-process-item strong {color:var(--mba-ink)!important}

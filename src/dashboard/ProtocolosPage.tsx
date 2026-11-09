@@ -102,7 +102,7 @@ export function ProtocolosPage() {
       </article>
       <article className="protocolos-card protocolos-upload-card"><header><span className="protocolos-card-icon"><Files size={18}/></span><h3>Documentos</h3></header>
         <UploadField files={documents} onChange={setDocuments} documents disabled={!canRun||uploadBusy}/>
-        <div className="protocolos-card-footer"><span className="protocolos-import-line">Envio para o repositório da VPS</span><button type="button" className="protocolos-button primary" disabled={!canRun||!documents.length||uploadBusy} onClick={()=>void upload()}>{uploadBusy?<LoaderCircle className="spin" size={15}/>:<UploadCloud size={15}/>}Enviar documentos</button></div>
+        <div className="protocolos-card-footer"><span className="protocolos-import-line">Envio para o repositório de documentos</span><button type="button" className="protocolos-button primary" disabled={!canRun||!documents.length||uploadBusy} onClick={()=>void upload()}>{uploadBusy?<LoaderCircle className="spin" size={15}/>:<UploadCloud size={15}/>}Enviar documentos</button></div>
         {uploadFeedback?<p className={`protocolos-feedback ${uploadError?'danger':''}`} role={uploadError?'alert':'status'}>{uploadFeedback}</p>:null}
       </article>
     </div>

@@ -1,6 +1,7 @@
 import {BackofficeRead,readSource} from '../v3/backoffice';
 import {SelectMenu} from './SelectMenu';
 import {createPortal} from 'react-dom';
+import {useModuleVisible} from './useModuleVisible';
 import './operacao.css';
 import {OperacaoEncerramentosPage} from './OperacaoEncerramentosPage';
 import {OperacaoLiminarPage} from './OperacaoLiminarPage';
@@ -225,7 +226,7 @@ function PagamentosQueue({summary,items,loading}:{summary:PagamentoOperacaoSumma
       <table className="protocolos-table-react operacao-pagamentos-table">
         <thead><tr><th>Processo / Pasta</th><th>Status</th><th>Base pagamentos</th><th>Provisão Benner</th><th>Comprovante</th><th>Atualização</th></tr></thead>
         <tbody>
-          {loading?<tr><td colSpan={6}><div className="protocolos-empty"><LoaderCircle className="spin" size={22}/><strong>Carregando pagamentos</strong><span>Consultando o snapshot operacional.</span></div></td></tr>:null}
+          {loading?<tr><td colSpan={6}><div className="protocolos-empty"><LoaderCircle className="spin" size={22}/><strong>Carregando pagamentos</strong><span>Consultando a base operacional.</span></div></td></tr>:null}
           {!loading && visible.length===0?<tr><td colSpan={6}><div className="protocolos-empty"><CircleDollarSign size={22}/><strong>Nenhum registro nesta visão</strong><span>Importe uma base ou ajuste os filtros.</span></div></td></tr>:null}
           {!loading && pageRows.map(item=><tr key={item.id}>
             <td><strong className="protocolos-cnj">{item.processo||item.pasta||'—'}</strong><small>{item.processo&&item.pasta?'Pasta '+item.pasta:item.processo?'Sem pasta informada':'Sem processo informado'}</small>{item.automation_message?<small className={item.status_operacional==='ACAO_NECESSARIA'?'operacao-danger-copy':''} title={item.automation_message}>{item.automation_message}</small>:null}</td>
@@ -311,14 +312,14 @@ function PagamentosPage() {
   return <div className="protocolos-page-react operacao-pagamentos-page">
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
 
-    <section className="protocolos-session-bar" aria-label="Status do backend">
-      <div className="protocolos-session-copy"><span>Status do backend</span><strong className={'protocolos-session-state '+state} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong><small>{queueTotal?number(queueTotal)+' item(ns) nas filas Benner':summary?.session?.updated_at?'Última atividade: '+dateTime(summary.session.updated_at):'Nenhuma execução recente'}</small></div>
+    <section className="protocolos-session-bar" aria-label="Situação do processamento">
+      <div className="protocolos-session-copy"><span>Situação do processamento</span><strong className={'protocolos-session-state '+state} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong><small>{queueTotal?number(queueTotal)+' item(ns) nas filas Benner':summary?.session?.updated_at?'Última atividade: '+dateTime(summary.session.updated_at):'Nenhuma execução recente'}</small></div>
       <button type="button" className="protocolos-button primary protocolos-start-button" disabled={!canRun||startBusy||busy||loading||!summary?.importacao} onClick={()=>void start()}>{startBusy?<LoaderCircle className="spin" size={15}/>:<Play size={15}/>}Processar fila</button>
     </section>
 
     <div className="protocolos-intake-grid-react operacao-single-intake">
       <article className="protocolos-card protocolos-upload-card">
-        <header><span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span><div><h3>Input de pagamentos</h3><small className="operacao-card-subtitle">PROCESSO e PASTA podem ser alternativos; IDENTIFICADOR e VALOR são opcionais.</small></div></header>
+        <header><span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span><div><h3>Importar pagamentos</h3><small className="operacao-card-subtitle">PROCESSO e PASTA podem ser alternativos; IDENTIFICADOR e VALOR são opcionais.</small></div></header>
         <UploadField file={file} onChange={setFile} disabled={!canImport||importBusy||busy}/>
         <div className="protocolos-card-footer">
           <div className="protocolos-import-line"><span>Última importação:</span><span>{dateTime(summary?.importacao?.completed_at||summary?.importacao?.created_at)}</span>{summary?.importacao?<><i>·</i><strong>{number(summary.importacao.valid_rows)} no arquivo</strong></>:null}</div>
@@ -365,7 +366,10 @@ export function OperacaoPage() {
   }, []);
   const [module, setModule] = useState<OperationModule>(() => operationModuleFromLocation() || 'pagamentos');
   // Mount once per authorized visit, then keep state between submodule changes.
-  const [visited, setVisited] = useState<OperationModule[]>(() => [operationModuleFromLocation() || 'pagamentos']);
+  const [visited, setVisited] = useState<OperationModule[]>(() => document.getElementById('acordos')?.classList.contains('active') ? [operationModuleFromLocation() || 'pagamentos'] : []);
+  // Automações is the Home tab of Operação: its page stays in the shell, under its own route and permission.
+  const homeVisible = useModuleVisible('automacoes');
+  const [canOpenHome, setCanOpenHome] = useState(false);
   const [allowed, setAllowed] = useState<OperationVisibility>({
     pagamentos: false, liminar: false, encerramentos: false, protocolos: false, defesas: false,
   });
@@ -388,6 +392,7 @@ export function OperacaoPage() {
         protocolos: canAccessProtocols,
         defesas: canAccessProtocols,
       };
+      setCanOpenHome(policy?.canAccess('automacoes') === true);
       setAllowed(previous => OPERATION_MODULES.every(key => previous[key] === next[key]) ? previous : next);
       setModule(previous => {
         const requested = operationModuleFromLocation();
@@ -423,19 +428,21 @@ export function OperacaoPage() {
   }, [allowed]);
 
   useEffect(() => {
-    if (allowed[module]) setVisited(previous => previous.includes(module) ? previous : [...previous, module]);
-  }, [module, allowed]);
+    if (allowed[module] && operationVisible) setVisited(previous => previous.includes(module) ? previous : [...previous, module]);
+  }, [module, allowed, operationVisible]);
 
   const shellTabs = document.getElementById('mba-shell-tabs');
   const operationTabs = <nav className="mba-operation-subnav operacao-module-subnav" aria-label="Fluxos de Operação">
-      {allowed.pagamentos ? <button type="button" className={module === 'pagamentos' ? 'active' : ''} aria-current={module === 'pagamentos' ? 'page' : undefined} onClick={() => navigateOperationModule('pagamentos')}>Pagamentos</button> : null}
-      {allowed.liminar ? <button type="button" className={module === 'liminar' ? 'active' : ''} aria-current={module === 'liminar' ? 'page' : undefined} onClick={() => navigateOperationModule('liminar')}>Liminar</button> : null}
-      {allowed.encerramentos ? <button type="button" className={module === 'encerramentos' ? 'active' : ''} aria-current={module === 'encerramentos' ? 'page' : undefined} onClick={() => navigateOperationModule('encerramentos')}>Encerramentos</button> : null}
-      {allowed.protocolos ? <button type="button" className={module === 'protocolos' ? 'active' : ''} aria-current={module === 'protocolos' ? 'page' : undefined} onClick={() => navigateOperationModule('protocolos')}>Protocolos</button> : null}
-      {allowed.defesas ? <button type="button" className={module === 'defesas' ? 'active' : ''} aria-current={module === 'defesas' ? 'page' : undefined} onClick={() => navigateOperationModule('defesas')}>Defesas</button> : null}
+      {canOpenHome ? <button type="button" className={homeVisible ? 'active' : ''} aria-current={homeVisible ? 'page' : undefined} onClick={() => (window as Window & { MBA_NAVIGATE?: (route: string) => boolean }).MBA_NAVIGATE?.('automacoes')}>Home</button> : null}
+      {allowed.pagamentos ? <button type="button" className={!homeVisible && module === 'pagamentos' ? 'active' : ''} aria-current={!homeVisible && module === 'pagamentos' ? 'page' : undefined} onClick={() => navigateOperationModule('pagamentos')}>Pagamentos</button> : null}
+      {allowed.liminar ? <button type="button" className={!homeVisible && module === 'liminar' ? 'active' : ''} aria-current={!homeVisible && module === 'liminar' ? 'page' : undefined} onClick={() => navigateOperationModule('liminar')}>Liminar</button> : null}
+      {allowed.encerramentos ? <button type="button" className={!homeVisible && module === 'encerramentos' ? 'active' : ''} aria-current={!homeVisible && module === 'encerramentos' ? 'page' : undefined} onClick={() => navigateOperationModule('encerramentos')}>Encerramentos</button> : null}
+      {allowed.protocolos ? <button type="button" className={!homeVisible && module === 'protocolos' ? 'active' : ''} aria-current={!homeVisible && module === 'protocolos' ? 'page' : undefined} onClick={() => navigateOperationModule('protocolos')}>Protocolos</button> : null}
+      {allowed.defesas ? <button type="button" className={!homeVisible && module === 'defesas' ? 'active' : ''} aria-current={!homeVisible && module === 'defesas' ? 'page' : undefined} onClick={() => navigateOperationModule('defesas')}>Defesas</button> : null}
     </nav>;
   return <div className="operacao-module-shell">
-    {shellTabs ? (operationVisible ? createPortal(operationTabs, shellTabs) : null) : operationTabs}
+    {shellTabs ? (operationVisible || homeVisible ? createPortal(operationTabs, shellTabs) : null) : operationTabs}
+    {(window as Window & {MBA_RESULT_TABS?: Record<string, boolean>}).MBA_RESULT_TABS?.[module] ? <button type="button" className="operacao-results-link" onClick={() => (window as Window & {MBA_NAVIGATE?: (route: string) => boolean}).MBA_NAVIGATE?.('analytics/' + module)}>Ver resultados</button> : null}
     {allowed.pagamentos && (readSource('pagamentos')==='V3' ? (operationVisible && module==='pagamentos' ? <BackofficeRead module="pagamentos"/> : null) : (visited.includes('pagamentos') ? <div style={{display: module === 'pagamentos' ? 'contents' : 'none'}}><PagamentosPage/></div> : null))}
     {allowed.liminar && (readSource('liminar')==='V3' ? (operationVisible && module==='liminar' ? <BackofficeRead module="liminar"/> : null) : (visited.includes('liminar') ? <div style={{display: module === 'liminar' ? 'contents' : 'none'}}><OperacaoLiminarPage/></div> : null))}
     {allowed.encerramentos && (readSource('encerramentos')==='V3' ? (operationVisible && module==='encerramentos' ? <BackofficeRead module="encerramentos"/> : null) : (visited.includes('encerramentos') ? <div style={{display: module === 'encerramentos' ? 'contents' : 'none'}}><OperacaoEncerramentosPage/></div> : null))}

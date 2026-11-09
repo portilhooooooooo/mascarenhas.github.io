@@ -27,4 +27,4 @@ assert.ok(group.indexOf('<section className="base-geral-panel base-geral-compari
   group.indexOf('<section className="base-geral-panel base-geral-products-table"'),
   'Comparação precede Produtos no fluxo de leitura');
 assert.match(base,/--base-geral-orange-primary:#C77436/);
-assert.match(base,/--base-geral-orange-light:#F0B77E/);
+assert.match(base,/--base-geral-orange-light:var\(--mba-border-strong\)/);
