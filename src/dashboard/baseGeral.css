@@ -465,3 +465,11 @@
   line-height:1.3;
   white-space:nowrap;
 }
+
+/* Resultados > Cadastro / Andamentos: apenas cards, mesmo padrão compacto. */
+.cadastro-cards{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
+.cadastro-cards .base-geral-card{min-height:105px;cursor:default}
+.cadastro-cards button.base-geral-card{cursor:pointer}
+.cadastro-cards .base-geral-card strong{margin-top:4px}
+@media(max-width:920px){.cadastro-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:550px){.cadastro-cards{grid-template-columns:1fr}}

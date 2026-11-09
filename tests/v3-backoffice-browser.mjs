@@ -43,10 +43,24 @@ const login=async()=>{
 try{
  await step('existing_login_ui',async()=>{await page.goto(base);await page.waitForFunction(()=>document.querySelector('#login-screen')||document.body.innerText.includes('Microsoft'));});
  await step('existing_session_bootstrap',login);
- for(const [route,module] of [['processos','processos'],['analytics/cadastro','cadastro'],['analytics/andamentos','andamentos'],['operacao/encerramentos','encerramentos'],['operacao/liminar','liminar'],['operacao/pagamentos','pagamentos'],['controladoria/protocolos','controladoria'],['tarefas','tarefas'],['automacoes','automacoes']]){
+ for(const [route,module] of [['processos','processos'],['operacao/encerramentos','encerramentos'],['operacao/liminar','liminar'],['operacao/pagamentos','pagamentos'],['controladoria/protocolos','controladoria'],['tarefas','tarefas'],['automacoes','automacoes']]){
   await step('navigation_'+module,async()=>{await navigate(route,module);assert.ok(calls.some(c=>c.path==='/api/v3/'+module));assert.equal(await page.locator(`[data-module="${module}"] [role="alert"]`).count(),0);});
  }
- await step('partial_coverage',async()=>{await navigate('analytics/cadastro','cadastro');await surface().getByText('Nenhum registro disponível neste recorte; a cobertura pode estar incompleta.').waitFor();assert.match(await page.locator('[data-module="cadastro"]').innerText(),/Cobertura parcial/);});
+ await step('cadastro_cards',async()=>{
+  await page.evaluate(()=>window.MBA_NAVIGATE('analytics/cadastro'));
+  await page.locator('section[aria-label="Cadastro no CPJ"]').waitFor();
+  for(const label of ['Entradas','Para cadastro','Com citação','Suspenso','Desconsideração de patrocínio','Em arquivamento','Faturável','Prescrito'])
+    assert.ok(await page.locator('section[aria-label="Cadastro no CPJ"] .cadastro-cards').getByText(label,{exact:true}).count()>0,label);
+  assert.equal(await page.getByRole('button',{name:'Base Geral',exact:true}).count(),0);
+ });
+ await step('andamentos_semantic_cards',async()=>{
+  await page.evaluate(()=>window.MBA_NAVIGATE('analytics/andamentos'));
+  await page.locator('section[aria-label="Classificação semântica dos andamentos"]').waitFor();
+  for(const label of ['Sentenças','Acórdãos','Tutelas','Suspensões','Trânsito em julgado','Arquivamentos','Recursos','Não classificados'])
+    assert.ok(await page.locator('section[aria-label="Classificação semântica dos andamentos"]').getByText(label,{exact:true}).count()>0,label);
+  await page.waitForTimeout(400);
+  assert.ok(calls.some(c=>c.path==='/api/v3/andamentos/summary'));
+ });
  await step('pagination',async()=>{await navigate('processos','processos');await surface().getByRole('button',{name:'Próxima página',exact:true}).click();await page.getByText('Página 2',{exact:true}).waitFor();await page.locator('[data-module="processos"] tbody tr').first().waitFor();await surface().getByRole('button',{name:'Anterior',exact:true}).click();});
  await step('detail_timeline',async()=>{await surface().getByRole('button',{name:/^Detalhes /}).first().click();await page.getByRole('dialog').waitFor();await surface().getByRole('button',{name:'Ver timeline',exact:true}).click();await page.locator('[role="dialog"] [aria-label="Carregando dados"]').waitFor({state:'detached'});await page.getByLabel('Fechar detalhe').click();});
  await step('combined_filters',async()=>{await surface().getByLabel('Pesquisar',{exact:true}).fill('NO-SUCH-ROUTE-FIXTURE');await surface().getByLabel('Fonte',{exact:true}).fill('CANONICAL');await surface().getByRole('button',{name:'Aplicar filtros',exact:true}).click();await surface().getByText('Nenhum registro disponível neste recorte; a cobertura pode estar incompleta.').waitFor({timeout:15000});await surface().getByLabel('Pesquisar',{exact:true}).fill('');await surface().getByLabel('Fonte',{exact:true}).fill('');await surface().getByRole('button',{name:'Aplicar filtros',exact:true}).click();await page.locator('[data-module="processos"] tbody tr').first().waitFor();});

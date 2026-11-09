@@ -115,7 +115,7 @@ const fromValues = (values: string[]) => [
   { value: '', label: 'Todos' }, ...values.map(value => ({ value, label: value })),
 ];
 
-export function BaseGeralPage({visible=true}:{visible?:boolean}) {
+export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;cardsOnly?:boolean}) {
   const [portfolio, setPortfolio] = useState(() => (window as Env).MBA_API?.getPortfolioId?.() || '');
   const [revision, setRevision] = useState(0);
   const [entryStart, setEntryStart] = useState('');
@@ -152,7 +152,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
   const comparable = !entryStart && !entryEnd && !product && !situation && !resolution;
   const canSeeClosings = ['agibank_enter','agibank_mba','nubank_mba'].includes(portfolio)
     && (window as Window & { MBA_CURRENT_USER?: { permissions?: Record<string, boolean> } }).MBA_CURRENT_USER?.permissions?.['encerramentos.view'] === true;
-  const closingComparable = comparable && !uf && canSeeClosings;
+  const closingComparable = !cardsOnly && comparable && !uf && canSeeClosings;
 
   const visibleRef=useRef(visible); visibleRef.current=visible;
   const refresh = useCallback(async (force = false) => {
@@ -327,8 +327,21 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     return () => { document.body.style.overflow = previous; window.removeEventListener('keydown', keydown); };
   }, [detail, revenueOpen]);
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
+  // Indicadores do CPJ: somente valores publicados explicitamente na origem.
+  // Prescrito e Faturamento conservam as consultas, regras e detalhes legados.
+  const cpj = (shown as Dashboard & {cpj_cards?: Record<string,number|null>} | null)?.cpj_cards;
+  const cadastroCards = [
+    {key:'entradas',label:'Entradas',icon:FolderOpen},
+    {key:'para_cadastro',label:'Para cadastro',icon:Clock3},
+    {key:'com_citacao',label:'Com citação',icon:FileCheck2},
+    {key:'suspenso',label:'Suspenso',icon:CirclePause},
+    {key:'desconsideracao_patrocinio',label:'Desconsideração de patrocínio',icon:ShieldAlert},
+    {key:'em_arquivamento',label:'Em arquivamento',icon:Hourglass},
+    {key:'faturavel',label:'Faturável',icon:CheckCircle2},
+  ] as const;
 
-  return <section className="base-geral-page" aria-label="Base Geral da carteira processual">
+
+  return <section className="base-geral-page" aria-label={cardsOnly ? 'Cadastro no CPJ' : 'Base Geral da carteira processual'}>
     <div className="base-geral-filters">
       <DateRangePicker label="Período da entrada" start={entryStart} end={entryEnd} onChange={(start,end)=>{setEntryStart(start);setEntryEnd(end)}}/>
       <Select label="Situação" value={situation} onChange={setSituation} options={[
@@ -341,6 +354,26 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
     </div>
     {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
+    {cardsOnly ? <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
+      {cadastroCards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
+        <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
+        <strong>{shown ? number(validNumber(cpj?.[key])) : pending ? <MetricDots/> : '—'}</strong>
+      </article>)}
+      <button type="button" className="base-geral-card mba-metric-card" onClick={()=>openDetail('prescribed')} title="Aging superior a 18 meses"
+        aria-label="Abrir relação: Base prescrita. Aging superior a 18 meses">
+        <span className="base-geral-card-top"><span>Prescrito</span><Clock3 size={15} strokeWidth={1.7}/></span>
+        <strong>{shown ? number(categories.prescribed) : pending ? <MetricDots/> : '—'}</strong>
+      </button>
+      {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
+        className="base-geral-card mba-metric-card base-geral-revenue-card"
+        title="Faturamento projetado: 18 mensalidades de R$ 35 e antecipação pelos andamentos enviados no mês corrente"
+        aria-label="Detalhar faturamento estimado da Regular"
+        disabled={estimatedRevenue === null}
+        onClick={() => setRevenueOpen(true)}>
+        <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={15} strokeWidth={1.7}/></span>
+        <strong>{billingPending && !currentBilling ? <MetricDots/> : money(estimatedRevenue)}</strong>
+      </button>}
+    </div> : <>
     <div className={'base-geral-kpi-layout' + (portfolio === 'agibank_mba' && canViewBilling ? ' with-billing' : '')}>
     <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
       {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
@@ -412,6 +445,7 @@ export function BaseGeralPage({visible=true}:{visible?:boolean}) {
         </div>
       </section>
     </div>
+    </>}
     {revenueOpen && portfolio === 'agibank_mba' && canViewBilling && <div className="base-geral-overlay" role="presentation" onMouseDown={event => {
       if (event.target === event.currentTarget) setRevenueOpen(false);
     }}>
