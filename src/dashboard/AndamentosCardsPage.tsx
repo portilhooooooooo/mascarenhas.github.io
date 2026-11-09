@@ -2,12 +2,16 @@ import {useEffect,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
 import {BookOpen,FileCheck2,FileText,Archive,Scale,PauseCircle,RotateCcw,Gavel} from 'lucide-react';
 import {SelectMenu} from './SelectMenu';
-import {readSource} from '../v3/backoffice';
-import {request,type Access,type Session,type Summary} from '../v3/client';
+import {runtimeScope} from '../tasks/runtimeQueries';
 import './baseGeral.css';
 
-type ScopedAccess=Access&{portfolio_id:string;source_tenant:string;authentication_mode:string};
-type CardSummary=Summary&{charts:Summary['charts']&{offices?:string[]}};
+type CardSummary={
+  status:'CURRENT'|'PARTIAL'|'UNAVAILABLE'|'STALE';
+  metrics:{by_event_kind?:Record<string,number>;fase_conhecimento?:number|null};
+  charts:{offices:string[]};
+  limitations:string[];
+};
+type Api={request:<T>(path:string,options?:RequestInit)=>Promise<T>;getPortfolioId?:()=>string};
 const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:75000,refetchOnWindowFocus:false}}});
 const labels=[
   {key:'FASE_CONHECIMENTO',label:'Fase de conhecimento',icon:BookOpen},
@@ -22,6 +26,10 @@ const labels=[
 ] as const;
 const numeric=(value:unknown):number|null=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0?value:null;
 const number=(value:number|null)=>value===null?'—':new Intl.NumberFormat('pt-BR').format(value);
+const getApi=()=>{
+  const w=window as Window&{MBA_API?:Api;MBA_AUTOMATION_API?:Api};
+  return w.MBA_AUTOMATION_API||w.MBA_API;
+};
 
 function AndamentosContent(){
   const [revision,setRevision]=useState(0);
@@ -32,27 +40,17 @@ function AndamentosContent(){
     events.forEach(event=>window.addEventListener(event,sync));
     return()=>events.forEach(event=>window.removeEventListener(event,sync));
   },[]);
-  const portfolio=(window as Window&{MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.()||'';
-  const initial:Session={portfolio,tenant:'',token:'',transport:'BACKOFFICE'};
-  const active=Boolean(portfolio)&&readSource('andamentos')==='V3';
-  const access=useQuery({
-    queryKey:['analytics','andamentos','access',portfolio,revision],
-    enabled:active,
-    queryFn:({signal})=>request<ScopedAccess>(initial,'/status',{},signal),
-  });
-  const authorized=access.data?.modules.includes('andamentos')===true;
-  const session:Session={...initial,tenant:access.data?.source_tenant||''};
+  const api=getApi();
+  const portfolio=(window as Window&{MBA_API?:Api}).MBA_API?.getPortfolioId?.()||'';
+  const enabled=Boolean(portfolio&&api);
   const summary=useQuery({
-    queryKey:['analytics','andamentos','published-cards',portfolio,session.tenant,access.data?.identity,office,revision],
-    enabled:active&&authorized,
-    queryFn:({signal})=>request<CardSummary>(session,'/andamentos/cards',office?{office}:{},signal),
+    queryKey:['resultados','andamentos','published-cards',runtimeScope(),portfolio,office,revision],
+    enabled,
+    queryFn:({signal})=>api!.request<CardSummary>('/api/resultados/andamentos/cards'+(office?'?office='+encodeURIComponent(office):''),{signal}),
   });
   const data=summary.data;
-  const byKind=data?.metrics?.by_event_kind;
-  const counts=byKind&&typeof byKind==='object'&&!Array.isArray(byKind)
-    ? byKind as Record<string,unknown>:null;
+  const counts=data?.metrics?.by_event_kind||{};
   const offices=Array.isArray(data?.charts.offices)?data!.charts.offices:[];
-  const hasPublishedData=data?.status!=='UNAVAILABLE';
   return <section className="base-geral-page" aria-label="Classificação semântica dos andamentos">
     <div className="andamentos-office-filter base-geral-filters">
       <SelectMenu label="Escritório" className="base-geral-filter" value={office} onChange={setOffice}
@@ -62,17 +60,15 @@ function AndamentosContent(){
     <div className="base-geral-kpis cadastro-cards">
       {labels.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
-        <strong>{summary.isPending?'—':number(numeric(key==='FASE_CONHECIMENTO'?data?.metrics?.fase_conhecimento:counts?.[key]))}</strong>
+        <strong>{summary.isPending?'—':number(numeric(key==='FASE_CONHECIMENTO'?data?.metrics?.fase_conhecimento:counts[key]))}</strong>
       </article>)}
     </div>
-    {!active&&<p className="base-geral-muted">Contrato de leitura dos andamentos não habilitado neste ambiente.</p>}
-    {active&&access.isPending&&<p className="base-geral-muted">Verificando acesso aos andamentos...</p>}
-    {active&&access.error&&<p className="base-geral-error" role="alert">Não foi possível validar o acesso ao contrato dos andamentos.</p>}
-    {active&&access.data&&!authorized&&<p className="base-geral-error" role="alert">Acesso aos andamentos não autorizado para este perfil.</p>}
-    {authorized&&summary.isPending&&<p className="base-geral-muted">Consultando andamentos publicados...</p>}
-    {authorized&&summary.error&&<p className="base-geral-error" role="alert">Não foi possível consultar os andamentos publicados para esta carteira.</p>}
-    {authorized&&data&&!hasPublishedData&&<p className="base-geral-muted">Nenhum andamento publicado no contrato canônico desta carteira e escritório.</p>}
-    {authorized&&data?.limitations.includes('CANONICAL_PROCESS_PHASE_NOT_AVAILABLE')&&<p className="base-geral-muted">Fase de conhecimento indisponível: não há estados processuais canônicos nesta carteira.</p>}
+    {!enabled&&<p className="base-geral-muted">Sessão ou carteira indisponível.</p>}
+    {enabled&&summary.isPending&&<p className="base-geral-muted">Consultando andamentos publicados...</p>}
+    {summary.error&&<p className="base-geral-error" role="alert">Não foi possível consultar os andamentos publicados para esta carteira.</p>}
+    {data?.status==='UNAVAILABLE'&&<p className="base-geral-muted">Nenhum andamento publicado no contrato canônico desta carteira e escritório.</p>}
+    {data?.status==='STALE'&&<p className="base-geral-muted">Indicadores temporariamente defasados.</p>}
+    {data?.limitations.includes('CANONICAL_PROCESS_PHASE_NOT_AVAILABLE')&&<p className="base-geral-muted">Fase de conhecimento indisponível para esta carteira.</p>}
   </section>;
 }
 export function AndamentosCardsPage(){

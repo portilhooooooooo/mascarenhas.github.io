@@ -2,12 +2,16 @@ import {useEffect,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
 import {CheckCircle2,CirclePause,Clock3,FileCheck2,FolderOpen,Hourglass,ShieldAlert} from 'lucide-react';
 import {SelectMenu} from './SelectMenu';
-import {readSource} from '../v3/backoffice';
-import {request,type Access,type Session,type Summary} from '../v3/client';
+import {runtimeScope} from '../tasks/runtimeQueries';
 import './baseGeral.css';
 
-type ScopedAccess=Access&{portfolio_id:string;source_tenant:string;authentication_mode:string};
-type CardSummary=Summary&{charts:Summary['charts']&{offices?:string[]}};
+type CardSummary={
+  status:'CURRENT'|'PARTIAL'|'UNAVAILABLE'|'STALE';
+  metrics:Record<string,number|null>;
+  charts:{offices:string[]};
+  limitations:string[];
+};
+type Api={request:<T>(path:string,options?:RequestInit)=>Promise<T>;getPortfolioId?:()=>string};
 const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:75000,refetchOnWindowFocus:false}}});
 const cards=[
   {key:'entradas',label:'Entradas',icon:FolderOpen},
@@ -18,6 +22,10 @@ const cards=[
   {key:'em_arquivamento',label:'Em arquivamento',icon:Hourglass},
   {key:'faturavel',label:'Faturável',icon:CheckCircle2},
 ] as const;
+const getApi=()=>{
+  const w=window as Window&{MBA_API?:Api;MBA_AUTOMATION_API?:Api};
+  return w.MBA_AUTOMATION_API||w.MBA_API;
+};
 function Content(){
   const [office,setOffice]=useState('');
   const [revision,setRevision]=useState(0);
@@ -27,20 +35,13 @@ function Content(){
     events.forEach(event=>window.addEventListener(event,change));
     return()=>events.forEach(event=>window.removeEventListener(event,change));
   },[]);
-  const portfolio=(window as Window&{MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.()||'';
-  const initial:Session={portfolio,tenant:'',token:'',transport:'BACKOFFICE'};
-  const enabled=Boolean(portfolio)&&readSource('cadastro')==='V3';
-  const access=useQuery({
-    queryKey:['analytics','cadastro','access',portfolio,revision],
-    enabled,
-    queryFn:({signal})=>request<ScopedAccess>(initial,'/status',{},signal),
-  });
-  const authorized=access.data?.modules.includes('cadastro')===true;
-  const session:Session={...initial,tenant:access.data?.source_tenant||''};
+  const api=getApi();
+  const portfolio=(window as Window&{MBA_API?:Api}).MBA_API?.getPortfolioId?.()||'';
+  const enabled=Boolean(portfolio&&api);
   const summary=useQuery({
-    queryKey:['analytics','cadastro','cpj-cards',portfolio,session.tenant,access.data?.identity,office,revision],
-    enabled:enabled&&authorized,
-    queryFn:({signal})=>request<CardSummary>(session,'/cadastro/cards',office?{office}:{},signal),
+    queryKey:['resultados','cadastro','cpj-cards',runtimeScope(),portfolio,office,revision],
+    enabled,
+    queryFn:({signal})=>api!.request<CardSummary>('/api/resultados/cadastro/cards'+(office?'?office='+encodeURIComponent(office):''),{signal}),
   });
   const offices=Array.isArray(summary.data?.charts.offices)?summary.data!.charts.offices:[];
   const number=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0
@@ -49,20 +50,19 @@ function Content(){
     <div className="cadastro-cpj-toolbar">
       <SelectMenu label="Escritório (CPJ)" className="base-geral-filter" value={office} onChange={setOffice}
         options={[{value:'',label:'Todos'},...offices.map(name=>({value:name,label:name}))]} searchable={offices.length>8}/>
-      <span className="base-geral-muted">O filtro de escritório aplica-se aos indicadores do CPJ. Prescrito e Faturamento preservam seus cálculos existentes.</span>
+      <span className="base-geral-muted">Prescrito e Faturamento preservam os cálculos existentes.</span>
     </div>
     {cards.map(({key,label,icon:Icon})=><article className="base-geral-card mba-metric-card" key={key}>
       <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
       <strong>{summary.isPending?'—':number(summary.data?.metrics?.[key])}</strong>
     </article>)}
     <div className="cadastro-cpj-note">
-      {!enabled&&<p className="base-geral-muted">Contrato de leitura CPJ não habilitado neste ambiente.</p>}
-      {enabled&&access.isPending&&<p className="base-geral-muted">Verificando acesso aos cadastros...</p>}
-      {enabled&&access.error&&<p role="alert" className="base-geral-error">Não foi possível validar a autorização para os cadastros.</p>}
-      {enabled&&access.data&&!authorized&&<p role="alert" className="base-geral-error">Acesso aos cadastros não autorizado.</p>}
-      {authorized&&summary.error&&<p role="alert" className="base-geral-error">Não foi possível consultar os cadastros publicados.</p>}
-      {authorized&&summary.data?.status==='UNAVAILABLE'&&<p className="base-geral-muted">Nenhum cadastro CPJ publicado no contrato canônico desta carteira.</p>}
-      {authorized&&summary.data?.limitations.includes('CPJ_STATUS_COVERAGE_INCOMPLETE')&&<p className="base-geral-muted">Algumas situações do CPJ não possuem classificação comprovada; não foram convertidas em zero.</p>}
+      {!enabled&&<p className="base-geral-muted">Sessão ou carteira indisponível.</p>}
+      {enabled&&summary.isPending&&<p className="base-geral-muted">Consultando cadastros publicados...</p>}
+      {enabled&&summary.error&&<p role="alert" className="base-geral-error">Falha ao consultar os cadastros do CPJ.</p>}
+      {summary.data?.status==='UNAVAILABLE'&&<p className="base-geral-muted">Nenhum cadastro CPJ publicado no contrato canônico desta carteira.</p>}
+      {summary.data?.status==='STALE'&&<p className="base-geral-muted">Indicadores temporariamente defasados.</p>}
+      {summary.data?.limitations.includes('CPJ_STATUS_COVERAGE_INCOMPLETE')&&<p className="base-geral-muted">Algumas situações ainda não têm classificação comprovada.</p>}
     </div>
   </>;
 }
