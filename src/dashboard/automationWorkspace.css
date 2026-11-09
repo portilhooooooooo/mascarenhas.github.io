@@ -1,13 +1,17 @@
 .automation-workspace{width:100%;max-width:1480px;margin:0 auto;padding:0 0 30px;color:var(--mba-text)}
-.automation-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
-.automation-home-card,.automation-action{font:inherit;color:inherit;text-align:left;border:1px solid var(--mba-border);background:var(--mba-surface);border-radius:9px;cursor:pointer}
-.automation-home-card{min-height:110px;padding:14px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s}
-.automation-home-card:hover,.automation-action:hover{border-color:var(--mba-blue)}
-.automation-home-heading{display:flex;align-items:center;gap:10px;font-size:13px}
-.automation-home-heading>svg:first-child{color:var(--mba-muted)}
-.automation-home-heading>svg:last-child{margin-left:auto;color:var(--mba-muted)}
-.automation-home-detail{font-size:11px;line-height:1.4;color:var(--mba-text-2);flex:1}
-.automation-home-open{font-size:11px;font-weight:650;color:var(--mba-blue)}
+.automation-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
+.automation-home-card{display:flex;flex-direction:column;align-items:stretch;gap:14px;min-width:0;min-height:214px;padding:18px;border:1px solid var(--mba-border);border-radius:10px;background:var(--mba-surface);color:var(--mba-text)}
+.automation-home-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:8px;background:var(--mba-subtle);color:var(--mba-text-2)}
+.automation-home-icon-datajud{background:rgba(29,96,185,.1);color:#3976b7}
+.automation-home-icon-encerramentos{background:rgba(217,119,36,.12);color:#c66d22}
+.automation-home-icon-pagamentos{background:rgba(29,96,185,.1);color:#3976b7}
+.automation-home-copy{flex:1;min-width:0}
+.automation-home-copy h2{margin:0 0 8px;font-size:14px;line-height:1.35;font-weight:650;letter-spacing:-.01em}
+.automation-home-copy p{margin:0;font-size:12px;line-height:1.5;color:var(--mba-text-2);overflow-wrap:break-word}
+.automation-home-actions{margin-top:auto}
+.automation-home-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:36px;padding:8px 12px;border:1px solid #d97724;border-radius:7px;background:#d97724;color:white;font:inherit;font-size:12px;font-weight:650;cursor:pointer;transition:background-color .15s,border-color .15s}
+.automation-home-actions button:hover{background:#b9611e;border-color:#b9611e}
+.automation-home-actions button:focus-visible{outline:2px solid var(--mba-blue);outline-offset:3px}
 .automation-config-head{margin-bottom:13px}
 .automation-config-head h1{font-size:17px;font-weight:700;line-height:1.25;margin:0}
 .automation-config-head p{font-size:12px;color:var(--mba-text-2);margin:5px 0 0}

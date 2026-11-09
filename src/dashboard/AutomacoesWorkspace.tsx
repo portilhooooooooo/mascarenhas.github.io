@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {Archive,ArrowUpRight,FileSpreadsheet,FolderInput,Landmark,Play,Receipt,ShieldCheck,Workflow} from 'lucide-react';
+import {Archive,FileSpreadsheet,FolderInput,Landmark,Play,Receipt,ShieldCheck,Workflow} from 'lucide-react';
 import {useModuleVisible} from './useModuleVisible';
 import {AutomationKanban,type KanbanFlow} from './AutomationKanban';
 import './automationWorkspace.css';
@@ -21,6 +21,11 @@ const descriptions:Record<AutomationModule,string>={
   datajud:'Classifica os andamentos coletados pelo DataJud.',
   encerramentos:'Faz a reclassificação dos processos de encerramentos encontrados pela automação, e distribuição automática.',
   pagamentos:'Faz a classificação de pagamentos judiciais no Benner.',
+};
+const homeDescriptions:Record<'datajud'|'encerramentos'|'pagamentos'|'liminar'|'andamentos',string>={
+  ...descriptions,
+  liminar:'Consulta e acompanha decisões de liminar.',
+  andamentos:'Acompanha lançamentos de andamentos no Benner.',
 };
 const schemas:Record<AutomationModule,string>={
   datajud:'CNJ | PASTA | FASE | DATA_ANDAMENTO | OBS_ANDAMENTO | MOTIVO_DERROTA | NOME_ANDAMENTO | DATA_DOCUMENTO | TIPO_DOCUMENTO | NOME_DOCUMENTO',
@@ -93,11 +98,18 @@ const integrations=[
 ];
 function Home({access}:{access:Set<Module>}){
   return <div className="automation-home-grid" aria-label="Integrações">
-    {integrations.filter(entry=>access.has(entry.id)).map(({id,label,icon:Icon})=><button type="button" className="automation-home-card" key={id} onClick={()=>go(id==='encerramentos'?'executar-encerramentos':id==='pagamentos'?'executar-pagamentos':id)}>
-      <span className="automation-home-heading"><Icon size={18} strokeWidth={1.65}/><strong>{label}</strong><ArrowUpRight size={16}/></span>
-      {id in descriptions&&<span className="automation-home-detail">{descriptions[id as AutomationModule]}</span>}
-      <span className="automation-home-open">Executar</span>
-    </button>)}
+    {integrations.filter(entry=>access.has(entry.id)).map(({id,label,icon:Icon})=><article className="automation-home-card" key={id}>
+      <div className={'automation-home-icon automation-home-icon-'+id}><Icon size={19} strokeWidth={1.8} aria-hidden="true"/></div>
+      <div className="automation-home-copy">
+        <h2>{label}</h2>
+        <p>{homeDescriptions[id]}</p>
+      </div>
+      <div className="automation-home-actions">
+        <button type="button" onClick={()=>go(id==='encerramentos'?'executar-encerramentos':id==='pagamentos'?'executar-pagamentos':id)}>
+          <Play size={14} aria-hidden="true"/>Executar
+        </button>
+      </div>
+    </article>)}
   </div>;
 }
 export function AutomacoesWorkspace(){
