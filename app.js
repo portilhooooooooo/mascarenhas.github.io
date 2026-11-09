@@ -18,7 +18,6 @@ window.addEventListener('mba:portfolio-changed', () => setTaskNavCount(null));
 const pageRoutes = Object.freeze({
   processos: 'processos',
   dashboard: 'analytics',
-  acordos: 'operacao/pagamentos',
   protocolo: 'controladoria/protocolos',
   automacoes: 'automacoes',
   tarefas: 'tarefas',
@@ -27,7 +26,6 @@ const pageRoutes = Object.freeze({
   'acordo-execucao': 'tarefas/acordos',
   pagamentos: 'pagamentos',
   tutelas: 'automacoes/liminares',
-  encerramentos: 'automacoes/encerramentos',
   usuarios: 'usuarios',
   configuracoes: 'configuracoes',
   'sem-acesso': 'sem-acesso',
@@ -41,11 +39,15 @@ const nestedPageRoutes = Object.freeze({
   'analytics/defesas': 'dashboard',
   'analytics/protocolos': 'dashboard',
   'analytics/ranking': 'dashboard',
-  'operacao/pagamentos': 'acordos',
-  'operacao/liminar': 'acordos',
-  'operacao/encerramentos': 'acordos',
-  'operacao/protocolos': 'acordos',
-  'operacao/defesas': 'acordos',
+  'automacoes/datajud': 'automacoes',
+  'automacoes/executar-encerramentos': 'automacoes',
+  'automacoes/executar-pagamentos': 'automacoes',
+  'automacoes/encerramentos': 'automacoes',
+  'automacoes/pagamentos': 'automacoes',
+  'automacoes/liminar': 'automacoes',
+  'automacoes/protocolos': 'automacoes',
+  'automacoes/defesas': 'automacoes',
+  'automacoes/andamentos': 'automacoes',
   'controladoria/defesas': 'protocolo',
   'controladoria/indicadores': 'protocolo',
   'tarefas/atribuicoes': 'tarefas',
@@ -56,18 +58,23 @@ const routeAliases = Object.freeze({
   ranking: 'analytics',
   'analytics/ranking': 'analytics',
   'gestao-processual': 'analytics',
-  acordos: 'operacao/pagamentos',
-  operacao: 'operacao/pagamentos',
-  pagamentos: 'operacao/pagamentos',
-  'operacao/liminares': 'operacao/liminar',
-  'operacao/tutelas': 'operacao/liminar',
-  'operacao/encerramento': 'operacao/encerramentos',
-  'operacao/protocolo': 'operacao/protocolos',
-  'operacao/defesa': 'operacao/defesas',
+  acordos: 'automacoes/pagamentos',
+  operacao: 'automacoes/pagamentos',
+  pagamentos: 'automacoes/pagamentos',
+  'operacao/pagamentos': 'automacoes/pagamentos',
+  'operacao/liminar': 'automacoes/liminar',
+  'operacao/liminares': 'automacoes/liminar',
+  'operacao/tutelas': 'automacoes/liminar',
+  'operacao/encerramentos': 'automacoes/encerramentos',
+  'operacao/encerramento': 'automacoes/encerramentos',
+  'operacao/protocolos': 'automacoes/protocolos',
+  'operacao/protocolo': 'automacoes/protocolos',
+  'operacao/defesas': 'automacoes/defesas',
+  'operacao/defesa': 'automacoes/defesas',
   protocolo: 'controladoria/protocolos',
   controladoria: 'controladoria/protocolos',
-  'automacoes/protocolos': 'controladoria/protocolos',
-  tutelas: 'automacoes/liminares',
+  'automacoes/liminares': 'automacoes/liminar',
+  tutelas: 'automacoes/liminar',
   encerramentos: 'automacoes/encerramentos',
 });
 
@@ -79,19 +86,19 @@ function routeUrl(route) {
   return window.MBA_LOCAL_PREVIEW ? '#/' + route : '/' + route;
 }
 const operationRoutePermissions = Object.freeze({
-  'operacao/pagamentos': 'pagamentos',
-  'operacao/liminar': 'tutelas',
-  'operacao/encerramentos': 'encerramentos',
-  'operacao/protocolos': 'protocolo',
-  'operacao/defesas': 'protocolo',
+  'automacoes/pagamentos': 'pagamentos',
+  'automacoes/liminar': 'tutelas',
+  'automacoes/encerramentos': 'encerramentos',
+  'automacoes/protocolos': 'protocolo',
+  'automacoes/defesas': 'protocolo',
 });
-let lastOperationRoute = 'operacao/pagamentos';
+let lastOperationRoute = 'automacoes/pagamentos';
 function preferredOperationRoute() {
   const policy = window.MBA_PORTFOLIO_POLICY;
   if (policy?.canAccess(operationRoutePermissions[lastOperationRoute]) === true) return lastOperationRoute;
   return Object.keys(operationRoutePermissions)
     .find(route => policy?.canAccess(operationRoutePermissions[route]) === true)
-    || 'operacao/pagamentos';
+    || 'automacoes/pagamentos';
 }
 function resolvePageRoute(route) {
   const canonical = (route === 'operacao' || route === 'acordos')
@@ -110,6 +117,7 @@ function canAccessRoute(pageId, route) {
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
+  if ((route === 'automacoes/datajud' || route === 'automacoes/andamentos') && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/faturamento' && window.MBA_CURRENT_USER?.permissions?.['faturamento.view'] !== true) return false;
   if (route === 'analytics/andamentos' && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
@@ -1179,7 +1187,7 @@ window.addEventListener('mba:module-activated', event => {
   const { pageId, user } = event.detail;
   authenticatedUser = user;
   const grants = user.permissions || {};
-  if (pageId === 'automacoes' && grants['automations.view'] && window.MBA_V3_READ_SOURCE?.('automacoes') !== 'V3') loadIntegrationHealth();
+  if (pageId === 'automacoes' && grants['automations.view'] && document.querySelector('[data-integration-card]') && window.MBA_V3_READ_SOURCE?.('automacoes') !== 'V3') loadIntegrationHealth();
   if (pageId === 'encerramentos' && grants['encerramentos.view']) loadLatestEncerramentosResults().catch(() => {});
   if (pageId === 'tutelas' && grants['tutelas.view']) loadTutelaCases().catch(() => {});
   if (pageId === 'pagamentos' && grants['pagamentos.view']) loadPagamentos(true).catch(() => {});

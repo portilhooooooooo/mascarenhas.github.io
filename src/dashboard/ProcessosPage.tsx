@@ -260,7 +260,16 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
 export function ProcessosPage() {
   const [cnj, setCnj] = useState(selectedCnj);
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState({q:'',situation:'',uf:'',movement:''});
+  const [filters, setFilters] = useState({q:''});
+  useEffect(()=>{
+    const shortcut=(event:KeyboardEvent)=>{
+      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&document.getElementById('processos')?.classList.contains('active')){
+        event.preventDefault();document.querySelector<HTMLInputElement>('#mba-processos-quick-search')?.focus();
+      }
+    };
+    document.addEventListener('keydown',shortcut);
+    return()=>document.removeEventListener('keydown',shortcut);
+  },[]);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Paged<ProcessRecord> | null>(null);
   const [error, setError] = useState('');
@@ -287,20 +296,15 @@ export function ProcessosPage() {
   },[filters,page,cnj,authorized,revision]);
   if(!authorized) return <div className="processos-state" role="status">Processos indisponível para este acesso.</div>;
   if(cnj) return <ProcessView key={cnj} cnj={cnj} onBack={()=>win.MBA_NAVIGATE?.('processos')}/>;
-  const filter=(key: keyof typeof filters,value:string)=>{setPage(1);setFilters(f=>({...f,[key]:value}));};
   return <section className="processos-page">
     <header className="processos-heading"><h1>Processos</h1></header>
     <form className="processos-filters" onSubmit={e=>{
       e.preventDefault();setPage(1);setFilters(f=>({...f,q:search.trim()}));
     }}>
-      <label className="processos-search">Número CNJ<input type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
-      <ProcessFilter label="Situação" className="processos-situation-filter" value={filters.situation} onChange={v=>filter('situation',v)} options={situationOptions}/>
-      <ProcessFilter label="UF" className="processos-uf-filter" value={filters.uf} onChange={v=>filter('uf',v)} options={[{value:'',label:'Todas'},...BRAZIL_STATES.map(s=>({value:s.uf,label:s.uf}))]}/>
-      <ProcessFilter label="Movimentações" className="processos-movement-filter" value={filters.movement} onChange={v=>filter('movement',v)} options={movementOptions}/>
+      <label className="processos-search">Buscar (Ctrl + K)<input id="mba-processos-quick-search" type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
       <button className="primary-button" type="submit">Buscar</button>
-      <button type="button" className="processos-clear" onClick={()=>{setSearch('');setPage(1);setFilters({q:'',situation:'',uf:'',movement:''});}}>Limpar</button>
     </form>
-    {error ? <div role="alert" className="processos-state">{error === 'Filtros inválidos.' && filters.movement ? 'O servidor ainda não reconhece o filtro de movimentações. É necessário publicar a versão atualizada da API.' : error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
+    {error ? <div role="alert" className="processos-state">{error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
       : loading ? <div role="status" className="processos-state">Carregando processos…</div>
       : data?.rows.length ? <div className="processos-table-wrap"><table>
         <thead><tr><th>Processo</th><th>Situação</th><th>UF</th><th>Data da última movimentação</th></tr></thead>

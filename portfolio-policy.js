@@ -53,13 +53,13 @@
       'acordo-execucao': ['tarefas', 'tasks'],
       acordos: ['operacao', 'acordos', 'agreements', 'pagamentos', 'liminar', 'tutelas', 'encerramentos', 'controladoria', 'protocolo', 'protocolos'],
       pagamentos: ['operacao', 'pagamentos'],
-      automacoes: ['automacoes', 'automations'],
+      automacoes: ['automacoes', 'automations', 'operacao', 'acordos', 'pagamentos', 'liminar', 'tutelas', 'encerramentos', 'controladoria', 'protocolo', 'protocolos'],
       protocolo: ['operacao', 'controladoria', 'protocolo', 'protocolos'],
       tutelas: ['operacao', 'tutelas', 'liminar'],
       encerramentos: ['operacao', 'encerramentos'],
     };
     if (ENTER_ONLY.has(pageId) && !isEnter(portfolio)) return false;
-    if (pageId === 'automacoes' && !isEnter(portfolio) && canonical(portfolio.id) !== 'agibank_mba') return false;
+    if (pageId === 'automacoes' && !isEnter(portfolio) && canonical(portfolio.id) !== 'agibank_mba') return moduleAvailable('acordos', user);
     if (modules) return (moduleAliases[pageId] || [pageId]).some(key => modules.has(key));
     // Without declared capabilities, allow generic modules only by user permission.
     // Modules tied to Enter still require an Enter portfolio.
@@ -68,6 +68,7 @@
   const canAccess = (pageId, user = window.MBA_CURRENT_USER) => {
     const permission = PAGE_PERMISSIONS[pageId];
     if (pageId === 'processos' && user?.capabilities?.processos !== true) return false;
+    if (pageId === 'automacoes') return Boolean((user?.permissions?.['automations.view'] === true && moduleAvailable('automacoes', user)) || canAccess('acordos', user));
     if (pageId === 'acordos') return Boolean((user?.permissions?.['pagamentos.view'] === true || user?.permissions?.['tutelas.view'] === true || user?.permissions?.['encerramentos.view'] === true || canAccess('protocolo', user)) && moduleAvailable(pageId, user));
     return Boolean(permission && user?.permissions?.[permission] === true && moduleAvailable(pageId, user));
   };

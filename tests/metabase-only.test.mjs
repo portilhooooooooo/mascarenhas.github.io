@@ -15,7 +15,7 @@ assert.doesNotMatch(operacaoPage, /MetabaseOperacaoEmbed/);
 assert.match(operacaoPage, /operacaoPagamentosService/);
 assert.match(operacaoPage, /Pago com comprovante/);
 assert.match(operacaoPage, /Ação necessária/);
-assert.match(main, /OperacaoPage/);
+assert.match(main, /AutomacoesWorkspace/);
 assert.doesNotMatch(main, /ensureOperationSubnav|mba-operation-subnav/);
 assert.doesNotMatch(main, /CarteiraProcessualPage|AcordosAnalyticsPage|PagamentosAnalyticsPage/);
 assert.equal(pkg.dependencies?.recharts, undefined, 'recharts must not be used for process analytics');

@@ -28,7 +28,7 @@ function createPolicy(id, overrides = {}) {
 for (const id of ['agibank_mba', 'banco_pan_mba']) {
   const policy = createPolicy(id);
   assert.equal(policy.canAccess('dashboard'), true);
-  assert.equal(policy.canAccess('automacoes'), id === 'agibank_mba', id + ' automation scope must follow Agibank Mascarenhas authorization');
+  assert.equal(policy.canAccess('automacoes'), true, id + ' operations access must be consolidated under Automações');
   assert.equal(policy.canAccess('protocolo'), false, id + ' must not see Controladoria');
   assert.equal(policy.canAccess('tarefas'), true);
 }
@@ -37,8 +37,8 @@ for (const id of ['agibank_enter', 'energisa_enter']) {
   assert.equal(policy.canAccess('automacoes'), true);
   assert.equal(policy.canAccess('protocolo'), true);
 }
-assert.equal(createPolicy('agibank_enter', { permissions: { ...allPermissions, 'automations.view': false } }).canAccess('automacoes'), false, 'individual user denial must take precedence');
-assert.equal(createPolicy('agibank_mba', { permissions: { ...allPermissions, 'automations.view': false } }).canAccess('automacoes'), false, 'Agibank MBA automation still requires user permission');
+assert.equal(createPolicy('agibank_enter', { permissions: { ...allPermissions, 'automations.view': false, 'pagamentos.view': false, 'tutelas.view': false, 'encerramentos.view': false } }).canAccess('automacoes'), false, 'without any automation or operational permission, module must remain blocked');
+assert.equal(createPolicy('agibank_mba', { permissions: { ...allPermissions, 'automations.view': false, 'pagamentos.view': false, 'tutelas.view': false, 'encerramentos.view': false } }).canAccess('automacoes'), false, 'Agibank MBA operations require an explicit permission');
 assert.equal(createPolicy('not-allowed').canAccess('automacoes'), false, 'unknown portfolio must fail closed');
 assert.equal(createPolicy('not-allowed').canAccess('dashboard'), false, 'unknown portfolio must not expose shared modules');
 const metadata = portfolios.map(item => item.id === 'agibank_enter' ? { ...item, enabled_modules: ['analytics', 'tasks'] } : item);
@@ -51,7 +51,7 @@ assert.doesNotMatch(html, /nav-badge">23<\/em>/, 'task badge must not be hardcod
 assert.match(html, /id="tasks-nav-count"[^>]*hidden/, 'task badge must start empty');
 assert.match(html, /portfolio-policy\.js/, 'portfolio policy must be loaded for classic navigation');
 assert.match(shell, /dashboard: 'Resultados'/, 'Resultados must be the primary module label');
-assert.match(shell, /new Set\(\['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard'\]\)/, 'primary navbar must expose five operational destinations');
+assert.match(shell, /new Set\(\['processos', 'tarefas', 'automacoes', 'dashboard'\]\)/, 'operation must be integrated under Automações in the primary navbar');
 assert.doesNotMatch(html, /id="mba-active-module"|class="mba-context-label"/, 'redundant breadcrumb removed; functional titles preserved');
 assert.match(html, /href="reimagined-workspace.css"/, 'reimagined styles must load after existing themes');
 assert.match(shell, /mayOpen\('protocolo'\)/, 'Controladoria lifecycle must enforce the portfolio');

@@ -112,58 +112,59 @@ test('autenticação prioriza rota compartilhada', () => {
 });
 
 
-test('links de Operação abrem cada submódulo e restauram histórico', () => {
+test('links antigos de Operação passam a usar submódulos de Automações', () => {
   const e = environment('/operacao/pagamentos', {
-    allowed: ['acordos', 'pagamentos', 'tutelas', 'encerramentos', 'protocolo'],
+    allowed: ['automacoes', 'pagamentos', 'tutelas', 'encerramentos', 'protocolo', 'dashboard'],
   });
   const modules = ['pagamentos', 'liminar', 'encerramentos', 'protocolos', 'defesas'];
   for (const module of modules) {
     assert.equal(e.window.MBA_NAVIGATE('operacao/' + module), true, module);
-    assert.equal(e.active.get('acordos'), true, module);
-    assert.equal(e.location.pathname, '/operacao/' + module, module);
+    assert.equal(e.active.get('automacoes'), true, module);
+    assert.equal(e.location.pathname, '/automacoes/' + module, module);
     assert.equal(e.window.restorePageRoute(), true, module);
-    assert.equal(e.location.pathname, '/operacao/' + module, module);
+    assert.equal(e.location.pathname, '/automacoes/' + module, module);
   }
   e.window.showPage('dashboard');
-  e.window.showPage('acordos');
-  assert.equal(e.location.pathname, '/operacao/defesas', 'Operação retoma a última aba autorizada');
+  e.window.showPage('automacoes');
+  assert.equal(e.location.pathname, '/automacoes/defesas', 'Retoma a última aba acessível');
 });
 
-test('links legados de Operação são canônicos, preservando Controladoria', () => {
+test('deep links de execução pertencem à Home, e aliases legados permanecem navegáveis', () => {
   const e = environment('/pagamentos', {
-    allowed: ['acordos', 'pagamentos', 'tutelas', 'encerramentos', 'protocolo'],
+    allowed: ['automacoes', 'pagamentos', 'tutelas', 'encerramentos', 'protocolo'],
   });
   assert.equal(e.window.restorePageRoute(), true);
-  assert.equal(e.location.pathname, '/operacao/pagamentos');
+  assert.equal(e.location.pathname, '/automacoes/pagamentos');
   assert.equal(e.window.MBA_NAVIGATE('operacao/tutelas'), true);
-  assert.equal(e.location.pathname, '/operacao/liminar');
+  assert.equal(e.location.pathname, '/automacoes/liminar');
+  assert.equal(e.window.MBA_NAVIGATE('automacoes/executar-encerramentos'), true);
+  assert.equal(e.active.get('automacoes'), true);
   assert.equal(e.window.MBA_NAVIGATE('controladoria/defesas'), true);
-  assert.equal(e.location.pathname, '/controladoria/defesas');
   assert.equal(e.active.get('protocolo'), true);
 });
 
-test('Operação sem Pagamentos abre o primeiro módulo autorizado', () => {
-  const e = environment('/tarefas', { allowed: ['acordos', 'tutelas', 'tarefas'] });
-  e.window.showPage('acordos');
-  assert.equal(e.location.pathname, '/operacao/liminar');
+test('sem Pagamentos, Operação direciona para o primeiro submódulo permitido', () => {
+  const e = environment('/tarefas', { allowed: ['automacoes', 'acordos', 'tutelas', 'tarefas'] });
+  assert.equal(e.window.MBA_NAVIGATE('operacao'), true);
+  assert.equal(e.location.pathname, '/automacoes/liminar');
   assert.equal(e.window.MBA_NAVIGATE('operacao/pagamentos'), false);
   assert.equal(e.active.get('sem-acesso'), true);
 });
 
-test('deep links sem permissão não mostram módulos indevidos', () => {
-  const e = environment('/operacao/defesas', { allowed: ['acordos', 'pagamentos'] });
+test('deep links sem permissão não mostram colunas indevidas', () => {
+  const e = environment('/operacao/defesas', { allowed: ['automacoes', 'pagamentos'] });
   assert.equal(e.window.restorePageRoute(), true);
   assert.equal(e.active.get('sem-acesso'), true);
   assert.equal(e.location.pathname, '/operacao/defesas');
   e.allowed.add('protocolo');
   assert.equal(e.window.restorePageRoute(), true);
-  assert.equal(e.active.get('acordos'), true);
-  assert.equal(e.location.pathname, '/operacao/defesas');
+  assert.equal(e.active.get('automacoes'), true);
+  assert.equal(e.location.pathname, '/automacoes/defesas');
   const preview = environment('/#/operacao/liminar', {
-    preview: true, allowed: ['acordos', 'tutelas'],
+    preview: true, allowed: ['automacoes', 'tutelas'],
   });
   assert.equal(preview.window.restorePageRoute(), true);
-  assert.equal(preview.location.hash, '#/operacao/liminar');
+  assert.equal(preview.location.hash, '#/automacoes/liminar');
 });
 test('subabas de Operação sincronizam a rota em vez de alterar apenas o estado local', () => {
   const source = readFileSync(new URL('../src/dashboard/OperacaoPage.tsx', import.meta.url), 'utf8');

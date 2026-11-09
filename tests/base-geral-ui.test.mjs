@@ -6,8 +6,8 @@ const page = fs.readFileSync(new URL('../src/dashboard/BaseGeralPage.tsx', impor
 const tabs = fs.readFileSync(new URL('../src/dashboard/GestaoProcessualPage.tsx', import.meta.url),'utf8');
 const styles = fs.readFileSync(new URL('../src/dashboard/baseGeral.css', import.meta.url),'utf8');
 
-test('Base Geral navigation and exact eight compact cards', () => {
-  assert.match(tabs, />Base Geral<\/button>/);
+test('Cadastro navigation and existing compact analytical cards', () => {
+  assert.match(tabs, />Cadastro<\/button>/);
   assert.match(tabs, /<BaseGeralPage\b/);
   assert.doesNotMatch(page, /<h1>Base Geral<\/h1>/);
   const order = ['Base ativa','Base prescrita','Em encerramento','Suspensos',
@@ -34,7 +34,7 @@ test('unified process directory API serves the summary, products and category dr
 });
 
 test('filters for period, product, UF, situation and resolution propagate to drilldown and export', () => {
-  assert.match(page,/params\.set\('entry_start', dateStart\(period\)\)/);
+  assert.match(page,/params\.set\('entry_start', entryStart\)/);
   assert.match(page,/params\.set\('uf', uf\)/);
   assert.match(page,/params\.set\('product', product\)/);
   assert.match(page,/params\.set\('situation', situation\)/);

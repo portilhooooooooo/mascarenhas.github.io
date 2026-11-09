@@ -480,3 +480,18 @@
 .cadastro-cpj-toolbar .base-geral-muted{padding:0;flex:1;min-width:220px}
 .cadastro-cpj-note:empty{display:none}
 .andamentos-office-filter{grid-template-columns:minmax(200px,280px)}
+
+/* Compact results cards: shared Encerramentos proportions. */
+.cadastro-cards,.cadastro-status-cards,.andamento-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:10px}
+.cadastro-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.andamento-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cadastro-cards .base-geral-card,.cadastro-status-cards .base-geral-card,.andamento-cards .base-geral-card{
+  height:100px;min-height:100px;padding:12px 14px;gap:7px;border-radius:9px;cursor:default
+}
+.cadastro-status-cards button.base-geral-card,.cadastro-cards button.base-geral-card{cursor:pointer}
+.cadastro-cards .base-geral-card strong,.cadastro-status-cards .base-geral-card strong,.andamento-cards .base-geral-card strong{font-size:24px;line-height:1.1;margin:0}
+.cadastro-cards .base-geral-card-top,.cadastro-status-cards .base-geral-card-top,.andamento-cards .base-geral-card-top{font-size:11px}
+.cadastro-products{margin-top:5px}
+@media(max-width:1100px){.andamento-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:740px){.cadastro-cards,.andamento-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.cadastro-cards,.cadastro-status-cards,.andamento-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}

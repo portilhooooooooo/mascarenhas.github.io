@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=(p)=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const pages=[
- ['src/dashboard/BaseGeralPage.tsx','Base Geral'],
+ ['src/dashboard/BaseGeralPage.tsx','Cadastro'],
  ['src/dashboard/EncerramentosPage.tsx','Encerramentos'],
- ['src/dashboard/OperacaoPage.tsx','Pagamentos'],
+
  ['src/dashboard/OperacaoLiminarPage.tsx','Liminar'],
- ['src/dashboard/OperacaoEncerramentosPage.tsx','Encerramentos'],
+
  ['src/dashboard/ProtocolosPage.tsx','Protocolos'],
  ['src/dashboard/DefesasPage.tsx','Defesas'],
  ['src/dashboard/DefesasResultadosPage.tsx','Defesas'],
@@ -15,11 +15,11 @@ const pages=[
 ];
 test('submodule tab names remain accessible in the real upper navigation',()=>{
   const analytics=read('src/dashboard/GestaoProcessualPage.tsx');
-  const operation=read('src/dashboard/OperacaoPage.tsx');
-  for(const label of ['Base Geral','Encerramentos','Defesas','Protocolos'])
+  const operation=read('src/dashboard/AutomacoesWorkspace.tsx');
+  for(const label of ['Cadastro','Andamentos','Encerramentos','Defesas','Protocolos'])
     assert.match(analytics,new RegExp('>'+label+'<\\/button>'));
-  for(const label of ['Pagamentos','Liminar','Encerramentos','Protocolos','Defesas'])
-    assert.match(operation,new RegExp('>'+label+'<\\/button>'));
+  for(const label of ['home','encerramentos','pagamentos','liminar','protocolos','defesas'])
+    assert.match(operation,new RegExp("'"+label+"'"));
 });
 test('module bodies do not duplicate their active tab as large h1 headings',()=>{
   for(const [file,label] of pages) {

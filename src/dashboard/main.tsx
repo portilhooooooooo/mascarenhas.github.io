@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { ProcessosPage } from './ProcessosPage';
 import {BackofficeRead,readSource} from '../v3/backoffice';
 import { GestaoProcessualPage } from './GestaoProcessualPage';
-import { OperacaoPage } from './OperacaoPage';
+import { AutomacoesWorkspace } from './AutomacoesWorkspace';
 import { ControladoriaPage } from './ControladoriaPage';
 import { UsersPage } from './UsersPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
@@ -40,7 +40,7 @@ function setTopModuleActive(page: string) {
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
   if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
   const label = document.getElementById('mba-active-module');
-  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Automações', automacoes: 'Automações', dashboard: 'Resultados' };
   if (label) label.textContent = titles[page] || 'Workspace';
 }
 
@@ -50,11 +50,11 @@ function syncTopModuleFromActivePage() {
 
   if (activePage.id === 'processos') { setTopModuleActive('processos'); return; }
   if (activePage.id === 'acordos') {
-    setTopModuleActive('acordos');
+    setTopModuleActive('automacoes');
     return;
   }
   if (['protocolo', 'pagamentos', 'tutelas', 'encerramentos'].includes(activePage.id)) {
-    setTopModuleActive('acordos');
+    setTopModuleActive('automacoes');
     return;
   }
   if (activePage.id === 'automacoes') {
@@ -85,13 +85,12 @@ function configureApplicationShell() {
   }
   nav.dataset.mbaModuleNav = 'true';
 
-  // Um único nível principal. Protocolos e Defesas passam a ser abas de Operação.
+  // Um único nível principal. Operação foi absorvida por Automações.
   // A página /controladoria permanece montável para preservar links legados.
-  const visiblePages = new Set(['processos', 'tarefas', 'acordos', 'automacoes', 'dashboard']);
+  const visiblePages = new Set(['processos', 'tarefas', 'automacoes', 'dashboard']);
   const labels: Record<string, string> = {
     processos: 'Processos',
     tarefas: 'Tarefas',
-    acordos: 'Operação',
     automacoes: 'Automações',
     dashboard: 'Resultados',
   };
@@ -126,7 +125,6 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="processos"]'),
     nav.querySelector<HTMLElement>('[data-page="tarefas"]'),
     nav.querySelector<HTMLElement>('[data-page="automacoes"]'),
-    nav.querySelector<HTMLElement>('[data-page="acordos"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
 
@@ -141,58 +139,6 @@ function configureApplicationShell() {
   window.addEventListener('mba:session-expired', syncVisibility);
   window.addEventListener('mba:logged-out', syncVisibility);
   syncVisibility();
-}
-
-let operacaoRoot: Root | null = null;
-
-function mountOperacaoPage() {
-  const section = document.getElementById('acordos');
-  if (!section || operacaoRoot) return;
-  section.dataset.reactMounted = 'true';
-  section.classList.add('operacao-react-host');
-  section.replaceChildren();
-  const mount = document.createElement('div');
-  mount.className = 'operacao-react-root';
-  section.appendChild(mount);
-  operacaoRoot = createRoot(mount);
-  operacaoRoot.render(<StrictMode><OperacaoPage/></StrictMode>);
-}
-
-function unmountOperacaoPage() {
-  if (!operacaoRoot) return;
-  operacaoRoot.unmount();
-  operacaoRoot = null;
-  const section = document.getElementById('acordos');
-  if (section) {
-    delete section.dataset.reactMounted;
-    section.replaceChildren();
-  }
-}
-
-function syncOperacaoLifecycle() {
-  const section = document.getElementById('acordos');
-  const user = (window as DashboardWindow).MBA_CURRENT_USER;
-  const active = section?.classList.contains('active') === true;
-  const allowed = mayOpen('acordos');
-  // Keep previously visited modules mounted across navigation and tab visibility.
-  // Drop their state only when authorization/session/portfolio actually changes.
-  if (!allowed) unmountOperacaoPage();
-  else if (active) mountOperacaoPage();
-}
-
-function configureOperacaoLifecycle() {
-  const section = document.getElementById('acordos');
-  if (!section) return;
-  const observer = new MutationObserver(syncOperacaoLifecycle);
-  observer.observe(section, { attributes: true, attributeFilter: ['class'] });
-  window.addEventListener('mba:authenticated', syncOperacaoLifecycle);
-  window.addEventListener('mba:profile-ready', syncOperacaoLifecycle);
-  window.addEventListener('mba:module-visibility-updated', syncOperacaoLifecycle);
-  window.addEventListener('mba:portfolio-changed', () => { unmountOperacaoPage(); syncOperacaoLifecycle(); });
-  window.addEventListener('mba:session-expired', unmountOperacaoPage);
-  window.addEventListener('mba:logged-out', unmountOperacaoPage);
-  document.addEventListener('visibilitychange', syncOperacaoLifecycle);
-  syncOperacaoLifecycle();
 }
 
 let protocolosRoot: Root | null = null;
@@ -338,7 +284,6 @@ const root = document.getElementById('dashboard-root');
 if (!root) throw new Error('O ponto de montagem #dashboard-root não foi encontrado.');
 createRoot(root).render(<StrictMode><RootApp/></StrictMode>);
 mountTasksPage();
-configureOperacaoLifecycle();
 configureProtocolosLifecycle();
 configureUsersLifecycle();
 
@@ -365,18 +310,21 @@ if (processosHost) {
   syncProcessos();
 }
 
-// The static automation shell retains all legacy commands in LEGACY builds.
-if (readSource('automacoes')==='V3') {
- let root:Root|null=null;
- const host=document.getElementById('automacoes');
- const clear=()=>{root?.unmount();root=null;host?.replaceChildren();};
- const sync=()=>{
-  if(!host||!mayOpen('automacoes')){clear();return;}
-  if(host.classList.contains('active')&&!root){host.replaceChildren();root=createRoot(host);root.render(<BackofficeRead module="automacoes"/>);}
- };
- if(host)new MutationObserver(sync).observe(host,{attributes:true,attributeFilter:['class']});
- for(const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated'])window.addEventListener(event,sync);
- window.addEventListener('mba:portfolio-changed',()=>{clear();sync();});
- for(const event of ['mba:session-expired','mba:logged-out'])window.addEventListener(event,clear);
- sync();
+// Automações consolidates integrations and read-only operational Kanban in testing.
+{
+  let root:Root|null=null;
+  const host=document.getElementById('automacoes');
+  const clear=()=>{root?.unmount();root=null;host?.replaceChildren();};
+  const sync=()=>{
+    if(!host||!mayOpen('automacoes')){clear();return;}
+    if(host.classList.contains('active')&&!root){
+      host.replaceChildren();root=createRoot(host);
+      root.render(<StrictMode><AutomacoesWorkspace/></StrictMode>);
+    }
+  };
+  if(host)new MutationObserver(sync).observe(host,{attributes:true,attributeFilter:['class']});
+  for(const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated'])window.addEventListener(event,sync);
+  window.addEventListener('mba:portfolio-changed',()=>{clear();sync();});
+  for(const event of ['mba:session-expired','mba:logged-out'])window.addEventListener(event,clear);
+  sync();
 }

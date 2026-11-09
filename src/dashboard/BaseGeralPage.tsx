@@ -330,34 +330,51 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
   return <section className="base-geral-page" aria-label={cardsOnly ? 'Cadastro no CPJ' : 'Base Geral da carteira processual'}>
     <div className="base-geral-filters">
-      <DateRangePicker label="Período da entrada" start={entryStart} end={entryEnd} onChange={(start,end)=>{setEntryStart(start);setEntryEnd(end)}}/>
+      <DateRangePicker label={cardsOnly ? "Entrada" : "Período da entrada"} start={entryStart} end={entryEnd} onChange={(start,end)=>{setEntryStart(start);setEntryEnd(end)}}/>
       <Select label="Situação" value={situation} onChange={setSituation} options={[
         {value:'',label:'Todas'}, {value:'active',label:'Em andamento'},
         {value:'closed',label:'Encerrados'}, {value:'unknown',label:'Não informada'},
       ]}/>
-      <Select label="UF" value={uf} onChange={setUf} options={fromValues(data?.filters.states || [])}/>
-      <Select label="Produto" value={product} onChange={setProduct} options={fromValues(data?.filters.products || [])}/>
-      <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
+      {!cardsOnly && <>
+        <Select label="UF" value={uf} onChange={setUf} options={fromValues(data?.filters.states || [])}/>
+        <Select label="Produto" value={product} onChange={setProduct} options={fromValues(data?.filters.products || [])}/>
+        <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
+      </>}
     </div>
     {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
-    {cardsOnly ? <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
-      <CadastroCpjCards/>
-      <button type="button" className="base-geral-card mba-metric-card" onClick={()=>openDetail('prescribed')} title="Aging superior a 18 meses"
-        aria-label="Abrir relação: Base prescrita. Aging superior a 18 meses">
-        <span className="base-geral-card-top"><span>Prescrito</span><Clock3 size={15} strokeWidth={1.7}/></span>
-        <strong>{shown ? number(categories.prescribed) : pending ? <MetricDots/> : '—'}</strong>
-      </button>
-      {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
-        className="base-geral-card mba-metric-card base-geral-revenue-card"
-        title="Faturamento projetado: 18 mensalidades de R$ 35 e antecipação pelos andamentos enviados no mês corrente"
-        aria-label="Detalhar faturamento estimado da Regular"
-        disabled={estimatedRevenue === null}
-        onClick={() => setRevenueOpen(true)}>
-        <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={15} strokeWidth={1.7}/></span>
-        <strong>{billingPending && !currentBilling ? <MetricDots/> : money(estimatedRevenue)}</strong>
-      </button>}
-    </div> : <>
+    {cardsOnly ? <>
+      <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
+        <CadastroCpjCards filtered={Boolean(entryStart || entryEnd || situation)}/>
+        {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
+          className="base-geral-card mba-metric-card base-geral-revenue-card"
+          aria-label="Detalhar faturamento" disabled={estimatedRevenue === null} onClick={() => setRevenueOpen(true)}>
+          <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={14} strokeWidth={1.7}/></span>
+          <strong>{billingPending && !currentBilling ? <MetricDots/> : money(estimatedRevenue)}</strong>
+        </button>}
+      </div>
+      <div className="base-geral-kpis cadastro-status-cards" aria-label="Ativos e prescritos">
+        <button type="button" className="base-geral-card mba-metric-card" onClick={() => openDetail('active')}>
+          <span className="base-geral-card-top"><span>Ativos</span><FolderOpen size={14}/></span>
+          <strong>{shown ? number(categories.active) : pending ? <MetricDots/> : '—'}</strong>
+        </button>
+        <button type="button" className="base-geral-card mba-metric-card" onClick={() => openDetail('prescribed')}>
+          <span className="base-geral-card-top"><span>Prescritos</span><Clock3 size={14}/></span>
+          <strong>{shown ? number(categories.prescribed) : pending ? <MetricDots/> : '—'}</strong>
+        </button>
+      </div>
+      <section className="base-geral-panel base-geral-products-table cadastro-products" aria-label="Produtos">
+        <header><div><h2>Produtos</h2></div><span className="base-geral-tally">{number(productTotal)} processos</span></header>
+        <div className="base-geral-table-scroll"><table className="base-geral-products">
+          <thead><tr><th>Produto</th><th>Processos</th><th>Participação</th></tr></thead>
+          <tbody>{products.length ? products.map(row=>{
+            const share=productTotal?Number(row.value)/productTotal*100:0;
+            return <tr key={row.label}><td>{row.label}</td><td>{number(row.value)}</td>
+              <td><div className="base-geral-product-share"><div className="base-geral-product-share-track" aria-hidden="true"><span style={{width:share+'%'}}/></div><span>{share.toFixed(1).replace('.',',')}%</span></div></td></tr>;
+          }) : <tr><td colSpan={3} className="base-geral-empty">—</td></tr>}</tbody>
+        </table></div>
+      </section>
+    </> : <>
     <div className={'base-geral-kpi-layout' + (portfolio === 'agibank_mba' && canViewBilling ? ' with-billing' : '')}>
     <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
       {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"

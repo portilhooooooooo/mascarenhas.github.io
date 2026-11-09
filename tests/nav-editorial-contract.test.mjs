@@ -6,7 +6,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html');
 const css=read('nav-editorial.css');
 const build=read('build-static.mjs');
-const operation=read('src/dashboard/OperacaoPage.tsx');
+const operation=read('src/dashboard/AutomacoesWorkspace.tsx');
 const results=read('src/dashboard/GestaoProcessualPage.tsx');
 const shell=read('src/dashboard/main.tsx');
 const theme=read('brand-theme.js');
@@ -36,7 +36,7 @@ test('geometria de Carteiras, estado ativo e ordenação',()=>{
   assert.match(css,/\.nav-item:not\(\.active\) \{[\s\S]*?background:transparent !important/);
   const nav=shell.match(/const orderedItems: Array<HTMLElement \| null> = \[([\s\S]*?)\];/)[1];
   const pages=[...nav.matchAll(/\[data-page="([^"]+)"\]/g)].map(x=>x[1]);
-  assert.deepEqual(pages,['dashboard','processos','tarefas','automacoes','acordos']);
+  assert.deepEqual(pages,['dashboard','processos','tarefas','automacoes']);
   assert.doesNotMatch(css,/\.main-nav \.nav-item\[data-page="acordos"\]\s*\{\s*margin-top/);
   assert.doesNotMatch(css,/\.main-nav \.nav-item\[data-page="acordos"\]::after/);
 });
@@ -48,14 +48,12 @@ test('usuários no rodapé respeita permissão existente',()=>{
   assert.match(css,/\.sidebar-users-button\[hidden\] \{ display:none !important/);
 });
 
-test('submódulos reais no portal somem quando Operação não está ativa',()=>{
+test('submódulos de Automações usam o portal do shell único',()=>{
   assert.match(operation,/import \{createPortal\} from 'react-dom'/);
-  assert.match(operation,/const shellTabs = document\.getElementById\('mba-shell-tabs'\)/);
-  assert.match(operation,/attributeFilter:\['class'\]/);
-  assert.match(operation,/operationVisible \? createPortal\(operationTabs, shellTabs\) : null/);
-  assert.match(operation,/onClick=\{\(\) => navigateOperationModule\('pagamentos'\)\}/);
+  assert.match(operation,/const shellTabs=document\.getElementById\('mba-shell-tabs'\)/);
+  assert.match(operation,/shellTabs\?createPortal\(tabsNav,shellTabs\):tabsNav/);
+  assert.match(operation,/<AutomationKanban key=\{active\}/);
 });
-
 test('deploy de testes inclui o CSS novo e versão anti-cache',()=>{
   assert.match(build,/'nav-editorial.css'/);
   assert.match(build,/nav-editorial\\\.css/);
@@ -66,5 +64,5 @@ test('submódulos reais de Resultados usam a navbar sem duplicação',()=>{
   assert.match(results,/const shellTabs = document\.getElementById\('mba-shell-tabs'\)/);
   assert.match(results,/visible \? createPortal\(resultsTabs, shellTabs\) : null/);
   assert.match(results,/aria-label="Seções de Analytics"/);
-  assert.match(results,/onClick=\{\(\) => navigateAnalytics\('analytics'\)\}/);
+  assert.match(results,/onClick=\{\(\) => navigateAnalytics\('analytics\/cadastro'\)\}/);
 });
