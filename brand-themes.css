@@ -10,7 +10,7 @@
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   height:31px;min-width:66px;padding:0 10px;border-radius:7px;
   border:1px solid var(--mba-border);background:transparent;
-  color:var(--mba-text-2);font:500 12px/1 Inter,system-ui,sans-serif;
+  color:var(--mba-text-2);font:500 11px/1 Inter,system-ui,sans-serif;
   white-space:nowrap;cursor:pointer;box-shadow:none;
   transition:background .16s ease,border-color .16s ease,color .16s ease;
 }

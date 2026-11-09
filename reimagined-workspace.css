@@ -11,9 +11,7 @@ html[data-mba-theme="sol"] {
   --mba-subtle: #f1f3f4;
   --mba-text: #25292c;
   --mba-text-2: #5e676e;
-  --mba-muted: #68737b;
-  --mba-accent: #a44b28;
-  --mba-accent-soft: #f9eee9;
+  --mba-muted: #758088;
   --mba-border: #e3e6e8;
   --mba-border-strong: #cbd1d5;
   --mba-blue: #a44b28;
@@ -29,13 +27,11 @@ html[data-mba-theme="sol"] {
 }
 html[data-mba-theme="lua"] {
   --mba-bg: #151719;
-  --mba-surface: #212529;
+  --mba-surface: #1c1f22;
   --mba-subtle: #262a2e;
   --mba-text: #eff0f1;
   --mba-text-2: #c1c6ca;
   --mba-muted: #a4acb2;
-  --mba-accent: #e78b56;
-  --mba-accent-soft: #372922;
   --mba-border: #34393e;
   --mba-border-strong: #4d545b;
   --mba-blue: #e78b56;
@@ -77,8 +73,8 @@ html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
 }
 .sidebar-head { border-color: #2c3034 !important; }
 .sidebar .brand { font-size: 13px; gap: 6px; letter-spacing: -.025em; }
-.sidebar .brand > span:first-child { color: #e8b08d !important; font-weight: 600; }
-.sidebar .brand .brand-word { font-weight: 500; color: #e9e8e6 !important; }
+.sidebar .brand > span:first-child { color: #e8b08d !important; font-weight: 650; }
+.sidebar .brand .brand-word { font-weight: 450; color: #e9e8e6 !important; }
 .sidebar .main-nav { gap: 3px; padding-top: 15px; }
 .sidebar .nav-item {
   height: 37px;
@@ -86,7 +82,7 @@ html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
   padding: 0 11px;
   border-radius: 7px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 470;
   letter-spacing: 0;
   color: #b6bac0;
   transition: background-color .14s ease, color .14s ease;
@@ -107,7 +103,7 @@ html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
   border-radius: 5px;
   background: #44332b;
   color: #edbc9d;
-  font-size: 12px;
+  font-size: 10px;
 }
 .sidebar .sidebar-bottom { border-color: #313439 !important; }
 .sidebar .sidebar-portfolio-trigger {
@@ -115,9 +111,9 @@ html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
   background: #23262a !important;
   border-radius: 7px;
   min-height: 37px;
-  font-size: 12px;
+  font-size: 11px;
 }
-.sidebar .sidebar-portfolio-heading { color: #92999f !important; font-size: 12px; }
+.sidebar .sidebar-portfolio-heading { color: #92999f !important; font-size: 9px; }
 .sidebar .sidebar-logout { color: #aeb6bc; }
 .sidebar .sidebar-logout:hover { background: #2b292a; color: #fff; }
 
@@ -140,12 +136,12 @@ html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] {
   min-width: 0;
   color: var(--mba-muted);
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 11.5px;
   line-height: 1;
 }
-.mba-context-label span { font-weight: 500; }
+.mba-context-label span { font-weight: 450; }
 .mba-context-label i { color: var(--mba-border-strong); font-size: 15px; font-style: normal; }
-.mba-context-label strong { color: var(--mba-text); font-size: 12px; font-weight: 600; }
+.mba-context-label strong { color: var(--mba-text); font-size: 11.5px; font-weight: 620; }
 .app-shell .local-preview-badge { margin: 0; }
 .app-shell .top-actions { flex-shrink: 0; }
 .topbar .mba-theme-switch {
@@ -197,7 +193,7 @@ body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks
 }
 body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button.active {
   color: var(--mba-blue) !important;
-  font-weight: 600 !important;
+  font-weight: 650 !important;
 }
 body :is(.analytics-subnav, .mba-operation-subnav, .controladoria-subnav, .tasks-react-subnav) > button.active::after {
   height: 2px !important;
@@ -232,7 +228,7 @@ html[data-mba-theme="lua"] body :is(.analytics-subnav, .mba-operation-subnav, .c
 }
 #tarefas[data-react-tasks='true'] .task-station .tasks-process-title strong {
   color: var(--mba-text-2) !important;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: none;
   letter-spacing: 0;
@@ -255,8 +251,8 @@ html[data-mba-theme="lua"] body :is(.analytics-subnav, .mba-operation-subnav, .c
   border-color: color-mix(in srgb, var(--mba-blue) 28%, transparent) !important;
   box-shadow: inset 2px 0 0 var(--mba-blue) !important;
 }
-#tarefas[data-react-tasks='true'] .tasks-process-item strong { color: var(--mba-text) !important; font-size: 12px; }
-#tarefas[data-react-tasks='true'] .tasks-process-item small { color: var(--mba-muted) !important; font-size: 12px; }
+#tarefas[data-react-tasks='true'] .tasks-process-item strong { color: var(--mba-text) !important; font-size: 11.3px; }
+#tarefas[data-react-tasks='true'] .tasks-process-item small { color: var(--mba-muted) !important; font-size: 10px; }
 #tarefas[data-react-tasks='true'] .tasks-process-search,
 #tarefas[data-react-tasks='true'] .mba-react-select-trigger {
   background: var(--mba-surface) !important;
@@ -316,14 +312,14 @@ html[data-mba-theme="lua"] #tarefas[data-react-tasks='true'] .queue-item-badges 
   background: var(--mba-subtle) !important;
   border-bottom-color: var(--mba-border) !important;
   color: var(--mba-text-2) !important;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 650;
   letter-spacing: .025em;
 }
 .app-shell :is(.tasks-management-table td, .protocolos-table-react td) {
   border-bottom-color: var(--mba-border) !important;
   color: var(--mba-text-2);
-  font-size: 12px;
+  font-size: 11.5px;
 }
 .app-shell :is(.tasks-management-table tbody tr:hover, .protocolos-table-react tbody tr:hover) td {
   background: var(--mba-subtle);

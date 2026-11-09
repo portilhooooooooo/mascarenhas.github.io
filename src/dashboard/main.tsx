@@ -40,7 +40,7 @@ function setTopModuleActive(page: string) {
   const candidate = nav.querySelector<HTMLElement>(`[data-page="${page}"]`);
   if (candidate && !candidate.hidden && candidate.dataset.mbaHidden !== 'true') { candidate.classList.add('active'); candidate.setAttribute('aria-current','page'); }
   const label = document.getElementById('mba-active-module');
-  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Operação', dashboard: 'Resultados' };
+  const titles: Record<string, string> = { processos: 'Processos', tarefas: 'Tarefas', acordos: 'Operação', automacoes: 'Automações', dashboard: 'Resultados' };
   if (label) label.textContent = titles[page] || 'Workspace';
 }
 
@@ -58,7 +58,7 @@ function syncTopModuleFromActivePage() {
     return;
   }
   if (activePage.id === 'automacoes') {
-    setTopModuleActive(mayOpen('acordos') ? 'acordos' : 'automacoes');
+    setTopModuleActive('automacoes');
     return;
   }
   if (TASK_PAGES.has(activePage.id)) {
@@ -92,7 +92,7 @@ function configureApplicationShell() {
     processos: 'Processos',
     tarefas: 'Tarefas',
     acordos: 'Operação',
-    automacoes: 'Operação',
+    automacoes: 'Automações',
     dashboard: 'Resultados',
   };
 
@@ -101,9 +101,7 @@ function configureApplicationShell() {
     buttons.forEach(button => {
       const page = button.dataset.page || '';
       const recognized = visiblePages.has(page);
-      // Automações lives under Operação; its own entry remains only for users without Operação.
-      const merged = page === 'automacoes' && mayOpen('acordos');
-      const eligible = recognized && Boolean(page) && mayOpen(page) && !merged;
+      const eligible = recognized && Boolean(page) && mayOpen(page);
       button.dataset.mbaHidden = String(!eligible);
       button.hidden = !eligible;
       if (!eligible) button.classList.remove('active');
@@ -131,13 +129,6 @@ function configureApplicationShell() {
     nav.querySelector<HTMLElement>('[data-page="acordos"]'),
   ];
   orderedItems.forEach(item => { if (item) nav.appendChild(item); });
-
-  // Operação opens on Home (Automações) when the user may see it.
-  nav.querySelector<HTMLElement>('[data-page="acordos"]')?.addEventListener('click', event => {
-    if (!mayOpen('automacoes')) return;
-    event.stopImmediatePropagation();
-    (window as DashboardWindow).showPage?.('automacoes');
-  }, true);
 
   const observer = new MutationObserver(syncTopModuleFromActivePage);
   document.querySelectorAll<HTMLElement>('main .page').forEach(page => {
@@ -181,8 +172,7 @@ function unmountOperacaoPage() {
 function syncOperacaoLifecycle() {
   const section = document.getElementById('acordos');
   const user = (window as DashboardWindow).MBA_CURRENT_USER;
-  const active = section?.classList.contains('active') === true
-    || document.getElementById('automacoes')?.classList.contains('active') === true;
+  const active = section?.classList.contains('active') === true;
   const allowed = mayOpen('acordos');
   // Keep previously visited modules mounted across navigation and tab visibility.
   // Drop their state only when authorization/session/portfolio actually changes.
@@ -195,8 +185,6 @@ function configureOperacaoLifecycle() {
   if (!section) return;
   const observer = new MutationObserver(syncOperacaoLifecycle);
   observer.observe(section, { attributes: true, attributeFilter: ['class'] });
-  const automationPage = document.getElementById('automacoes');
-  if (automationPage) observer.observe(automationPage, { attributes: true, attributeFilter: ['class'] });
   window.addEventListener('mba:authenticated', syncOperacaoLifecycle);
   window.addEventListener('mba:profile-ready', syncOperacaoLifecycle);
   window.addEventListener('mba:module-visibility-updated', syncOperacaoLifecycle);

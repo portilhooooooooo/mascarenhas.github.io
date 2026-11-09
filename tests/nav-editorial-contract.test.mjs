@@ -52,7 +52,7 @@ test('submódulos reais no portal somem quando Operação não está ativa',()=>
   assert.match(operation,/import \{createPortal\} from 'react-dom'/);
   assert.match(operation,/const shellTabs = document\.getElementById\('mba-shell-tabs'\)/);
   assert.match(operation,/attributeFilter:\['class'\]/);
-  assert.match(operation,/operationVisible \|\| homeVisible \? createPortal\(operationTabs, shellTabs\) : null/);
+  assert.match(operation,/operationVisible \? createPortal\(operationTabs, shellTabs\) : null/);
   assert.match(operation,/onClick=\{\(\) => navigateOperationModule\('pagamentos'\)\}/);
 });
 

@@ -386,7 +386,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     </div>
     <div className="base-geral-bottom">
       <section className="base-geral-panel base-geral-comparison">
-        <header><div><h2>Base ativa × prescrita</h2><span className="base-geral-context">Quantidade de processos</span></div></header>
+        <header><div><h2>Prejuízo X Lucro</h2><span className="base-geral-context">Quantidade de processos</span></div></header>
         <div className="base-geral-comparison-compact">
           <div className={'base-geral-comparison-track' + (!donutReady ? ' is-unavailable' : '')}
             role="img" aria-label={donutReady

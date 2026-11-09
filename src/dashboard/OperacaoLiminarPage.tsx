@@ -90,9 +90,9 @@ export function OperacaoLiminarPage() {
 
   return <div className="protocolos-page-react operacao-pagamentos-page operacao-liminar-page">
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
-    <section className="protocolos-session-bar" aria-label="Situação do processamento">
+    <section className="protocolos-session-bar" aria-label="Status do backend">
       <div className="protocolos-session-copy">
-        <span>Situação do processamento</span>
+        <span>Status do backend</span>
         <strong className={'protocolos-session-state '+(error?'error':'connected')}><i aria-hidden="true"/>{loading?'Consultando histórico…':'Cruzamento histórico disponível'}</strong>
         <small>Reutiliza correspondências já registradas no DataJud{(window as Window&{MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.().endsWith('_enter')?' e na Enter':''}. Não executa worker nem consulta externa.</small>
       </div>
@@ -101,7 +101,7 @@ export function OperacaoLiminarPage() {
 
     <section className="protocolos-intake-grid-react operacao-single-intake">
       <article className="protocolos-card protocolos-upload-card">
-        <header><span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span><div><h3>Importar processos</h3><small className="operacao-card-subtitle">CSV ou XLSX com coluna CNJ ou Número do processo · somente cruzamento com histórico existente.</small></div></header>
+        <header><span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span><div><h3>Input de processos</h3><small className="operacao-card-subtitle">CSV ou XLSX com coluna CNJ ou Número do processo · somente cruzamento com histórico existente.</small></div></header>
         <input ref={fileInput} type="file" accept=".xlsx,.csv" hidden onChange={event=>setFile(event.target.files?.[0]||null)} aria-label="Selecionar processos"/>
         <button type="button" className="protocolos-modern-drop" disabled={!canImport||busy} onClick={()=>fileInput.current?.click()}>
           <UploadCloud size={21}/><span>Selecionar planilha de processos</span><small>CSV ou XLSX · até 8 MB</small>

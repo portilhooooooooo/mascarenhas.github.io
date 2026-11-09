@@ -30,7 +30,7 @@ test('critical inner section headings, controls and context are kept',()=>{
   const base=read('src/dashboard/BaseGeralPage.tsx');
   const close=read('src/dashboard/EncerramentosPage.tsx');
   const defenses=read('src/dashboard/DefesasResultadosPage.tsx');
-  assert.match(base,/<h2>Base ativa × prescrita<\/h2>/);
+  assert.match(base,/<h2>Prejuízo X Lucro<\/h2>/);
   assert.match(base,/<h2>Produto<\/h2>/);
   assert.match(base,/className="base-geral-filters"/);
   assert.match(close,/closing-filter-row/);
