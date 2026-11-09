@@ -479,7 +479,7 @@
 .cadastro-cpj-toolbar .base-geral-filter{width:min(270px,100%)}
 .cadastro-cpj-toolbar .base-geral-muted{padding:0;flex:1;min-width:220px}
 .cadastro-cpj-note:empty{display:none}
-.andamentos-office-filter{grid-template-columns:minmax(200px,280px)}
+.andamentos-office-filter{grid-template-columns:minmax(200px,280px);justify-content:end;margin-top:8px}
 
 /* Compact results cards: shared Encerramentos proportions. */
 .cadastro-cards,.cadastro-status-cards,.andamento-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:10px}

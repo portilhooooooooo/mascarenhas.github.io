@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
-import {Archive,BookOpen,FileCheck2,FileText,Scale,PauseCircle,Gavel,CheckCircle2} from 'lucide-react';
+import {Archive,BookOpen,FileCheck2,Scale,PauseCircle,Gavel,CheckCircle2,ShieldAlert} from 'lucide-react';
 import {SelectMenu} from './SelectMenu';
 import {MetricDots} from './dashboardFeedback';
 import {runtimeScope} from '../tasks/runtimeQueries';
@@ -19,8 +19,9 @@ const cards=[
   {key:'RECURSAL_PROCEDENTE',label:'Recursal - Procedente',icon:Scale},
   {key:'TRANSITO_EM_JULGADO_VITORIA',label:'Trânsito em julgado - Vitória',icon:CheckCircle2},
   {key:'TRANSITO_EM_JULGADO',label:'Trânsito em julgado',icon:BookOpen},
-  {key:'DERROTA_VOLUNTARIA',label:'Derrota voluntária',icon:FileText},
+  {key:'TRANSITO_EM_JULGADO_DERROTA',label:'Trânsito em julgado - Derrota',icon:Scale},
   {key:'SUSPENSAO',label:'Suspensos',icon:PauseCircle},
+  {key:'PEDIDO_BLOQUEIO',label:'Pedido de bloqueio',icon:ShieldAlert},
   {key:'CUMPRIMENTO_SENTENCA',label:'Cumprimento de Sentença',icon:Gavel},
 ] as const;
 const numeric=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0?new Intl.NumberFormat('pt-BR').format(value):'—';
@@ -44,15 +45,15 @@ function Content(){
   const counts=data?.metrics?.by_event_kind||{};
   const offices=Array.isArray(data?.charts?.offices)?data!.charts.offices:[];
   return <section className="base-geral-page" aria-label="Andamentos">
-    <div className="andamentos-office-filter base-geral-filters">
-      <SelectMenu label="Escritório" className="base-geral-filter" value={office} onChange={setOffice}
-        options={[{value:'',label:'Todos'},...offices.map(name=>({value:name,label:name}))]} searchable={offices.length>8}/>
-    </div>
     <div className="base-geral-kpis andamento-cards">
       {cards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
         <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
         <strong>{summary.isPending?<MetricDots/>:numeric(key==='FASE_CONHECIMENTO'?data?.metrics?.fase_conhecimento:counts[key])}</strong>
       </article>)}
+    </div>
+    <div className="andamentos-office-filter base-geral-filters">
+      <SelectMenu label="Escritório" className="base-geral-filter" value={office} onChange={setOffice}
+        options={[{value:'',label:'Todos'},...offices.map(name=>({value:name,label:name}))]} searchable={offices.length>8}/>
     </div>
   </section>;
 }
