@@ -59,3 +59,13 @@
 .mba-dashboard-recovery{border:0;background:transparent;padding:3px 0;margin:3px 0 9px;
   font-size:11px;color:var(--mba-muted);gap:9px}
 .mba-dashboard-recovery button{font-size:11px;text-decoration:none}
+
+/* Quiet technical retry: only present when a real request failed without a snapshot. */
+.mba-dashboard-recovery--compact{display:flex;align-items:center;justify-content:flex-end;
+  margin:0 0 6px;padding:0;border:0;background:transparent;min-height:22px}
+.mba-dashboard-recovery--compact button{display:inline-flex;align-items:center;gap:6px;
+  border:0;background:transparent;color:var(--mba-muted);text-decoration:none;
+  cursor:pointer;font-size:10px;font-weight:500;padding:2px 4px}
+.mba-dashboard-recovery--compact button:hover{color:var(--mba-text)}
+.mba-retry-spinning{animation:mba-retry-spin 1s linear infinite}
+@keyframes mba-retry-spin{to{transform:rotate(360deg)}}

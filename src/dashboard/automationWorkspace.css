@@ -295,8 +295,8 @@
 
 /* Brand copper is scoped: legacy shell sometimes overrides --mba-orange with amber. */
 .automation-workspace,.automation-dialog{
-  --automation-copper:#c18847;
-  --automation-copper-dark:#9f6a38;
+  --automation-copper:#b87555;
+  --automation-copper-dark:#94593f;
 }
 .automation-home-actions .automation-execute{
   background:var(--automation-copper);
@@ -337,4 +337,116 @@
 @media(max-width:650px){
   .automation-dialog[data-module="protocolos"]{min-height:min(510px,calc(100dvh - 16px))}
   .automation-dialog[data-module="protocolos"]:has(.protocolos-embedded[data-section="fila"]){height:calc(100dvh - 16px)}
+}
+
+/* Use Backoffice's primary button accent, not the secondary copper/amber token. */
+.automation-workspace .automation-action-run,
+.automation-dialog .automation-action-run,
+.automation-dialog .automation-submit button:not(:disabled){
+  background:var(--automation-copper);
+  border-color:var(--automation-copper);
+}
+.automation-workspace .automation-action-run:hover,
+.automation-dialog .automation-action-run:hover{
+  background:var(--automation-copper-dark);
+  border-color:var(--automation-copper-dark);
+}
+.automation-workspace .automation-home-icon-encerramentos{
+  background:var(--mba-blue-soft,#fbf0ea);
+  color:var(--automation-copper);
+}
+
+/* Encerramentos / ACP execution: compact, role-specific forms. */
+.automation-dialog .closing-execution-panel,
+.automation-dialog .payments-acp-panel{
+  width:100%;
+}
+.closing-execution-panel .automation-submit{
+  margin-top:12px;
+}
+.automation-dialog .automation-submit button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  min-height:34px;
+  min-width:132px;
+  font-size:11px;
+}
+.automation-dialog .automation-submit button:not(:disabled){
+  background:#b87555;
+  color:white;
+  border:1px solid #b87555;
+}
+.automation-dialog .automation-submit button:hover:not(:disabled){
+  background:#94593f;
+  border-color:#94593f;
+}
+.automation-action-description{display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--mba-text-2)}
+.automation-action-description strong{font-size:12px;color:var(--mba-text)}
+.automation-dialog .automation-file-name{display:inline-flex;align-items:center;gap:6px;color:var(--mba-text-2);overflow-wrap:anywhere}
+.automation-form-error{padding:10px 12px;margin:10px 0;border-radius:7px;background:#fff2f0;
+  color:#8f3435;font-size:11px;border:1px solid #edcbc9}
+.automation-dialog[data-module="pagamentos"]:has(.payments-acp-results){
+  height:min(760px,calc(100dvh - 46px));
+}
+.automation-dialog[data-module="pagamentos"]:has(.payments-acp-results) .automation-dialog-body{
+  min-height:0;display:flex;flex-direction:column;overflow:hidden;
+}
+.automation-dialog[data-module="pagamentos"] .payments-acp-panel{
+  display:flex;flex-direction:column;min-height:0;flex:1;
+}
+.automation-dialog .payments-acp-panel .automation-action-detail{min-height:0;padding:14px 16px;margin:0 0 12px}
+.automation-dialog .payments-acp-panel .automation-submit{margin-top:0}
+.payments-acp-results{display:flex;flex-direction:column;min-height:0;flex:1}
+.payments-acp-summary{display:flex;align-items:center;flex-wrap:wrap;gap:10px 20px;
+  padding:0 0 12px;font-size:11px;color:var(--mba-text-2)}
+.payments-acp-summary strong{color:var(--mba-text);font-size:12px}
+.payments-acp-search{display:inline-flex;align-items:center;gap:8px;
+  min-height:35px;width:min(440px,100%);box-sizing:border-box;
+  padding:0 11px;margin-bottom:12px;border:1px solid var(--mba-border);
+  border-radius:7px;color:var(--mba-muted)}
+.payments-acp-search input{min-width:0;flex:1;background:transparent;border:0;outline:0;
+  color:var(--mba-text);font:400 11px Inter,ui-sans-serif,system-ui,sans-serif}
+.payments-acp-table-wrap{flex:1;min-height:110px;overflow:auto}
+.payments-acp-table-wrap table{width:100%;border-collapse:collapse;font-size:11px;text-align:left}
+.payments-acp-table-wrap th{position:sticky;top:0;z-index:1;white-space:nowrap;
+  background:var(--mba-subtle);color:var(--mba-text-2);font-weight:650;
+  padding:12px;border-bottom:1px solid var(--mba-border)}
+.payments-acp-table-wrap td{padding:12px;border-bottom:1px solid var(--mba-border);
+  color:var(--mba-text-2)}
+.payments-acp-table-wrap td strong{color:var(--mba-text)}
+.payments-acp-table-wrap tbody tr:hover{background:var(--mba-subtle)}
+.payments-acp-footer{flex:none;padding:12px 0 0;color:var(--mba-muted);font-size:11px}
+.payments-acp-note{padding:10px 12px;font-size:11px;color:var(--mba-muted);margin:0}
+@media(max-width:650px){
+  .automation-dialog[data-module="pagamentos"]:has(.payments-acp-results){height:calc(100dvh - 16px)}
+  .payments-acp-table-wrap table{min-width:490px}
+}
+
+/* Compact native-language file control for portfolio ERP. */
+.automation-dialog .automation-upload-target{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  position:relative;box-sizing:border-box;min-height:57px;
+  padding:10px 14px;border:1px dashed var(--mba-border-strong);
+  background:var(--mba-subtle);border-radius:7px;
+  color:var(--mba-text-2);font-size:11px;font-weight:550;
+  cursor:pointer;overflow:hidden;
+}
+.automation-dialog .automation-upload-target span{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
+}
+.automation-dialog .automation-upload-target input[type=file]{
+  position:absolute;inset:0;width:100%;height:100%;opacity:0;
+  cursor:pointer;padding:0;margin:0;z-index:1;
+}
+.automation-dialog .automation-upload-target:focus-within{
+  outline:2px solid var(--mba-blue);outline-offset:2px;
+}
+.automation-dialog .automation-upload-target:has(input:disabled){opacity:.5;cursor:default}
+.automation-dialog .closing-execution-panel .automation-submit button:disabled{
+  background:var(--mba-subtle);
+  color:var(--mba-muted);
+  border:1px solid var(--mba-border);
+  opacity:1;
 }

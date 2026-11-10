@@ -2,6 +2,8 @@ import {useEffect,useId,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Archive,FileSpreadsheet,FolderInput,History,Landmark,Play,Receipt,ShieldCheck,Workflow,X,Files} from 'lucide-react';
 import {ProtocolosPage} from './ProtocolosPage';
+import {ClosingExecutionPanel} from './ClosingExecutionPanel';
+import {PaymentsACPExecutionPanel} from './PaymentsACPExecutionPanel';
 import {useModuleVisible} from './useModuleVisible';
 import {AutomationKanban,type KanbanFlow} from './AutomationKanban';
 import './automationWorkspace.css';
@@ -20,8 +22,8 @@ function go(module:Module){
 }
 const descriptions:Record<AutomationModule,string>={
   datajud:'Movimentações judiciais',
-  encerramentos:'Classificação processual',
-  pagamentos:'Pagamentos judiciais',
+  encerramentos:'Importar lotes e reclassificar processos',
+  pagamentos:'Analisar ACP, pagamentos e comprovantes',
 };
 const homeDescriptions:Record<'datajud'|'encerramentos'|'pagamentos'|'liminar'|'andamentos'|'protocolos',string>={
   ...descriptions,
@@ -138,6 +140,11 @@ export function AutomacoesWorkspace(){
   useEffect(()=>{
     if(execute&&!access.has(execute))setExecute(null);
   },[access,execute]);
+  useEffect(()=>{
+    const close=()=>setExecute(null);
+    window.addEventListener('mba:portfolio-changed',close);
+    return()=>window.removeEventListener('mba:portfolio-changed',close);
+  },[]);
   const active=access.has(module)?module:'home';
   const tabs:Module[]=['home','encerramentos','pagamentos','liminar','protocolos','defesas'];
   const visibleTabs=tabs.filter(id=>access.has(id));
@@ -159,8 +166,10 @@ export function AutomacoesWorkspace(){
           <button type="button" aria-label="Fechar" onClick={()=>setExecute(null)}><X size={18}/></button>
         </header>
         <div className="automation-dialog-body">{execute==='protocolos'?<ProtocolosPage embedded/>:
-          (execute==='datajud'||execute==='encerramentos'||execute==='pagamentos')?<AutomationForm module={execute}/>:
-          <p className="automation-empty">Execução indisponível.</p>}</div>
+          execute==='encerramentos'?<ClosingExecutionPanel/>:
+          execute==='pagamentos'?<PaymentsACPExecutionPanel/>:
+          execute==='datajud'?<AutomationForm module="datajud"/>:
+          <p className="automation-empty">Execução não configurada.</p>}</div>
         <footer className="automation-dialog-footer">
           <span>{execute==='protocolos'?'Agibank Enter · Protocolos':'Automação'}</span>
           <button type="button" onClick={()=>setExecute(null)}>Fechar</button>
