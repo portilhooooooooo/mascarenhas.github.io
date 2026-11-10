@@ -103,3 +103,238 @@
 .automation-lane-item:hover:not(:disabled){border-color:var(--mba-orange,#c18847);box-shadow:0 2px 7px rgba(0,0,0,.04)}
 .automation-lane-item:focus-visible{outline:2px solid var(--mba-blue);outline-offset:2px}
 .automation-lane-empty{padding:30px 8px}
+
+/* Modal operacional — mesma hierarquia visual de Resultados / Analisados. */
+.automation-dialog{
+  box-sizing:border-box;
+  width:min(960px,calc(100vw - 40px));
+  min-height:340px;
+  max-height:calc(100dvh - 46px);
+  border-radius:10px;
+}
+.automation-dialog[data-module="protocolos"]{height:min(760px,calc(100dvh - 46px))}
+.automation-dialog-header{
+  min-height:63px;
+  box-sizing:border-box;
+  padding:16px 20px;
+}
+.automation-dialog-header h2{
+  font-family:Inter,ui-sans-serif,system-ui,sans-serif;
+  color:var(--mba-text);
+  font-size:18px;
+  font-weight:680;
+  letter-spacing:-.02em;
+}
+.automation-dialog-body{flex:1;min-height:0;padding:14px 20px;overflow:auto}
+.automation-dialog-footer{
+  flex:none;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  min-height:52px;
+  box-sizing:border-box;
+  padding:10px 20px;
+  border-top:1px solid var(--mba-border);
+  font-size:11px;
+  color:var(--mba-muted);
+}
+.automation-dialog-footer button{
+  min-height:31px;
+  border:1px solid var(--mba-border);
+  border-radius:7px;
+  padding:0 15px;
+  background:var(--mba-surface);
+  color:var(--mba-text);
+  font:600 11px Inter,ui-sans-serif,system-ui,sans-serif;
+  cursor:pointer;
+}
+.automation-dialog-footer button:hover{background:var(--mba-subtle)}
+.automation-execute-tabs{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:14px;
+  border-bottom:1px solid var(--mba-border);
+  padding:0 0 10px;
+}
+.automation-execute-tabs button{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  justify-content:center;
+  min-height:34px;
+  padding:0 13px;
+  border:1px solid transparent;
+  border-radius:7px;
+  background:transparent;
+  color:var(--mba-text-2);
+  font:600 11px Inter,ui-sans-serif,system-ui,sans-serif;
+  cursor:pointer;
+}
+.automation-execute-tabs button.active{
+  border-color:var(--mba-border-strong);
+  background:var(--mba-subtle);
+  color:var(--mba-text);
+}
+.automation-execute-tabs button:hover:not(.active){background:var(--mba-subtle)}
+.automation-execute-tabs button:focus-visible,
+.automation-dialog button:focus-visible{outline:2px solid var(--mba-blue);outline-offset:2px}
+.automation-config .automation-action-detail{
+  margin:0 0 14px;
+  padding:18px;
+  border:1px solid var(--mba-border);
+  border-radius:8px;
+  background:var(--mba-surface);
+  min-height:122px;
+}
+.automation-config .automation-file-field,
+.automation-config .automation-manual-field{
+  color:var(--mba-text);
+  font-size:12px;
+}
+.automation-config :is(.automation-file-field,.automation-manual-field)>strong{
+  font-size:11px;
+  font-weight:620;
+}
+.automation-config .automation-file-field input{
+  width:100%;
+  box-sizing:border-box;
+  padding:11px;
+  border:1px dashed var(--mba-border-strong);
+  border-radius:7px;
+  background:var(--mba-subtle);
+}
+.automation-config .automation-submit{gap:15px;min-height:36px}
+.automation-config .automation-submit button{min-height:34px;min-width:90px}
+.automation-home-card{min-height:154px}
+.automation-home-copy h2{font-size:14px;margin:0 0 5px}
+.automation-home-copy p{font-size:11px}
+.automation-home-actions button{font-size:11px}
+.automation-board-head>span{display:none}
+.automation-inline-retry{
+  font-size:11px;border:0;background:transparent;
+  color:var(--mba-blue);cursor:pointer
+}
+.automation-lane>header .mba-metric-dots{min-width:24px;gap:3px}
+.automation-lane>header .mba-metric-dots i{width:4px;height:4px}
+.automation-keep-mounted{min-width:0}
+.automation-dialog .protocolos-page-react.protocolos-embedded{
+  width:100%;
+  max-width:none;
+  display:flex;
+  flex-direction:column;
+  flex:1;
+  gap:0;
+  min-height:0;
+  zoom:1;
+}
+.automation-dialog[data-module="protocolos"] .automation-dialog-body{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding:14px 20px 10px;
+}
+.automation-dialog .protocolos-embedded .protocolos-execution-entry{
+  min-height:0;
+  overflow:auto;
+  flex:1;
+  padding-right:3px;
+}
+.automation-dialog .protocolos-embedded .protocolos-execution-queue{
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+}
+.automation-dialog .protocolos-embedded .protocolos-workspace{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  height:100%;
+}
+.automation-dialog .protocolos-embedded .protocolos-workspace-head{display:none}
+.automation-dialog .protocolos-embedded .protocolos-status-strip-react{
+  flex:0 0 auto;
+  overflow-x:auto;
+  padding:12px 12px 8px;
+}
+.automation-dialog .protocolos-embedded .protocolos-toolbar{flex:0 0 auto}
+.automation-dialog .protocolos-embedded .protocolos-table-wrap{
+  min-height:110px;
+  max-height:none;
+  overflow:auto;
+  flex:1;
+}
+.automation-dialog .protocolos-embedded .protocolos-table-react{
+  min-width:840px;
+}
+.automation-dialog .protocolos-embedded .protocolos-table-react th{
+  background:var(--mba-subtle);
+  color:var(--mba-text-2);
+  font-size:11px;
+  text-transform:none;
+  letter-spacing:0;
+  position:sticky;
+  top:0;
+  z-index:1;
+}
+.automation-dialog .protocolos-embedded .protocolos-table-react td{
+  font-size:11px;
+  padding:12px;
+}
+.automation-dialog .protocolos-embedded .protocolos-pagination{flex:0 0 auto}
+@media(max-width:650px){
+  .automation-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}
+  .automation-dialog[data-module="protocolos"]{height:calc(100dvh - 16px)}
+  .automation-dialog-header{padding:14px 16px;min-height:54px}
+  .automation-dialog-body{padding:12px 14px}
+  .automation-dialog[data-module="protocolos"] .automation-dialog-body{padding:12px 14px}
+  .automation-dialog-footer{padding:8px 14px}
+}
+
+/* Brand copper is scoped: legacy shell sometimes overrides --mba-orange with amber. */
+.automation-workspace,.automation-dialog{
+  --automation-copper:#c18847;
+  --automation-copper-dark:#9f6a38;
+}
+.automation-home-actions .automation-execute{
+  background:var(--automation-copper);
+  border-color:var(--automation-copper);
+  color:#fff;
+}
+.automation-home-actions .automation-execute:hover{
+  background:var(--automation-copper-dark);
+  border-color:var(--automation-copper-dark);
+}
+.automation-dialog .protocolos-button.primary{
+  background:var(--automation-copper);
+  border-color:var(--automation-copper);
+  color:#fff;
+}
+.automation-dialog .protocolos-button.primary:hover:not(:disabled){
+  background:var(--automation-copper-dark);
+  border-color:var(--automation-copper-dark);
+}
+.automation-dialog .protocolos-button:disabled{opacity:.55}
+/* Entrada permanece compacta; a fila usa o espaço vertical para as linhas. */
+.automation-dialog[data-module="protocolos"]{
+  height:auto;
+  min-height:min(510px,calc(100dvh - 46px));
+}
+.automation-dialog[data-module="protocolos"]:has(.protocolos-embedded[data-section="fila"]){
+  height:min(760px,calc(100dvh - 46px));
+}
+.automation-dialog .protocolos-embedded .protocolos-workspace{
+  border:0;
+  border-radius:0;
+}
+.automation-dialog .protocolos-embedded .protocolos-status-strip-react{padding:12px 0 8px}
+.automation-dialog .protocolos-embedded .protocolos-toolbar{padding-left:0;padding-right:0}
+.automation-dialog .protocolos-embedded .protocolos-workspace-head{display:none}
+.automation-dialog .protocolos-embedded .protocolos-pagination{padding:10px 8px}
+.automation-dialog .protocolos-execution-queue .protocolos-table-react td:first-child{font-weight:600}
+@media(max-width:650px){
+  .automation-dialog[data-module="protocolos"]{min-height:min(510px,calc(100dvh - 16px))}
+  .automation-dialog[data-module="protocolos"]:has(.protocolos-embedded[data-section="fila"]){height:calc(100dvh - 16px)}
+}

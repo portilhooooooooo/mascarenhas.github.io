@@ -35,7 +35,8 @@ function UploadField({files,onChange,documents=false,disabled=false}: {files:Fil
   </div>;
 }
 
-export function ProtocolosPage() {
+export function ProtocolosPage({embedded=false}:{embedded?:boolean}) {
+  const [section,setSection]=useState<'entrada'|'fila'>('entrada');
   const [items,setItems]=useState<ProtocoloItem[]>([]);
   const [summary,setSummary]=useState<ProtocoloSummary|null>(null);
   const [canView,setCanView]=useState(false),[canRun,setCanRun]=useState(false);
@@ -62,9 +63,9 @@ export function ProtocolosPage() {
   },[refresh]);
   useEffect(()=>{
     if(!canView)return;
-    const timer=window.setInterval(()=>{if(!document.hidden)void refresh();},5000);
+    const timer=window.setInterval(()=>{if(!document.hidden)void refresh();},embedded?30000:5000);
     return()=>window.clearInterval(timer);
-  },[canView,refresh]);
+  },[canView,refresh,embedded]);
   const importRelation=async()=>{
     if(!canRun||!relation[0]||relationBusy)return;
     setRelationBusy(true);setRelationFeedback('');setRelationError(false);
@@ -91,8 +92,13 @@ export function ProtocolosPage() {
   if(!canView&&!loading)return <div className="protocolos-empty"><strong>Sem acesso a Protocolos</strong></div>;
   const state=startBusy?'starting':summary?.session?.state||'unknown';
   const busy=['starting','authenticating','connected','in_use'].includes(state);
-  return <div className="protocolos-page-react">
+  return <div className={'protocolos-page-react'+(embedded?' protocolos-embedded':'')} data-section={embedded?section:undefined}>
+    {embedded&&<nav className="automation-execute-tabs" aria-label="Protocolo">
+      <button type="button" className={section==='entrada'?'active':''} aria-pressed={section==='entrada'} onClick={()=>setSection('entrada')}><FileSpreadsheet size={15}/>Entrada</button>
+      <button type="button" className={section==='fila'?'active':''} aria-pressed={section==='fila'} onClick={()=>setSection('fila')}><Files size={15}/>Fila de protocolos</button>
+    </nav>}
     {error?<div className="protocolos-alert error" role="alert"><AlertTriangle size={16}/><span>{error}</span></div>:null}
+    <div className="protocolos-execution-entry" style={{display:embedded&&section!=='entrada'?'none':undefined}}>
     <section className="protocolos-session-bar" aria-label="Status da automação"><div className="protocolos-session-copy"><span>Status da automação</span><strong className={`protocolos-session-state ${state}`} aria-live="polite"><i aria-hidden="true"/>{loading?'Consultando status…':AUTOMATION_LABELS[state]||AUTOMATION_LABELS.unknown}</strong></div><button type="button" className="protocolos-button primary protocolos-start-button" disabled={!canRun||startBusy||busy||loading} onClick={()=>void start()}>{startBusy?<LoaderCircle className="spin" size={15}/>:<Play size={15}/>}Iniciar</button></section>
     <div className="protocolos-intake-grid-react">
       <article className="protocolos-card protocolos-upload-card"><header><span className="protocolos-card-icon"><FileSpreadsheet size={18}/></span><h3>Correspondências</h3></header>
@@ -107,6 +113,9 @@ export function ProtocolosPage() {
       </article>
     </div>
 
-    <ProtocolQueue summary={summary} items={items} loading={loading} canRun={canRun} refresh={refresh} setError={setError}/>
+    </div>
+    <div className="protocolos-execution-queue" style={{display:embedded&&section!=='fila'?'none':undefined}}>
+      <ProtocolQueue summary={summary} items={items} loading={loading} canRun={canRun} refresh={refresh} setError={setError} embedded={embedded}/>
+    </div>
   </div>;
 }

@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {MetricDots} from './dashboardFeedback';
 import type {ClosingStatus,ClosingSummary,ClosingCase} from './operacaoEncerramentosService';
 import {getClosingCases,getClosingSummary} from './operacaoEncerramentosService';
@@ -32,6 +32,15 @@ const protocolStages:[ProtocoloStatus,string][]=[
   ['DOCUMENTOS_ENVIADOS','Documentos enviados'],['ENVIADO','Enviado'],
   ['DONE','Concluído'],['HUMAN_NECESSARY','Ação humana'],
 ];
+const statusCatalog:Record<KanbanFlow,Array<[string,string]>>={
+  encerramentos:closingStages,
+  pagamentos:paymentStages,
+  liminar:liminarStages,
+  protocolos:protocolStages,
+  defesas:[['apt','Aptos à defesa'],['reschedule','Aptos ao reagendamento'],['completed','Concluídos']],
+};
+const emptyLanes=(module:KanbanFlow):Lane[]=>
+  statusCatalog[module].map(([key,label])=>({key,label,count:null,items:[]}));
 const getApi=()=>{
   const w=window as Window&{MBA_API?:Api;MBA_AUTOMATION_API?:Api};
   return w.MBA_AUTOMATION_API||w.MBA_API;
@@ -138,64 +147,93 @@ async function loadMoreLane(module:KanbanFlow,key:string,offset:number):Promise<
   return [];
 }
 export function AutomationKanban({module,active}:{module:KanbanFlow;active:boolean}){
-  const [lanes,setLanes]=useState<Lane[]>([]);
+  const [lanes,setLanes]=useState<Lane[]>(()=>emptyLanes(module));
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState('');
   const [revision,setRevision]=useState(0);
+  const [loadedAt,setLoadedAt]=useState(0);
+  const generation=useRef(0);
+  const laneElements=useRef<Record<string,HTMLDivElement|null>>({});
   const [loadingLane,setLoadingLane]=useState<string|null>(null);
   const [exhausted,setExhausted]=useState<string[]>([]);
   useEffect(()=>{
-    const change=()=>{setLanes([]);setExhausted([]);setRevision(n=>n+1);};
+    const change=()=>{generation.current+=1;setLanes(emptyLanes(module));setLoadedAt(0);setLoadingLane(null);setExhausted([]);setRevision(n=>n+1);};
     const events=['mba:portfolio-changed','mba:session-expired','mba:logged-out','mba:authorization-invalidated'];
     events.forEach(e=>window.addEventListener(e,change));
     return()=>events.forEach(e=>window.removeEventListener(e,change));
-  },[]);
+  },[module]);
   useEffect(()=>{
-    if(!active)return;
+    if(!active || (loadedAt && Date.now()-loadedAt < 90_000))return;
     let cancelled=false;
-    setLoading(true);setError('');setExhausted([]);
-    void loadKanban(module).then(rows=>{if(!cancelled)setLanes(rows);}).catch(()=>{
-      if(!cancelled)setError('Não foi possível carregar os status.');
-    }).finally(()=>{if(!cancelled)setLoading(false);});
+    const requestGeneration=generation.current;
+    setLoading(true);setError('');
+    void loadKanban(module).then(rows=>{
+      if(!cancelled&&generation.current===requestGeneration){
+        setLanes(rows);setLoadedAt(Date.now());setExhausted([]);
+      }
+    }).catch(()=>{
+      if(!cancelled&&generation.current===requestGeneration)setError('Não foi possível carregar os registros.');
+    }).finally(()=>{if(!cancelled&&generation.current===requestGeneration)setLoading(false);});
     return()=>{cancelled=true;};
-  },[module,active,revision]);
+  },[module,active,revision,loadedAt]);
   const onScroll=(key:string,el:HTMLElement)=>{
     const lane=lanes.find(item=>item.key===key);
     if(!lane||loading||loadingLane!==null||exhausted.includes(key)||
        lane.count===0||(lane.count!==null&&lane.items.length>=lane.count)||
        el.scrollTop+el.clientHeight<el.scrollHeight-160)return;
+    const requestGeneration=generation.current;
     setLoadingLane(key);
     void loadMoreLane(module,key,lane.items.length).then(next=>{
-      if(!next.length){setExhausted(keys=>keys.includes(key)?keys:[...keys,key]);return;}
+      if(generation.current!==requestGeneration)return;
+      const previousIds=new Set(lane.items.map(item=>item.id));
+      const unique=next.filter(item=>!previousIds.has(item.id));
+      if(!unique.length){setExhausted(keys=>keys.includes(key)?keys:[...keys,key]);return;}
       setLanes(previous=>previous.map(current=>{
         if(current.key!==key)return current;
         const seen=new Set(current.items.map(item=>item.id));
-        return {...current,items:[...current.items,...next.filter(item=>!seen.has(item.id))]};
+        return {...current,items:[...current.items,...unique.filter(item=>!seen.has(item.id))]};
       }));
-    }).catch(()=>setExhausted(keys=>keys.includes(key)?keys:[...keys,key]))
-      .finally(()=>setLoadingLane(null));
+    }).catch(()=>{
+      if(generation.current===requestGeneration)setExhausted(keys=>keys.includes(key)?keys:[...keys,key]);
+    }).finally(()=>{
+      if(generation.current===requestGeneration)setLoadingLane(null);
+    });
   };
+  // If a short page does not fill the lane, scroll events cannot fire.
+  // Fetch the next batch until the lane scrolls or the backend has no more rows.
+  useEffect(()=>{
+    if(!active||loading||loadingLane!==null)return;
+    const underfilled=lanes.find(lane=>{
+      const element=laneElements.current[lane.key];
+      return element&&lane.count!==null&&lane.items.length<lane.count&&
+        !exhausted.includes(lane.key)&&element.scrollHeight<=element.clientHeight+1;
+    });
+    if(underfilled){
+      const element=laneElements.current[underfilled.key];
+      if(element)onScroll(underfilled.key,element);
+    }
+  },[active,loading,loadingLane,lanes,exhausted]);
   const navigate=(cnj:string)=>{
     if(!/^\d{7}-?\d{2}\.?\d{4}/.test(cnj))return;
     (window as Window&{MBA_NAVIGATE?:(route:string)=>boolean}).MBA_NAVIGATE?.('processos/'+encodeURIComponent(cnj));
   };
   return <section className="automation-kanban-section" aria-label={'Kanban de '+module}>
-    <div className="automation-board-head"><h2>Fluxo por status</h2><span>Os registros são carregados conforme a rolagem.</span></div>
-    {loading&&<div className="automation-board-loading" role="status"><MetricDots/></div>}
-    {error&&<p role="alert" className="automation-board-error">{error}</p>}
-    {!loading&&lanes.length>0&&<div className="automation-kanban" role="group" aria-label="Colunas por status">
+    <div className="automation-board-head"><h2>Fluxo por status</h2>
+      {error&&<button type="button" className="automation-inline-retry" onClick={()=>{setLoadedAt(0);setRevision(n=>n+1)}}>Tentar novamente</button>}
+    </div>
+    <div className="automation-kanban" role="group" aria-label="Colunas por status" aria-busy={loading}>
       {lanes.map(lane=><section className="automation-lane" key={lane.key} aria-label={lane.label}>
-        <header><strong>{lane.label}</strong><span>{labelCount(lane.count)}</span></header>
-        <div className="automation-lane-items" onScroll={event=>onScroll(lane.key,event.currentTarget)}>
+        <header><strong>{lane.label}</strong><span aria-label={lane.count===null?'Aguardando dados':undefined}>{lane.count===null&&loading?<MetricDots/>:labelCount(lane.count)}</span></header>
+        <div className="automation-lane-items" ref={element=>{laneElements.current[lane.key]=element;}} onScroll={event=>onScroll(lane.key,event.currentTarget)}>
           {lane.items.map(item=><button type="button" className="automation-lane-item" key={item.id}
             disabled={!/^\d{7}-?\d{2}\.?\d{4}/.test(item.cnj)} onClick={()=>navigate(item.cnj)}>
             <strong>{item.cnj}</strong>{item.secondary&&<small>{item.secondary}</small>}
           </button>)}
-          {!lane.items.length&&<span className="automation-lane-empty">—</span>}
-          {loadingLane===lane.key&&<span className="automation-lane-extra">Carregando mais…</span>}
-          {lane.count!==null&&lane.count>lane.items.length&&!exhausted.includes(lane.key)&&<span className="automation-lane-extra">Role para carregar mais</span>}
+          {!lane.items.length&&<span className="automation-lane-empty" role="status">{loading?'Carregando…':error?'Dados indisponíveis':loadedAt?'Nenhum registro':'—'}</span>}
+          {loadingLane===lane.key&&<span className="automation-lane-extra">Carregando…</span>}
+
         </div>
       </section>)}
-    </div>}
+    </div>
   </section>;
 }

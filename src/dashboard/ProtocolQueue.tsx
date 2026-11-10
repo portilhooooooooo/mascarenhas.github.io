@@ -92,11 +92,12 @@ function viewCount(summary: ProtocoloSummary | null, items: ProtocoloItem[], vie
   return Math.max(0, Number(statuses.HUMAN_NECESSARY || 0) - legacyMissingDocuments);
 }
 
-export function ProtocolQueue({summary,items,loading,canRun,refresh,setError}:{summary:ProtocoloSummary|null;items:ProtocoloItem[];loading:boolean;canRun:boolean;refresh:()=>Promise<void>;setError:(message:string)=>void}) {
+export function ProtocolQueue({summary,items,loading,canRun,refresh,setError,embedded=false}:{summary:ProtocoloSummary|null;items:ProtocoloItem[];loading:boolean;canRun:boolean;refresh:()=>Promise<void>;setError:(message:string)=>void;embedded?:boolean}) {
   const [query, setQuery] = useState('');
   const [view, setView] = useState<ProtocolView>('ALL');
   const [pageSize, setPageSize] = useState<number>(10);
   const [page, setPage] = useState(1);
+  const [visibleCount,setVisibleCount]=useState(50);
   const [selectedRetryIds, setSelectedRetryIds] = useState<Set<string>>(() => new Set());
   const [retryBusy, setRetryBusy] = useState(false);
   const retrySelectAllRef = useRef<HTMLInputElement>(null);
@@ -116,8 +117,8 @@ export function ProtocolQueue({summary,items,loading,canRun,refresh,setError}:{s
   const pageStart = visibleItems.length ? (currentPage - 1) * pageSize : 0;
   const pageEnd = Math.min(pageStart + pageSize, visibleItems.length);
   const pagedItems = useMemo(
-    () => visibleItems.slice(pageStart, pageEnd),
-    [pageEnd, pageStart, visibleItems],
+    () => embedded?visibleItems.slice(0,visibleCount):visibleItems.slice(pageStart, pageEnd),
+    [embedded,visibleCount,pageEnd,pageStart,visibleItems],
   );
   const pageLinks = useMemo(() => paginationPages(pageCount, currentPage), [currentPage, pageCount]);
   const isErrors = view === 'ERRORS';
@@ -129,7 +130,7 @@ export function ProtocolQueue({summary,items,loading,canRun,refresh,setError}:{s
   const someEligibleSelected = eligiblePageIds.some(id => selectedRetryIds.has(id));
 
   useEffect(() => {
-    setPage(1);
+    setPage(1);setVisibleCount(50);
     setSelectedRetryIds(new Set());
   }, [pageSize, query, view]);
 
@@ -198,7 +199,7 @@ return (
       <header className="protocolos-workspace-head">
         <div>
           <h2>Fila de protocolos</h2>
-          <p>Filtre pelo estado e confira o motivo antes de agir.</p>
+          {!embedded&&<p>Filtre pelo estado e confira o motivo antes de agir.</p>}
         </div>
       </header>
 
@@ -229,12 +230,16 @@ return (
           >
             {retryBusy ? <LoaderCircle className="spin" size={14}/> : <RotateCcw size={14}/>} Tentar novamente ({number(selectedRetryIds.size)})
           </button>}
-          <SelectMenu label="Exibir" value={String(pageSize)} onChange={value=>setPageSize(Number(value))}
-            className="protocolos-page-size protocolos-react-menu" options={PAGE_SIZES.map(size=>({value:String(size),label:String(size)}))}/>
+          {!embedded&&<SelectMenu label="Exibir" value={String(pageSize)} onChange={value=>setPageSize(Number(value))}
+            className="protocolos-page-size protocolos-react-menu" options={PAGE_SIZES.map(size=>({value:String(size),label:String(size)}))}/>}
         </div>
       </div>
 
-      <div className="protocolos-table-wrap">
+      <div className="protocolos-table-wrap" onScroll={event=>{
+        const node=event.currentTarget;
+        if(embedded&&visibleCount<visibleItems.length&&node.scrollTop+node.clientHeight>=node.scrollHeight-180)
+          setVisibleCount(count=>Math.min(count+50,visibleItems.length));
+      }}>
         <table className="protocolos-table-react">
           <thead><tr>
             {isErrors && <th className="protocolos-select-cell">
@@ -287,7 +292,10 @@ return (
         </table>
       </div>
 
-      {!loading && visibleItems.length > 0 && <footer className="protocolos-pagination">
+      {embedded&&<footer className="protocolos-pagination">
+        <span>{number(pagedItems.length)} de {number(visibleItems.length)} registros</span>
+      </footer>}
+      {!embedded&&!loading && visibleItems.length > 0 && <footer className="protocolos-pagination">
         <span>{number(pageStart + 1)}–{number(pageEnd)} de {number(visibleItems.length)}</span>
         <div className="protocolos-pagination-controls">
           <button type="button" onClick={() => setPage(value => Math.max(1, value - 1))} disabled={currentPage <= 1} aria-label="Página anterior"><ChevronLeft size={14}/></button>

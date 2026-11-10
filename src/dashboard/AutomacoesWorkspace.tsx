@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Archive,FileSpreadsheet,FolderInput,History,Landmark,Play,Receipt,ShieldCheck,Workflow,X,Files} from 'lucide-react';
 import {ProtocolosPage} from './ProtocolosPage';
@@ -19,15 +19,15 @@ function go(module:Module){
   (window as Window&{MBA_NAVIGATE?:(page:string)=>boolean}).MBA_NAVIGATE?.(route(module));
 }
 const descriptions:Record<AutomationModule,string>={
-  datajud:'Classifica os andamentos coletados pelo DataJud.',
-  encerramentos:'Faz a reclassificação dos processos de encerramentos encontrados pela automação, e distribuição automática.',
-  pagamentos:'Faz a classificação de pagamentos judiciais no Benner.',
+  datajud:'Movimentações judiciais',
+  encerramentos:'Classificação processual',
+  pagamentos:'Pagamentos judiciais',
 };
 const homeDescriptions:Record<'datajud'|'encerramentos'|'pagamentos'|'liminar'|'andamentos'|'protocolos',string>={
   ...descriptions,
-  liminar:'Consulta e acompanha decisões de liminar.',
-  andamentos:'Acompanha lançamentos de andamentos no Benner.',
-  protocolos:'Importa planilhas e documentos para execução de protocolos.',
+  liminar:'Decisões judiciais',
+  andamentos:'Publicação no Benner',
+  protocolos:'Importação e execução',
 };
 const schemas:Record<AutomationModule,string>={
   datajud:'CNJ | PASTA | FASE | DATA_ANDAMENTO | OBS_ANDAMENTO | MOTIVO_DERROTA | NOME_ANDAMENTO | DATA_DOCUMENTO | TIPO_DOCUMENTO | NOME_DOCUMENTO',
@@ -51,44 +51,31 @@ function authorized():Set<Module>{
   return access;
 }
 function AutomationForm({module}:{module:AutomationModule}){
-  const [mode,setMode]=useState<Mode>(null);
+  const [mode,setMode]=useState<Exclude<Mode,null>>('import');
   const [file,setFile]=useState<File|null>(null);
   const [text,setText]=useState('');
-  useEffect(()=>{setMode(null);setFile(null);setText('');},[module]);
+  useEffect(()=>{setMode('import');setFile(null);setText('');},[module]);
   return <section className="automation-config" aria-label={'Execução de '+module}>
-    <div className="automation-config-head">
-      <h1>{module==='datajud'?'CNJ / DataJud':module==='encerramentos'?'Encerramentos':'Pagamentos'}</h1>
-      <p>{descriptions[module]}</p>
-    </div>
-    <div className="automation-action-row">
-      <button type="button" className={'automation-action automation-action-batch'+(mode==='import'?' selected':'')} onClick={()=>setMode(mode==='import'?null:'import')} aria-expanded={mode==='import'}>
-        <span className="automation-action-icon"><FileSpreadsheet size={19}/></span>
-        <span>Importação em lote</span>
-      </button>
-      <button type="button" className={'automation-action automation-action-manual'+(mode==='manual'?' selected':'')} onClick={()=>setMode(mode==='manual'?null:'manual')} aria-expanded={mode==='manual'}>
-        <span className="automation-action-icon"><FolderInput size={19}/></span>
-        <span>Inserção</span><small>{schemas[module]}</small>
-      </button>
-      <button type="button" className={'automation-action automation-action-run'+(mode==='run'?' selected':'')} onClick={()=>setMode(mode==='run'?null:'run')} aria-expanded={mode==='run'}>
-        <span className="automation-action-icon"><Play size={19}/></span>
-        <span>Iniciar execução</span>
-      </button>
-    </div>
-    {mode&&<div className="automation-action-detail" role="region" aria-label={mode==='import'?'Importação em lote':mode==='manual'?'Inserção manual':'Iniciar execução'}>
-      {mode==='import'&&<>
-        <label className="automation-file-field">Arquivo XLSX ou CSV
-          <input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={e=>setFile(e.target.files?.[0]||null)}/>
-        </label>
+    <nav className="automation-execute-tabs" aria-label="Forma de execução">
+      <button type="button" className={mode==='import'?'active':''} aria-pressed={mode==='import'} onClick={()=>setMode('import')}><FileSpreadsheet size={15}/>Importação</button>
+      <button type="button" className={mode==='manual'?'active':''} aria-pressed={mode==='manual'} onClick={()=>setMode('manual')}><FolderInput size={15}/>Inserção</button>
+      <button type="button" className={mode==='run'?'active':''} aria-pressed={mode==='run'} onClick={()=>setMode('run')}><Play size={15}/>Iniciar</button>
+    </nav>
+    <div className="automation-action-detail" role="region">
+      {mode==='import'&&<label className="automation-file-field">
+        <strong>Arquivo de entrada</strong>
+        <input type="file" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={e=>setFile(e.target.files?.[0]||null)}/>
         {file&&<span className="automation-file-name">{file.name}</span>}
-      </>}
-      {mode==='manual'&&<label className="automation-manual-field">{schemas[module]}
-        <textarea spellCheck={false} rows={4} value={text} onChange={e=>setText(e.target.value)} placeholder={schemas[module]} />
       </label>}
-      {mode==='run'&&<div className="automation-run-summary">{module==='datajud'?'Classificar andamentos DataJud':module==='encerramentos'?'Reclassificar os registros existentes':'Classificar pagamentos judiciais'}</div>}
-      <div className="automation-submit"><span>Integração pendente de backend</span><button type="button" disabled>
-        {mode==='import'?'Importar':mode==='manual'?'Inserir':'Iniciar execução'}
-      </button></div>
-    </div>}
+      {mode==='manual'&&<label className="automation-manual-field">
+        <strong>Registros</strong>
+        <textarea spellCheck={false} rows={5} value={text} onChange={e=>setText(e.target.value)} placeholder={schemas[module]}/>
+      </label>}
+      {mode==='run'&&<div className="automation-run-summary">Execução na carteira selecionada.</div>}
+    </div>
+    <div className="automation-submit"><span>Integração ainda indisponível</span>
+      <button type="button" disabled>{mode==='import'?'Importar':mode==='manual'?'Inserir':'Iniciar'}</button>
+    </div>
   </section>;
 }
 const integrations=[
@@ -120,6 +107,9 @@ export function AutomacoesWorkspace(){
   const [module,setModule]=useState<Module>(fromUrl);
   const [access,setAccess]=useState<Set<Module>>(authorized);
   const [execute,setExecute]=useState<HomeIntegration|null>(null);
+  const dialogId=useId();
+  const dialogRef=useRef<HTMLElement>(null);
+  const originFocus=useRef<HTMLElement|null>(null);
   useEffect(()=>{
     const sync=()=>{setModule(fromUrl());setAccess(authorized());};
     const events=['mba:route-changed','mba:profile-ready','mba:authenticated','mba:portfolio-changed','mba:module-visibility-updated','popstate','hashchange'];
@@ -128,11 +118,22 @@ export function AutomacoesWorkspace(){
   },[]);
   useEffect(()=>{
     if(!execute)return;
-    const close=(e:KeyboardEvent)=>{if(e.key==='Escape')setExecute(null)};
+    originFocus.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+    const dialog=dialogRef.current;
+    dialog?.querySelector<HTMLElement>('.automation-dialog-header button')?.focus();
+    const close=(e:KeyboardEvent)=>{
+      if(e.key==='Escape'){e.preventDefault();setExecute(null);return}
+      if(e.key!=='Tab'||!dialog)return;
+      const items=[...dialog.querySelectorAll<HTMLElement>('button:not([disabled]),a[href],input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex="0"]')]
+        .filter(element=>element.getClientRects().length>0);
+      if(!items.length)return;
+      if(e.shiftKey&&document.activeElement===items[0]){e.preventDefault();items[items.length-1].focus();}
+      else if(!e.shiftKey&&document.activeElement===items[items.length-1]){e.preventDefault();items[0].focus();}
+    };
     const original=document.body.style.overflow;
     document.body.style.overflow='hidden';
     window.addEventListener('keydown',close);
-    return()=>{document.body.style.overflow=original;window.removeEventListener('keydown',close)};
+    return()=>{document.body.style.overflow=original;window.removeEventListener('keydown',close);originFocus.current?.focus()};
   },[execute]);
   useEffect(()=>{
     if(execute&&!access.has(execute))setExecute(null);
@@ -141,7 +142,6 @@ export function AutomacoesWorkspace(){
   const tabs:Module[]=['home','encerramentos','pagamentos','liminar','protocolos','defesas'];
   const visibleTabs=tabs.filter(id=>access.has(id));
   const homeFlow=active==='datajud'||active==='executar-encerramentos'||active==='executar-pagamentos'||active==='andamentos';
-  if(!visible)return null;
   const tabsNav=<nav className="mba-operation-subnav automation-workspace-tabs" aria-label="Seções de Automações">
     {visibleTabs.map(id=><button type="button" key={id} className={(active===id||(id==='home'&&homeFlow))?'active':''} aria-current={(active===id||(id==='home'&&homeFlow))?'page':undefined} onClick={()=>go(id)}>
       {id==='home'?'Home':id==='liminar'?'Liminar':id==='protocolos'?'Protocolos':id==='defesas'?'Defesas':id==='encerramentos'?'Encerramentos':'Pagamentos'}
@@ -149,15 +149,22 @@ export function AutomacoesWorkspace(){
 
   </nav>;
   const shellTabs=document.getElementById('mba-shell-tabs');
-  return <div className="automation-workspace">
-    {shellTabs?createPortal(tabsNav,shellTabs):tabsNav}
+  return <div className="automation-workspace" hidden={!visible}>
+    {visible ? (shellTabs?createPortal(tabsNav,shellTabs):tabsNav) : null}
     {active==='home'&&<Home access={access} onExecute={setExecute}/>}
-    {execute&&access.has(execute)&&createPortal(<div className="automation-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setExecute(null)}}>
-      <section className="automation-dialog" role="dialog" aria-modal="true" aria-label={'Executar '+execute}>
-        <header className="automation-dialog-header"><h2>Executar · {integrations.find(item=>item.id===execute)?.label}</h2><button type="button" aria-label="Fechar" onClick={()=>setExecute(null)}><X size={18}/></button></header>
-        <div className="automation-dialog-body">{execute==='protocolos'?<ProtocolosPage/>:
+    {visible&&execute&&access.has(execute)&&createPortal(<div className="automation-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setExecute(null)}}>
+      <section ref={dialogRef} className="automation-dialog" data-module={execute} role="dialog" aria-modal="true" aria-labelledby={dialogId}>
+        <header className="automation-dialog-header">
+          <h2 id={dialogId}>{integrations.find(item=>item.id===execute)?.label}</h2>
+          <button type="button" aria-label="Fechar" onClick={()=>setExecute(null)}><X size={18}/></button>
+        </header>
+        <div className="automation-dialog-body">{execute==='protocolos'?<ProtocolosPage embedded/>:
           (execute==='datajud'||execute==='encerramentos'||execute==='pagamentos')?<AutomationForm module={execute}/>:
-          <p className="automation-empty">Execução ainda não integrada a esta tela. Consulte o histórico para acompanhar os registros.</p>}</div>
+          <p className="automation-empty">Execução indisponível.</p>}</div>
+        <footer className="automation-dialog-footer">
+          <span>{execute==='protocolos'?'Agibank Enter · Protocolos':'Automação'}</span>
+          <button type="button" onClick={()=>setExecute(null)}>Fechar</button>
+        </footer>
       </section>
     </div>,document.body)}
     {(active==='datajud'||active==='executar-encerramentos'||active==='executar-pagamentos')&&<><button type="button" className="automation-back" onClick={()=>go('home')}>Voltar à Home</button><AutomationForm module={active==='executar-encerramentos'?'encerramentos':active==='executar-pagamentos'?'pagamentos':'datajud'}/></>}
@@ -165,7 +172,9 @@ export function AutomacoesWorkspace(){
     {active==='liminar'&&<div className="automation-config-head"><h1>Liminar</h1></div>}
     {active==='protocolos'&&<div className="automation-config-head"><h1>Protocolos</h1></div>}
     {active==='defesas'&&<div className="automation-config-head"><h1>Defesas</h1></div>}
-    {(['encerramentos','pagamentos','liminar','protocolos','defesas'] as KanbanFlow[]).includes(active as KanbanFlow)&&
-      <AutomationKanban key={active} module={active as KanbanFlow} active={visible}/>}
+    {(['encerramentos','pagamentos','liminar','protocolos','defesas'] as KanbanFlow[]).filter(flow=>access.has(flow)).map(flow=>
+      <div key={flow} className="automation-keep-mounted" style={{display:active===flow?'block':'none'}} aria-hidden={active!==flow}>
+        <AutomationKanban module={flow} active={visible&&active===flow}/>
+      </div>)}
   </div>;
 }
