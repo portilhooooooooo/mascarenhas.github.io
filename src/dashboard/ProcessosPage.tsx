@@ -261,15 +261,6 @@ export function ProcessosPage() {
   const [cnj, setCnj] = useState(selectedCnj);
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({q:''});
-  useEffect(()=>{
-    const shortcut=(event:KeyboardEvent)=>{
-      if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'&&document.getElementById('processos')?.classList.contains('active')){
-        event.preventDefault();document.querySelector<HTMLInputElement>('#mba-processos-quick-search')?.focus();
-      }
-    };
-    document.addEventListener('keydown',shortcut);
-    return()=>document.removeEventListener('keydown',shortcut);
-  },[]);
   const [page, setPage] = useState(1);
   const [data, setData] = useState<Paged<ProcessRecord> | null>(null);
   const [error, setError] = useState('');
@@ -301,7 +292,7 @@ export function ProcessosPage() {
     <form className="processos-filters" onSubmit={e=>{
       e.preventDefault();setPage(1);setFilters(f=>({...f,q:search.trim()}));
     }}>
-      <label className="processos-search">Buscar (Ctrl + K)<input id="mba-processos-quick-search" type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
+      <label className="processos-search">Buscar processo<input id="mba-processos-quick-search" type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
       <button className="primary-button" type="submit">Buscar</button>
     </form>
     {error ? <div role="alert" className="processos-state">{error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>

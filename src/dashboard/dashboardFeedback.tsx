@@ -17,10 +17,10 @@ export function DashboardRecovery({
   className?:string;
 }) {
   return <div className={['mba-dashboard-recovery',className].filter(Boolean).join(' ')}
-    role={hasSnapshot?'status':'alert'}>
+    role="status">
     <span>{hasSnapshot
-      ? 'Atualização indisponível. Últimos dados preservados.'
-      : 'Dados temporariamente indisponíveis.'}</span>
+      ? 'Últimos indicadores preservados; nova consulta não concluída.'
+      : 'Nenhum dado carregado nesta consulta.'}</span>
     <button type="button" onClick={onRetry} disabled={retrying}>
       {retrying?<MetricDots label="Tentando novamente"/>:'Tentar novamente'}
     </button>

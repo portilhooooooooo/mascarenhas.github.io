@@ -37,7 +37,7 @@ function Content({filtered}:{filtered:boolean}){
   // contagens globais como se tivessem sido filtradas.
   return <>{cards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
     <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
-    <strong>{summary.isPending&&!filtered?<MetricDots/>:filtered?'—':format(summary.data?.metrics?.[key])}</strong>
+    <strong>{summary.isLoading&&!filtered?<MetricDots/>:filtered?'—':format(summary.data?.metrics?.[key])}</strong>
   </article>)}</>;
 }
 export function CadastroCpjCards({filtered=false}:{filtered?:boolean}){

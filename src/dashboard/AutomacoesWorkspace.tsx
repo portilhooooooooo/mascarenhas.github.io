@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {Archive,FileSpreadsheet,FolderInput,Landmark,Play,Receipt,ShieldCheck,Workflow} from 'lucide-react';
+import {Archive,FileSpreadsheet,FolderInput,History,Landmark,Play,Receipt,ShieldCheck,Workflow,X,Files} from 'lucide-react';
+import {ProtocolosPage} from './ProtocolosPage';
 import {useModuleVisible} from './useModuleVisible';
 import {AutomationKanban,type KanbanFlow} from './AutomationKanban';
 import './automationWorkspace.css';
@@ -22,10 +23,11 @@ const descriptions:Record<AutomationModule,string>={
   encerramentos:'Faz a reclassificação dos processos de encerramentos encontrados pela automação, e distribuição automática.',
   pagamentos:'Faz a classificação de pagamentos judiciais no Benner.',
 };
-const homeDescriptions:Record<'datajud'|'encerramentos'|'pagamentos'|'liminar'|'andamentos',string>={
+const homeDescriptions:Record<'datajud'|'encerramentos'|'pagamentos'|'liminar'|'andamentos'|'protocolos',string>={
   ...descriptions,
   liminar:'Consulta e acompanha decisões de liminar.',
   andamentos:'Acompanha lançamentos de andamentos no Benner.',
+  protocolos:'Importa planilhas e documentos para execução de protocolos.',
 };
 const schemas:Record<AutomationModule,string>={
   datajud:'CNJ | PASTA | FASE | DATA_ANDAMENTO | OBS_ANDAMENTO | MOTIVO_DERROTA | NOME_ANDAMENTO | DATA_DOCUMENTO | TIPO_DOCUMENTO | NOME_DOCUMENTO',
@@ -45,7 +47,7 @@ function authorized():Set<Module>{
   if(can('encerramentos')){access.add('encerramentos');access.add('executar-encerramentos');}
   if(can('pagamentos')){access.add('pagamentos');access.add('executar-pagamentos');}
   if(can('tutelas'))access.add('liminar');
-  if(can('protocolo')){access.add('protocolos');access.add('defesas');}
+  if(portfolio==='agibank_enter' && can('protocolo')){access.add('protocolos');access.add('defesas');}
   return access;
 }
 function AutomationForm({module}:{module:AutomationModule}){
@@ -95,19 +97,20 @@ const integrations=[
   {id:'pagamentos' as const,label:'Pagamentos',icon:Receipt},
   {id:'liminar' as const,label:'Liminar',icon:ShieldCheck},
   {id:'andamentos' as const,label:'Andamentos',icon:Workflow},
+  {id:'protocolos' as const,label:'Protocolos',icon:Files},
 ];
-function Home({access}:{access:Set<Module>}){
+type HomeIntegration=typeof integrations[number]['id'];
+const historyEnabled=new Set<HomeIntegration>(['encerramentos','pagamentos','liminar','protocolos']);
+function Home({access,onExecute}:{access:Set<Module>;onExecute:(module:HomeIntegration)=>void}){
   return <div className="automation-home-grid" aria-label="Integrações">
     {integrations.filter(entry=>access.has(entry.id)).map(({id,label,icon:Icon})=><article className="automation-home-card" key={id}>
       <div className={'automation-home-icon automation-home-icon-'+id}><Icon size={19} strokeWidth={1.8} aria-hidden="true"/></div>
-      <div className="automation-home-copy">
-        <h2>{label}</h2>
-        <p>{homeDescriptions[id]}</p>
-      </div>
+      <div className="automation-home-copy"><h2>{label}</h2><p>{homeDescriptions[id]}</p></div>
       <div className="automation-home-actions">
-        <button type="button" onClick={()=>go(id==='encerramentos'?'executar-encerramentos':id==='pagamentos'?'executar-pagamentos':id)}>
-          <Play size={14} aria-hidden="true"/>Executar
-        </button>
+        <button type="button" className="automation-execute" onClick={()=>onExecute(id)}><Play size={14} aria-hidden="true"/>Executar</button>
+        <button type="button" className="automation-history" disabled={!historyEnabled.has(id)}
+          title={!historyEnabled.has(id)?'Histórico ainda não integrado':undefined}
+          onClick={()=>go(id)}><History size={14} aria-hidden="true"/>Histórico</button>
       </div>
     </article>)}
   </div>;
@@ -116,12 +119,24 @@ export function AutomacoesWorkspace(){
   const visible=useModuleVisible('automacoes');
   const [module,setModule]=useState<Module>(fromUrl);
   const [access,setAccess]=useState<Set<Module>>(authorized);
+  const [execute,setExecute]=useState<HomeIntegration|null>(null);
   useEffect(()=>{
     const sync=()=>{setModule(fromUrl());setAccess(authorized());};
     const events=['mba:route-changed','mba:profile-ready','mba:authenticated','mba:portfolio-changed','mba:module-visibility-updated','popstate','hashchange'];
     events.forEach(e=>window.addEventListener(e,sync));
     return()=>events.forEach(e=>window.removeEventListener(e,sync));
   },[]);
+  useEffect(()=>{
+    if(!execute)return;
+    const close=(e:KeyboardEvent)=>{if(e.key==='Escape')setExecute(null)};
+    const original=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    window.addEventListener('keydown',close);
+    return()=>{document.body.style.overflow=original;window.removeEventListener('keydown',close)};
+  },[execute]);
+  useEffect(()=>{
+    if(execute&&!access.has(execute))setExecute(null);
+  },[access,execute]);
   const active=access.has(module)?module:'home';
   const tabs:Module[]=['home','encerramentos','pagamentos','liminar','protocolos','defesas'];
   const visibleTabs=tabs.filter(id=>access.has(id));
@@ -136,7 +151,15 @@ export function AutomacoesWorkspace(){
   const shellTabs=document.getElementById('mba-shell-tabs');
   return <div className="automation-workspace">
     {shellTabs?createPortal(tabsNav,shellTabs):tabsNav}
-    {active==='home'&&<Home access={access}/>}
+    {active==='home'&&<Home access={access} onExecute={setExecute}/>}
+    {execute&&access.has(execute)&&createPortal(<div className="automation-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setExecute(null)}}>
+      <section className="automation-dialog" role="dialog" aria-modal="true" aria-label={'Executar '+execute}>
+        <header className="automation-dialog-header"><h2>Executar · {integrations.find(item=>item.id===execute)?.label}</h2><button type="button" aria-label="Fechar" onClick={()=>setExecute(null)}><X size={18}/></button></header>
+        <div className="automation-dialog-body">{execute==='protocolos'?<ProtocolosPage/>:
+          (execute==='datajud'||execute==='encerramentos'||execute==='pagamentos')?<AutomationForm module={execute}/>:
+          <p className="automation-empty">Execução ainda não integrada a esta tela. Consulte o histórico para acompanhar os registros.</p>}</div>
+      </section>
+    </div>,document.body)}
     {(active==='datajud'||active==='executar-encerramentos'||active==='executar-pagamentos')&&<><button type="button" className="automation-back" onClick={()=>go('home')}>Voltar à Home</button><AutomationForm module={active==='executar-encerramentos'?'encerramentos':active==='executar-pagamentos'?'pagamentos':'datajud'}/></>}
     {active==='andamentos'&&<div className="automation-config-head"><h1>Andamentos</h1><p>Lançamento de andamentos no Benner.</p></div>}
     {active==='liminar'&&<div className="automation-config-head"><h1>Liminar</h1></div>}

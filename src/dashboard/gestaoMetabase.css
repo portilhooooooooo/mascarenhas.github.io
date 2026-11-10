@@ -102,3 +102,5 @@
   .gestao-processual-react .base-geral-page,
   .gestao-processual-react .payments-results{padding-left:8px;padding-right:8px}
 }
+
+.controladoria-results-subnav{margin:0 auto 14px;width:min(1200px,100%);justify-content:flex-start}

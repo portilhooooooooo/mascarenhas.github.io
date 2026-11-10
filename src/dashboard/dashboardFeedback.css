@@ -52,3 +52,10 @@
 .mba-dashboard-recovery button:focus-visible {outline:2px solid currentColor;outline-offset:3px;}
 .mba-dashboard-recovery .mba-metric-dots {height:14px;}
 @media(prefers-reduced-motion:reduce){.mba-metric-dots i{animation:none;opacity:1;transform:none}}
+
+.base-geral-empty-state{font-size:11px;color:var(--mba-muted);margin:0 0 12px}
+
+/* Falha sem dados não vira uma faixa de erro repetida em todos os cards. */
+.mba-dashboard-recovery{border:0;background:transparent;padding:3px 0;margin:3px 0 9px;
+  font-size:11px;color:var(--mba-muted);gap:9px}
+.mba-dashboard-recovery button{font-size:11px;text-decoration:none}

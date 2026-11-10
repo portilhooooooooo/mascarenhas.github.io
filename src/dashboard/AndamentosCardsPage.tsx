@@ -25,7 +25,7 @@ const cards=[
   {key:'CUMPRIMENTO_SENTENCA',label:'Cumprimento de Sentença',icon:Gavel},
 ] as const;
 const numeric=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0?new Intl.NumberFormat('pt-BR').format(value):'—';
-function Content(){
+function Content({visible}:{visible:boolean}){
   const [revision,setRevision]=useState(0);
   const [office,setOffice]=useState('');
   useEffect(()=>{
@@ -38,23 +38,24 @@ function Content(){
   const portfolio=w.MBA_API?.getPortfolioId?.()||'';
   const api=w.MBA_AUTOMATION_API||w.MBA_API;
   const summary=useQuery({queryKey:['resultados','andamentos','published-cards',runtimeScope(),portfolio,office,revision],
-    enabled:Boolean(portfolio&&api),
+    enabled:Boolean(visible&&portfolio&&api),
     queryFn:({signal})=>api!.request<CardSummary>('/api/resultados/andamentos/cards'+(office?'?office='+encodeURIComponent(office):''),{signal}),
   });
   const data=summary.data;
   const counts=data?.metrics?.by_event_kind||{};
   const offices=Array.isArray(data?.charts?.offices)?data!.charts.offices:[];
   return <section className="base-geral-page" aria-label="Andamentos">
-    <div className="base-geral-kpis andamento-cards">
-      {cards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
-        <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
-        <strong>{summary.isPending?<MetricDots/>:numeric(key==='FASE_CONHECIMENTO'?data?.metrics?.fase_conhecimento:counts[key])}</strong>
-      </article>)}
-    </div>
     <div className="andamentos-office-filter base-geral-filters">
       <SelectMenu label="Escritório" className="base-geral-filter" value={office} onChange={setOffice}
         options={[{value:'',label:'Todos'},...offices.map(name=>({value:name,label:name}))]} searchable={offices.length>8}/>
     </div>
+    <div className="base-geral-kpis andamento-cards">
+      {cards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
+        <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
+        <strong>{summary.isLoading?<MetricDots/>:numeric(key==='FASE_CONHECIMENTO'?data?.metrics?.fase_conhecimento:counts[key])}</strong>
+      </article>)}
+    </div>
+
   </section>;
 }
-export function AndamentosCardsPage(){return <QueryClientProvider client={cache}><Content/></QueryClientProvider>;}
+export function AndamentosCardsPage({visible=true}:{visible?:boolean}){return <QueryClientProvider client={cache}><Content visible={visible}/></QueryClientProvider>; }

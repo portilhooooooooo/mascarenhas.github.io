@@ -1,5 +1,5 @@
-import { useEffect, useId, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { CheckCircle2, Clock3, Download, FileCheck2, FileX2, RefreshCw, Search, X, type LucideIcon } from 'lucide-react';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { DashboardRecovery, MetricDots } from './dashboardFeedback';
@@ -48,8 +48,8 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
   const id=useId(), scope=runtimeScope();
   const [kind,setKind]=useState<Kind|null>(null);
   const [search,setSearch]=useState('');
-  const [page,setPage]=useState(1);
   const [querySearch,setQuerySearch]=useState('');
+  const scrollRef=useRef<HTMLDivElement>(null);
   const [exporting,setExporting]=useState(false);
   const [exportError,setExportError]=useState<string|null>(null);
   const portfolio=(window as Environment).MBA_API?.getPortfolioId?.();
@@ -60,15 +60,18 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
       if (!valid(payload)) throw new Error('Indicadores de Defesas inválidos.');
       return payload.summary;
     }},runtimeQueries);
-  const detail=useQuery({queryKey:['runtime-v2',scope,'enter-defense-results','detail',kind,page,querySearch],
-    enabled:visible&&allowed&&kind!==null,queryFn:async({signal})=>{
-      const payload=await requestResults(kind!,page,querySearch,signal);
+  const detail=useInfiniteQuery({queryKey:['runtime-v2',scope,'enter-defense-results','detail',kind,querySearch],
+    enabled:visible&&allowed&&kind!==null,initialPageParam:1,
+    queryFn:async({signal,pageParam})=>{
+      const payload=await requestResults(kind!,pageParam,querySearch,signal);
       if (!valid(payload)) throw new Error('Relação de Defesas inválida.');
       return payload;
-    }},runtimeQueries);
+    },
+    getNextPageParam:(last,pages)=>last.rows.length>0&&pages.reduce((n,p)=>n+p.rows.length,0)<last.total?pages.length+1:undefined
+  },runtimeQueries);
 
   useEffect(()=>{
-    const handle=setTimeout(()=>{setPage(1);setQuerySearch(search)},280);
+    const handle=setTimeout(()=>{setQuerySearch(search)},280);
     return ()=>clearTimeout(handle);
   },[search]);
   useEffect(()=>{
@@ -111,8 +114,15 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
     }catch(error){setExportError(error instanceof Error?error.message:'Não foi possível gerar o CSV.');}
     finally{setExporting(false);}
   };
-  const open=(next:Kind)=>{setSearch('');setQuerySearch('');setPage(1);setExportError(null);setKind(next)};
+  const open=(next:Kind)=>{setSearch('');setQuerySearch('');setExportError(null);setKind(next)};
   const active=cards.find(card=>card.kind===kind);
+  const rows=detail.data?.pages.flatMap(page=>page.rows)||[];
+  const total=detail.data?.pages[0]?.total;
+  useEffect(()=>{
+    const node=scrollRef.current;
+    if(node&&detail.hasNextPage&&!detail.isFetchingNextPage&&node.scrollHeight<=node.clientHeight+40)
+      void detail.fetchNextPage();
+  },[detail.data?.pages.length,detail.hasNextPage,detail.isFetchingNextPage]);
   if(!allowed) return <section className="defense-results-page"><p className="defense-results-state">Disponível apenas na carteira Agibank · Enter.</p></section>;
 
   return <section className="defense-results-page" aria-label="Resultados das pendências Talisman de Defesas da Enter">
@@ -134,7 +144,7 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
     {kind && <div className="defense-results-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setKind(null)}}>
       <section className="defense-results-dialog" role="dialog" aria-modal="true" aria-labelledby={id+'-title'}>
         <header className="defense-results-dialog-header">
-          <div><h2 id={id+'-title'}>{active?.title}</h2><span>{detail.data ? number(detail.data.total)+' processos' : 'Relação de processos'}</span></div>
+          <div><h2 id={id+'-title'}>{active?.title}</h2><span>{detail.data ? number(total)+' processos' : 'Relação de processos'}</span></div>
           <button type="button" aria-label="Fechar relação" onClick={()=>setKind(null)}><X size={18}/></button>
         </header>
         <div className="defense-results-dialog-toolbar"><label><Search size={15}/><input aria-label="Buscar CNJ" placeholder="Buscar CNJ" value={search} onChange={event=>setSearch(event.target.value)}/></label>
@@ -144,11 +154,16 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
         </div>
         {kind==='reschedule'&&exportError&&<p className="defense-results-error" role="alert">{exportError}</p>}
         {detail.error && <DashboardRecovery hasSnapshot={Boolean(detail.data)} retrying={detail.isFetching} onRetry={()=>void detail.refetch()}/> }
-        <div className="defense-results-table-wrap"><table className={'defense-results-table'+(kind==='reschedule'?' defense-results-table--reschedule':'')}>
+        <div className="defense-results-table-wrap" ref={scrollRef}
+          onScroll={event=>{
+            const element=event.currentTarget;
+            if(detail.hasNextPage&&!detail.isFetchingNextPage&&element.scrollTop+element.clientHeight>=element.scrollHeight-240)
+              void detail.fetchNextPage();
+          }}><table className={'defense-results-table'+(kind==='reschedule'?' defense-results-table--reschedule':'')}>
           {kind==='reschedule'
           ? <>
               <thead><tr><th>CNJ</th><th>VAZIO</th><th>FATAL</th><th>JUSTIFICATIVA</th></tr></thead>
-              <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
+              <tbody>{rows.map(row=><tr key={row.id}>
                 <td><strong>{row.cnj||'—'}</strong></td>
                 <td aria-label="Vazio"></td>
                 <td>{date(row.reschedule_fatal)}</td>
@@ -157,18 +172,17 @@ export function DefesasResultadosPage({visible}: {visible: boolean}) {
             </>
           : <>
               <thead><tr><th>CNJ</th><th>Analista</th><th>Situação</th><th>Prazo</th><th>Última análise</th></tr></thead>
-              <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
+              <tbody>{rows.map(row=><tr key={row.id}>
                 <td><strong>{row.cnj||'—'}</strong></td><td>{row.analyst||'—'}</td><td>{row.situation|| (kind==='pending'?'Sem análise':'—')}</td><td>{date(row.fatal_deadline)}</td><td>{date(row.analyzed_at)}</td>
               </tr>)}</tbody>
             </>}
         </table>
         {detail.isFetching&&!detail.data&&<p className="defense-results-empty" role="status">Carregando processos…</p>}
-        {!detail.isFetching&&detail.data&&!detail.data.rows.length&&<p className="defense-results-empty">Nenhum processo encontrado.</p>}
+        {!detail.isFetching&&detail.data&&!rows.length&&<p className="defense-results-empty">Nenhum processo encontrado.</p>}
         </div>
         <footer className="defense-results-pagination">
-          <span>{detail.data ? number(detail.data.total)+' registros' : '—'}</span>
-          <div><button type="button" disabled={page<=1||detail.isFetching} onClick={()=>setPage(value=>value-1)}>Anterior</button><span>Página {page}</span>
-          <button type="button" disabled={detail.isFetching||!detail.data||page*25>=detail.data.total} onClick={()=>setPage(value=>value+1)}>Próxima</button></div>
+          <span>{detail.data ? number(rows.length)+' de '+number(total)+' registros' : '—'}</span>
+          <span>{detail.isFetchingNextPage?'Carregando mais processos…':detail.hasNextPage?'Role para ver mais':'Fim da relação'}</span>
         </footer>
       </section>
     </div>}

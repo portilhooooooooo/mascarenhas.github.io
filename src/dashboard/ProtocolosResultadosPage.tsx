@@ -1,5 +1,5 @@
-import { useEffect, useId, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useId, useRef, useState } from 'react';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Clock3, FileX2, Send, RefreshCw, Search, X, type LucideIcon } from 'lucide-react';
 import { runtimeQueries, runtimeScope } from '../tasks/runtimeQueries';
 import { DashboardRecovery, MetricDots } from './dashboardFeedback';
@@ -53,8 +53,8 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
   const id=useId(),scope=runtimeScope();
   const [kind,setKind]=useState<Kind|null>(null);
   const [search,setSearch]=useState('');
-  const [page,setPage]=useState(1);
   const [querySearch,setQuerySearch]=useState('');
+  const scrollRef=useRef<HTMLDivElement>(null);
   const portfolio=(window as Env).MBA_API?.getPortfolioId?.();
   const allowed=portfolio==='agibank_enter' && Boolean(scope);
   const summary=useQuery({queryKey:['runtime-v2',scope,'enter-protocol-results','summary'],
@@ -63,14 +63,17 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
       if(!valid(data))throw new Error('Indicadores de Protocolos inválidos.');
       return data.summary;
     }},runtimeQueries);
-  const detail=useQuery({queryKey:['runtime-v2',scope,'enter-protocol-results','detail',kind,page,querySearch],
-    enabled:visible&&allowed&&kind!==null,queryFn:async({signal})=>{
-      const data=await requestResults(kind!,page,querySearch,signal);
-      if(!valid(data))throw new Error('Relação de Protocolos inválida.');
-      return data;
-    }},runtimeQueries);
+  const detail=useInfiniteQuery({queryKey:['runtime-v2',scope,'enter-protocol-results','detail',kind,querySearch],
+    enabled:visible&&allowed&&kind!==null,initialPageParam:1,
+    queryFn:async({signal,pageParam})=>{
+      const payload=await requestResults(kind!,pageParam,querySearch,signal);
+      if(!valid(payload))throw new Error('Relação de Protocolos inválida.');
+      return payload;
+    },
+    getNextPageParam:(last,pages)=>last.rows.length>0&&pages.reduce((n,p)=>n+p.rows.length,0)<last.total?pages.length+1:undefined
+  },runtimeQueries);
   useEffect(()=>{
-    const timer=setTimeout(()=>{setPage(1);setQuerySearch(search)},280);
+    const timer=setTimeout(()=>{setQuerySearch(search)},280);
     return ()=>clearTimeout(timer);
   },[search]);
   useEffect(()=>{
@@ -79,8 +82,15 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
     window.addEventListener('keydown',close);
     return ()=>window.removeEventListener('keydown',close);
   },[kind]);
-  const open=(next:Kind)=>{setSearch('');setQuerySearch('');setPage(1);setKind(next)};
+  const open=(next:Kind)=>{setSearch('');setQuerySearch('');setKind(next)};
   const selected=cards.find(card=>card.kind===kind);
+  const rows=detail.data?.pages.flatMap(page=>page.rows)||[];
+  const total=detail.data?.pages[0]?.total;
+  useEffect(()=>{
+    const node=scrollRef.current;
+    if(node&&detail.hasNextPage&&!detail.isFetchingNextPage&&node.scrollHeight<=node.clientHeight+40)
+      void detail.fetchNextPage();
+  },[detail.data?.pages.length,detail.hasNextPage,detail.isFetchingNextPage]);
   if(!allowed)return <section className="defense-results-page"><p className="defense-results-state">Disponível apenas na carteira Agibank · Enter.</p></section>;
 
   return <section className="defense-results-page" aria-label="Resultados dos protocolos pendentes no Talisman">
@@ -102,14 +112,19 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
     {kind&&<div className="defense-results-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setKind(null)}}>
       <section className="defense-results-dialog" role="dialog" aria-modal="true" aria-labelledby={id+'-title'}>
         <header className="defense-results-dialog-header">
-          <div><h2 id={id+'-title'}>{selected?.title}</h2><span>{detail.data?count(detail.data.total)+' processos':'Relação de processos'}</span></div>
+          <div><h2 id={id+'-title'}>{selected?.title}</h2><span>{detail.data?count(total)+' processos':'Relação de processos'}</span></div>
           <button type="button" aria-label="Fechar relação" onClick={()=>setKind(null)}><X size={18}/></button>
         </header>
         <div className="defense-results-dialog-toolbar"><label><Search size={15}/><input aria-label="Buscar CNJ" placeholder="Buscar CNJ" value={search} onChange={event=>setSearch(event.target.value)}/></label></div>
         {detail.error&&<DashboardRecovery hasSnapshot={Boolean(detail.data)} retrying={detail.isFetching} onRetry={()=>void detail.refetch()}/>}
-        <div className="defense-results-table-wrap"><table className="defense-results-table">
+        <div className="defense-results-table-wrap" ref={scrollRef}
+          onScroll={event=>{
+            const element=event.currentTarget;
+            if(detail.hasNextPage&&!detail.isFetchingNextPage&&element.scrollTop+element.clientHeight>=element.scrollHeight-240)
+              void detail.fetchNextPage();
+          }}><table className="defense-results-table">
           <thead><tr><th>CNJ</th><th>Responsável</th><th>Situação</th><th>Prazo</th><th>Atualização</th></tr></thead>
-          <tbody>{(detail.data?.rows||[]).map(row=><tr key={row.id}>
+          <tbody>{rows.map(row=><tr key={row.id}>
             <td><strong>{row.task_url?.startsWith('https://www.app.getenter.ai/')
               ? <a href={row.task_url} target="_blank" rel="noopener noreferrer">{row.cnj||'—'}</a>
               : row.cnj||'—'}</strong></td>
@@ -120,12 +135,11 @@ export function ProtocolosResultadosPage({visible}:{visible:boolean}) {
           </tr>)}</tbody>
         </table>
         {detail.isFetching&&!detail.data&&<p className="defense-results-empty" role="status"><MetricDots label="Consultando processos"/></p>}
-        {!detail.isFetching&&detail.data&&!detail.data.rows.length&&<p className="defense-results-empty">Nenhum processo encontrado.</p>}
+        {!detail.isFetching&&detail.data&&!rows.length&&<p className="defense-results-empty">Nenhum processo encontrado.</p>}
         </div>
         <footer className="defense-results-pagination">
-          <span>{detail.data?count(detail.data.total)+' registros':'—'}</span>
-          <div><button type="button" disabled={page<=1||detail.isFetching} onClick={()=>setPage(v=>v-1)}>Anterior</button><span>Página {page}</span>
-          <button type="button" disabled={detail.isFetching||!detail.data||page*25>=detail.data.total} onClick={()=>setPage(v=>v+1)}>Próxima</button></div>
+          <span>{detail.data ? count(rows.length)+' de '+count(total)+' registros' : '—'}</span>
+          <span>{detail.isFetchingNextPage?'Carregando mais processos…':detail.hasNextPage?'Role para ver mais':'Fim da relação'}</span>
         </footer>
       </section>
     </div>}

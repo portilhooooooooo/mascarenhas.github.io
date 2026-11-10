@@ -342,6 +342,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
       </>}
     </div>
     {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
+    {!pending && shown?.summary?.total === 0 && <p className="base-geral-empty-state" role="status">Sem dados nesta seleção.</p>}
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
     {cardsOnly ? <>
       <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
@@ -352,8 +353,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
           <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={14} strokeWidth={1.7}/></span>
           <strong>{billingPending && !currentBilling ? <MetricDots/> : money(estimatedRevenue)}</strong>
         </button>}
-      </div>
-      <div className="base-geral-kpis cadastro-status-cards" aria-label="Ativos e prescritos">
+      {/* Mesma malha de quatro colunas de Encerramentos, inclusive Ativos e Prescritos. */}
         <button type="button" className="base-geral-card mba-metric-card" onClick={() => openDetail('active')}>
           <span className="base-geral-card-top"><span>Ativos</span><FolderOpen size={14}/></span>
           <strong>{shown ? number(categories.active) : pending ? <MetricDots/> : '—'}</strong>

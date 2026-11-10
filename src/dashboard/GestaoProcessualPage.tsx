@@ -19,8 +19,8 @@ function currentAnalyticsTab(): AnalyticsTab {
   if (path === 'analytics/andamentos') return 'andamentos';
   if (path === 'analytics/faturamento') return 'faturamento';
   if (path === 'analytics/pagamentos') return 'pagamentos';
-  if (path === 'analytics/defesas') return 'defesas';
-  if (path === 'analytics/protocolos') return 'protocolos';
+  if (path === 'analytics/defesas' || path === 'analytics/controladoria/defesas' || path === 'analytics/controladoria') return 'defesas';
+  if (path === 'analytics/protocolos' || path === 'analytics/controladoria/protocolos') return 'protocolos';
   return path === 'analytics/encerramentos' ? 'encerramentos' : 'cadastro';
 }
 function navigateAnalytics(route: string) {
@@ -106,14 +106,18 @@ export function GestaoProcessualPage() {
       {canViewAnalytics && <button type="button" className={displayedTab === 'andamentos' ? 'active' : ''} aria-current={displayedTab === 'andamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/andamentos')}>Andamentos</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewPayments && <button type="button" className={displayedTab === 'pagamentos' ? 'active' : ''} aria-current={displayedTab === 'pagamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/pagamentos')}>Pagamentos</button>}
-      {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} aria-current={displayedTab === 'defesas' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/defesas')}>Defesas</button>}
-      {canViewEnterProtocols && <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/protocolos')}>Protocolos</button>}
+      {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' || displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'defesas' || displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/controladoria/defesas')}>Controladoria</button>}
     </nav>;
 
   return <div className="gestao-metabase-page gestao-processual-react">
     {shellTabs ? (visible ? createPortal(resultsTabs, shellTabs) : null) : resultsTabs}
+    {canViewEnterDefenses && (displayedTab === 'defesas' || displayedTab === 'protocolos') &&
+      <nav className="mba-operation-subnav controladoria-results-subnav" aria-label="Fluxos da Controladoria">
+        <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} onClick={() => navigateAnalytics('analytics/controladoria/defesas')}>Defesas</button>
+        <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} onClick={() => navigateAnalytics('analytics/controladoria/protocolos')}>Protocolos</button>
+      </nav>}
     {canViewAnalytics && visitedTabs.includes('cadastro') ? <div style={{display: displayedTab === 'cadastro' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='cadastro'} cardsOnly/></div> : null}
-    {canViewAnalytics && visible && displayedTab==='andamentos' && <AndamentosCardsPage key={runtimeScope()}/>}
+    {canViewAnalytics && visitedTabs.includes('andamentos') ? <div style={{display: displayedTab === 'andamentos' ? 'contents' : 'none'}}><AndamentosCardsPage key={runtimeScope()} visible={visible && displayedTab==='andamentos'}/></div> : null}
     {canViewV3Faturamento && visible && displayedTab==='faturamento' && <BackofficeRead key={runtimeScope()} module="faturamento"/>}
     {canViewClosing && (readSource('encerramentos') === 'V3' ? (visible && displayedTab === 'encerramentos' ? <BackofficeRead key={runtimeScope()} module="encerramentos"/> : null) : (visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null))}
     {canViewPayments && (readSource('pagamentos') === 'V3' ? (visible && displayedTab === 'pagamentos' ? <BackofficeRead key={runtimeScope()} module="pagamentos"/> : null) : (visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null))}
