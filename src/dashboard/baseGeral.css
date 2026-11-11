@@ -466,83 +466,56 @@
   white-space:nowrap;
 }
 
-/* Resultados > Cadastro / Andamentos: apenas cards, mesmo padrão compacto. */
-.cadastro-cards{grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch}
-.cadastro-cards .base-geral-card{min-height:105px;cursor:default}
+/* Resultados > Cadastro / Andamentos / Read Model V1.
+ * KPI geometry is NOT defined here: the cards join the Encerramentos KPI
+ * contract in ui-foundations.css (Results KPI grid contract). Only behaviour that is
+ * specific to these panels remains. */
+.cadastro-cards .base-geral-card{cursor:default}
 .cadastro-cards button.base-geral-card{cursor:pointer}
-.cadastro-cards .base-geral-card strong{margin-top:4px}
-@media(max-width:920px){.cadastro-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:550px){.cadastro-cards{grid-template-columns:1fr}}
-
 .cadastro-cpj-toolbar,.cadastro-cpj-note{grid-column:1/-1}
 .cadastro-cpj-toolbar{display:flex;align-items:center;gap:15px;flex-wrap:wrap}
 .cadastro-cpj-toolbar .base-geral-filter{width:min(270px,100%)}
 .cadastro-cpj-toolbar .base-geral-muted{padding:0;flex:1;min-width:220px}
 .cadastro-cpj-note:empty{display:none}
-.andamentos-office-filter{grid-template-columns:minmax(200px,280px);justify-content:end;margin-top:8px}
-
-/* Compact results cards: shared Encerramentos proportions. */
-.cadastro-cards,.cadastro-status-cards,.andamento-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:10px}
-.cadastro-status-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-.andamento-cards{grid-template-columns:repeat(4,minmax(0,1fr))}
-.cadastro-cards .base-geral-card,.cadastro-status-cards .base-geral-card,.andamento-cards .base-geral-card{
-  height:100px;min-height:100px;padding:12px 14px;gap:7px;border-radius:9px;cursor:default
-}
-.cadastro-status-cards button.base-geral-card,.cadastro-cards button.base-geral-card{cursor:pointer}
-.cadastro-cards .base-geral-card strong,.cadastro-status-cards .base-geral-card strong,.andamento-cards .base-geral-card strong{font-size:24px;line-height:1.1;margin:0}
-.cadastro-cards .base-geral-card-top,.cadastro-status-cards .base-geral-card-top,.andamento-cards .base-geral-card-top{font-size:11px}
 .cadastro-products{margin-top:5px}
-@media(max-width:1100px){.andamento-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:740px){.cadastro-cards,.andamento-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){.cadastro-cards,.cadastro-status-cards,.andamento-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* Resultados: grade única com as mesmas dimensões de Encerramentos. */
-.gestao-processual-react .cadastro-cards,
-.gestao-processual-react .andamento-cards {
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
-  align-items:stretch;
+/* Filter rows of the Resultados panels fill 100% of their container, like the
+ * Encerramentos row: no empty grid tracks, no fixed-width orphan boxes.
+ * Encerramentos itself keeps its own .closing-filter-row--standard rule. */
+.base-geral-page>.base-geral-filters{
+  display:grid;width:100%;grid-template-columns:repeat(5,minmax(0,1fr));
+  align-items:end;gap:var(--mba-ui-gap,10px);
 }
-.gestao-processual-react .cadastro-cards .base-geral-card,
-.gestao-processual-react .andamento-cards .base-geral-card{
-  box-sizing:border-box;
-  height:102px;
-  min-height:102px;
-  max-height:102px;
-  min-width:0;
-  overflow:hidden;
-  padding:15px 16px;
-  gap:7px;
-  border-radius:9px;
+.base-geral-page>.base-geral-filters>*{width:100%;min-width:0}
+.base-geral-page>.base-geral-filters .mba-date-range,
+.base-geral-page>.base-geral-filters .mba-date-range-trigger{width:100%;min-width:0}
+/* Cadastro: período + situação, same 1.15fr/1fr proportion as Encerramentos. */
+.base-geral-page>.base-geral-filters.base-geral-filters--pair{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+/* Andamentos: single office selector spans the whole row. */
+.base-geral-page>.base-geral-filters.andamentos-office-filter{grid-template-columns:minmax(0,1fr);justify-content:stretch;margin:0 0 12px}
+@media(max-width:1250px){
+  /* Five filters -> balanced 3 + 2 rows, each row full width. */
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter){grid-template-columns:repeat(6,minmax(0,1fr))}
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter)>*{grid-column:span 2}
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter)>:nth-child(n+4){grid-column:span 3}
 }
-.gestao-processual-react .cadastro-cards .base-geral-card strong,
-.gestao-processual-react .andamento-cards .base-geral-card strong{
-  font-size:25px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.gestao-processual-react .andamentos-office-filter{
-  display:grid;
-  grid-template-columns:minmax(160px,280px);
-  justify-content:start;
-  margin:0 0 12px;
-}
-@media(max-width:1000px){
-  .gestao-processual-react .cadastro-cards,
-  .gestao-processual-react .andamento-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:850px){
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter){grid-template-columns:repeat(2,minmax(0,1fr))}
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter)>*{grid-column:auto}
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter)>:last-child:nth-child(odd){grid-column:1/-1}
 }
 @media(max-width:560px){
-  .gestao-processual-react .cadastro-cards,
-  .gestao-processual-react .andamento-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .base-geral-page>.base-geral-filters,
+  .base-geral-page>.base-geral-filters.base-geral-filters--pair{grid-template-columns:minmax(0,1fr)}
+  .base-geral-page>.base-geral-filters>*,
+  .base-geral-page>.base-geral-filters:not(.base-geral-filters--pair):not(.andamentos-office-filter)>*{grid-column:auto}
 }
 
 /* Explicit data states (certified / não certificado / sem dados / auth / erro).
    Compact tags in the existing blue/orange palette; numbers never stand alone
    when the source is not certified. */
 .mba-data-tag{align-self:flex-start;display:inline-flex;align-items:center;height:16px;padding:0 6px;border-radius:4px;
-  font-size:9.5px;font-weight:650;letter-spacing:.02em;text-transform:uppercase;line-height:1;white-space:nowrap;border:1px solid transparent}
+  font-size:9.5px;font-weight:650;letter-spacing:normal;text-transform:uppercase;line-height:1;white-space:nowrap;border:1px solid transparent}
 .mba-data-tag--warn{color:var(--mba-orange,#e87828);background:color-mix(in srgb,var(--mba-orange,#e87828) 10%,transparent);border-color:color-mix(in srgb,var(--mba-orange,#e87828) 35%,transparent)}
 .mba-data-tag--muted{color:var(--mba-muted);background:var(--mba-subtle);border-color:var(--mba-border)}
 .mba-data-tag--auth{color:var(--mba-text);background:transparent;border-color:var(--mba-text-2)}
@@ -552,11 +525,10 @@
 .gestao-processual-react .base-geral-card[data-state="forbidden"] strong,.gestao-processual-react .base-geral-card[data-state="error"] strong,
 .base-geral-card[data-state="absent"] strong,.base-geral-card[data-state="unauthenticated"] strong,
 .base-geral-card[data-state="forbidden"] strong,.base-geral-card[data-state="error"] strong{color:var(--mba-muted)}
-.gestao-processual-react .cadastro-cards .base-geral-card,.gestao-processual-react .andamento-cards .base-geral-card{gap:5px}
 .gestao-processual-react .mba-read-model,.mba-read-model{margin:4px 0 12px;padding:12px 14px;min-height:0;height:auto}
 .mba-read-model-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .mba-read-model-head>div{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;flex-wrap:wrap}
-.mba-read-model-head h2{margin:0;font-size:13px;font-weight:650}
+.mba-read-model-head h2{margin:0;font-size:13px;font-weight:700;line-height:1.35;letter-spacing:-.015em}
 .mba-read-model-retry{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--mba-border);background:var(--mba-surface);color:var(--mba-blue);border-radius:6px;padding:4px 8px;font:inherit;font-size:11px;cursor:pointer}
 .mba-read-model .mba-read-model-cards{margin-bottom:6px}
 .mba-read-model-note{margin:0;font-size:10.5px;color:var(--mba-muted)}

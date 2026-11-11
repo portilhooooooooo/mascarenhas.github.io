@@ -330,7 +330,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
   }, [detail, revenueOpen]);
   const detailLabel = detail === 'injunction' ? 'Tutelas' : detail ? catalog.find(item => item.key === detail)?.label : '';
   return <section className="base-geral-page" aria-label={cardsOnly ? 'Cadastro no CPJ' : 'Base Geral da carteira processual'}>
-    <div className="base-geral-filters">
+    <div className={cardsOnly ? "base-geral-filters base-geral-filters--pair" : "base-geral-filters"}>
       <DateRangePicker label={cardsOnly ? "Entrada" : "Período da entrada"} start={entryStart} end={entryEnd} onChange={(start,end)=>{setEntryStart(start);setEntryEnd(end)}}/>
       <Select label="Situação" value={situation} onChange={setSituation} options={[
         {value:'',label:'Todas'}, {value:'active',label:'Em andamento'},

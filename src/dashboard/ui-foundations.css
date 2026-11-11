@@ -166,45 +166,96 @@ button.ranking-kpi-main.mba-metric-card:hover {background:var(--mba-blue);border
 .ranking-footnote.mba-help-disclosure {margin:0;padding:0 17px 12px}
 .ranking-footnote.mba-help-disclosure p{font-size:11px}
 
-/* Results KPI grid contract — Base Geral / Encerramentos.
- * A shared ceiling keeps cards from getting excessively wide on large monitors.
- * Both sections use the same column count, gap, card geometry, and breakpoints.
- * Existing KPI behavior, business logic, dialogs and tooltips remain unchanged. */
+/* Results KPI grid contract — Base Geral / Encerramentos / Cadastro / Andamentos / Read Model V1.
+ * Single source of truth: the effective Encerramentos KPI card
+ * (100px tall, 13px 14px padding, 9px gap, 9px radius, 12px/500 label with 15px icon,
+ * 26px/700 value; 23px value at <=640px). All Resultados KPI grids share the same
+ * column count, gap, card geometry and breakpoints. Business logic, dialogs and
+ * tooltips are unchanged. */
+.gestao-processual-react {
+  --mba-results-card-padding:13px 14px;
+  --mba-results-card-gap:9px;
+  --mba-results-icon-size:15px;
+}
 .gestao-processual-react :is(.base-geral-page,.closing-page-v2) {
   width:100%;
   max-width:1200px;
   margin-inline:auto;
 }
-.gestao-processual-react :is(.base-geral-kpi-layout,.closing-kpis-main) {
+.gestao-processual-react :is(.base-geral-kpi-layout,.closing-kpis-main,.cadastro-cards,.andamento-cards) {
   display:grid;
   grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
+  gap:var(--mba-ui-gap);
   align-items:stretch;
 }
 .gestao-processual-react .base-geral-kpi-layout.with-billing {
   grid-template-columns:repeat(4,minmax(0,1fr));
 }
-.gestao-processual-react :is(.base-geral-kpi-layout .base-geral-card,.closing-kpis-main>.closing-kpi) {
+.gestao-processual-react :is(.base-geral-kpi-layout .base-geral-card,.closing-kpis-main>.closing-kpi,
+    .cadastro-cards>.base-geral-card,.andamento-cards>.base-geral-card) {
   box-sizing:border-box;
   width:100%;
   min-width:0;
-  height:100px;
-  min-height:100px;
-  border-radius:9px;
-  padding:13px 14px;
+  height:var(--mba-ui-card-height);
+  min-height:var(--mba-ui-card-height);
+  border-radius:var(--mba-ui-card-radius);
+  padding:var(--mba-results-card-padding);
+}
+/* Cadastro / Andamentos / Read Model cards: Encerramentos inner rhythm.
+ * The state tag (não certificado, sem dados…) sits on the value row so the
+ * box keeps the exact Encerramentos height instead of growing a third line. */
+.gestao-processual-react :is(.cadastro-cards,.andamento-cards)>.base-geral-card.mba-metric-card {
+  display:grid;
+  grid-template-columns:minmax(0,auto) minmax(0,1fr);
+  grid-template-rows:auto auto;
+  align-content:start;
+  row-gap:var(--mba-results-card-gap);
+  column-gap:8px;
+  overflow:hidden;
+}
+.gestao-processual-react :is(.cadastro-cards,.andamento-cards)>.base-geral-card>.base-geral-card-top {
+  grid-column:1/-1;
+  font-size:var(--mba-ui-label-size);
+  font-weight:500;
+  line-height:1.25;
+  letter-spacing:normal;
+}
+.gestao-processual-react :is(.cadastro-cards,.andamento-cards)>.base-geral-card>.base-geral-card-top svg {
+  width:var(--mba-results-icon-size);
+  height:var(--mba-results-icon-size);
+}
+.gestao-processual-react :is(.cadastro-cards,.andamento-cards)>.base-geral-card>strong {
+  grid-column:1;
+  margin:0;
+  font-size:var(--mba-ui-value-size);
+  font-weight:700;
+  line-height:1.12;
+  letter-spacing:-.045em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.gestao-processual-react :is(.cadastro-cards,.andamento-cards)>.base-geral-card>.mba-data-tag {
+  grid-column:2;
+  align-self:center;
+  justify-self:start;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 @media(max-width:1160px) {
-  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main) {
+  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main,.cadastro-cards,.andamento-cards) {
     grid-template-columns:repeat(3,minmax(0,1fr));
   }
 }
 @media(max-width:900px) {
-  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main) {
+  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main,.cadastro-cards,.andamento-cards) {
     grid-template-columns:repeat(2,minmax(0,1fr));
   }
 }
 @media(max-width:500px) {
-  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main) {
+  .gestao-processual-react :is(.base-geral-kpi-layout,.base-geral-kpi-layout.with-billing,.closing-kpis-main,.cadastro-cards,.andamento-cards) {
     grid-template-columns:minmax(0,1fr);
   }
 }

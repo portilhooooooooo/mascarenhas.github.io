@@ -117,7 +117,7 @@ export function MetricCard({label,icon:Icon,state,onOpen}:{
     :'reasons' in state?reasonText(state.reasons):state.message;
   const title=[label,tag?.label,detail].filter(Boolean).join(' — ');
   const body=<>
-    <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
+    <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
     <strong className={state.kind==='uncertified'?'mba-metric-uncertified':undefined}>
       {state.kind==='loading'?<MetricDots/>:hasValue?formatCount(state.value):'—'}
     </strong>
