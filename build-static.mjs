@@ -1,7 +1,19 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { execSync } from 'node:child_process';
 
-const dist = 'dist';
+// Build target. Production (default) copies config.js byte-for-byte into dist/.
+// Staging writes to dist-staging/ and points the API at a loopback backend only;
+// the production API host is rejected anywhere in the staging artifact.
+const PRODUCTION_API_HOST = 'api.portilhobackoffice.site';
+const target = String(process.env.MBA_BUILD_TARGET || 'production').trim();
+if (!['production', 'staging'].includes(target)) throw new Error(`MBA_BUILD_TARGET inválido: ${target}`);
+const staging = target === 'staging';
+const stagingApiBaseUrl = String(process.env.MBA_STAGING_API_BASE_URL || 'http://127.0.0.1:5051').trim().replace(/\/$/, '');
+if (staging && !/^http:\/\/(127\.0\.0\.1|localhost):[0-9]{2,5}$/.test(stagingApiBaseUrl)) {
+  throw new Error('MBA_STAGING_API_BASE_URL deve ser um backend loopback (http://127.0.0.1:<porta> ou http://localhost:<porta>).');
+}
+const dist = staging ? (process.env.MBA_DIST_DIR || 'dist-staging') : 'dist';
+if (staging && dist === 'dist') throw new Error('O build de staging não pode sobrescrever dist/ de produção.');
 const fallbackVersion = '20260923-react-login';
 let buildVersion = process.env.CF_PAGES_COMMIT_SHA || process.env.GITHUB_SHA || '';
 
@@ -49,6 +61,23 @@ const files = [
 
 for (const file of files) {
   await cp(file, `${dist}/${file}`);
+}
+
+if (staging) {
+  const apiLine = /^window\.MBA_API_BASE_URL = '[^']*';$/m;
+  const configJs = await readFile('config.js', 'utf8');
+  if ((configJs.match(/^window\.MBA_API_BASE_URL = /gm) || []).length !== 1 || !apiLine.test(configJs)) {
+    throw new Error('config.js deve declarar MBA_API_BASE_URL exatamente uma vez.');
+  }
+  // Same preview/auth logic as production; only the API origin and staging flags differ.
+  const stagingConfig = configJs.replace(apiLine,
+    `// STAGING BUILD (MBA_BUILD_TARGET=staging): backend loopback, nunca a API de produção.\n`
+    + `window.MBA_API_BASE_URL = '${stagingApiBaseUrl}';\n`
+    + `window.MBA_BUILD_TARGET = 'staging';\n`
+    + `window.MBA_DASHBOARD_V1_ENABLED = true;`);
+  await writeFile(`${dist}/config.js`, stagingConfig, 'utf8');
+  const headers = await readFile('_headers', 'utf8');
+  await writeFile(`${dist}/_headers`, headers.replaceAll(`https://${PRODUCTION_API_HOST}`, stagingApiBaseUrl), 'utf8');
 }
 
 // O vídeo institucional da branch de testes é obrigatório na tela de login.
@@ -134,3 +163,16 @@ await cp('assets/vendor', `${dist}/assets/vendor`, { recursive: true });
 // Pin and serve the existing icon library with the application, without a CDN dependency.
 await cp('node_modules/lucide/dist/umd/lucide.min.js', `${dist}/assets/vendor/lucide.min.js`);
 await cp('node_modules/lucide/LICENSE', `${dist}/assets/vendor/lucide-LICENSE`);
+
+if (staging) {
+  const textFile = /\.(?:js|mjs|css|html|txt|json|svg)$|^_headers$/;
+  const walk = async (dir) => (await Promise.all((await readdir(dir, { withFileTypes: true }))
+    .map((entry) => entry.isDirectory() ? walk(`${dir}/${entry.name}`) : [`${dir}/${entry.name}`]))).flat();
+  const leaks = [];
+  for (const path of await walk(dist)) {
+    if (!textFile.test(path.split('/').pop())) continue;
+    if ((await readFile(path, 'utf8')).includes(PRODUCTION_API_HOST)) leaks.push(path);
+  }
+  if (leaks.length) throw new Error(`Build de staging referencia a API de produção: ${leaks.join(', ')}`);
+  console.log(`staging: ${dist}/ usa MBA_API_BASE_URL=${stagingApiBaseUrl}; nenhuma referência a ${PRODUCTION_API_HOST}.`);
+}

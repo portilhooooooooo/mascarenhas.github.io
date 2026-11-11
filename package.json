@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && vite build && node build-static.mjs",
+    "build:staging": "tsc --noEmit && vite build && MBA_BUILD_TARGET=staging node build-static.mjs",
     "dev": "npm run dev:local",
     "dev:local": "npm run build && vite preview --outDir dist --host localhost --port 5173 --strictPort",
     "preview": "vite preview --outDir dist --host 0.0.0.0 --port 5173 --strictPort",
+    "preview:staging": "vite preview --outDir dist-staging --host 127.0.0.1 --port 5173 --strictPort",
     "test:hardening": "node tests/hardening.test.mjs && node tests/portfolio-policy.test.mjs && node tests/routing.test.mjs && node tests/qa-workspace.test.mjs && node tests/session-race.test.mjs && node tests/frontend-stability.test.mjs",
     "test:metabase": "node tests/metabase-only.test.mjs",
     "dev:ux": "vite --config vite.ux.config.ts --host 127.0.0.1",
@@ -19,7 +21,8 @@
     "build:v3": "tsc --noEmit && vite build --config vite.v3.config.ts",
     "test:v3": "node tests/v3-read-browser.mjs",
     "build:routes-testing": "tsc --noEmit && vite build --mode routes-testing && node build-static.mjs",
-    "test:routes": "node tests/v3-backoffice-browser.mjs"
+    "test:routes": "node tests/v3-backoffice-browser.mjs",
+    "test:staging-config": "node tests/staging-config.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
