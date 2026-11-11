@@ -1,45 +1,74 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
 import {CalendarDays,Clock3,FolderArchive,FolderOpen,ShieldCheck} from 'lucide-react';
-import {MetricDots} from './dashboardFeedback';
 import {runtimeScope} from '../tasks/runtimeQueries';
+import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,classifyCard,currentPortfolio,failureState,getApi} from './metricState';
+import {MetricCasesDialog,type CaseSource,cadastroCases} from './MetricCasesDialog';
 import './baseGeral.css';
 
-type Summary={metrics:Record<string,number|null>};
-type Api={request:<T>(path:string,options?:RequestInit)=>Promise<T>;getPortfolioId?:()=>string};
+/**
+ * GET /api/resultados/cadastro/cards (contract cadastro.cards.v2.x).
+ * Each card carries its own value/status/source; drilldown uses
+ * GET /api/resultados/cadastro/processos with the same filters and category.
+ */
+type Summary={contract_version?:string;portfolio_id?:string;status?:string;
+  cards?:Record<string,BackendCard>;metrics?:Record<string,number|null>;
+  filters_applied?:Record<string,string|null>;limitations?:string[]};
+export type CadastroFilters={entry_start?:string;entry_end?:string;situation?:string};
+
 const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:75000,refetchOnWindowFocus:false}}});
+// `legacy` keys are read only when an older backend omits the per-card object.
 const cards=[
-  {key:'entradas',label:'Entradas',icon:FolderOpen},
-  {key:'para_cadastro',label:'Cadastrar',icon:Clock3},
-  {key:'com_audiencia',label:'Com audiência',icon:CalendarDays},
-  {key:'com_liminar',label:'Com liminar',icon:ShieldCheck},
-  {key:'em_arquivamento',label:'Arquivar',icon:FolderArchive},
+  {key:'entradas',legacy:'entradas',label:'Entradas',icon:FolderOpen,drill:true},
+  {key:'cadastrar',legacy:'para_cadastro',label:'Cadastrar',icon:Clock3,drill:true},
+  {key:'com_audiencia',legacy:'com_audiencia',label:'Com audiência',icon:CalendarDays,drill:false},
+  {key:'com_liminar',legacy:'com_liminar',label:'Com liminar',icon:ShieldCheck,drill:true},
+  {key:'arquivar',legacy:'em_arquivamento',label:'Arquivar',icon:FolderArchive,drill:true},
 ] as const;
-const format=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0
-  ?new Intl.NumberFormat('pt-BR').format(value):'—';
-function Content({filtered}:{filtered:boolean}){
+
+function Content({filters}:{filters:CadastroFilters}){
   const [revision,setRevision]=useState(0);
+  const [drill,setDrill]=useState<CaseSource|null>(null);
   useEffect(()=>{
-    const change=()=>{cache.clear();setRevision(n=>n+1);};
-    const events=['mba:authenticated','mba:profile-ready','mba:portfolio-changed','mba:logged-out','mba:session-expired','mba:authorization-invalidated','mba:server-data-changed'];
-    events.forEach(e=>window.addEventListener(e,change));
-    return()=>events.forEach(e=>window.removeEventListener(e,change));
+    const change=()=>{cache.clear();setDrill(null);setRevision(n=>n+1);};
+    AUTH_EVENTS.forEach(e=>window.addEventListener(e,change));
+    return()=>AUTH_EVENTS.forEach(e=>window.removeEventListener(e,change));
   },[]);
-  const w=window as Window&{MBA_API?:Api;MBA_AUTOMATION_API?:Api};
-  const portfolio=w.MBA_API?.getPortfolioId?.()||'';
-  const api=w.MBA_AUTOMATION_API||w.MBA_API;
+  const api=getApi();
+  const portfolio=currentPortfolio();
+  const query=useMemo(()=>{
+    const p=new URLSearchParams();
+    for(const k of ['entry_start','entry_end','situation'] as const)if(filters[k])p.set(k,filters[k]!);
+    return p;
+  },[filters.entry_start,filters.entry_end,filters.situation]);
+  const qs=query.toString();
   const summary=useQuery({
-    queryKey:['resultados','cadastro','cpj-cards',runtimeScope(),portfolio,revision],
+    queryKey:['resultados','cadastro','cards',runtimeScope(),portfolio,qs,revision],
     enabled:Boolean(portfolio&&api),
-    queryFn:({signal})=>api!.request<Summary>('/api/resultados/cadastro/cards',{signal}),
+    queryFn:async({signal})=>{
+      const body=await api!.request<Summary>('/api/resultados/cadastro/cards'+(qs?'?'+qs:''),{signal});
+      if(body?.portfolio_id&&body.portfolio_id!==portfolio)throw Object.assign(new Error('Resposta de outra carteira descartada.'),{status:502});
+      return body;
+    },
   });
-  // Este contrato CPJ ainda não admite filtros de entrada/situação. Não apresentar
-  // contagens globais como se tivessem sido filtradas.
-  return <>{cards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
-    <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
-    <strong>{summary.isLoading&&!filtered?<MetricDots/>:filtered?'—':format(summary.data?.metrics?.[key])}</strong>
-  </article>)}</>;
+  const data=summary.data;
+  // The backend must echo every requested filter; otherwise counts are global, not filtered.
+  const filterIgnored=Boolean(data)&&[...query.entries()].some(([k,v])=>(data!.filters_applied?.[k]??null)!==v);
+  const stateFor=(key:string,legacy:string):CardState=>{
+    if(!api||!portfolio)return {kind:'unauthenticated',message:'Sessão não autenticada.'};
+    if(summary.isLoading)return {kind:'loading'};
+    if(summary.error)return failureState(summary.error);
+    if(filterIgnored)return {kind:'absent',reasons:['FILTER_NOT_APPLIED']};
+    const card=data?.cards?.[key]??(data?.metrics&&legacy in data.metrics?{value:data.metrics[legacy]}:undefined);
+    return classifyCard(card,data?.status);
+  };
+  return <>
+    {cards.map(({key,legacy,label,icon,drill:canDrill})=><MetricCard key={key} label={label} icon={icon}
+      state={stateFor(key,legacy)}
+      onOpen={canDrill?()=>setDrill(cadastroCases(key,label,query)):undefined}/>)}
+    {drill&&<MetricCasesDialog source={drill} onClose={()=>setDrill(null)}/>}
+  </>;
 }
-export function CadastroCpjCards({filtered=false}:{filtered?:boolean}){
-  return <QueryClientProvider client={cache}><Content filtered={filtered}/></QueryClientProvider>;
+export function CadastroCpjCards({filters={}}:{filters?:CadastroFilters}){
+  return <QueryClientProvider client={cache}><Content filters={filters}/></QueryClientProvider>;
 }

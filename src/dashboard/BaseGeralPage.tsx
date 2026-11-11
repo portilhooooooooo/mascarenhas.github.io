@@ -1,5 +1,6 @@
 import {SelectMenu} from './SelectMenu';
 import {CadastroCpjCards} from './CadastroCpjCards';
+import {ReadModelDashboard} from './ReadModelDashboard';
 import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -346,7 +347,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
     {cardsOnly ? <>
       <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
-        <CadastroCpjCards filtered={Boolean(entryStart || entryEnd || situation)}/>
+        <CadastroCpjCards filters={{entry_start: entryStart || undefined, entry_end: entryEnd || undefined, situation: situation || undefined}}/>
         {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
           className="base-geral-card mba-metric-card base-geral-revenue-card"
           aria-label="Detalhar faturamento" disabled={estimatedRevenue === null} onClick={() => setRevenueOpen(true)}>
@@ -363,6 +364,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
           <strong>{shown ? number(categories.prescribed) : pending ? <MetricDots/> : '—'}</strong>
         </button>
       </div>
+      <ReadModelDashboard dashboard="cadastro"/>
       <section className="base-geral-panel base-geral-products-table cadastro-products" aria-label="Produtos">
         <header><div><h2>Produtos</h2></div><span className="base-geral-tally">{number(productTotal)} processos</span></header>
         <div className="base-geral-table-scroll"><table className="base-geral-products">
