@@ -251,11 +251,6 @@
     if(path.startsWith('/api/') && path!=='/api/me' && (document.body.classList.contains('auth-unavailable')||document.body.classList.contains('auth-validating')))throw Object.assign(new Error('Acesso aguardando validação.'),{code:'AUTH_TEMPORARILY_UNAVAILABLE',status:503});
     if (preview && window.MBA_MOCK_API) return window.MBA_MOCK_API.handle(path, options);
     const method = String(options.method || 'GET').toUpperCase();
-    // The presentation branch replaces read-only dashboard snapshots only.
-    if(method==='GET' && window.MBA_CURRENT_USER?.id && typeof window.MBA_PRODUCT_METRICS==='function') {
-      const snapshot=window.MBA_PRODUCT_METRICS(path,getPortfolioId());
-      if(snapshot!==undefined)return snapshot;
-    }
 
     const userCached = cachedUserDetail(path, method);
     if (userCached) return userCached;
