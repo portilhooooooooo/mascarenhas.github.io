@@ -346,7 +346,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
     {cardsOnly ? <>
       <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
-        <CadastroCpjCards filtered={Boolean(entryStart || entryEnd || situation)}/>
+        <CadastroCpjCards entryStart={entryStart} entryEnd={entryEnd} situation={situation}/>
         {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
           className="base-geral-card mba-metric-card base-geral-revenue-card"
           aria-label="Detalhar faturamento" disabled={estimatedRevenue === null} onClick={() => setRevenueOpen(true)}>

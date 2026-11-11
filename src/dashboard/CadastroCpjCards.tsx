@@ -17,7 +17,7 @@ const cards=[
 ] as const;
 const format=(value:unknown)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=0
   ?new Intl.NumberFormat('pt-BR').format(value):'—';
-function Content({filtered}:{filtered:boolean}){
+function Content({entryStart,entryEnd,situation}:{entryStart:string;entryEnd:string;situation:string}){
   const [revision,setRevision]=useState(0);
   useEffect(()=>{
     const change=()=>{cache.clear();setRevision(n=>n+1);};
@@ -29,17 +29,15 @@ function Content({filtered}:{filtered:boolean}){
   const portfolio=w.MBA_API?.getPortfolioId?.()||'';
   const api=w.MBA_AUTOMATION_API||w.MBA_API;
   const summary=useQuery({
-    queryKey:['resultados','cadastro','cpj-cards',runtimeScope(),portfolio,revision],
+    queryKey:['resultados','cadastro','cpj-cards',runtimeScope(),portfolio,entryStart,entryEnd,situation,revision],
     enabled:Boolean(portfolio&&api),
-    queryFn:({signal})=>api!.request<Summary>('/api/resultados/cadastro/cards',{signal}),
+    queryFn:({signal})=>{const p=new URLSearchParams();if(entryStart)p.set('entry_start',entryStart);if(entryEnd)p.set('entry_end',entryEnd);if(situation)p.set('situation',situation);return api!.request<Summary>('/api/resultados/cadastro/cards'+(p.size?'?'+p:''),{signal});},
   });
-  // Este contrato CPJ ainda não admite filtros de entrada/situação. Não apresentar
-  // contagens globais como se tivessem sido filtradas.
   return <>{cards.map(({key,label,icon:Icon})=><article key={key} className="base-geral-card mba-metric-card" aria-label={label}>
     <span className="base-geral-card-top"><span>{label}</span><Icon size={14} strokeWidth={1.7}/></span>
-    <strong>{summary.isLoading&&!filtered?<MetricDots/>:filtered?'—':format(summary.data?.metrics?.[key])}</strong>
+    <strong>{summary.isLoading?<MetricDots/>:format(summary.data?.metrics?.[key])}</strong>
   </article>)}</>;
 }
-export function CadastroCpjCards({filtered=false}:{filtered?:boolean}){
-  return <QueryClientProvider client={cache}><Content filtered={filtered}/></QueryClientProvider>;
+export function CadastroCpjCards({entryStart='',entryEnd='',situation=''}:{entryStart?:string;entryEnd?:string;situation?:string}){
+  return <QueryClientProvider client={cache}><Content entryStart={entryStart} entryEnd={entryEnd} situation={situation}/></QueryClientProvider>;
 }

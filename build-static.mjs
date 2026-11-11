@@ -32,6 +32,7 @@ const files = [
   'protocolo.css',
   'config.js',
   'data-api.js',
+  'presentation-metrics.js',
   'portfolio-policy.js',
   'app.js',
   'user-access-manager.js',
