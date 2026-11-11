@@ -75,6 +75,7 @@ const REASON_LABELS:Record<string,string>={
   SNAPSHOT_STALE:'Snapshot em cache (desatualizado)',
   CERTIFICATION_NOT_DECLARED:'Fonte sem certificação declarada',
   NO_PUBLISHED_REVISION:'Nenhuma revisão publicada',
+  NO_FROZEN_DETAILS:'Sem detalhes congelados para esta revisão',
   LEGACY_PARITY_PENDING:'Paridade com o legado pendente',
   HEARING_SOURCE_NOT_CERTIFIED:'Fonte de audiências não certificada',
   JUDICIAL_COVERAGE_NOT_CERTIFIED:'Cobertura judicial não certificada',
