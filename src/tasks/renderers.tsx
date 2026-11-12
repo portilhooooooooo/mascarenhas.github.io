@@ -20,6 +20,24 @@ type BaseRendererProps = {
   onQueued?: (process: TaskProcess) => void;
 };
 
+/**
+ * Repeated submissions of an identical draft in the same task view share
+ * the same operation ID. A changed answer or newly opened task gets a new ID.
+ */
+function useAnalysisOperation() {
+  const current = useRef<{ identity: string; key: string } | null>(null);
+  return {
+    headers(processId: string, body: string) {
+      const identity = processId + ':' + body;
+      if (current.current?.identity !== identity) {
+        current.current = { identity, key: crypto.randomUUID() };
+      }
+      return { 'X-Idempotency-Key': current.current.key };
+    },
+    reset() { current.current = null; },
+  };
+}
+
 function defenseControlDeadline(task: Task, process: TaskProcess) {
   const metadata = process.source_metadata || {};
   return String(metadata.fatal_deadline || task.deadline_at || '').slice(0, 10) || null;
@@ -29,6 +47,7 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controlDeadline = defenseControlDeadline(task, process);
+  const operation = useAnalysisOperation();
   const onPhaseEntered = useCallback((index: number, stage: string) => {
     if (document.hidden || !document.getElementById('tarefas')?.classList.contains('active')) return;
     void api(`/api/task-processes/${process.id}/analysis-activity`, {
@@ -40,9 +59,7 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
     setBusy(true);
     setError(null);
     try {
-      await api(`/api/task-processes/${process.id}/defesa-analysis`, {
-        method: 'POST',
-        body: JSON.stringify({
+      const body = JSON.stringify({
           workflow_version: 5,
           reason: draft.reason,
           court_fatal_deadline: draft.deadline_correct ? null : draft.fatal_deadline,
@@ -51,8 +68,11 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
           has_defense_order: draft.has_defense_order,
           has_valid_court_deadline: draft.has_valid_court_deadline,
           analysis_origin: 'TASK',
-        }),
+        });
+      await api(`/api/task-processes/${process.id}/defesa-analysis`, {
+        method: 'POST', body, headers: operation.headers(process.id, body),
       });
+      operation.reset();
       clearQaDraft(draftKey);
       onCompleted(process);
     } catch (cause: any) {
@@ -67,6 +87,7 @@ export function DefenseRenderer({ api, task, process, draftKey = '', onCompleted
     setError(null);
     try {
       await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      operation.reset();
       clearQaDraft(draftKey);
       onSkipped(process);
     } catch (cause: any) {
@@ -122,6 +143,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const classifierClassification = closingClassifierClassification(process);
+  const operation = useAnalysisOperation();
   const [closingPrefill, setClosingPrefill] = useState<{ processId: string; values: ClosingPrefill } | null>(null);
   useEffect(() => {
     let active = true;
@@ -145,10 +167,11 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     setBusy(true);
     setError(null);
     try {
+      const body = JSON.stringify(draft);
       const saved = await api(`/api/task-processes/${process.id}/encerramento-analysis`, {
-        method: 'POST',
-        body: JSON.stringify(draft),
+        method: 'POST', body, headers: operation.headers(process.id, body),
       });
+      operation.reset();
       clearQaDraft(draftKey);
       window.dispatchEvent(new CustomEvent('mba:closing-analysis-saved'));
       if (saved?.reopen_at) onDeferred(process, String(saved.reopen_at));
@@ -165,6 +188,7 @@ export function ClosingRenderer({ api, task, process, draftKey = '', onCompleted
     setError(null);
     try {
       await api(`/api/task-processes/${process.id}/skip`, { method: 'POST', body: '{}' });
+      operation.reset();
       clearQaDraft(draftKey);
       onSkipped(process);
     } catch (cause: any) {
