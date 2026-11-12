@@ -133,7 +133,8 @@ export function DataJudEvidencePanel({portfolioId,canView}:{
                     <td>Aguardando validação humana</td>
                     <td>{timestamp(row.consultado_em)}</td>
                   </tr>)}
-                  {!rows?.rows?.length?<tr><td colSpan={5}>Sem resultados nesta seleção.</td></tr>:null}
+                  {!rows&&!listError?<tr><td colSpan={5}>Carregando…</td></tr>:null}
+                  {rows&&!rows.rows?.length?<tr><td colSpan={5}>Sem resultados nesta seleção.</td></tr>:null}
                 </tbody>
               </table>
             </div>
