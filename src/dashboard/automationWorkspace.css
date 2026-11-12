@@ -9,8 +9,8 @@
 .automation-home-copy h2{margin:0 0 8px;font-size:14px;line-height:1.35;font-weight:650;letter-spacing:-.01em}
 .automation-home-copy p{margin:0;font-size:12px;line-height:1.5;color:var(--mba-text-2);overflow-wrap:break-word}
 .automation-home-actions{margin-top:auto}
-.automation-home-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:36px;padding:8px 12px;border:1px solid var(--mba-orange,#c18847);border-radius:7px;background:var(--mba-orange,#c18847);color:white;font:inherit;font-size:12px;font-weight:650;cursor:pointer;transition:background-color .15s,border-color .15s}
-.automation-home-actions button:hover{background:var(--mba-blue-dark,#94593f);border-color:var(--mba-blue-dark,#94593f)}
+.automation-home-actions button{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:36px;padding:8px 12px;border:1px solid var(--mba-blue,#142b67);border-radius:7px;background:var(--mba-blue,#142b67);color:white;font:inherit;font-size:12px;font-weight:650;cursor:pointer;transition:background-color .15s,border-color .15s}
+.automation-home-actions button:hover{background:var(--mba-blue-dark,#0d2052);border-color:var(--mba-blue-dark,#0d2052)}
 .automation-home-actions button:focus-visible{outline:2px solid var(--mba-blue);outline-offset:3px}
 .automation-config-head{margin-bottom:13px}
 .automation-config-head h1{font-size:17px;font-weight:700;line-height:1.25;margin:0}
@@ -20,9 +20,9 @@
 .automation-action>span:not(.automation-action-icon){font-size:12px;font-weight:700}
 .automation-action-icon{height:23px;display:flex;align-items:center;color:var(--mba-blue)}
 .automation-action small{font-size:10px;line-height:1.35;color:var(--mba-text-2);overflow-wrap:anywhere}
-.automation-action-run{border-color:#c66d22;background:var(--mba-orange,#c18847);color:white}
+.automation-action-run{border-color:var(--mba-blue,#142b67);background:var(--mba-blue,#142b67);color:white}
 .automation-action-run .automation-action-icon{color:white}
-.automation-action-run:hover,.automation-action-run.selected{border-color:var(--mba-blue-dark,#94593f);background:var(--mba-blue-dark,#94593f)}
+.automation-action-run:hover,.automation-action-run.selected{border-color:var(--mba-blue-dark,#0d2052);background:var(--mba-blue-dark,#0d2052)}
 .automation-action-batch.selected,.automation-action-manual.selected{background:var(--mba-subtle);border-color:var(--mba-blue)}
 .automation-action-detail{margin-top:10px;border:1px solid var(--mba-border);border-radius:9px;padding:15px;background:var(--mba-surface);display:grid;gap:10px}
 .automation-file-field,.automation-manual-field{font-size:11px;display:grid;gap:8px;color:var(--mba-text-2)}
@@ -31,7 +31,7 @@
 .automation-run-summary{font-size:12px}
 .automation-file-name{font-size:11px}
 .automation-submit{display:flex;align-items:center;justify-content:flex-end;gap:12px;color:var(--mba-muted);font-size:11px}
-.automation-submit button{background:var(--mba-orange,#c18847);border:0;color:#fff;border-radius:7px;padding:9px 14px;font-weight:650}
+.automation-submit button{background:var(--mba-blue,#142b67);border:0;color:#fff;border-radius:7px;padding:9px 14px;font-weight:650}
 .automation-submit button:disabled{opacity:.5;cursor:not-allowed}
 .automation-kanban-section{margin-top:17px}
 .automation-board-head{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px}
@@ -295,8 +295,8 @@
 
 /* Brand copper is scoped: legacy shell sometimes overrides --mba-orange with amber. */
 .automation-workspace,.automation-dialog{
-  --automation-copper:#b87555;
-  --automation-copper-dark:#94593f;
+  --automation-copper:var(--mba-blue,#142b67);
+  --automation-copper-dark:var(--mba-blue-dark,#0d2052);
 }
 .automation-home-actions .automation-execute{
   background:var(--automation-copper);

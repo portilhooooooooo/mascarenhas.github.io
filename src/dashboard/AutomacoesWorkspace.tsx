@@ -92,7 +92,7 @@ type HomeIntegration=typeof integrations[number]['id'];
 const historyEnabled=new Set<HomeIntegration>(['encerramentos','pagamentos','liminar','protocolos']);
 function Home({access,onExecute}:{access:Set<Module>;onExecute:(module:HomeIntegration)=>void}){
   return <div className="automation-home-grid" aria-label="Integrações">
-    {integrations.filter(entry=>access.has(entry.id)).map(({id,label,icon:Icon})=><article className="automation-home-card" key={id}>
+    {integrations.filter(entry=>entry.id!=='datajud'&&access.has(entry.id)).map(({id,label,icon:Icon})=><article className="automation-home-card" key={id}>
       <div className={'automation-home-icon automation-home-icon-'+id}><Icon size={19} strokeWidth={1.8} aria-hidden="true"/></div>
       <div className="automation-home-copy"><h2>{label}</h2><p>{homeDescriptions[id]}</p></div>
       <div className="automation-home-actions">
