@@ -534,3 +534,11 @@
 .mba-read-model-note{margin:0;font-size:10.5px;color:var(--mba-muted)}
 .mba-data-warning{border-color:color-mix(in srgb,var(--mba-orange,#e87828) 40%,transparent)}
 .base-geral-detail-table code{font-size:11px;color:var(--mba-text-2)}
+
+/* Cadastro (cardsOnly): Entrada + Situação fill 100% of the filter row, ~half each;
+ * stacked on narrow screens. Scoped to --pair; other panels unchanged. */
+.base-geral-page>.base-geral-filters.base-geral-filters--pair{display:grid;width:100%;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:end}
+.base-geral-page>.base-geral-filters.base-geral-filters--pair>*{width:100%;min-width:0;grid-column:auto}
+.base-geral-page>.base-geral-filters.base-geral-filters--pair .mba-date-range,
+.base-geral-page>.base-geral-filters.base-geral-filters--pair .mba-date-range-trigger{width:100%;min-width:0}
+@media(max-width:560px){.base-geral-page>.base-geral-filters.base-geral-filters--pair{grid-template-columns:minmax(0,1fr)}}
