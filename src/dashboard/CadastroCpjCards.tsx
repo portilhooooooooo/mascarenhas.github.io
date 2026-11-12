@@ -1,17 +1,19 @@
 import {useEffect,useMemo,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
-import {CalendarDays,Clock3,FolderArchive,FolderOpen,ShieldCheck} from 'lucide-react';
+import {Clock3,FolderArchive,FolderOpen,ShieldCheck,UserX} from 'lucide-react';
 import {runtimeScope} from '../tasks/runtimeQueries';
 import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,classifyCard,currentPortfolio,failureState,getApi} from './metricState';
 import {MetricCasesDialog,type CaseSource,cadastroCases} from './MetricCasesDialog';
 import './baseGeral.css';
 
 /**
- * GET /api/resultados/cadastro/cards (contract cadastro.cards.v2.x).
+ * GET /api/resultados/cadastro/cards (contract cadastro.cards.v3).
  * Each card carries its own value/status/source; drilldown uses
- * GET /api/resultados/cadastro/processos with the same filters and category.
+ * GET /api/resultados/cadastro/processos with the same filters, category and
+ * the summary `revision`, so count and list come from the same pinned revision.
  */
-type Summary={contract_version?:string;portfolio_id?:string;status?:string;
+type Summary={contract_version?:string;portfolio_id?:string;portfolio_kind?:'ENTER'|'REGULAR';status?:string;
+  revision?:string|null;calculated_at?:string|null;source_revision?:Record<string,unknown>|null;
   cards?:Record<string,BackendCard>;metrics?:Record<string,number|null>;
   filters_applied?:Record<string,string|null>;limitations?:string[]};
 export type CadastroFilters={entry_start?:string;entry_end?:string;situation?:string};
@@ -20,10 +22,11 @@ const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:7500
 // `legacy` keys are read only when an older backend omits the per-card object.
 const cards=[
   {key:'entradas',legacy:'entradas',label:'Entradas',icon:FolderOpen,drill:true},
-  {key:'cadastrar',legacy:'para_cadastro',label:'Cadastrar',icon:Clock3,drill:true},
-  {key:'com_audiencia',legacy:'com_audiencia',label:'Com audiência',icon:CalendarDays,drill:false},
+  // Cadastrar exists only in Enter (agibank_enter).
+  {key:'cadastrar',legacy:'para_cadastro',label:'Cadastrar',icon:Clock3,drill:true,only:'agibank_enter'},
   {key:'com_liminar',legacy:'com_liminar',label:'Com liminar',icon:ShieldCheck,drill:true},
   {key:'arquivar',legacy:'em_arquivamento',label:'Arquivar',icon:FolderArchive,drill:true},
+  {key:'desconsideracao_patrocinio',legacy:'desconsideracao_patrocinio',label:'Desconsideração de patrocínio',icon:UserX,drill:true},
 ] as const;
 
 function Content({filters}:{filters:CadastroFilters}){
@@ -62,10 +65,14 @@ function Content({filters}:{filters:CadastroFilters}){
     const card=data?.cards?.[key]??(data?.metrics&&legacy in data.metrics?{value:data.metrics[legacy]}:undefined);
     return classifyCard(card,data?.status);
   };
+  // Drill only against the pinned revision of the counts shown; no revision → not drillable.
+  const pinned=typeof data?.revision==='string'&&data.revision?data.revision:null;
+  const visible=cards.filter(c=>!('only' in c)||(c.only===portfolio
+    &&String(data?.cards?.[c.key]?.status||'').toUpperCase()!=='NOT_APPLICABLE'));
   return <>
-    {cards.map(({key,legacy,label,icon,drill:canDrill})=><MetricCard key={key} label={label} icon={icon}
+    {visible.map(({key,legacy,label,icon,drill:canDrill})=><MetricCard key={key} label={label} icon={icon}
       state={stateFor(key,legacy)}
-      onOpen={canDrill?()=>setDrill(cadastroCases(key,label,query)):undefined}/>)}
+      onOpen={canDrill&&pinned?()=>setDrill(cadastroCases(key,label,query,pinned)):undefined}/>)}
     {drill&&<MetricCasesDialog source={drill} onClose={()=>setDrill(null)}/>}
   </>;
 }

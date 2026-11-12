@@ -90,26 +90,32 @@ export function MetricCasesDialog({source,onClose}:{source:CaseSource;onClose:()
 
 /* ---------- Loaders ---------- */
 
-type CadastroRow={id:string;cnj?:string;situation?:string;state?:string;entry_date?:string;product?:string};
-type CadastroList={status?:string;rows?:CadastroRow[];total?:number|null;blockers?:string[]};
+type CadastroRow={id:string;cnj?:string;pasta?:string|null;situation?:string;state?:string;entry_date?:string;product?:string;
+  archive_reasons?:string[]|null;current_credited_office?:string|null};
+type CadastroList={status?:string;category?:string;revision?:string|null;rows?:CadastroRow[];total?:number|null;
+  page?:number;page_size?:number;blockers?:string[];source_revision?:Record<string,unknown>|null};
 
-export function cadastroCases(category:string,label:string,filters:URLSearchParams):CaseSource{
+/** Cadastro drilldown pinned to the `revision` returned by /cadastro/cards. */
+export function cadastroCases(category:string,label:string,filters:URLSearchParams,revision:string):CaseSource{
   const pageSize=25;
   return {
     title:label,cursorMode:false,pageSize,
-    source:'Fonte: /api/resultados/cadastro/processos · categoria '+category,
-    columns:['CNJ','Situação','UF','Data entrada','Produto'],
+    source:'Fonte: /api/resultados/cadastro/processos · categoria '+category+' · revisão '+revision,
+    columns:['CNJ','Pasta','Situação','UF','Data entrada','Produto'],
     async load(_cursor,page,signal){
       const api=getApi();
       if(!api)throw Object.assign(new Error('API indisponível.'),{status:0});
       const params=new URLSearchParams(filters);
-      params.set('category',category);params.set('page',String(page));params.set('page_size',String(pageSize));
+      params.set('category',category);params.set('revision',revision);
+      params.set('page',String(page));params.set('page_size',String(pageSize));
       const body=await api.request<CadastroList>('/api/resultados/cadastro/processos?'+params,{signal});
+      if(body?.revision&&body.revision!==revision)
+        throw Object.assign(new Error('Resposta de detalhe incompatível com a revisão solicitada.'),{status:502});
       if(!body||body.total===null||body.total===undefined)return {rows:[],total:null,next:null,status:body?.status,reasons:body?.blockers||['DETAIL_UNAVAILABLE']};
       return {
         total:body.total,next:null,status:body.status,reasons:body.blockers||[],
         rows:(body.rows||[]).map(r=>({id:r.id,cnj:r.cnj||null,primary:r.cnj||r.id,
-          cells:[r.situation||'',r.state||'',r.entry_date||'',r.product||'']})),
+          cells:[r.pasta||'',r.situation||'',r.state||'',r.entry_date||'',r.product||'']})),
       };
     },
   };
