@@ -125,16 +125,20 @@ type V1Case={canonical_case_id:string;reference_date?:string;dimensions?:Record<
   evidence?:{source_revision?:unknown;source_position?:unknown;batch_id?:unknown}|null};
 type V1Cases={contract_version?:string;portfolio_id?:string;total?:number;cases?:V1Case[];next_after?:string|null;revision?:string};
 
+// Mirrors backend dashboard_api.METRIC_VERSIONS: Cadastro Enter publishes metric version 2.
+const METRIC_VERSIONS:Record<string,string>={cadastro:'2'};
+
 export function dashboardV1Cases(dashboard:string,metric:string,label:string,revision:string,portfolio:string):CaseSource{
   const pageSize=50;
+  const version=METRIC_VERSIONS[dashboard]||'1';
   return {
     title:label,cursorMode:true,pageSize,
-    source:`Fonte: Read Model V1 · ${dashboard}/${metric} v1 · revisão ${revision}`,
+    source:`Fonte: Read Model V1 · ${dashboard}/${metric} v${version} · revisão ${revision}`,
     columns:['Caso canônico','Data de referência','Dimensões','Evidência'],
     async load(cursor,_page,signal){
       const api=getApi();
       if(!api)throw Object.assign(new Error('API indisponível.'),{status:0});
-      const params=new URLSearchParams({revision,version:'1',limit:String(pageSize)});
+      const params=new URLSearchParams({revision,version,limit:String(pageSize)});
       if(cursor)params.set('after',cursor);
       const body=await api.request<V1Cases>(`/api/dashboard/v1/${dashboard}/metrics/${metric}/cases?`+params,{signal});
       if(body?.contract_version!=='1.0.0'||body.portfolio_id!==portfolio||body.revision!==revision||!Array.isArray(body.cases))
