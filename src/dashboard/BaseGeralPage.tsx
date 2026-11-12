@@ -158,7 +158,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
 
   const visibleRef=useRef(visible); visibleRef.current=visible;
   const refresh = useCallback(async (force = false) => {
-    if(!visibleRef.current)return;
+    if(!visibleRef.current||cardsOnly)return;
     const sequence = ++requestSequence.current;
     const api = getApi();
     const queryKey=['runtime-v2',runtimeScope(),'base-geral',filterQuery] as const;
@@ -177,7 +177,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     } finally {
       if (sequence === requestSequence.current) setPending(false);
     }
-  }, [filterKey, filterQuery]);
+  }, [cardsOnly, filterKey, filterQuery]);
 
   const refreshBilling = useCallback(async (force = false) => {
     if (!visibleRef.current || portfolio !== 'agibank_mba' || !canViewBilling) return;
@@ -285,7 +285,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     let cancelled = false;
     setDetailData(null);
     setDetailError('');
-    if (!detail || !listSupported || !filtersSupported) return () => { cancelled = true; };
+    if (cardsOnly || !detail || !listSupported || !filtersSupported) return () => { cancelled = true; };
     const api = getApi();
     if (!api) { setDetailError('API indisponível.'); return () => { cancelled = true; }; }
     const params = new URLSearchParams(filterQuery);
@@ -307,7 +307,7 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
       if (!cancelled) setDetailError(cause instanceof Error ? cause.message : 'Falha ao carregar processos.');
     }).finally(() => { if (!cancelled) setDetailPending(false); });
     return () => { cancelled = true; };
-  }, [detail, detailPage, detailCategory, detailSearch, listSupported, filtersSupported, filterQuery, portfolio, revision]);
+  }, [cardsOnly, detail, detailPage, detailCategory, detailSearch, listSupported, filtersSupported, filterQuery, portfolio, revision]);
 
   const openDetail = (value: Category) => {
     setDetail(value); setDetailPage(1); setDetailData(null);
@@ -345,38 +345,22 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
     {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
     {!pending && shown?.summary?.total === 0 && <p className="base-geral-empty-state" role="status">Sem dados nesta seleção.</p>}
     {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
-    {cardsOnly ? <>
+    {cardsOnly ? <CadastroCpjCards filters={{entry_start: entryStart || undefined, entry_end: entryEnd || undefined, situation: situation || undefined}}>
+      {({cards,agingCards,products})=><>
       <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
-        <CadastroCpjCards filters={{entry_start: entryStart || undefined, entry_end: entryEnd || undefined, situation: situation || undefined}}/>
+        {cards}
         {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
           className="base-geral-card mba-metric-card base-geral-revenue-card"
           aria-label="Detalhar faturamento" disabled={estimatedRevenue === null} onClick={() => setRevenueOpen(true)}>
           <span className="base-geral-card-top"><span>Faturamento</span><Wallet size={14} strokeWidth={1.7}/></span>
           <strong>{billingPending && !currentBilling ? <MetricDots/> : money(estimatedRevenue)}</strong>
         </button>}
-      {/* Mesma malha de quatro colunas de Encerramentos, inclusive Ativos e Prescritos. */}
-        <button type="button" className="base-geral-card mba-metric-card" onClick={() => openDetail('active')}>
-          <span className="base-geral-card-top"><span>Ativos</span><FolderOpen size={14}/></span>
-          <strong>{shown ? number(categories.active) : pending ? <MetricDots/> : '—'}</strong>
-        </button>
-        <button type="button" className="base-geral-card mba-metric-card" onClick={() => openDetail('prescribed')}>
-          <span className="base-geral-card-top"><span>Prescritos</span><Clock3 size={14}/></span>
-          <strong>{shown ? number(categories.prescribed) : pending ? <MetricDots/> : '—'}</strong>
-        </button>
+        {agingCards}
       </div>
       <ReadModelDashboard dashboard="cadastro"/>
-      <section className="base-geral-panel base-geral-products-table cadastro-products" aria-label="Produtos">
-        <header><div><h2>Produtos</h2></div><span className="base-geral-tally">{number(productTotal)} processos</span></header>
-        <div className="base-geral-table-scroll"><table className="base-geral-products">
-          <thead><tr><th>Produto</th><th>Processos</th><th>Participação</th></tr></thead>
-          <tbody>{products.length ? products.map(row=>{
-            const share=productTotal?Number(row.value)/productTotal*100:0;
-            return <tr key={row.label}><td>{row.label}</td><td>{number(row.value)}</td>
-              <td><div className="base-geral-product-share"><div className="base-geral-product-share-track" aria-hidden="true"><span style={{width:share+'%'}}/></div><span>{share.toFixed(1).replace('.',',')}%</span></div></td></tr>;
-          }) : <tr><td colSpan={3} className="base-geral-empty">—</td></tr>}</tbody>
-        </table></div>
-      </section>
-    </> : <>
+      {products}
+      </>}
+    </CadastroCpjCards> : <>
     <div className={'base-geral-kpi-layout' + (portfolio === 'agibank_mba' && canViewBilling ? ' with-billing' : '')}>
     <div className={'base-geral-kpis base-geral-kpis-primary' + (portfolio === 'agibank_mba' && canViewBilling ? ' base-geral-kpis-with-billing' : '')}>
       {catalog.slice(0,3).map(({key,label,subtitle,icon:Icon}) => <button key={key} type="button" className="base-geral-card mba-metric-card"
