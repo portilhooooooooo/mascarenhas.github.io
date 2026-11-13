@@ -18,10 +18,23 @@ type Summary={contract_version?:string;portfolio_id?:string;portfolio_kind?:'ENT
   filters_applied?:Record<string,string|null>;limitations?:string[]};
 type ProductRow={label:string;value:number};
 type CadastroLayout={cards:ReactNode;agingCards:ReactNode;products:ReactNode};
-type Props={filters?:CadastroFilters;children?:(layout:CadastroLayout)=>ReactNode};
+type Props={filters?:CadastroFilters;active?:boolean;children?:(layout:CadastroLayout)=>ReactNode};
 export type CadastroFilters={entry_start?:string;entry_end?:string;situation?:string};
 
-const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:75000,refetchOnWindowFocus:false}}});
+// Auto-refresh: every 60s while the Cadastro tab is visible, plus on window refocus.
+// The query is disabled while hidden, so neither path fetches in the background.
+const REFRESH_MS=60000;
+const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:15000,refetchOnWindowFocus:true}}});
+/** Future server invalidation (`mba:realtime-invalidate` {module:'cadastro'}); no server push exists yet. */
+export const onCadastroInvalidate=(run:()=>void)=>{
+  let debounce:number|undefined;
+  const onEvent=(event:Event)=>{
+    if((event as CustomEvent<{module?:string}>).detail?.module!=='cadastro')return;
+    window.clearTimeout(debounce);debounce=window.setTimeout(run,450);
+  };
+  window.addEventListener('mba:realtime-invalidate',onEvent);
+  return()=>{window.clearTimeout(debounce);window.removeEventListener('mba:realtime-invalidate',onEvent);};
+};
 // `legacy` keys are read only when an older backend omits the per-card object.
 const cards=[
   {key:'entradas',legacy:'entradas',label:'Entradas',icon:FolderOpen,drill:true},
@@ -37,7 +50,7 @@ const agingCards=[
   {key:'prescritos',label:'Prescritos',icon:Clock3},
 ] as const;
 
-function Content({filters={},children}:Props){
+function Content({filters={},active=true,children}:Props){
   const [revision,setRevision]=useState(0);
   const [drill,setDrill]=useState<{scope:string;source:CaseSource}|null>(null);
   useEffect(()=>{
@@ -45,6 +58,7 @@ function Content({filters={},children}:Props){
     AUTH_EVENTS.forEach(e=>window.addEventListener(e,change));
     return()=>AUTH_EVENTS.forEach(e=>window.removeEventListener(e,change));
   },[]);
+  useEffect(()=>onCadastroInvalidate(()=>void cache.invalidateQueries({queryKey:['resultados','cadastro']})),[]);
   const api=getApi();
   const portfolio=currentPortfolio();
   const query=useMemo(()=>{
@@ -57,7 +71,8 @@ function Content({filters={},children}:Props){
   useEffect(()=>setDrill(null),[scope]);
   const summary=useQuery({
     queryKey:['resultados','cadastro','cards',runtimeScope(),portfolio,qs,revision],
-    enabled:Boolean(portfolio&&api),
+    enabled:Boolean(active&&portfolio&&api),
+    refetchInterval:active?REFRESH_MS:false,
     queryFn:async({signal})=>{
       const body=await api!.request<Summary>('/api/resultados/cadastro/cards'+(qs?'?'+qs:''),{signal});
       if(body?.portfolio_id&&body.portfolio_id!==portfolio)throw Object.assign(new Error('Resposta de outra carteira descartada.'),{status:502});
@@ -81,9 +96,9 @@ function Content({filters={},children}:Props){
     &&String(data?.cards?.[c.key]?.status||'').toUpperCase()!=='NOT_APPLICABLE'));
   const open=(key:string,label:string)=>pinned
     ?()=>setDrill({scope,source:cadastroCases(key,label,query,pinned)}):undefined;
-  const cardNodes=visible.map(({key,legacy,label,icon,drill:canDrill})=><MetricCard key={key} label={label} icon={icon}
+  const cardNodes=visible.map(({key,legacy,label,icon,drill:canDrill})=><MetricCard key={key} label={label} icon={icon} hideCertTag
     state={stateFor(key,legacy)} onOpen={canDrill?open(key,label):undefined}/>);
-  const agingNodes=agingCards.map(({key,label,icon})=><MetricCard key={key} label={label} icon={icon}
+  const agingNodes=agingCards.map(({key,label,icon})=><MetricCard key={key} label={label} icon={icon} hideCertTag
     state={stateFor(key)} onOpen={open(key,label)}/>);
   const productState=stateFor('produtos');
   const productAvailable=productState.kind==='certified'||productState.kind==='uncertified';
@@ -94,9 +109,11 @@ function Content({filters={},children}:Props){
   const productTotal=products?products.reduce((sum,row)=>sum+row.value,0):null;
   const productDetail='reasons' in productState?reasonText(productState.reasons)
     :'message' in productState?productState.message:'';
-  const productTable=<section className="base-geral-panel base-geral-products-table cadastro-products" aria-label="Produtos">
+  // Uncertified products: no visible tag; the status stays in the section's title/aria-label.
+  const productLabel=productState.kind==='uncertified'&&products?['Produtos','não certificado',productDetail].filter(Boolean).join(' — '):'Produtos';
+  const productTable=<section className="base-geral-panel base-geral-products-table cadastro-products" aria-label={productLabel}
+    title={productLabel==='Produtos'?undefined:productLabel} data-state={productState.kind}>
     <header><div><h2>Produtos</h2>
-      {productState.kind==='uncertified'&&products&&<span className="mba-data-tag mba-data-tag--warn" title={productDetail}>não certificado</span>}
       {productState.kind!=='loading'&&!products&&<span className="mba-data-tag mba-data-tag--muted" title={productDetail}>sem dados</span>}
     </div><span className="base-geral-tally">{productTotal===null?'—':formatCount(productTotal)} processos</span></header>
     <div className="base-geral-table-scroll"><table className="base-geral-products">

@@ -107,21 +107,24 @@ const STATE_TAG:Record<CardState['kind'],{label:string;tone:string}|null>={
   error:{label:'erro',tone:'error'},
 };
 
-/** Compact KPI card; clickable only when a number exists and a drilldown is offered. */
-export function MetricCard({label,icon:Icon,state,onOpen}:{
-  label:string;icon:LucideIcon;state:CardState;onOpen?:()=>void;
+/** Compact KPI card; clickable only when a number exists and a drilldown is offered.
+ * `hideCertTag` (Cadastro/Read Model only) hides the visible "não certificado" tag and
+ * muted value styling; the state stays in data-state, title and aria-label. */
+export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false}:{
+  label:string;icon:LucideIcon;state:CardState;onOpen?:()=>void;hideCertTag?:boolean;
 }){
   const tag=STATE_TAG[state.kind];
+  const plain=hideCertTag&&state.kind==='uncertified';
   const hasValue=state.kind==='certified'||state.kind==='uncertified';
   const detail=state.kind==='loading'?''
     :'reasons' in state?reasonText(state.reasons):state.message;
   const title=[label,tag?.label,detail].filter(Boolean).join(' — ');
   const body=<>
     <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
-    <strong className={state.kind==='uncertified'?'mba-metric-uncertified':undefined}>
+    <strong className={state.kind==='uncertified'?'mba-metric-uncertified'+(plain?' mba-metric-plain':''):undefined}>
       {state.kind==='loading'?<MetricDots/>:hasValue?formatCount(state.value):'—'}
     </strong>
-    {tag&&<span className={'mba-data-tag mba-data-tag--'+tag.tone} data-state={state.kind}>{tag.label}</span>}
+    {tag&&!plain&&<span className={'mba-data-tag mba-data-tag--'+tag.tone} data-state={state.kind}>{tag.label}</span>}
   </>;
   const canOpen=Boolean(onOpen)&&hasValue;
   return canOpen

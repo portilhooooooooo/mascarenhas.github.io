@@ -291,8 +291,7 @@ body {
   padding: 0 20px;
   border: 0;
   border-bottom: 1px solid var(--mba-border);
-  background: rgba(255, 255, 255, .96);
-  backdrop-filter: blur(10px);
+  background: var(--mba-surface, #fff);
 }
 .local-preview-badge { margin-right: auto; white-space: nowrap; }
 .top-actions { display: flex; align-items: center; gap: 6px; }
