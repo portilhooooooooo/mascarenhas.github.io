@@ -95,8 +95,9 @@ body[data-react-login="true"] #login-error { display:none!important; }
 }
 #login-view .lp-copy h1 em {
   display:block;
-  font:italic 400 clamp(58px,6.7vw,107px)/1.05 Georgia,"Times New Roman",serif;
-  letter-spacing:-.06em;
+  font:inherit;
+  letter-spacing:inherit;
+  color:var(--lp-copper);
 }
 #login-view .lp-period { color:var(--lp-copper); }
 #login-view .lp-subtitle {
@@ -261,7 +262,6 @@ body[data-react-login="true"] #login-error { display:none!important; }
   #login-view .lp-sections { grid-template-columns:1fr;row-gap:40px; }
   #login-view .lp-hero { min-height:0;padding-top:48px;padding-bottom:56px; }
   #login-view .lp-copy h1 { font-size:clamp(46px,9vw,72px); }
-  #login-view .lp-copy h1 em { font-size:clamp(56px,11vw,88px); }
   #login-view .lp-eyebrow { margin-bottom:24px; }
   #login-view .lp-about { grid-template-columns:1fr;row-gap:32px;margin-bottom:16px; }
 }
@@ -276,7 +276,6 @@ body[data-react-login="true"] #login-error { display:none!important; }
   #login-view .lp-login-trigger { margin-left:4px;padding:10px 22px;font-size:14px; }
   #login-view .lp-hero { padding-top:32px; }
   #login-view .lp-copy h1 { font-size:clamp(40px,12vw,56px);margin-bottom:24px; }
-  #login-view .lp-copy h1 em { font-size:clamp(50px,14.5vw,68px); }
   #login-view .lp-subtitle { font-size:16px; }
   #login-view .lp-about-flow { grid-template-columns:1fr;row-gap:20px; }
   #login-view .lp-section p { font-size:16px; }
