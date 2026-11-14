@@ -185,7 +185,7 @@ function LoginPage() {
           <div className="lp-copy">
             <p className="lp-eyebrow">Desde 1968</p>
             <h1 id="lp-hero-title">Tradição que <em>evolui<span className="lp-period">.</span></em></h1>
-            <p className="lp-subtitle">Transformamos mais de 58 anos de experiência jurídica em soluções tecnológicas para uma operação com mais de 80 mil processos.</p>
+            <p className="lp-subtitle">Transformando 58 anos de experiência em produtos tecnológicos.</p>
           </div>
           <InstitutionalVideo/>
         </section>
