@@ -26,42 +26,27 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 }
 
-/* Real institutional video. Autoplays muted only when motion is allowed; otherwise the poster
- * stays and a play control is offered. The control is always keyboard reachable. */
+/* Silent looping institutional video: no playback controls or UI overlay. */
 function InstitutionalVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const onPlay = () => setPlaying(true);
-    const onPause = () => setPlaying(false);
-    video.addEventListener('play', onPlay);
-    video.addEventListener('pause', onPause);
-    if (!prefersReducedMotion()) video.play().catch(() => setPlaying(false));
-    return () => {
-      video.removeEventListener('play', onPlay);
-      video.removeEventListener('pause', onPause);
-    };
+    // Respect the device's accessibility preference; all other visitors see autoplay.
+    if (prefersReducedMotion()) {
+      video.pause();
+      return;
+    }
+    void video.play().catch(() => { /* The poster remains if the browser blocks autoplay. */ });
   }, []);
 
-  const toggle = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) video.play().catch(() => setPlaying(false));
-    else video.pause();
-  };
-
-  return <figure className={`lp-video${playing ? ' is-playing' : ''}`}>
-    <video ref={videoRef} muted playsInline loop preload="metadata" poster={VIDEO_POSTER}
+  return <figure className="lp-video">
+    <video ref={videoRef} autoPlay={!prefersReducedMotion()} muted playsInline loop preload="auto"
+      poster={VIDEO_POSTER} controls={false} disablePictureInPicture
       aria-label="Vídeo institucional da sede do escritório Mascarenhas Barbosa">
       <source src={VIDEO_SRC} type="video/mp4"/>
     </video>
-    <button type="button" className="lp-video-toggle" onClick={toggle}
-      aria-label={playing ? 'Pausar vídeo institucional' : 'Reproduzir vídeo institucional'}>
-      <span aria-hidden="true" className={playing ? 'lp-icon-pause' : 'lp-icon-play'}/>
-    </button>
   </figure>;
 }
 
@@ -72,6 +57,8 @@ function LoginPage() {
   );
   const [validating, setValidating] = useState(transitionIsActive);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [view, setView] = useState<'home' | 'about'>('home');
+  const [aboutPanel, setAboutPanel] = useState(0);
   const inFlight = useRef(false);
   const landingRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -137,14 +124,16 @@ function LoginPage() {
     void startMicrosoftLogin();
   };
 
-  // In-page navigation without touching location.hash (auth.js listens to hashchange).
-  const goTo = (id: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+  // Keep navigation in React state: auth.js uses hashchange, and no page scroll is needed.
+  const navigate = (target: 'home' | 'about') => (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const target = document.getElementById(id);
-    if (!target) return;
-    target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
-    target.focus({ preventScroll: true });
+    if (target === 'about') setAboutPanel(0);
+    setView(target);
   };
+
+  useEffect(() => {
+    document.getElementById(view === 'home' ? 'lp-home' : 'sobre-nos')?.focus({preventScroll:true});
+  }, [view]);
 
   const closeLogin = () => { if (!authState.busy) setLoginOpen(false); };
   const onDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -164,7 +153,7 @@ function LoginPage() {
   return <>
     <div className="react-login-view lp" ref={landingRef}>
       <header className="lp-header">
-        <a className="lp-brand" href="/" aria-label="Mascarenhas Barbosa — Central de Produtos">
+        <a className="lp-brand" href="/" onClick={navigate('home')} aria-label="Mascarenhas Barbosa — Central de Produtos, voltar ao início">
           <span className="lp-symbol" aria-hidden="true"/>
           <span className="lp-brand-rule" aria-hidden="true"/>
           <span className="lp-brand-text">
@@ -173,31 +162,28 @@ function LoginPage() {
           </span>
         </a>
         <nav className="lp-nav" aria-label="Principal">
-          <a href="#sobre-nos" onClick={goTo('sobre-nos')}>Sobre nós</a>
-          <a href="#blog" onClick={goTo('blog')}>Blog</a>
+          <a href="#sobre-nos" onClick={navigate('about')} aria-current={view === 'about' ? 'page' : undefined}>Sobre nós</a>
           <button ref={loginTriggerRef} type="button" className="lp-login-trigger"
             aria-haspopup="dialog" aria-expanded={loginOpen} onClick={() => setLoginOpen(true)}>Login</button>
         </nav>
       </header>
 
-      <main>
-        <section className="lp-hero" aria-labelledby="lp-hero-title">
+      <main className="lp-main">
+        {view === 'home' ? <section id="lp-home" className="lp-hero" tabIndex={-1} aria-labelledby="lp-hero-title">
           <div className="lp-copy">
             <p className="lp-eyebrow">Desde 1968</p>
             <h1 id="lp-hero-title">Tradição que <em>evolui<span className="lp-period">.</span></em></h1>
             <p className="lp-subtitle">Transformando 58 anos de experiência em produtos tecnológicos.</p>
           </div>
           <InstitutionalVideo/>
-        </section>
-
-        <div className="lp-sections">
-          <section id="sobre-nos" className="lp-section lp-about" tabIndex={-1} aria-labelledby="lp-sobre-title">
+        </section> : <div className="lp-sections">
+          <section id="sobre-nos" data-panel={aboutPanel} className="lp-section lp-about" tabIndex={-1} aria-labelledby="lp-sobre-title">
             <div className="lp-about-head">
               <h2 id="lp-sobre-title" className="lp-about-eyebrow">Sobre nós</h2>
               <h3 className="lp-about-title">A experiência de quem vive a operação, transformada em tecnologia.</h3>
             </div>
             <div className="lp-about-body">
-              <p>Somos a <strong>Central de Produtos do Mascarenhas Barbosa Advogados</strong>, uma iniciativa que aproxima a experiência dos nossos profissionais do desenvolvimento de novas soluções tecnológicas.</p>
+              <p>Somos a <strong className="lp-about-brand">Central de Produtos do Mascarenhas Barbosa Advogados</strong>, uma iniciativa que aproxima a experiência dos nossos profissionais do desenvolvimento de novas soluções tecnológicas.</p>
               <p>Acreditamos que as melhores ideias surgem de quem está próximo dos desafios. Por isso, reunimos o conhecimento de advogados, estagiários e lideranças que vivenciam diariamente a realidade das carteiras jurídicas.</p>
               <p>É a partir dessa experiência que identificamos oportunidades, criamos soluções e avaliamos como a tecnologia pode tornar nosso trabalho mais simples, eficiente e inteligente.</p>
               <p>As iniciativas são desenvolvidas e testadas pela Central de Produtos. Depois de validadas, são encaminhadas à equipe de Tecnologia para implementação nos sistemas do escritório.</p>
@@ -208,12 +194,16 @@ function LoginPage() {
               <li><span className="lp-about-step" aria-hidden="true">02</span><strong>Quem transforma</strong><span>Cria e testa novas soluções.</span></li>
               <li><span className="lp-about-step" aria-hidden="true">03</span><strong>Quem implementa</strong><span>Leva as soluções aos sistemas do escritório.</span></li>
             </ol>
+            <div className="lp-about-pages" role="group" aria-label="Navegação do Sobre nós">
+              {['Origem', 'Atuação', 'Processo'].map((label, index) =>
+                <button key={label} type="button" onClick={() => setAboutPanel(index)}
+                  aria-current={aboutPanel === index ? 'step' : undefined}
+                  aria-label={`Parte ${index + 1} de 3: ${label}`}>
+                  <span aria-hidden="true">0{index + 1}</span> {label}
+                </button>)}
+            </div>
           </section>
-          <section id="blog" className="lp-section" tabIndex={-1} aria-labelledby="lp-blog-title">
-            <h2 id="lp-blog-title">Blog</h2>
-            <p>Em breve. Ainda não há publicações disponíveis.</p>
-          </section>
-        </div>
+        </div>}
       </main>
     </div>
 
