@@ -1,4 +1,4 @@
-import { type FormEvent, StrictMode, useLayoutEffect, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, type MouseEvent, StrictMode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import './login.css';
@@ -13,10 +13,56 @@ type AuthWindow = Window & typeof globalThis & {
   };
 };
 
+const VIDEO_SRC = '/assets/mascarenhas-login.mp4?v=20261027-3b74ad84';
+const VIDEO_POSTER = '/assets/mascarenhas-login-poster.jpg?v=20261027-3b74ad84';
+
 function transitionIsActive(): boolean {
   return document.body.classList.contains('auth-loading')
     || document.body.classList.contains('auth-validating')
     || document.body.classList.contains('mba-auth-transition-hold');
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+}
+
+/* Real institutional video. Autoplays muted only when motion is allowed; otherwise the poster
+ * stays and a play control is offered. The control is always keyboard reachable. */
+function InstitutionalVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    video.addEventListener('play', onPlay);
+    video.addEventListener('pause', onPause);
+    if (!prefersReducedMotion()) video.play().catch(() => setPlaying(false));
+    return () => {
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('pause', onPause);
+    };
+  }, []);
+
+  const toggle = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => setPlaying(false));
+    else video.pause();
+  };
+
+  return <figure className={`lp-video${playing ? ' is-playing' : ''}`}>
+    <video ref={videoRef} muted playsInline loop preload="metadata" poster={VIDEO_POSTER}
+      aria-label="Vídeo institucional da sede do escritório Mascarenhas Barbosa">
+      <source src={VIDEO_SRC} type="video/mp4"/>
+    </video>
+    <button type="button" className="lp-video-toggle" onClick={toggle}
+      aria-label={playing ? 'Pausar vídeo institucional' : 'Reproduzir vídeo institucional'}>
+      <span aria-hidden="true" className={playing ? 'lp-icon-pause' : 'lp-icon-play'}/>
+    </button>
+  </figure>;
 }
 
 function LoginPage() {
@@ -25,7 +71,12 @@ function LoginPage() {
     (window as AuthWindow).MBA_AUTH?.getLoginState?.() || { busy: false, error: null }
   );
   const [validating, setValidating] = useState(transitionIsActive);
+  const [loginOpen, setLoginOpen] = useState(false);
   const inFlight = useRef(false);
+  const landingRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const loginTriggerRef = useRef<HTMLButtonElement>(null);
+  const corporateRef = useRef<HTMLButtonElement>(null);
 
   useLayoutEffect(() => {
     document.body.dataset.reactLogin = 'true';
@@ -51,6 +102,21 @@ function LoginPage() {
     };
   }, []);
 
+  // An authentication error must never be hidden behind the closed access panel.
+  useEffect(() => { if (authState.error) setLoginOpen(true); }, [authState.error]);
+
+  // Modal behaviour: background inert, focus moves into the panel and returns on close.
+  useEffect(() => {
+    const landing = landingRef.current;
+    if (!loginOpen) return;
+    landing?.setAttribute('inert', '');
+    corporateRef.current?.focus();
+    return () => {
+      landing?.removeAttribute('inert');
+      loginTriggerRef.current?.focus();
+    };
+  }, [loginOpen]);
+
   const startMicrosoftLogin = async () => {
     if (authState.busy || inFlight.current) return;
     const start = (window as AuthWindow).MBA_AUTH?.startMicrosoftLogin;
@@ -71,22 +137,83 @@ function LoginPage() {
     void startMicrosoftLogin();
   };
 
+  // In-page navigation without touching location.hash (auth.js listens to hashchange).
+  const goTo = (id: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    target.focus({ preventScroll: true });
+  };
+
+  const closeLogin = () => { if (!authState.busy) setLoginOpen(false); };
+  const onDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') { event.stopPropagation(); closeLogin(); return; }
+    if (event.key !== 'Tab' || !dialogRef.current) return;
+    const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), input:not(:disabled), [href], [tabindex]:not([tabindex="-1"])'));
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
+
   const overlayRoot = document.getElementById('login-transition-root');
   const preparing = authState.busy || validating;
 
   return <>
-    <div className="react-login-view">
-      <header className="react-login-header" aria-label="Mascarenhas Barbosa Backoffice">
-        <div className="react-login-brand">
-          <img src="/favicon-white.svg?v=20261013-original-mark" alt="" aria-hidden="true"/>
-          <span>Mascarenhas Barbosa<small>BACKOFFICE</small></span>
-        </div>
+    <div className="react-login-view lp" ref={landingRef}>
+      <header className="lp-header">
+        <a className="lp-brand" href="/" aria-label="Mascarenhas Barbosa — Central de Produtos">
+          <span className="lp-symbol" aria-hidden="true"/>
+          <span className="lp-brand-rule" aria-hidden="true"/>
+          <span className="lp-brand-text">
+            <strong>Mascarenhas Barbosa</strong>
+            <small>Central de Produtos</small>
+          </span>
+        </a>
+        <nav className="lp-nav" aria-label="Principal">
+          <a href="#sobre-nos" onClick={goTo('sobre-nos')}>Sobre nós</a>
+          <a href="#blog" onClick={goTo('blog')}>Blog</a>
+          <button ref={loginTriggerRef} type="button" className="lp-login-trigger"
+            aria-haspopup="dialog" aria-expanded={loginOpen} onClick={() => setLoginOpen(true)}>Login</button>
+        </nav>
       </header>
-      <main className="react-login-main">
-        <section className="react-login-access" aria-labelledby="react-login-title">
-          <h1 id="react-login-title">Explore como estamos trabalhando</h1>
+
+      <main>
+        <section className="lp-hero" aria-labelledby="lp-hero-title">
+          <div className="lp-copy">
+            <p className="lp-eyebrow">Desde 1968</p>
+            <h1 id="lp-hero-title">Tradição que <em>evolui<span className="lp-period">.</span></em></h1>
+            <p className="lp-subtitle">Transformamos mais de 58 anos de experiência jurídica em soluções tecnológicas para uma operação com mais de 80 mil processos.</p>
+          </div>
+          <InstitutionalVideo/>
+        </section>
+
+        <div className="lp-sections">
+          <section id="sobre-nos" className="lp-section" tabIndex={-1} aria-labelledby="lp-sobre-title">
+            <h2 id="lp-sobre-title">Sobre nós</h2>
+            <p>Fundado em 1968, o Mascarenhas Barbosa Advogados reúne mais de 58 anos de experiência jurídica. A Central de Produtos apresenta as soluções tecnológicas que desenvolvemos a partir dessa trajetória, para uma operação com mais de 80 mil processos.</p>
+          </section>
+          <section id="blog" className="lp-section" tabIndex={-1} aria-labelledby="lp-blog-title">
+            <h2 id="lp-blog-title">Blog</h2>
+            <p>Em breve. Ainda não há publicações disponíveis.</p>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    {loginOpen ? <div className="lp-dialog-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) closeLogin(); }}>
+      <div ref={dialogRef} className="lp-dialog" role="dialog" aria-modal="true"
+        aria-labelledby="react-login-title" onKeyDown={onDialogKeyDown}>
+        <button type="button" className="lp-dialog-close" onClick={closeLogin}
+          disabled={authState.busy} aria-label="Fechar acesso">
+          <span aria-hidden="true">×</span>
+        </button>
+        <section className="react-login-access">
+          <h2 id="react-login-title">Explore como estamos trabalhando</h2>
           <div className="react-login-form">
-            <button className="react-login-corporate" type="button"
+            <button ref={corporateRef} className="react-login-corporate" type="button"
               onClick={() => void startMicrosoftLogin()} disabled={authState.busy} aria-busy={authState.busy}>
               <svg className="react-login-microsoft-symbol" aria-hidden="true" viewBox="0 0 24 24">
                 <path fill="#F35325" d="M1 1h10v10H1z"/>
@@ -110,15 +237,8 @@ function LoginPage() {
           </div>
           {authState.error ? <div className="react-login-error" role="alert">{authState.error}</div> : null}
         </section>
-        <aside className="react-login-visual" aria-label="Identidade visual Mascarenhas Barbosa">
-          <video autoPlay muted playsInline loop preload="auto"
-            poster="/assets/mascarenhas-login-poster.jpg?v=20261027-3b74ad84"
-            aria-label="Vídeo institucional do escritório Mascarenhas Barbosa">
-            <source src="/assets/mascarenhas-login.mp4?v=20261027-3b74ad84" type="video/mp4"/>
-          </video>
-        </aside>
-      </main>
-    </div>
+      </div>
+    </div> : null}
     {overlayRoot ? createPortal(<InstitutionalLoading visible={preparing}/>, overlayRoot) : null}
   </>;
 }
