@@ -13,8 +13,12 @@ function settings():Partial<Record<Module,Source>> {
  if(!String(env.VITE_V3_READ_ALLOWED_ORIGINS||'').split(',').map(s=>s.trim()).includes(location.origin))return {};
  try{const value=JSON.parse(String(env.VITE_V3_READ_SOURCES||'{}'));return value&&typeof value==='object'?value:{};}catch{return {};}
 }
-// Each domain is selected explicitly in an origin-limited testing build.
+// Only Cadastro and Andamentos have the approved V3 read model.
+// All other modules MUST retain their original React screens and legacy APIs,
+// even if an older Windows launcher erroneously enables V3 for every module.
+const READ_MODEL_MODULES:ReadonlySet<Module>=new Set(['cadastro','andamentos']);
 export function readSource(module:Module):Source {
+ if(!READ_MODEL_MODULES.has(module))return 'LEGACY';
  return settings()[module]==='V3'?'V3':'LEGACY';
 }
 const cache=new QueryClient({defaultOptions:{queries:{retry:false,refetchOnWindowFocus:false,gcTime:300000}}});
