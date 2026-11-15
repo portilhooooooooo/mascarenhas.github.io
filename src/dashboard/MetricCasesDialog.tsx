@@ -126,7 +126,7 @@ type V1Case={canonical_case_id:string;reference_date?:string;dimensions?:Record<
 type V1Cases={contract_version?:string;portfolio_id?:string;total?:number;cases?:V1Case[];next_after?:string|null;revision?:string};
 
 // Mirrors backend dashboard_api.METRIC_VERSIONS: Cadastro Enter publishes metric version 2.
-const METRIC_VERSIONS:Record<string,string>={cadastro:'2'};
+const METRIC_VERSIONS:Record<string,string>={cadastro:'2',andamentos:'2'};
 
 export function dashboardV1Cases(dashboard:string,metric:string,label:string,revision:string,portfolio:string):CaseSource{
   const pageSize=50;
@@ -144,8 +144,9 @@ export function dashboardV1Cases(dashboard:string,metric:string,label:string,rev
       if(body?.contract_version!=='1.0.0'||body.portfolio_id!==portfolio||body.revision!==revision||!Array.isArray(body.cases))
         throw Object.assign(new Error('Resposta de detalhe incompatível com a revisão solicitada.'),{status:502});
       return {
-        total:typeof body.total==='number'?body.total:null,next:body.next_after||null,status:'PARTIAL',
-        reasons:['LEGACY_PARITY_PENDING'],
+        total:typeof body.total==='number'?body.total:null,next:body.next_after||null,
+        status:dashboard==='andamentos'?'CURRENT':'PARTIAL',
+        reasons:dashboard==='andamentos'?[]:['LEGACY_PARITY_PENDING'],
         rows:body.cases.map(c=>({id:c.canonical_case_id,cnj:null,primary:c.canonical_case_id.slice(0,8)+'…',
           cells:[c.reference_date||'',Object.entries(c.dimensions||{}).map(([k,v])=>k+': '+v).join(', '),
             c.evidence?.source_revision!=null?'rev. '+String(c.evidence.source_revision):''],

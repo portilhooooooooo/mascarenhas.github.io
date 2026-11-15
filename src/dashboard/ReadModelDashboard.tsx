@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
-import {CheckCircle2,FolderOpen,BookOpen,Send,RefreshCw,type LucideIcon} from 'lucide-react';
+import {CheckCircle2,FolderOpen,BookOpen,Send,RefreshCw,Archive,FileCheck2,Scale,PauseCircle,Gavel,ShieldAlert,type LucideIcon} from 'lucide-react';
 import {runtimeScope} from '../tasks/runtimeQueries';
 import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,classifyCard,currentPortfolio,failureState,getApi,reasonText} from './metricState';
 import {MetricCasesDialog,type CaseSource,dashboardV1Cases} from './MetricCasesDialog';
@@ -18,7 +18,21 @@ type Summary={contract_version?:string;dashboard?:string;status?:string;portfoli
 
 const METRICS:Record<ReadModelName,{name:string;label:string;kind:'STOCK'|'FLOW';icon:LucideIcon}[]>={
   cadastro:[{name:'entradas',label:'Entradas',kind:'STOCK',icon:FolderOpen}],
-  andamentos:[{name:'fase_conhecimento',label:'Fase de conhecimento',kind:'STOCK',icon:BookOpen}],
+  andamentos:[
+    {name:'fase_conhecimento',label:'Fase de conhecimento',kind:'STOCK',icon:BookOpen},
+    {name:'sentenca_extincao',label:'Sentença - Extinção',kind:'STOCK',icon:Archive},
+    {name:'sentenca_improcedente',label:'Sentença - Improcedente',kind:'STOCK',icon:FileCheck2},
+    {name:'sentenca_procedente',label:'Sentença - Procedente',kind:'STOCK',icon:Gavel},
+    {name:'recursal_extincao',label:'Recursal - Extinção',kind:'STOCK',icon:Archive},
+    {name:'recursal_improcedente',label:'Recursal - Improcedente',kind:'STOCK',icon:FileCheck2},
+    {name:'recursal_procedente',label:'Recursal - Procedente',kind:'STOCK',icon:Scale},
+    {name:'transito_em_julgado_vitoria',label:'Trânsito em julgado - Vitória',kind:'STOCK',icon:CheckCircle2},
+    {name:'transito_em_julgado',label:'Trânsito em julgado',kind:'STOCK',icon:BookOpen},
+    {name:'transito_em_julgado_derrota',label:'Trânsito em julgado - Derrota',kind:'STOCK',icon:Scale},
+    {name:'suspensao',label:'Suspensos',kind:'STOCK',icon:PauseCircle},
+    {name:'pedido_bloqueio',label:'Pedido de bloqueio',kind:'STOCK',icon:ShieldAlert},
+    {name:'cumprimento_sentenca',label:'Cumprimento de Sentença',kind:'STOCK',icon:Gavel},
+  ],
   encerramentos:[
     {name:'validated_cases',label:'Validados',kind:'FLOW',icon:CheckCircle2},
     {name:'confirmed_benner_cases',label:'Confirmados no Benner',kind:'FLOW',icon:Send},
@@ -75,18 +89,18 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
   };
   const when=(iso?:string)=>{if(!iso)return '—';const d=new Date(iso);return Number.isNaN(d.getTime())?iso:d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});};
   const uncertified=Boolean(data&&data.status!=='UNAVAILABLE'&&!certified);
-  // Cadastro: no visible "não certificado" tag; the status stays in the section's title/aria-label.
+  // Preserve Cadastro's accessible, quiet certification status without a banner.
   const status=isCadastro&&uncertified?['não certificado',reasonText(limitations)].filter(Boolean).join(' — '):'';
   return <section className="base-geral-panel mba-read-model" aria-label={'Read Model V1 — '+dashboard+(status?' — '+status:'')}
     title={status||undefined} data-dashboard={dashboard}>
-    <header className="mba-read-model-head">
+    {dashboard!=='andamentos'&&<header className="mba-read-model-head">
       <div><h2>Read Model V1</h2>
         <span className="base-geral-context">{data?.revision?`Revisão ${data.revision} · dados até ${when(data.data_as_of)} · calculado ${when(data.calculated_at)}`:'Publicação revisionada'}</span>
       </div>
       {!isCadastro&&uncertified&&<span className="mba-data-tag mba-data-tag--warn" title={reasonText(limitations)}>não certificado</span>}
       {!isCadastro&&summary.error&&failureState(summary.error).kind==='error'&&<button type="button" className="mba-read-model-retry" onClick={()=>void summary.refetch()} disabled={summary.isFetching}>
         <RefreshCw size={13}/> Recarregar</button>}
-    </header>
+    </header>}
     <div className="base-geral-kpis andamento-cards mba-read-model-cards">
       {METRICS[dashboard].map(m=>{
         const state=stateFor(m.name);
@@ -94,7 +108,7 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
           onOpen={data?.revision?()=>setDrill(dashboardV1Cases(dashboard,m.name,m.label+' (Read Model)',data.revision!,portfolio)):undefined}/>;
       })}
     </div>
-    {limitations.length>0&&<p className="mba-read-model-note">{reasonText(limitations)}</p>}
+    {dashboard!=='andamentos'&&limitations.length>0&&<p className="mba-read-model-note">{reasonText(limitations)}</p>}
     {drill&&<MetricCasesDialog source={drill} onClose={()=>setDrill(null)}/>}
   </section>;
 }

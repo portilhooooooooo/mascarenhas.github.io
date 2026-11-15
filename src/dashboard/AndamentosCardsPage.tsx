@@ -4,7 +4,7 @@ import {Archive,BookOpen,FileCheck2,Scale,PauseCircle,Gavel,CheckCircle2,ShieldA
 import {SelectMenu} from './SelectMenu';
 import {runtimeScope} from '../tasks/runtimeQueries';
 import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,classifyCard,currentPortfolio,failureState,getApi} from './metricState';
-import {ReadModelDashboard} from './ReadModelDashboard';
+import {ReadModelDashboard,readModelEnabled} from './ReadModelDashboard';
 import './baseGeral.css';
 
 /**
@@ -84,4 +84,10 @@ function Content({visible}:{visible:boolean}){
     <ReadModelDashboard dashboard="andamentos" visible={visible}/>
   </section>;
 }
-export function AndamentosCardsPage({visible=true}:{visible?:boolean}){return <QueryClientProvider client={cache}><Content visible={visible}/></QueryClientProvider>; }
+// V3 staging uses one authoritative, revision-bound card set, never legacy
+// counters next to a second Read Model panel. Production remains unchanged
+// until its explicit Dashboard V1 release flag is enabled.
+export function AndamentosCardsPage({visible=true}:{visible?:boolean}){
+  if(readModelEnabled())return <ReadModelDashboard dashboard="andamentos" visible={visible}/>;
+  return <QueryClientProvider client={cache}><Content visible={visible}/></QueryClientProvider>;
+}
