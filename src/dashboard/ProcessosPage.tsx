@@ -213,8 +213,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
         <div className={'processos-workspace' + (!detail.permissions.tasks ? ' processos-workspace-single' : '')}>
           <section className="processos-history" aria-label="Histórico processual">
             <div className="processos-workspace-header">
-              <div><h2>Movimentações</h2><p>Andamentos relevantes do processo</p></div>
-
+              <h2>Movimentações</h2>
             </div>
             {eventError ? <div role="alert" className="processos-state">{eventError}<button type="button" onClick={() => setRevision(r=>r+1)}>Tentar novamente</button></div>
               : eventsLoading ? <div role="status" className="processos-state">Carregando movimentações…</div>
@@ -224,7 +223,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
                   <li key={e.id} data-event-kind={e.kind}>
                     <div className="processos-event-date"><time dateTime={e.occurred_at}>{date(e.occurred_at)}</time>{e.degree ? <span>{e.degree}</span> : null}</div>
                     <h3>{eventTitle(e)}</h3>
-                    <p className="processos-event-meta">{e.source}{e.degree ? ' · ' + e.degree : ''}</p>
+                    <p className="processos-event-meta">{e.source}</p>
                     <details><summary>Rastreabilidade</summary>
                       <dl><div><dt>Fonte</dt><dd>{e.source}</dd></div>{e.code != null ? <div><dt>Código TPU</dt><dd>{e.code}</dd></div> : null}{e.raw_title && e.raw_title !== e.title ? <div><dt>Movimento original</dt><dd>{e.raw_title}</dd></div> : null}<div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div></dl>
                     </details>
@@ -234,7 +233,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
               </> : null}
           </section>
           {detail.permissions.tasks ? <aside className="processos-tasks" aria-label="Tarefas do processo">
-            <div className="processos-workspace-header"><div><h2>Tarefas</h2><p>Atividades vinculadas a este CNJ</p></div></div>
+            <div className="processos-workspace-header"><h2>Tarefas</h2>{tasks ? <span className="processos-count">{tasks.total}</span> : null}</div>
             {taskError ? <div role="alert" className="processos-state">{taskError}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
               : tasksLoading ? <div role="status" className="processos-state">Carregando tarefas…</div>
               : tasks ? <>

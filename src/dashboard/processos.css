@@ -141,3 +141,142 @@
   border-radius: 10px;
   box-shadow: none;
 }
+
+/* 2026-11 — Processos alinhado ao workspace operacional (LP-UX-MODULOS-PROCESSO).
+   Mesma escala de título, raio e padding dos módulos vizinhos; só tokens existentes. */
+.processos-page .processos-heading,
+.processos-detail .processos-heading { margin: 0 0 12px; }
+.processos-page .processos-heading h1,
+.processos-detail .processos-heading h1 {
+  font-size: clamp(19px, 1.6vw, 25px);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -.028em;
+  color: var(--mba-text);
+}
+.processos-detail .processos-detail-heading h1 { font-variant-numeric: tabular-nums; }
+.processos-detail .processos-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 0 0 6px;
+  font-size: 11.5px;
+}
+.processos-detail .processos-back:hover { color: var(--mba-text) !important; }
+
+/* Identificação: faixa única em superfície, com divisores, no lugar de texto solto. */
+.processos-detail .processos-identification {
+  gap: 0;
+  margin: 0 0 var(--mba-ui-gap, 10px);
+  padding: 0;
+  border: 1px solid var(--mba-border-strong);
+  border-radius: var(--mba-ui-card-radius, 9px);
+  background: var(--mba-surface);
+}
+.processos-detail .processos-identification > div {
+  min-width: 0;
+  padding: 12px 16px;
+  border-left: 1px solid var(--mba-border);
+}
+.processos-detail .processos-identification > div:first-child { border-left: 0; }
+.processos-detail .processos-identification dt { margin-bottom: 4px; font-size: 11px; font-weight: 500; }
+.processos-detail .processos-identification dd { font-size: 13px; font-weight: 600; color: var(--mba-text); }
+.processos-detail .processos-last-movement-title { font-size: 11.5px; font-weight: 500; color: var(--mba-text-2); }
+
+/* Avisos: divergência de fontes e confirmação deixam de ser texto apagado. */
+.processos-detail .processos-sources-differ,
+.processos-detail .processos-notice {
+  margin: 0 0 var(--mba-ui-gap, 10px);
+  padding: 9px 12px;
+  border: 1px solid var(--mba-border);
+  border-left: 3px solid var(--mba-orange);
+  border-radius: 7px;
+  background: var(--mba-surface);
+  color: var(--mba-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.processos-detail .processos-notice { border-left-color: var(--mba-green); }
+
+/* Painéis: mesmo raio/padding dos cards vizinhos. */
+.processos-detail .processos-workspace { gap: var(--mba-ui-gap, 10px); }
+.processos-detail .processos-history,
+.processos-detail .processos-tasks {
+  border-radius: var(--mba-ui-card-radius, 9px);
+  padding: var(--mba-ui-panel-padding, 16px 18px);
+}
+.processos-detail .processos-workspace-header { align-items: center; padding-bottom: 12px; }
+.processos-detail .processos-workspace-header h2 { font-size: var(--mba-ui-panel-title-size, 14px); font-weight: 600; }
+.processos-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border: 1px solid var(--mba-border);
+  border-radius: 999px;
+  color: var(--mba-text-2);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.processos-detail .processos-source-status {
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border: 1px solid var(--mba-border);
+  border-left: 3px solid var(--mba-orange);
+  border-radius: 7px;
+  color: var(--mba-text);
+}
+.processos-detail .processos-timeline { margin: 16px 0 6px; }
+.processos-detail .processos-timeline li { padding-bottom: 16px; }
+.processos-detail .processos-timeline .processos-event-date time { font-size: 11px; font-variant-numeric: tabular-nums; }
+.processos-detail .processos-timeline h3 { font-size: 13px; margin: 3px 0 2px; }
+.processos-detail .processos-timeline .processos-event-meta { margin: 0; }
+.processos-detail .processos-timeline details { opacity: 1; }
+.processos-detail .processos-timeline summary { display: inline-block; margin: 4px 0 0; font-size: 11px; }
+.processos-detail .processos-timeline summary:hover { color: var(--mba-text); }
+.processos-detail .processos-timeline summary:focus-visible { outline: 2px solid var(--mba-blue); outline-offset: 2px; }
+
+/* Tarefas vinculadas: tipo e status legíveis; status como etiqueta neutra. */
+.processos-detail .processos-task-item { padding: 12px 0; }
+.processos-detail .processos-task-top { align-items: center; font-size: 11px; }
+.processos-detail .processos-task-top span:last-child {
+  padding: 1px 7px;
+  border: 1px solid var(--mba-border-strong);
+  border-radius: 999px;
+  background: var(--mba-subtle);
+  color: var(--mba-text);
+  white-space: nowrap;
+}
+.processos-detail .processos-task-item h3 { font-size: 13px; font-weight: 600; margin: 6px 0 3px; }
+.processos-detail .processos-task-item p { margin-bottom: 6px; }
+.processos-detail .processos-task-item button { min-height: 24px; }
+
+/* Estados: carregando e vazio ficam discretos; erro tem tratamento próprio. */
+.processos-page .processos-state,
+.processos-detail .processos-state { padding: 24px 16px; font-size: 12px; }
+.processos-page .processos-state[role="alert"],
+.processos-detail .processos-state[role="alert"] {
+  margin: 12px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--mba-border);
+  border-left: 3px solid var(--mba-red);
+  border-radius: 7px;
+  background: var(--mba-surface);
+  color: var(--mba-text);
+  text-align: left;
+}
+.processos-page .processos-state[role="alert"] button,
+.processos-detail .processos-state[role="alert"] button { margin: 6px 0 0; padding-left: 0; }
+
+@media (max-width: 1000px) {
+  .processos-detail .processos-identification > div:nth-child(odd) { border-left: 0; }
+  .processos-detail .processos-identification > div:nth-child(n+3) { border-top: 1px solid var(--mba-border); }
+}
+
+
+/* Reviewed mobile follow-up: keep the original 14px panel inset. */
+@media (max-width:600px) {
+  .processos-detail .processos-history,
+  .processos-detail .processos-tasks { padding:14px; }
+}
