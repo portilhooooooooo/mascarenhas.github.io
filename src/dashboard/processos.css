@@ -141,3 +141,82 @@
   border-radius: 10px;
   box-shadow: none;
 }
+
+/* 2026-11 — Refino pós-login (THOM-REFINO-POSTLOGIN-20261114).
+   Diretório e ficha processual como área de trabalho: largura de leitura,
+   faixa de identificação única, histórico em linhas e tarefas compactas.
+   Somente tokens existentes; nenhum dado, filtro ou permissão é alterado. */
+.processos-page,.processos-detail{width:100%;max-width:1200px;margin-inline:auto;box-sizing:border-box}
+.processos-page .processos-heading{margin:0 0 10px}
+.processos-page .processos-heading h1{font-size:20px;line-height:1.3;font-weight:600;letter-spacing:-.02em}
+.processos-page .processos-filters{padding:0 0 12px;margin-bottom:12px}
+.processos-page .processos-filters .processos-search{flex:0 1 440px}
+.processos-page .processos-table-wrap{border-radius:9px}
+.processos-page .processos-table-wrap th,.processos-page .processos-table-wrap td{padding:9px 14px}
+.processos-page .processos-table-wrap td{font-variant-numeric:tabular-nums}
+.processos-page .processos-table-wrap td button{font-weight:600;padding:4px 0;text-align:left}
+:is(.processos-page,.processos-detail) .processos-pagination{gap:8px;padding:10px 0 0}
+:is(.processos-page,.processos-detail) .processos-pagination span{font-variant-numeric:tabular-nums}
+:is(.processos-page,.processos-detail) .processos-pagination button{min-height:30px;padding:0 11px;border:1px solid var(--mba-border-strong);border-radius:7px;background:var(--mba-surface);color:var(--mba-text);font-weight:600}
+:is(.processos-page,.processos-detail) .processos-pagination button:hover:not(:disabled){background:var(--mba-subtle)}
+:is(.processos-page,.processos-detail) .processos-pagination button:disabled{opacity:1;color:var(--mba-muted,var(--mba-text-2));border-color:var(--mba-border);background:var(--mba-subtle);cursor:not-allowed}
+:is(.processos-page,.processos-detail) .processos-state{padding:26px 16px;font-size:12px}
+
+/* Ficha: cabeçalho + identificação formam uma única faixa. */
+.processos-detail .processos-back{margin:0 0 6px;font-size:12px}
+.processos-detail .processos-detail-heading{margin:0;padding:11px 16px;min-height:36px;border:1px solid var(--mba-border-strong);border-bottom:0;border-radius:9px 9px 0 0;background:var(--mba-surface)}
+.processos-detail .processos-detail-heading>div{min-width:0}
+.processos-detail .processos-detail-heading h1{font-size:18px;line-height:1.3;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.processos-detail .processos-detail-heading .primary-button{flex:0 0 auto;height:32px;min-height:32px;padding:0 13px;font-size:12px}
+.processos-detail .processos-identification{gap:6px 20px;margin:0 0 12px;padding:11px 16px 12px;border:1px solid var(--mba-border-strong);border-radius:0 0 9px 9px;background:var(--mba-surface)}
+.processos-detail .processos-identification>div{min-width:0}
+.processos-detail .processos-identification dt{margin-bottom:3px}
+.processos-detail .processos-identification dd{font-weight:500}
+.processos-detail .processos-sources-differ{margin:0 0 12px;padding:8px 12px;border:1px solid var(--mba-border);border-left:3px solid var(--mba-orange,var(--mba-border-strong));border-radius:7px;background:var(--mba-surface);color:var(--mba-text)}
+.processos-detail .processos-notice{margin:0 0 12px}
+
+/* Painéis de trabalho. */
+.processos-detail .processos-workspace{gap:12px}
+.processos-detail .processos-history,.processos-detail .processos-tasks{border-radius:9px}
+.processos-detail .processos-workspace-header{align-items:center;flex-wrap:nowrap;padding:0 0 10px}
+.processos-detail .processos-workspace-header h2{font-size:13px;font-weight:600}
+.processos-count{flex:0 0 auto;min-width:20px;padding:1px 6px;border:1px solid var(--mba-border);border-radius:10px;background:var(--mba-subtle);color:var(--mba-text-2);font-size:11px;font-weight:600;line-height:1.5;text-align:center;font-variant-numeric:tabular-nums;box-sizing:border-box}
+.processos-detail .processos-source-status{padding:8px 0}
+
+/* Movimentações: registro em linhas (data | conteúdo), sem trilho decorativo. */
+.processos-detail .processos-timeline{margin:0}
+.processos-detail .processos-timeline li{display:grid;grid-template-columns:96px minmax(0,1fr);column-gap:14px;margin:0;padding:10px 0;border-left:0;border-bottom:1px solid var(--mba-border)}
+.processos-detail .processos-timeline li:last-child{padding-bottom:10px;border-bottom:0}
+.processos-detail .processos-timeline li::before{content:none}
+.processos-detail .processos-timeline li>*{grid-column:2;min-width:0}
+.processos-detail .processos-timeline li>div.processos-event-date{grid-column:1;grid-row:1 / span 3;flex-direction:column;align-items:flex-start;align-self:start;gap:4px;padding-top:1px}
+.processos-detail .processos-timeline .processos-event-date time{font-size:11px;font-variant-numeric:tabular-nums}
+.processos-detail .processos-timeline h3{margin:0 0 2px;line-height:1.4}
+.processos-detail .processos-timeline p{margin:0}
+.processos-detail .processos-timeline details{opacity:1}
+.processos-detail .processos-timeline summary{display:inline-block;margin:4px 0 0;padding:1px 0;font-size:11px}
+.processos-detail .processos-timeline summary:hover{color:var(--mba-text)}
+.processos-detail .processos-timeline summary:focus-visible{outline:2px solid var(--mba-blue);outline-offset:2px;border-radius:3px}
+.processos-detail .processos-timeline dl{margin:6px 0 2px}
+
+/* Tarefas: tipo/situação, título, responsável e ação na mesma unidade. */
+.processos-detail .processos-task-item{padding:10px 0}
+.processos-detail .processos-task-item:last-child{padding-bottom:2px}
+.processos-detail .processos-task-top{align-items:center;font-size:11px}
+.processos-detail .processos-task-top span:last-child{flex:0 0 auto;padding:1px 6px;border:1px solid var(--mba-border);border-radius:4px;background:var(--mba-subtle);color:var(--mba-text);font-size:10.5px}
+.processos-detail .processos-task-item h3{margin:5px 0 2px}
+.processos-detail .processos-task-item p{margin:0 0 5px}
+.processos-detail .processos-task-item button{padding:2px 0;font-weight:600}
+
+@media(min-width:601px){
+  .processos-detail .processos-history,.processos-detail .processos-tasks{padding:14px 16px}
+}
+@media(max-width:600px){
+  .processos-page .processos-filters .processos-search{flex:1 1 100%}
+  .processos-detail .processos-detail-heading{padding:10px 12px}
+  .processos-detail .processos-detail-heading h1{font-size:16px}
+  .processos-detail .processos-identification{padding:10px 12px;gap:10px 14px}
+  .processos-detail .processos-timeline li{grid-template-columns:minmax(0,1fr);row-gap:3px}
+  .processos-detail .processos-timeline li>*{grid-column:1}
+  .processos-detail .processos-timeline li>div.processos-event-date{grid-row:auto;flex-direction:row;align-items:center;gap:8px}
+}
