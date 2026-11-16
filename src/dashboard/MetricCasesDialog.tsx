@@ -8,14 +8,17 @@ import {failureState,formatCount,getApi,reasonText} from './metricState';
  *  - Dashboard V1: GET /api/dashboard/v1/<d>/metrics/<m>/cases (keyset cursor, canonical case IDs)
  * The dialog never fabricates a total: 409/absent detail is shown as unavailable.
  */
-export type CaseRow={id:string;cnj?:string|null;primary:string;cells:string[]};
+/** `values` are the full, untruncated cells written to CSV, aligned with `exportColumns`. */
+export type CaseRow={id:string;cnj?:string|null;primary:string;cells:string[];values:string[]};
 export type CasePage={rows:CaseRow[];total:number|null;next:string|null;status?:string;reasons:string[]};
 export type CaseSource={
   title:string;
-  /** Provenance kept for audit/debug only; never rendered (no endpoint/revision strings in the UI). */
+  /** Provenance kept for audit/debug only; never rendered. */
   source:string;columns:string[];pageSize:number;
-  load:(cursor:string|null,page:number,signal:AbortSignal)=>Promise<CasePage>;
+  /** `size` overrides pageSize (CSV export reads the largest page the endpoint accepts). */
+  load:(cursor:string|null,page:number,signal:AbortSignal,size?:number)=>Promise<CasePage>;
   cursorMode:boolean;
+  exportName:string;exportColumns:string[];exportPageSize:number;
 };
 
 type Env=Window&{MBA_NAVIGATE?:(path:string)=>void};
@@ -101,22 +104,28 @@ export function cadastroCases(category:string,label:string,filters:URLSearchPara
   const pageSize=25;
   return {
     title:label,cursorMode:false,pageSize,
+    // Backend caps page_size at 50 (and page at 200) for this endpoint.
+    exportPageSize:50,
+    exportName:['cadastro',category,'rev'+revision,filters.get('entry_start'),filters.get('entry_end'),filters.get('situation')].filter(Boolean).join('_'),
+    exportColumns:['CNJ','Pasta','Situação','UF','Data entrada','Produto'],
     source:'Fonte: /api/resultados/cadastro/processos · categoria '+category+' · revisão '+revision,
     columns:['CNJ','Pasta','Situação','UF','Data entrada','Produto'],
-    async load(_cursor,page,signal){
+    async load(_cursor,page,signal,size=pageSize){
       const api=getApi();
       if(!api)throw Object.assign(new Error('API indisponível.'),{status:0});
       const params=new URLSearchParams(filters);
       params.set('category',category);params.set('revision',revision);
-      params.set('page',String(page));params.set('page_size',String(pageSize));
+      params.set('page',String(page));params.set('page_size',String(size));
       const body=await api.request<CadastroList>('/api/resultados/cadastro/processos?'+params,{signal});
       if(body?.revision&&body.revision!==revision)
         throw Object.assign(new Error('Resposta de detalhe incompatível com a revisão solicitada.'),{status:502});
       if(!body||body.total===null||body.total===undefined)return {rows:[],total:null,next:null,status:body?.status,reasons:body?.blockers||['DETAIL_UNAVAILABLE']};
       return {
         total:body.total,next:null,status:body.status,reasons:body.blockers||[],
-        rows:(body.rows||[]).map(r=>({id:r.id,cnj:r.cnj||null,primary:r.cnj||r.id,
-          cells:[r.pasta||'',r.situation||'',r.state||'',r.entry_date||'',r.product||'']})),
+        rows:(body.rows||[]).map(r=>{
+          const cells=[r.pasta||'',r.situation||'',r.state||'',r.entry_date||'',r.product||''];
+          return {id:r.id,cnj:r.cnj||null,primary:r.cnj||r.id,cells,values:[r.cnj||'',...cells]};
+        }),
       };
     },
   };
@@ -134,12 +143,16 @@ export function dashboardV1Cases(dashboard:string,metric:string,label:string,rev
   const version=METRIC_VERSIONS[dashboard]||'1';
   return {
     title:label,cursorMode:true,pageSize,
+    // Backend caps `limit` at 200 for metric cases.
+    exportPageSize:200,
+    exportName:[dashboard,metric,'rev'+revision].join('_'),
+    exportColumns:['Caso canônico','Data de referência','Dimensões','Revisão da fonte'],
     source:`Fonte: Read Model V1 · ${dashboard}/${metric} v${version} · revisão ${revision}`,
     columns:['Caso canônico','Data de referência','Dimensões','Evidência'],
-    async load(cursor,_page,signal){
+    async load(cursor,_page,signal,size=pageSize){
       const api=getApi();
       if(!api)throw Object.assign(new Error('API indisponível.'),{status:0});
-      const params=new URLSearchParams({revision,version,limit:String(pageSize)});
+      const params=new URLSearchParams({revision,version,limit:String(size)});
       if(cursor)params.set('after',cursor);
       const body=await api.request<V1Cases>(`/api/dashboard/v1/${dashboard}/metrics/${metric}/cases?`+params,{signal});
       if(body?.contract_version!=='1.0.0'||body.portfolio_id!==portfolio||body.revision!==revision||!Array.isArray(body.cases))
@@ -148,10 +161,13 @@ export function dashboardV1Cases(dashboard:string,metric:string,label:string,rev
         total:typeof body.total==='number'?body.total:null,next:body.next_after||null,
         status:dashboard==='andamentos'?'CURRENT':'PARTIAL',
         reasons:dashboard==='andamentos'?[]:['LEGACY_PARITY_PENDING'],
-        rows:body.cases.map(c=>({id:c.canonical_case_id,cnj:null,primary:c.canonical_case_id.slice(0,8)+'…',
-          cells:[c.reference_date||'',Object.entries(c.dimensions||{}).map(([k,v])=>k+': '+v).join(', '),
-            c.evidence?.source_revision!=null?'rev. '+String(c.evidence.source_revision):''],
-        })),
+        rows:body.cases.map(c=>{
+          const dims=Object.entries(c.dimensions||{}).map(([k,v])=>k+': '+v).join(', ');
+          const sourceRevision=c.evidence?.source_revision!=null?String(c.evidence.source_revision):'';
+          return {id:c.canonical_case_id,cnj:null,primary:c.canonical_case_id.slice(0,8)+'…',
+            cells:[c.reference_date||'',dims,sourceRevision?'rev. '+sourceRevision:''],
+            values:[c.canonical_case_id,c.reference_date||'',dims,sourceRevision]};
+        }),
       };
     },
   };

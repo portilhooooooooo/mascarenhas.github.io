@@ -304,3 +304,37 @@ article.base-geral-card.mba-metric-card:hover {
 @media(max-width:820px) {
   .gestao-processual-react .defense-results-page {padding-inline:8px}
 }
+
+/* THOM-OPUS-CSV-20261116 — "Baixar CSV" nos cards com relação de processos.
+   O card vira <article> com dois botões irmãos (sem aninhar): camada "abrir relação"
+   cobrindo o card e a ação CSV no canto inferior direito. Geometria do card inalterada. */
+.mba-metric-card.mba-metric-card--actions {position:relative;cursor:pointer}
+article.base-geral-card.mba-metric-card.mba-metric-card--actions:hover {
+  background:var(--mba-subtle);border-color:var(--mba-border-strong);
+}
+.mba-metric-card--actions > .mba-metric-open {
+  position:absolute;inset:0;z-index:1;margin:0;padding:0;border:0;border-radius:inherit;
+  background:transparent;color:inherit;cursor:pointer;
+}
+.mba-metric-card--actions > .mba-metric-open:focus-visible {
+  outline:2px solid var(--mba-ui-focus);outline-offset:-2px;
+}
+.mba-metric-card--actions > .mba-metric-export {
+  position:absolute;right:8px;bottom:8px;z-index:2;
+  display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 7px;
+  border:1px solid var(--mba-border);border-radius:6px;background:var(--mba-surface);
+  color:var(--mba-text-2);font-family:inherit;font-size:11px;font-weight:600;line-height:1;
+  white-space:nowrap;cursor:pointer;
+}
+.mba-metric-card--actions > .mba-metric-export svg {color:currentColor}
+.mba-metric-card--actions > .mba-metric-export:hover:not(:disabled) {border-color:var(--mba-blue);color:var(--mba-text)}
+.mba-metric-card--actions > .mba-metric-export:focus-visible {outline:2px solid var(--mba-ui-focus);outline-offset:1px}
+.mba-metric-card--actions > .mba-metric-export:disabled {opacity:.55;cursor:default}
+@media (pointer:coarse) {
+  .mba-metric-card--actions > .mba-metric-export {height:28px;padding:0 9px}
+}
+.mba-metric-export-status {
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 12px;
+  font-size:12px;color:var(--mba-text-2);
+}
+.mba-metric-export-status.base-geral-error {color:#9c2424}

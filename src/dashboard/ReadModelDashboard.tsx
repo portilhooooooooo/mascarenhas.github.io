@@ -5,6 +5,7 @@ import {runtimeScope} from '../tasks/runtimeQueries';
 import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,classifyCard,currentPortfolio,failureState,getApi,reasonText} from './metricState';
 import {MetricCasesDialog,type CaseSource,dashboardV1Cases} from './MetricCasesDialog';
 import {onCadastroInvalidate} from './CadastroCpjCards';
+import {useCaseCsvExport} from './metricCsv';
 import './baseGeral.css';
 
 /**
@@ -57,6 +58,7 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
     return()=>AUTH_EVENTS.forEach(e=>window.removeEventListener(e,change));
   },[]);
   const isCadastro=dashboard==='cadastro';
+  const csv=useCaseCsvExport();
   useEffect(()=>isCadastro
     ?onCadastroInvalidate(()=>void cache.invalidateQueries({queryKey:['dashboard-v1','cadastro']})):undefined,[isCadastro]);
   const api=getApi();
@@ -103,10 +105,15 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
     <div className="base-geral-kpis andamento-cards mba-read-model-cards">
       {METRICS[dashboard].map(m=>{
         const state=stateFor(m.name);
+        const rev=data?.revision;
+        const source=()=>dashboardV1Cases(dashboard,m.name,m.label+' (Read Model)',rev!,portfolio);
         return <MetricCard key={m.name} label={m.label} icon={m.icon} state={state} hideCertTag={isCadastro}
-          onOpen={data?.revision?()=>setDrill(dashboardV1Cases(dashboard,m.name,m.label+' (Read Model)',data.revision!,portfolio)):undefined}/>;
+          onOpen={rev?()=>setDrill(source()):undefined}
+          {...(rev&&'value' in state?{onExport:()=>csv.start(m.name,m.label,source(),state.value),
+            exportBusy:csv.busyKey===m.name,exportLocked:csv.busy}:{})}/>;
       })}
     </div>
+    {csv.status}
     {dashboard!=='andamentos'&&limitations.length>0&&<p className="mba-read-model-note">{reasonText(limitations)}</p>}
     {drill&&<MetricCasesDialog source={drill} onClose={()=>setDrill(null)}/>}
   </section>;

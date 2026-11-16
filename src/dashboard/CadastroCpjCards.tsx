@@ -4,6 +4,7 @@ import {Clock3,FolderArchive,FolderOpen,ShieldCheck,UserX} from 'lucide-react';
 import {runtimeScope} from '../tasks/runtimeQueries';
 import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,STATE_TAG,classifyCard,currentPortfolio,failureState,formatCount,getApi,isCount} from './metricState';
 import {MetricCasesDialog,type CaseSource,cadastroCases} from './MetricCasesDialog';
+import {useCaseCsvExport} from './metricCsv';
 import './baseGeral.css';
 
 /**
@@ -17,7 +18,7 @@ type Summary={contract_version?:string;portfolio_id?:string;portfolio_kind?:'ENT
   cards?:Record<string,BackendCard&{chart?:ProductRow[]}>;product_chart?:ProductRow[];metrics?:Record<string,number|null>;
   filters_applied?:Record<string,string|null>;limitations?:string[]};
 type ProductRow={label:string;value:number};
-type CadastroLayout={cards:ReactNode;agingCards:ReactNode;products:ReactNode};
+type CadastroLayout={cards:ReactNode;agingCards:ReactNode;products:ReactNode;exportStatus:ReactNode};
 type Props={filters?:CadastroFilters;active?:boolean;children?:(layout:CadastroLayout)=>ReactNode};
 export type CadastroFilters={entry_start?:string;entry_end?:string;situation?:string};
 
@@ -96,10 +97,22 @@ function Content({filters={},active=true,children}:Props){
     &&String(data?.cards?.[c.key]?.status||'').toUpperCase()!=='NOT_APPLICABLE'));
   const open=(key:string,label:string)=>pinned
     ?()=>setDrill({scope,source:cadastroCases(key,label,query,pinned)}):undefined;
-  const cardNodes=visible.map(({key,legacy,label,icon,drill:canDrill})=><MetricCard key={key} label={label} icon={icon} hideCertTag
-    state={stateFor(key,legacy)} onOpen={canDrill?open(key,label):undefined}/>);
-  const agingNodes=agingCards.map(({key,label,icon})=><MetricCard key={key} label={label} icon={icon} hideCertTag
-    state={stateFor(key)} onOpen={open(key,label)}/>);
+  // CSV reads the same pinned revision, filters and category as the drilldown.
+  const csv=useCaseCsvExport();
+  const exportProps=(key:string,label:string,state:CardState)=>pinned&&'value' in state?{
+    onExport:()=>csv.start(key,label,cadastroCases(key,label,query,pinned),state.value),
+    exportBusy:csv.busyKey===key,exportLocked:csv.busy,
+  }:{};
+  const cardNodes=visible.map(({key,legacy,label,icon,drill:canDrill})=>{
+    const state=stateFor(key,legacy);
+    return <MetricCard key={key} label={label} icon={icon} hideCertTag
+      state={state} onOpen={canDrill?open(key,label):undefined} {...(canDrill?exportProps(key,label,state):{})}/>;
+  });
+  const agingNodes=agingCards.map(({key,label,icon})=>{
+    const state=stateFor(key);
+    return <MetricCard key={key} label={label} icon={icon} hideCertTag
+      state={state} onOpen={open(key,label)} {...exportProps(key,label,state)}/>;
+  });
   const productState=stateFor('produtos');
   const productAvailable=productState.kind==='certified'||productState.kind==='uncertified';
   const chart=data?.product_chart??data?.cards?.produtos?.chart;
@@ -127,7 +140,7 @@ function Content({filters={},active=true,children}:Props){
     </table></div>
   </section>;
   return <>
-    {children?children({cards:cardNodes,agingCards:agingNodes,products:productTable}):cardNodes}
+    {children?children({cards:cardNodes,agingCards:agingNodes,products:productTable,exportStatus:csv.status}):<>{cardNodes}{csv.status}</>}
     {drill?.scope===scope&&<MetricCasesDialog source={drill.source} onClose={()=>setDrill(null)}/>}
   </>;
 }
