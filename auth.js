@@ -5,6 +5,12 @@
   const oauthVerifierKey = 'mba_oauth_verifier';
   const oauthHandoffKey = 'mba_oauth_handoff';
   const oauthStartedAtKey = 'mba_oauth_started_at';
+  // Latest-wins OAuth attempts. Each tab keeps its own verifier and attempt id in
+  // sessionStorage; localStorage only names the newest attempt of this browser
+  // (a random, non-secret id). A callback whose id is no longer the newest is
+  // stale and is discarded instead of blocking or racing the newer attempt.
+  const oauthAttemptKey = 'mba_oauth_attempt';
+  const oauthCurrentAttemptKey = 'mba_oauth_current_attempt';
   // One random institutional scene per new login or explicit portfolio change.
   // Last displayed scene is tracked to avoid back-to-back repetition, not to cycle.
   const institutionalSwitchKey = 'mba-institutional-portfolio-switch-v1';
@@ -112,6 +118,10 @@
   };
 
   const clearOAuthFlow = () => {
+    // Release the browser-wide marker only when it still names this tab's attempt.
+    const attempt = sessionStorage.getItem(oauthAttemptKey);
+    if (attempt && localStorage.getItem(oauthCurrentAttemptKey) === attempt) localStorage.removeItem(oauthCurrentAttemptKey);
+    sessionStorage.removeItem(oauthAttemptKey);
     sessionStorage.removeItem(oauthHandoffKey);
     sessionStorage.removeItem(oauthVerifierKey);
     sessionStorage.removeItem(oauthStartedAtKey);
@@ -374,6 +384,18 @@
     throw lastError || new Error('Orçamento de acesso esgotado.');
   }
 
+  // One exchange per handoff code in this tab, even if bootstrap re-enters
+  // (storage event, authorization invalidation) while the request is in flight.
+  let handoffExchange = null;
+  function exchangeOAuthHandoffOnce(code, verifier, deadline, retryBudget) {
+    if (handoffExchange?.code === code) return handoffExchange.promise;
+    const entry = { code };
+    entry.promise = exchangeOAuthHandoff(code, verifier, deadline, retryBudget)
+      .finally(() => { if (handoffExchange === entry) handoffExchange = null; });
+    handoffExchange = entry;
+    return entry.promise;
+  }
+
   const base64url = bytes => btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -398,6 +420,7 @@
     sessionStorage.removeItem('mba_google_handoff');
     localStorage.removeItem('mba_temp_access');
     localStorage.removeItem('mba_temp_email');
+    localStorage.removeItem('mba_oauth_lease');
 
     try {
       const fragment = new URLSearchParams(location.hash.slice(1));
@@ -407,18 +430,31 @@
         history.replaceState(null, '', location.pathname + location.search);
       }
 
-      const code = sessionStorage.getItem(oauthHandoffKey);
+      let code = sessionStorage.getItem(oauthHandoffKey);
       if (code) {
         const verifier = sessionStorage.getItem(oauthVerifierKey);
-        if (!verifier) {
+        const attempt = sessionStorage.getItem(oauthAttemptKey);
+        // A handoff is only exchanged by the tab that started it, and only while
+        // that attempt is still the newest one in this browser.
+        if (!verifier || !attempt || localStorage.getItem(oauthCurrentAttemptKey) !== attempt) {
           clearOAuthFlow();
-          throw new Error('Não foi possível concluir o acesso. Inicie o login novamente.');
+          code = null;
+          // With a session already stored (a newer login completed), the stale
+          // callback is dropped silently and this tab adopts the stored session.
+          if (!getStoredToken()) {
+            throw new Error(verifier && attempt
+              ? 'Este acesso foi substituído por uma tentativa mais recente neste navegador. Entre novamente.'
+              : 'Não foi possível concluir o acesso. Inicie o login novamente.');
+          }
         }
+      }
+      if (code) {
+        const verifier = sessionStorage.getItem(oauthVerifierKey);
         try {
-          const result = await exchangeOAuthHandoff(code, verifier, deadline, retryBudget);
+          const result = await exchangeOAuthHandoffOnce(code, verifier, deadline, retryBudget);
           if (!result?.access_token) throw new Error('O servidor não retornou uma sessão válida.');
+          // A successful new login replaces whatever session this browser held.
           setStoredToken(result.access_token);
-          localStorage.removeItem('mba_oauth_lease');
           clearOAuthFlow();
         } catch (error) {
           if ([401, 403, 422].includes(error?.status)) clearOAuthFlow();
@@ -504,15 +540,8 @@
   async function startMicrosoftLogin() {
     if (microsoftLoginInFlight) return;
     if (getStoredToken()) { await initializeAuth(); return; }
-    const leaseKey = 'mba_oauth_lease';
-    const start = async () => {
-      const lease = Number(localStorage.getItem(leaseKey) || 0);
-      if (Date.now() - lease < 60000) { publishLoginState({busy:false,error:'Outro acesso Microsoft está em andamento neste navegador.'}); return; }
-      localStorage.setItem(leaseKey,String(Date.now()));
-      return beginMicrosoftLogin();
-    };
-    if (navigator.locks) return navigator.locks.request('mba-oauth-start', start);
-    return start();
+    // No cross-tab lease: a new attempt never waits for a pending one, it replaces it.
+    return beginMicrosoftLogin();
   }
 
   async function beginMicrosoftLogin() {
@@ -526,7 +555,10 @@
         new TextEncoder().encode(verifier),
       )));
 
-      sessionStorage.removeItem(oauthHandoffKey);
+      // Drops any earlier attempt of this tab (and its marker, if still ours).
+      clearOAuthFlow();
+      const attempt = crypto.randomUUID();
+      sessionStorage.setItem(oauthAttemptKey, attempt);
       sessionStorage.setItem(oauthVerifierKey, verifier);
       sessionStorage.setItem(oauthStartedAtKey, String(Date.now()));
 
@@ -538,10 +570,12 @@
       if (target.origin !== 'https://login.microsoftonline.com') {
         throw new Error('Não foi possível realizar o acesso.');
       }
+      // Become the newest attempt only once the redirect is certain, so a failed
+      // start never supersedes an attempt that is pending in another tab.
+      localStorage.setItem(oauthCurrentAttemptKey, attempt);
       location.assign(target.href);
     } catch (error) {
       clearOAuthFlow();
-      localStorage.removeItem('mba_oauth_lease');
       microsoftLoginInFlight = false;
       publishLoginState({ busy: false, error: error?.message || 'Não foi possível iniciar o acesso com Microsoft.' });
     }
@@ -576,6 +610,15 @@
     microsoftLoginInFlight = false;
     setAuthState(false);
     publishLoginState({ busy: false, status:'expired_or_revoked', error: sessionEndMessage(event.detail?.reason) });
+  });
+
+  // Returning from Microsoft with the browser Back button can restore this page
+  // from the back/forward cache with the previous attempt still marked in flight.
+  window.addEventListener('pageshow', event => {
+    if (!event.persisted || !microsoftLoginInFlight) return;
+    microsoftLoginInFlight = false;
+    if (getStoredToken()) void initializeAuth();
+    else publishLoginState({ busy: false, error: null });
   });
 
   window.addEventListener('mba:authorization-invalidated',()=>{
