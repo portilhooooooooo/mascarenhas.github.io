@@ -414,7 +414,7 @@ export function UsersPage() {
 
               <div className="users-access-state">
                 <div>
-                  <strong>Acesso ao Backoffice</strong>
+                  <strong>Acesso à Central de Produtos</strong>
                   <small>Ao desativar, novas requisições autenticadas passam a ser recusadas.</small>
                 </div>
                 <label className="users-switch">

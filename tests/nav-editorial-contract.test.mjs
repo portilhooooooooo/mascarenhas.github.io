@@ -12,9 +12,10 @@ const shell=read('src/dashboard/main.tsx');
 const theme=read('brand-theme.js');
 
 test('marca original e fonte Instrument Sans alinhada ao shell',()=>{
-  assert.match(html, /<img class="brand-symbol" src="\/favicon-white.svg\?v=20261013-original-mark" alt="Mascarenhas Barbosa">/);
-  assert.match(html, /<span class="brand-word">Backoffice<\/span>/);
-  assert.match(css,/\.sidebar \.brand \.brand-word \{[\s\S]*?font:600 15px\/1\.1 "Instrument Sans"/);
+  assert.match(html, /<img class="brand-symbol" src="\/favicon-copper\.svg\?v=20261116-cobre" alt="Mascarenhas Barbosa">/);
+  assert.match(html, /<span class="brand-word">Central de Produtos<\/span>/);
+  assert.doesNotMatch(html, /<span class="brand-word">Backoffice/);
+  assert.match(css,/\.sidebar \.brand \.brand-word \{[\s\S]*?font:600 13px\/1\.1 "Instrument Sans"/);
   assert.match(html,/Instrument\+Sans:wght@400;500;600/);
   assert.match(css,/font-family:"Instrument Sans",Inter/);
   assert.doesNotMatch(css, /(?:\.protocolos-table-react|\.tasks-management-table).*Instrument Sans/);

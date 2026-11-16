@@ -56,6 +56,7 @@ const files = [
   'page-init-2.js',
   'favicon.svg',
   'favicon-white.svg',
+  'favicon-copper.svg',
   '_headers',
 ];
 
@@ -106,8 +107,8 @@ const builtIndexHtml = indexHtml
   .replace(/\s*<script src="\/?security-ui\.js(?:\?v=[^"]+)?"><\/script>/g, '')
   .replace(/\s*<script src="\/?mock-api\.js(?:\?v=[^"]+)?"><\/script>/g, '')
   .replace(/<title>[^<]*<\/title>/, '<title>Mascarenhas Barbosa</title>')
-  .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Backoffice">')
-  .replace(/<link[^>]*rel="icon"[^>]*>/g, `<link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-white.svg?v=${buildVersion}">`)
+  .replace(/<meta name="description" content="[^"]*">/, '<meta name="description" content="Mascarenhas Barbosa — Central de Produtos">')
+  .replace(/<link[^>]*rel="icon"[^>]*>/g, `<link rel="icon" type="image/svg+xml" sizes="any" href="/favicon-copper.svg?v=${buildVersion}">`)
   .replace(/(<script src="\/?app\.js\?v=[^"]+"><\/script>)/, `$1\n  <script src="/react-compat.js?v=${buildVersion}"></script>`)
   .replace('</body>', `  <script type="module" src="/assets/react-dashboard/login-react.js?v=${buildVersion}"></script>\n</body>`)
   .replace(/brand-identity\.css(?:\?v=[^"']+)?/g, `brand-identity.css?v=${buildVersion}`)

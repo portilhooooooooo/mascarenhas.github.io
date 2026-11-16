@@ -1112,7 +1112,7 @@ async function runStoredTutelas() {
     setResourceBusy('liminar', true);
     pollIntegration('liminar', job.job_id || job.id);
   } catch (error) {
-    const messages = { 401: 'A automação não aceitou a credencial atual. Sua sessão no Backoffice continua ativa.', 403: 'Você não possui permissão para executar esta automação.', 409: 'Já existe uma automação utilizando a credencial Enter.', 413: 'Esta execução excede o limite permitido de processos.', 429: 'Você atingiu o limite diário de execuções desta automação.' };
+    const messages = { 401: 'A automação não aceitou a credencial atual. Sua sessão na Central de Produtos continua ativa.', 403: 'Você não possui permissão para executar esta automação.', 409: 'Já existe uma automação utilizando a credencial Enter.', 413: 'Esta execução excede o limite permitido de processos.', 429: 'Você atingiu o limite diário de execuções desta automação.' };
     window.alert(messages[error.status] || error.message);
   } finally { if (!started) button.disabled = false; }
 }

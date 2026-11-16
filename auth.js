@@ -135,21 +135,21 @@
     document.title = 'Mascarenhas Barbosa';
 
     const description = document.querySelector('meta[name="description"]');
-    if (description) description.setAttribute('content', 'Mascarenhas Backoffice');
+    if (description) description.setAttribute('content', 'Mascarenhas Barbosa — Central de Produtos');
 
     const favicon = document.querySelector('link[rel~="icon"]') || document.createElement('link');
     favicon.rel = 'icon';
     favicon.type = 'image/svg+xml';
-    favicon.href = '/favicon-white.svg?v=20261011';
+    favicon.href = '/favicon-copper.svg?v=20261116-cobre';
     if (!favicon.parentNode) document.head.appendChild(favicon);
 
     const appBrand = document.querySelector('.brand');
     if (appBrand) {
       appBrand.innerHTML = `
-        <img class="brand-symbol" src="/favicon.svg?v=20260917-exact-symbol" alt="" aria-hidden="true">
-        <span class="brand-word">Backoffice</span>
+        <img class="brand-symbol" src="/favicon-copper.svg?v=20261116-cobre" alt="" aria-hidden="true">
+        <span class="brand-word">Central de Produtos</span>
       `;
-      appBrand.setAttribute('aria-label', 'Mascarenhas Backoffice');
+      appBrand.setAttribute('aria-label', 'Mascarenhas Barbosa — Central de Produtos');
     }
   }
 
@@ -462,7 +462,7 @@
         publishLoginState({
           busy: false,
           error: unauthorizedProfile
-            ? 'Seu usuário não possui acesso ativo ao Backoffice.'
+            ? 'Seu usuário não possui acesso ativo à Central de Produtos.'
             : sessionEndMessage(error?.reason),
         });
       } else if (hasToken) {

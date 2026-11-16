@@ -16,7 +16,7 @@ for (const name of [
   'Presença nacional.',
   'Estamos distribuídos em diferentes regiões do Brasil.',
   '60.000',
-  'processos na plataforma Mascarenhas Backoffice.',
+  'processos na Central de Produtos.',
   'Cadastro',
   'Operação',
   'Jurimetria',

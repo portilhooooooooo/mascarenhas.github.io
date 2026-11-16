@@ -57,14 +57,19 @@
 }
 .sidebar .brand .brand-symbol {
   display:block;
-  flex:0 0 27px;
-  width:27px;
-  height:27px;
-  filter:brightness(0) invert(1);
+  flex:0 0 24px;
+  width:24px;
+  height:24px;
+  /* Original mark already tinted #B97A58 (favicon-copper.svg); earlier layers forced it white. */
+  filter:none;
 }
+/* "Central de Produtos" must fit the 216px rail beside the toggle: 13px, never under the button. */
 .sidebar .brand .brand-word {
-  font:600 15px/1.1 "Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
+  font:600 13px/1.1 "Instrument Sans",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
   color:#f4f1ee !important;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .sidebar .sidebar-head { min-height:50px; }
 

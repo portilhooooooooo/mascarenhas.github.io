@@ -90,10 +90,10 @@ export function InstitutionalLoading({ visible }: { visible: boolean }) {
       role="status" aria-live="polite" aria-hidden={!visible}
       data-testid="auth-transition" data-storyboard-scene={scene}>
       <div className="mba-storyboard">
-        <header className="mba-storyboard-header" aria-label="Mascarenhas Barbosa Backoffice">
+        <header className="mba-storyboard-header" aria-label="Mascarenhas Barbosa — Central de Produtos">
           <div className="mba-storyboard-brand">
             <strong>Mascarenhas Barbosa</strong>
-            <small>BACKOFFICE</small>
+            <small>CENTRAL DE PRODUTOS</small>
           </div>
         </header>
 
@@ -138,10 +138,10 @@ export function InstitutionalLoading({ visible }: { visible: boolean }) {
           )}
 
           {scene === 2 && (
-            <section className="mba-storyboard-slide mba-storyboard-scale" aria-label="Mascarenhas Backoffice">
+            <section className="mba-storyboard-slide mba-storyboard-scale" aria-label="Central de Produtos">
               <div className="mba-storyboard-copy">
                 <div className="mba-storyboard-scale-number">60.000<span>+</span></div>
-                <h1>processos na plataforma Mascarenhas Backoffice.</h1>
+                <h1>processos na Central de Produtos.</h1>
                 <p>Do cadastro à jurimetria e ao encerramento, conectamos a operação ponta a ponta.</p>
               </div>
               <ProcessJourney />

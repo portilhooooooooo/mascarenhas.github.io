@@ -1,9 +1,9 @@
-/* MBA Backoffice institutional loading — isolated from the login form and app shell.
+/* Central de Produtos institutional loading — isolated from the login form and app shell.
  * Four full-screen editorial scenes, fixed Sol palette and no progress bar or dark-flow overlay.
  */
 #login-transition-root .mba-auth-transition {
   display:block;
-  background:#f7f6f2;
+  background:#f6f5ef;
   color:#171717;
   color-scheme:light;
 }
@@ -13,7 +13,7 @@
   height:100dvh;
   min-height:100%;
   overflow:hidden;
-  background:#f7f6f2;
+  background:#f6f5ef;
   color:#181818;
   font-family:Inter,ui-sans-serif,system-ui,sans-serif;
 }
@@ -245,7 +245,7 @@
   padding:13px 15px;
   border-radius:8px;
   border:1px solid #e3dbd2;
-  background:rgba(255,255,255,.97);
+  background:#f6f5ef;
   box-shadow:0 5px 22px rgba(35,26,19,.04);
 }
 #login-transition-root .mba-storyboard-location-label span {

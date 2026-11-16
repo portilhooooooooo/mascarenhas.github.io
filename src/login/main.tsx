@@ -173,7 +173,7 @@ function LoginPage() {
           <div className="lp-copy">
             <p className="lp-eyebrow">Desde 1968</p>
             <h1 id="lp-hero-title">Tradição que <em>evolui<span className="lp-period">.</span></em></h1>
-            <p className="lp-subtitle">Transformando 58 anos de experiência em produtos tecnológicos.</p>
+            <p className="lp-subtitle">Transformando décadas de experiência jurídica em soluções tecnológicas.</p>
           </div>
           <InstitutionalVideo/>
         </section> : <div className="lp-sections">
@@ -215,7 +215,7 @@ function LoginPage() {
           <span aria-hidden="true">×</span>
         </button>
         <section className="react-login-access">
-          <h2 id="react-login-title">Explore como estamos trabalhando</h2>
+          <h2 id="react-login-title" className="lp-visually-hidden">Login</h2>
           <div className="react-login-form">
             <button ref={corporateRef} className="react-login-corporate" type="button"
               onClick={() => void startMicrosoftLogin()} disabled={authState.busy} aria-busy={authState.busy}>
