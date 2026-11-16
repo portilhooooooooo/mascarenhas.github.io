@@ -4,7 +4,7 @@ import type {CaseSource} from './MetricCasesDialog';
 import {CSV_EXPORT_MAX_ROWS,CsvExportError,buildCsv,collectCaseRows,csvFileName,limitMessage} from './metricCsvCore';
 
 /**
- * "Baixar CSV" for Read Model drill-down cards (THOM-OPUS-CSV-20261116).
+ * "Baixar CSV" inside Read Model process-detail dialogs (THOM-OPUS-CSV-20261116).
  *
  * No backend export endpoint exists for /api/resultados/cadastro/processos or
  * /api/dashboard/v1/<d>/metrics/<m>/cases. Both are pinned to an immutable
@@ -34,7 +34,7 @@ type Status={kind:'busy';key:string;label:string;done:number;total:number|null}
   |{kind:'error';label:string;message:string};
 
 /**
- * One export at a time per card group. Aborts on unmount and on any session or
+ * One export at a time per open dialog. Aborts on unmount and on any session or
  * carteira change, and discards the file if the carteira changed mid-export.
  */
 export function useCaseCsvExport(){

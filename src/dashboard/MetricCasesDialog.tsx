@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
-import {ArrowUpRight,X} from 'lucide-react';
+import {ArrowUpRight,Download,X} from 'lucide-react';
 import {failureState,formatCount,getApi,reasonText} from './metricState';
+import {useCaseCsvExport} from './metricCsv';
 
 /**
  * One drilldown dialog for both contracts:
@@ -29,6 +30,7 @@ export function MetricCasesDialog({source,onClose}:{source:CaseSource;onClose:()
   const [data,setData]=useState<CasePage|null>(null);
   const [error,setError]=useState<string>('');
   const [pending,setPending]=useState(true);
+  const csv=useCaseCsvExport();
   useEffect(()=>{
     const controller=new AbortController();
     setPending(true);setError('');
@@ -54,6 +56,7 @@ export function MetricCasesDialog({source,onClose}:{source:CaseSource;onClose:()
   const unavailable=Boolean(data&&data.total===null);
   const lastPage=data&&data.total!==null?Math.max(1,Math.ceil(data.total/source.pageSize)):null;
   const hasNext=source.cursorMode?Boolean(data?.next):Boolean(lastPage&&page<lastPage);
+  const canExport=!pending&&!unavailable&&!error&&data?.total!==null&&data?.total!==undefined&&data.total>0;
   const next=()=>{
     if(source.cursorMode&&data?.next)setCursors(list=>[...list.slice(0,page),data.next]);
     setPage(p=>p+1);
@@ -62,8 +65,16 @@ export function MetricCasesDialog({source,onClose}:{source:CaseSource;onClose:()
     <section className="base-geral-dialog" role="dialog" aria-modal="true" aria-label={'Relação de processos: '+source.title}>
       <header className="base-geral-dialog-head">
         <div><h2>{source.title}</h2><p>Processos que compõem o indicador</p></div>
-        <button type="button" className="base-geral-dismiss" onClick={onClose} aria-label="Fechar relação"><X size={19}/></button>
+        <div className="base-geral-dialog-actions">
+          <button type="button" className="base-geral-csv-action" disabled={!canExport||csv.busy}
+            aria-label={'Baixar CSV — '+source.title}
+            onClick={()=>{if(data?.total!==null&&data?.total!==undefined)csv.start(source.exportName,source.title,source,data.total);}}>
+            <Download size={14} aria-hidden="true"/>{csv.busy?'Gerando…':'Baixar CSV'}
+          </button>
+          <button type="button" className="base-geral-dismiss" onClick={onClose} aria-label="Fechar relação"><X size={19}/></button>
+        </div>
       </header>
+      {csv.status&&<div className="base-geral-dialog-csv-status">{csv.status}</div>}
       {data?.status&&data.status!=='CURRENT'&&!unavailable&&<div className="base-geral-warning mba-data-warning">Relação não certificada: {reasonText(data.reasons)||'certificação pendente'}.</div>}
       {unavailable&&<div className="base-geral-warning">Relação indisponível: {reasonText(data!.reasons)}. Nenhum total é exibido.</div>}
       {error&&<p className="base-geral-error base-geral-dialog-error" role="alert">{error}</p>}

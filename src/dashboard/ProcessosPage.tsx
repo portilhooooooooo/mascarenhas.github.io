@@ -207,7 +207,7 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
           <div><dt>Última movimentação</dt><dd className="processos-last-movement"><time>{date(detail.process.last_movement_at)}</time>{detail.process.last_movement_title ? <span className="processos-last-movement-title">{detail.process.last_movement_title.toLocaleLowerCase("pt-BR") === "definitivo" ? "Arquivamento definitivo" : detail.process.last_movement_title}</span> : null}</dd></div>
         </dl>
         {detail.process.situation === 'Em andamento' && detail.process.last_movement_title?.toLocaleLowerCase('pt-BR') === 'definitivo'
-          ? <p className="processos-sources-differ" role="status">O cadastro indica “Em andamento”, mas o DataJud registra arquivamento definitivo. Confirme a situação no Benner/CPJ.</p>
+          ? <p className="processos-sources-differ" role="status">O cadastro indica “Em andamento”, mas há registro de arquivamento definitivo. Confirme a situação no Benner/CPJ.</p>
           : null}
         {notice ? <p className="processos-notice" role="status">{notice}</p> : null}
         <div className={'processos-workspace' + (!detail.permissions.tasks ? ' processos-workspace-single' : '')}>
@@ -218,15 +218,11 @@ function ProcessView({cnj, onBack}: {cnj: string; onBack: () => void}) {
             {eventError ? <div role="alert" className="processos-state">{eventError}<button type="button" onClick={() => setRevision(r=>r+1)}>Tentar novamente</button></div>
               : eventsLoading ? <div role="status" className="processos-state">Carregando movimentações…</div>
               : events ? <>
-                {['unavailable','partial'].includes(events.sources.datajud.state) ? <p className="processos-source-status" role="status">{events.sources.datajud.message || 'Histórico DataJud parcial.'}</p> : null}
+                {['unavailable','partial'].includes(events.sources.datajud.state) ? <p className="processos-source-status" role="status">Histórico judicial parcialmente disponível.</p> : null}
                 {events.rows.length ? <ol className="processos-timeline">{events.rows.map(e =>
                   <li key={e.id} data-event-kind={e.kind}>
-                    <div className="processos-event-date"><time dateTime={e.occurred_at}>{date(e.occurred_at)}</time>{e.degree ? <span>{e.degree}</span> : null}</div>
+                    <div className="processos-event-date"><time dateTime={e.occurred_at}>{date(e.occurred_at)}</time></div>
                     <h3>{eventTitle(e)}</h3>
-                    <p className="processos-event-meta">{e.source}</p>
-                    <details><summary>Rastreabilidade</summary>
-                      <dl><div><dt>Fonte</dt><dd>{e.source}</dd></div>{e.code != null ? <div><dt>Código TPU</dt><dd>{e.code}</dd></div> : null}{e.raw_title && e.raw_title !== e.title ? <div><dt>Movimento original</dt><dd>{e.raw_title}</dd></div> : null}<div><dt>Capturado em</dt><dd>{date(e.captured_at)}</dd></div></dl>
-                    </details>
                   </li>
                 )}</ol> : <div className="processos-state">Nenhuma movimentação relevante identificada nas fontes disponíveis.</div>}
                 <Pagination page={eventPage} more={events.has_more} busy={eventsLoading} onChange={setEventPage}/>

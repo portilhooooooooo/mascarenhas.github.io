@@ -342,11 +342,11 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
         <Select label="Encerramento" value={resolution} onChange={setResolution} options={fromValues(data?.filters.resolutions || [])}/>
       </>}
     </div>
-    {error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
+    {!cardsOnly && error && <DashboardRecovery hasSnapshot={Boolean(shown)} onRetry={() => void refresh(true)} retrying={pending}/>}
     {!pending && shown?.summary?.total === 0 && <p className="base-geral-empty-state" role="status">Sem dados nesta seleção.</p>}
-    {billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
+    {!cardsOnly && billingError && portfolio === 'agibank_mba' && canViewBilling && <DashboardRecovery hasSnapshot={Boolean(currentBilling)} onRetry={() => void refreshBilling(true)} retrying={billingPending}/>}
     {cardsOnly ? <CadastroCpjCards active={visible} filters={{entry_start: entryStart || undefined, entry_end: entryEnd || undefined, situation: situation || undefined}}>
-      {({cards,agingCards,products,exportStatus})=><>
+      {({cards,agingCards,products})=><>
       <div className="base-geral-kpis cadastro-cards" aria-label="Situação dos cadastros no CPJ">
         {cards}
         {portfolio === 'agibank_mba' && canViewBilling && <button type="button"
@@ -357,7 +357,6 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
         </button>}
         {agingCards}
       </div>
-      {exportStatus}
       <ReadModelDashboard dashboard="cadastro" visible={visible}/>
       {products}
       </>}

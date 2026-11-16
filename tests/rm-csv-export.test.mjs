@@ -1,4 +1,4 @@
-// THOM-OPUS-CSV-20261116 — "Baixar CSV" nos cards RM com relação de processos.
+// THOM-OPUS-CSV-20261116 — "Baixar CSV" no modal de processos dos cards RM.
 // Behavioural part runs the real metricCsvCore.ts through Node type stripping.
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -80,28 +80,25 @@ test('authorization failures propagate and abort stops further requests',async()
   assert.equal(calls.length,1);
 });
 
-test('card action is separate from the card click (no nested buttons)',()=>{
+test('CSV action is inside the process dialog, not on metric summary cards',()=>{
   const card=src('metricState.tsx');
-  const branch=card.slice(card.indexOf('mba-metric-card--actions'),card.indexOf('</article>;'));
-  assert.match(branch,/<button type="button" className="mba-metric-open"[^>]*\/>/);
-  assert.match(branch,/className="mba-metric-export" aria-label=\{'Baixar CSV — '\+label\}/);
-  assert.match(card,/canOpen&&onExport&&hasValue&&state\.value>0/);
-  const css=src('ui-foundations.css');
-  assert.match(css,/\.mba-metric-export:focus-visible/);
-  assert.match(css,/\.mba-metric-open:focus-visible/);
-  assert.match(css,/@media \(pointer:coarse\)/);
+  const dialog=src('MetricCasesDialog.tsx');
+  assert.doesNotMatch(card,/mba-metric-export|onExport|exportBusy/);
+  assert.match(card,/className="base-geral-card mba-metric-card"/);
+  assert.match(dialog,/className="base-geral-dialog-actions"/);
+  assert.match(dialog,/aria-label=\{'Baixar CSV — '\+source\.title\}/);
+  assert.match(dialog,/csv\.start\(source\.exportName,source\.title,source,data\.total\)/);
+  const css=src('baseGeral.css');
+  assert.match(css,/\.base-geral-dialog-csv-status/);
 });
 
-test('every RM drilldown card exports with the same scope as its drilldown',()=>{
+test('drilldowns preserve revision and filters; CSV uses the same source in the modal',()=>{
   const cadastro=src('CadastroCpjCards.tsx');
-  assert.match(cadastro,/open=\(key:string,label:string\)=>pinned\s*\?\(\)=>setDrill\(\{scope,source:cadastroCases\(key,label,query,pinned\)\}\)/);
-  assert.match(cadastro,/csv\.start\(key,label,cadastroCases\(key,label,query,pinned\),state\.value\)/);
-  assert.match(cadastro,/onOpen=\{canDrill\?open\(key,label\):undefined\} \{\.\.\.\(canDrill\?exportProps/);
-  assert.match(cadastro,/onOpen=\{open\(key,label\)\} \{\.\.\.exportProps\(key,label,state\)\}/);
+  assert.match(cadastro,/setDrill\(\{scope,source:cadastroCases\(key,label,query,pinned\)\}\)/);
+  assert.match(cadastro,/onOpen=\{canDrill\?open\(key,label\):undefined\}/);
   const rm=src('ReadModelDashboard.tsx');
   assert.match(rm,/dashboardV1Cases\(dashboard,m\.name,m\.label\+' \(Read Model\)',rev!,portfolio\)/);
   assert.match(rm,/onOpen=\{rev\?\(\)=>setDrill\(source\(\)\):undefined\}/);
-  assert.match(rm,/csv\.start\(m\.name,m\.label,source\(\),state\.value\)/);
   const dialog=src('MetricCasesDialog.tsx');
   assert.match(dialog,/params\.set\('category',category\);params\.set\('revision',revision\)/);
   assert.match(dialog,/new URLSearchParams\(filters\)/);

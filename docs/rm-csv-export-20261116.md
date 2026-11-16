@@ -3,12 +3,13 @@
 Task: THOM-OPUS-CSV-20261116 (Thomas). Base: backoffice_frontend 4b00afe.
 
 ## What the frontend does now
-- Every Read Model card that opens a drill-down (`MetricCard` with `onOpen`) and has a positive count
-  shows a separate "CSV" button (accessible name "Baixar CSV — <indicador>"). Covered:
+- Every Read Model card that opens a process drill-down (`MetricCard` with `onOpen`) keeps
+  a single click target. The detail dialog (`MetricCasesDialog`) displays "Baixar CSV"
+  beside the close button when a positive total is available. Covered:
   - Cadastro (`CadastroCpjCards`): Entradas, Cadastrar (Enter only), Com liminar, Arquivar,
     Desconsideração de patrocínio, Ativos, Prescritos.
   - Read Model V1 panel (`ReadModelDashboard`): Cadastro, Andamentos (13 indicators), Encerramentos.
-- The legacy Andamentos cards have no drill-down, so they get no CSV button. Legacy Base Geral,
+- The legacy Andamentos cards have no drill-down, so they get no CSV action. Legacy Base Geral,
   Defesas and Encerramentos pages are not RM cards and are unchanged.
 - No export endpoint exists in the backend snapshot (61b281a). The browser pages through the **same**
   endpoint, headers and query as the drill-down dialog:
@@ -22,8 +23,8 @@ Task: THOM-OPUS-CSV-20261116 (Thomas). Base: backoffice_frontend 4b00afe.
   `total`. 401/403/409/5xx, a total change, a carteira or session change, or cancelling discard the
   export. No partial CSV is produced.
 - Limit: 5,000 rows (`CSV_EXPORT_MAX_ROWS`), i.e. ≤ 100 requests on Cadastro and ≤ 25 on V1, one
-  export at a time. When the card value or the first page's total is above the limit, the export is
-  refused with a message. It is not truncated.
+  export at a time. When the detail dialog's published total or the first page's total is above
+  the limit, the export is refused with a message in the dialog. It is not truncated.
 - File: UTF-8 with BOM, `;` separator, CRLF, every cell quoted. Cells starting with `= + - @`
   (also after leading whitespace), tab or CR get a leading `'` (formula injection).
 

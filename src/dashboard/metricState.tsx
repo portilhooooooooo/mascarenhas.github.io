@@ -1,4 +1,4 @@
-import {Download,type LucideIcon} from 'lucide-react';
+import {type LucideIcon} from 'lucide-react';
 import {MetricDots} from './dashboardFeedback';
 
 /**
@@ -125,10 +125,8 @@ export function metricAriaLabel(label:string,state:CardState):string{
  * `hideCertTag` (Cadastro/Read Model only) hides the visible "não certificado" tag and
  * muted value styling. No provenance hover tooltip: state stays in data-state,
  * aria-label describes the value, and reason codes stay in data-reasons. */
-export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false,onExport,exportBusy=false,exportLocked=false}:{
+export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false}:{
   label:string;icon:LucideIcon;state:CardState;onOpen?:()=>void;hideCertTag?:boolean;
-  /** "Baixar CSV": only offered on drillable cards with a positive count. */
-  onExport?:()=>void;exportBusy?:boolean;exportLocked?:boolean;
 }){
   const tag=STATE_TAG[state.kind];
   const plain=hideCertTag&&state.kind==='uncertified';
@@ -143,16 +141,7 @@ export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false,onExp
     {tag&&!plain&&<span className={'mba-data-tag mba-data-tag--'+tag.tone} data-state={state.kind}>{tag.label}</span>}
   </>;
   const canOpen=Boolean(onOpen)&&hasValue;
-  // Two sibling buttons, never nested: a full-card "abrir relação" layer and the CSV action.
-  if(canOpen&&onExport&&hasValue&&state.value>0)
-    return <article className="base-geral-card mba-metric-card mba-metric-card--actions" data-state={state.kind} data-reasons={reasons}>
-      {body}
-      <button type="button" className="mba-metric-open" aria-label={name+' — abrir relação de processos'} onClick={onOpen}/>
-      <button type="button" className="mba-metric-export" aria-label={'Baixar CSV — '+label}
-        aria-busy={exportBusy||undefined} disabled={exportBusy||exportLocked} onClick={onExport}>
-        <Download size={12} strokeWidth={1.9} aria-hidden="true"/><span>{exportBusy?'Gerando…':'CSV'}</span>
-      </button>
-    </article>;
+  // A single click target opens the details; export belongs inside that dialog.
   return canOpen
     ?<button type="button" className="base-geral-card mba-metric-card" data-state={state.kind} data-reasons={reasons}
       aria-label={name+' — abrir relação de processos'} onClick={onOpen}>{body}</button>

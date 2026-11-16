@@ -94,6 +94,10 @@
 .base-geral-dialog-head{display:flex;justify-content:space-between;align-items:center;gap:16px;flex:none;padding:18px 20px 14px;border-bottom:1px solid var(--mba-border)}
 .base-geral-dialog-head h2{font-size:19px;font-weight:650;margin:0 0 3px}
 .base-geral-dialog-head p{font-size:11px;color:var(--mba-muted);margin:0}
+.base-geral-dialog-actions{display:flex;align-items:center;gap:10px;flex:none}
+.base-geral-dialog-actions .base-geral-csv-action{min-height:30px}
+.base-geral-dialog-csv-status{flex:none;margin:8px 20px 0}
+.base-geral-dialog-csv-status .mba-metric-export-status{margin:0}
 .base-geral-dialog .base-geral-dismiss{flex:none;width:30px;height:30px;border:0;background:transparent;color:var(--mba-text-2)}
 .base-geral-dialog .base-geral-dismiss:hover{background:var(--mba-subtle)}
 .base-geral-outcome-tabs{display:flex;gap:6px;align-items:center;flex:none;padding:12px 20px 2px}

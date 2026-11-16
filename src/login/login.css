@@ -87,6 +87,8 @@ body[data-react-login="true"] #login-error { display:none!important; }
   column-gap:clamp(32px,4.7vw,75px);align-items:center;
   padding:24px var(--lp-gutter) 40px;
 }
+/* The hero is focused programmatically on navigation, not by keyboard tabbing. */
+#login-view .lp-hero:focus-visible { outline:none; }
 #login-view .lp-eyebrow {
   display:flex;align-items:center;gap:16px;margin:0 0 34px;
   font-size:12px;font-weight:700;letter-spacing:.225em;text-transform:uppercase;color:#4d555a;
