@@ -148,7 +148,7 @@ export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false,onExp
     return <article className="base-geral-card mba-metric-card mba-metric-card--actions" data-state={state.kind} data-reasons={reasons}>
       {body}
       <button type="button" className="mba-metric-open" aria-label={name+' — abrir relação de processos'} onClick={onOpen}/>
-      <button type="button" className="mba-metric-export" aria-label={'Baixar CSV — '+label} title="Baixar CSV"
+      <button type="button" className="mba-metric-export" aria-label={'Baixar CSV — '+label}
         aria-busy={exportBusy||undefined} disabled={exportBusy||exportLocked} onClick={onExport}>
         <Download size={12} strokeWidth={1.9} aria-hidden="true"/><span>{exportBusy?'Gerando…':'CSV'}</span>
       </button>
