@@ -91,8 +91,7 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
   const uncertified=Boolean(data&&data.status!=='UNAVAILABLE'&&!certified);
   // Preserve Cadastro's accessible, quiet certification status without a banner.
   const status=isCadastro&&uncertified?['não certificado',reasonText(limitations)].filter(Boolean).join(' — '):'';
-  return <section className="base-geral-panel mba-read-model" aria-label={'Read Model V1 — '+dashboard+(status?' — '+status:'')}
-    title={status||undefined} data-dashboard={dashboard}>
+  return <section className="base-geral-panel mba-read-model" aria-label={'Read Model V1 — '+dashboard+(status?' — '+status:'')} data-dashboard={dashboard}>
     {dashboard!=='andamentos'&&<header className="mba-read-model-head">
       <div><h2>Read Model V1</h2>
         <span className="base-geral-context">{data?.revision?`Revisão ${data.revision} · dados até ${when(data.data_as_of)} · calculado ${when(data.calculated_at)}`:'Publicação revisionada'}</span>

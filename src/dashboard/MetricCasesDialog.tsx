@@ -11,7 +11,9 @@ import {failureState,formatCount,getApi,reasonText} from './metricState';
 export type CaseRow={id:string;cnj?:string|null;primary:string;cells:string[]};
 export type CasePage={rows:CaseRow[];total:number|null;next:string|null;status?:string;reasons:string[]};
 export type CaseSource={
-  title:string;source:string;columns:string[];pageSize:number;
+  title:string;
+  /** Provenance kept for audit/debug only; never rendered (no endpoint/revision strings in the UI). */
+  source:string;columns:string[];pageSize:number;
   load:(cursor:string|null,page:number,signal:AbortSignal)=>Promise<CasePage>;
   cursorMode:boolean;
 };
@@ -59,7 +61,6 @@ export function MetricCasesDialog({source,onClose}:{source:CaseSource;onClose:()
         <div><h2>{source.title}</h2><p>Processos que compõem o indicador</p></div>
         <button type="button" className="base-geral-dismiss" onClick={onClose} aria-label="Fechar relação"><X size={19}/></button>
       </header>
-      <p className="base-geral-dialog-source">{source.source}{data?.status&&data.status!=='CURRENT'?' · '+data.status.toLowerCase():''}</p>
       {data?.status&&data.status!=='CURRENT'&&!unavailable&&<div className="base-geral-warning mba-data-warning">Relação não certificada: {reasonText(data.reasons)||'certificação pendente'}.</div>}
       {unavailable&&<div className="base-geral-warning">Relação indisponível: {reasonText(data!.reasons)}. Nenhum total é exibido.</div>}
       {error&&<p className="base-geral-error base-geral-dialog-error" role="alert">{error}</p>}

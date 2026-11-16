@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState,type ReactNode} from 'react';
 import {QueryClient,QueryClientProvider,useQuery} from '@tanstack/react-query';
 import {Clock3,FolderArchive,FolderOpen,ShieldCheck,UserX} from 'lucide-react';
 import {runtimeScope} from '../tasks/runtimeQueries';
-import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,classifyCard,currentPortfolio,failureState,formatCount,getApi,isCount,reasonText} from './metricState';
+import {AUTH_EVENTS,type BackendCard,type CardState,MetricCard,STATE_TAG,classifyCard,currentPortfolio,failureState,formatCount,getApi,isCount} from './metricState';
 import {MetricCasesDialog,type CaseSource,cadastroCases} from './MetricCasesDialog';
 import './baseGeral.css';
 
@@ -107,14 +107,15 @@ function Content({filters={},active=true,children}:Props){
   const products=productAvailable&&Array.isArray(chart)&&chart.every(row=>row&&typeof row.label==='string'&&isCount(row.value))
     ?[...chart].sort((a,b)=>b.value-a.value):null;
   const productTotal=products?products.reduce((sum,row)=>sum+row.value,0):null;
-  const productDetail='reasons' in productState?reasonText(productState.reasons)
-    :'message' in productState?productState.message:'';
-  // Uncertified products: no visible tag; the status stays in the section's title/aria-label.
-  const productLabel=productState.kind==='uncertified'&&products?['Produtos','não certificado',productDetail].filter(Boolean).join(' — '):'Produtos';
+  // Uncertified products: no visible tag and no hover tooltip; the status stays in aria-label/data-state.
+  const productLabel=productState.kind==='uncertified'&&products?'Produtos — não certificado':'Produtos';
+  // Absent chart: quiet dashes only. Auth/error keep their own tag so they are not read as "no value".
+  const productTag=productState.kind==='unauthenticated'||productState.kind==='forbidden'||productState.kind==='error'
+    ?STATE_TAG[productState.kind]:null;
   const productTable=<section className="base-geral-panel base-geral-products-table cadastro-products" aria-label={productLabel}
-    title={productLabel==='Produtos'?undefined:productLabel} data-state={productState.kind}>
+    data-state={productState.kind}>
     <header><div><h2>Produtos</h2>
-      {productState.kind!=='loading'&&!products&&<span className="mba-data-tag mba-data-tag--muted" title={productDetail}>sem dados</span>}
+      {productTag&&<span className={'mba-data-tag mba-data-tag--'+productTag.tone} data-state={productState.kind}>{productTag.label}</span>}
     </div><span className="base-geral-tally">{productTotal===null?'—':formatCount(productTotal)} processos</span></header>
     <div className="base-geral-table-scroll"><table className="base-geral-products">
       <thead><tr><th>Produto</th><th>Processos</th><th>Participação</th></tr></thead>

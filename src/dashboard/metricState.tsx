@@ -98,27 +98,41 @@ const REASON_LABELS:Record<string,string>={
 };
 export const reasonText=(reasons:string[])=>reasons.map(r=>REASON_LABELS[r]||r).join(' · ');
 
-const STATE_TAG:Record<CardState['kind'],{label:string;tone:string}|null>={
-  loading:null,certified:null,
+/** Visible tag per state. `absent` has no tag: the value slot shows a quiet dash and the
+ * distinction from error / no-permission / real zero stays in data-state and aria-label. */
+export const STATE_TAG:Record<CardState['kind'],{label:string;tone:string}|null>={
+  loading:null,certified:null,absent:null,
   uncertified:{label:'não certificado',tone:'warn'},
-  absent:{label:'sem dados',tone:'muted'},
   unauthenticated:{label:'não autenticado',tone:'auth'},
   forbidden:{label:'sem acesso',tone:'auth'},
   error:{label:'erro',tone:'error'},
 };
 
+/** Accessible name: label + value or state. Never carries source, endpoint, backend
+ * message or raw reason codes; those stay in the state object / data-reasons for audit. */
+export function metricAriaLabel(label:string,state:CardState):string{
+  const text=state.kind==='loading'?'carregando'
+    :state.kind==='certified'?formatCount(state.value)
+    :state.kind==='uncertified'?formatCount(state.value)+', não certificado'
+    :state.kind==='absent'?'valor não disponível'
+    :state.kind==='unauthenticated'?'não autenticado'
+    :state.kind==='forbidden'?'sem acesso'
+    :'erro ao carregar';
+  return label+': '+text;
+}
+
 /** Compact KPI card; clickable only when a number exists and a drilldown is offered.
  * `hideCertTag` (Cadastro/Read Model only) hides the visible "não certificado" tag and
- * muted value styling; the state stays in data-state, title and aria-label. */
+ * muted value styling. No hover tooltip (`title`): the state stays in data-state and
+ * aria-label, reason codes in data-reasons. */
 export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false}:{
   label:string;icon:LucideIcon;state:CardState;onOpen?:()=>void;hideCertTag?:boolean;
 }){
   const tag=STATE_TAG[state.kind];
   const plain=hideCertTag&&state.kind==='uncertified';
   const hasValue=state.kind==='certified'||state.kind==='uncertified';
-  const detail=state.kind==='loading'?''
-    :'reasons' in state?reasonText(state.reasons):state.message;
-  const title=[label,tag?.label,detail].filter(Boolean).join(' — ');
+  const name=metricAriaLabel(label,state);
+  const reasons='reasons' in state&&state.reasons.length?state.reasons.join(' '):undefined;
   const body=<>
     <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
     <strong className={state.kind==='uncertified'?'mba-metric-uncertified'+(plain?' mba-metric-plain':''):undefined}>
@@ -128,7 +142,7 @@ export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false}:{
   </>;
   const canOpen=Boolean(onOpen)&&hasValue;
   return canOpen
-    ?<button type="button" className="base-geral-card mba-metric-card" data-state={state.kind} title={title}
-      aria-label={title+' — abrir relação de processos'} onClick={onOpen}>{body}</button>
-    :<article className="base-geral-card mba-metric-card" data-state={state.kind} title={title} aria-label={title}>{body}</article>;
+    ?<button type="button" className="base-geral-card mba-metric-card" data-state={state.kind} data-reasons={reasons}
+      aria-label={name+' — abrir relação de processos'} onClick={onOpen}>{body}</button>
+    :<article className="base-geral-card mba-metric-card" data-state={state.kind} data-reasons={reasons} aria-label={name}>{body}</article>;
 }

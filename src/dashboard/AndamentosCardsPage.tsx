@@ -12,7 +12,7 @@ import './baseGeral.css';
  * Preferred contract: `cards[<KIND>] = {value,status|data_status,source,...}`.
  * Legacy contract (metrics.by_event_kind) carries no certification, so its
  * numbers are always labelled "não certificado". A kind missing from the
- * published counts is "sem dados", never an invented zero.
+ * published counts is absent (quiet dash), never an invented zero.
  */
 type CardSummary={status?:string;portfolio_id?:string;cards?:Record<string,BackendCard>;
   metrics?:{by_event_kind?:Record<string,number|null>;fase_conhecimento?:number|null};
