@@ -298,3 +298,10 @@
   .processos-detail .processos-tasks { padding:14px; }
 
 }
+
+/* THOM-OPUS-PROCESSOS-20261116 — barra de busca com a mesma borda horizontal da tabela.
+   Título e legenda visuais removidos no TSX (h1 visually-hidden e aria-label na busca). */
+.processos-page .processos-filters{flex-wrap:nowrap;width:100%;box-sizing:border-box}
+.processos-page .processos-filters .processos-search{flex:1 1 auto;min-width:0!important}
+.processos-page .processos-filters .primary-button{flex:0 0 auto}
+@media(max-width:600px){.processos-page .processos-filters .processos-search{flex:1 1 auto}}

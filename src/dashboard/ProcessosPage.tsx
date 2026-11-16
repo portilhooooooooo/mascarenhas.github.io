@@ -287,11 +287,11 @@ export function ProcessosPage() {
   if(!authorized) return <div className="processos-state" role="status">Processos indisponível para este acesso.</div>;
   if(cnj) return <ProcessView key={cnj} cnj={cnj} onBack={()=>win.MBA_NAVIGATE?.('processos')}/>;
   return <section className="processos-page">
-    <header className="processos-heading"><h1>Processos</h1></header>
+    <h1 className="mba-visually-hidden">Processos</h1>
     <form className="processos-filters" onSubmit={e=>{
       e.preventDefault();setPage(1);setFilters(f=>({...f,q:search.trim()}));
     }}>
-      <label className="processos-search">Buscar processo<input id="mba-processos-quick-search" type="search" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
+      <label className="processos-search"><input id="mba-processos-quick-search" type="search" aria-label="Buscar processo" inputMode="numeric" maxLength={25} value={search} placeholder="Buscar por número do processo" onChange={e=>setSearch(e.target.value)}/></label>
       <button className="primary-button" type="submit">Buscar</button>
     </form>
     {error ? <div role="alert" className="processos-state">{error}<button type="button" onClick={()=>setRevision(r=>r+1)}>Tentar novamente</button></div>
