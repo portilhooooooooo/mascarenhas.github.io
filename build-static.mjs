@@ -81,6 +81,17 @@ if (staging) {
   await writeFile(`${dist}/_headers`, headers.replaceAll(`https://${PRODUCTION_API_HOST}`, stagingApiBaseUrl), 'utf8');
 }
 
+// Route-testing keeps Microsoft OAuth on the production identity service while
+// its read-only bridge forwards Read Model requests to staging. Both preview
+// variants expose the same portfolio capability map to navigation and cards.
+if (staging || process.env.npm_lifecycle_event === 'build:routes-testing') {
+  const configPath = `${dist}/config.js`;
+  const config = await readFile(configPath, 'utf8');
+  await writeFile(configPath, config + '\n'
+    + (staging ? '' : 'window.MBA_DASHBOARD_V1_ENABLED = true;\n')
+    + 'window.MBA_DASHBOARD_V1_SCOPES = Object.freeze({cadastro:["agibank_enter"],andamentos:["agibank_enter","agibank_mba"]});\n', 'utf8');
+}
+
 // O vídeo institucional da branch de testes é obrigatório na tela de login.
 // Falhe no build se algum dos arquivos desaparecer, em vez de mostrar um símbolo genérico.
 await cp('assets/mascarenhas-login.mp4', `${dist}/assets/mascarenhas-login.mp4`);

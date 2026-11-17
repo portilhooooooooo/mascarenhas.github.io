@@ -112,8 +112,19 @@ function resolvePageRoute(route) {
   const pageId = Object.keys(pageRoutes).find(key => pageRoutes[key] === canonical) || nestedPageRoutes[canonical];
   return pageId ? { pageId, canonical } : null;
 }
+// Client-side presentation gate mirrors the opt-in staging Read Model scopes.
+// This only hides unsupported tabs; the backend remains the authority.
+function readModelScopeAllowed(module) {
+  const scopes = window.MBA_DASHBOARD_V1_SCOPES;
+  if (window.MBA_DASHBOARD_V1_ENABLED !== true || !scopes) return true;
+  const portfolio = window.MBA_API?.getPortfolioId?.();
+  return Array.isArray(scopes[module]) && scopes[module].includes(portfolio);
+}
+window.MBA_READ_MODEL_SCOPE_ALLOWED = readModelScopeAllowed;
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
+  if (route === 'analytics/cadastro' && !readModelScopeAllowed('cadastro')) return false;
+  if (route === 'analytics/andamentos' && !readModelScopeAllowed('andamentos')) return false;
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;

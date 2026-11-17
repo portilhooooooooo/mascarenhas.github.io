@@ -179,13 +179,19 @@
     const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : null;
     if (epochBeforeRequest!==authorizationEpoch || tokenBeforeRequest !== getStoredToken() || (path !== '/api/me' && portfolioBeforeRequest !== getPortfolioId())) throw Object.assign(new Error('Resposta de contexto anterior descartada.'), {code:'STALE_IDENTITY'});
     if (!response.ok) {
+      // The launcher sends these reads to staging, but Microsoft identity is
+      // validated by production. A staging 401/403 must never revoke that
+      // production session or reopen its institutional login animation.
+      const stagingRead=window.MBA_STAGE_READ_BRIDGE?.enabled===true&&(
+        /^\/api\/(?:v3\/|dashboard\/v1\/|resultados\/cadastro\/)/.test(path)||
+        path==='/api/resultados/andamentos/cards');
       const error = new Error(data?.error || data?.message || 'Não foi possível concluir a solicitação.');
       error.code = data?.code;
       error.status = response.status;
       error.retryAfter = response.headers.get('Retry-After');
       error.reason = ['session_replaced', 'session_revoked', 'session_expired'].includes(data?.reason) ? data.reason : 'invalid';
 
-      const sessionInvalid = response.status === 401
+      const sessionInvalid = !stagingRead && response.status === 401
         && Boolean(tokenBeforeRequest)
         && getStoredToken() === tokenBeforeRequest
         && sessionInvalidCodes.has(String(data?.code || ''));
@@ -195,8 +201,12 @@
           detail: Object.freeze({ code: data?.code, reason: error.reason }),
         }));
       }
-      if (response.status === 403 && path !== '/api/me' && tokenBeforeRequest
-        && ['PERMISSION_DENIED','PORTFOLIO_ACCESS_DENIED','PROFILE_NOT_AUTHORIZED'].includes(data?.code)) {
+      // A resource/portfolio denial is not a revoked session. In particular,
+      // staging Read Model scopes can reject a portfolio while Microsoft SSO
+      // remains valid; reinitializing auth here creates a loading-screen loop.
+      // Keep profile revocation as a separate, identity-wide signal.
+      if (!stagingRead && response.status === 403 && path !== '/api/me' && tokenBeforeRequest
+        && data?.code === 'PROFILE_NOT_AUTHORIZED') {
         window.MBA_CURRENT_USER = null;
         window.dispatchEvent(new Event('mba:logged-out'));
         window.dispatchEvent(new Event('mba:authorization-invalidated'));

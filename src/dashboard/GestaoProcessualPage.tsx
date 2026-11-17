@@ -43,6 +43,10 @@ export function GestaoProcessualPage() {
   const canViewClosing = permissions['encerramentos.view'] === true && policy?.canAccess('encerramentos') === true;
   const profile = (window as Window & {MBA_CURRENT_USER?:{id?:string;is_master_admin?:boolean}}).MBA_CURRENT_USER;
   const portfolio = (window as Window & {MBA_API?: {getPortfolioId?: () => string}}).MBA_API?.getPortfolioId?.();
+  const readModelScopeAllowed=(module:'cadastro'|'andamentos')=>
+    (window as Window & {MBA_READ_MODEL_SCOPE_ALLOWED?:(module:string)=>boolean}).MBA_READ_MODEL_SCOPE_ALLOWED?.(module)!==false;
+  const canViewCadastro=canViewAnalytics&&readModelScopeAllowed('cadastro');
+  const canViewAndamentos=canViewAnalytics&&permissions['automations.view']===true&&readModelScopeAllowed('andamentos');
   const canViewEnterDefenses = canViewAnalytics && permissions['tasks.view'] === true && portfolio === 'agibank_enter';
   const canViewEnterProtocols = canViewEnterDefenses;
   const canViewPayments = canViewAnalytics && ((profile?.is_master_admin === true && permissions['pagamentos.view'] === true) || (profile?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && portfolio === 'agibank_mba'));
@@ -80,18 +84,19 @@ export function GestaoProcessualPage() {
   }, []);
   // Mantém a intenção de navegação entre trocas de carteira.
   // Enquanto a permissão não existir, exibe apenas a visão autorizada.
-  const displayedTab: AnalyticsTab = activeTab === 'cadastro' && canViewAnalytics ? 'cadastro'
-    : activeTab === 'andamentos' && canViewAnalytics ? 'andamentos'
+  const displayedTab: AnalyticsTab = activeTab === 'cadastro' && canViewCadastro ? 'cadastro'
+    : activeTab === 'andamentos' && canViewAndamentos ? 'andamentos'
     : activeTab === 'faturamento' && canViewV3Faturamento ? 'faturamento'
-    : activeTab === 'protocolos' && canViewEnterProtocols
-    ? 'protocolos'
-    : activeTab === 'defesas' && canViewEnterDefenses
-    ? 'defesas'
-    : activeTab === 'pagamentos' && canViewPayments
-    ? 'pagamentos'
-    : (activeTab === 'encerramentos' || !canViewAnalytics) && canViewClosing
-      ? 'encerramentos'
-      : 'cadastro';
+    : activeTab === 'protocolos' && canViewEnterProtocols ? 'protocolos'
+    : activeTab === 'defesas' && canViewEnterDefenses ? 'defesas'
+    : activeTab === 'pagamentos' && canViewPayments ? 'pagamentos'
+    : activeTab === 'encerramentos' && canViewClosing ? 'encerramentos'
+    : canViewCadastro ? 'cadastro'
+    : canViewAndamentos ? 'andamentos'
+    : canViewClosing ? 'encerramentos'
+    : canViewPayments ? 'pagamentos'
+    : canViewEnterDefenses ? 'defesas'
+    : 'cadastro';
 
   useEffect(() => {
     if(!visible)return;
@@ -99,11 +104,13 @@ export function GestaoProcessualPage() {
   }, [displayedTab,visible]);
 
   if (!canViewAnalytics && !canViewClosing) return <section className="gestao-metabase-page" aria-label="Analytics indisponível">Sem autorização para visualizar Analytics.</section>;
+  if (!canViewCadastro && !canViewAndamentos && !canViewClosing && !canViewPayments && !canViewEnterDefenses)
+    return <section className="gestao-metabase-page" aria-label="Resultados indisponíveis">Nenhuma seção de Resultados disponível nesta carteira.</section>;
 
   const shellTabs = document.getElementById('mba-shell-tabs');
   const resultsTabs = <nav className="mba-operation-subnav gestao-processual-subnav" aria-label="Seções de Analytics">
-      {canViewAnalytics && <button type="button" className={displayedTab === 'cadastro' ? 'active' : ''} aria-current={displayedTab === 'cadastro' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/cadastro')}>Cadastro</button>}
-      {canViewAnalytics && <button type="button" className={displayedTab === 'andamentos' ? 'active' : ''} aria-current={displayedTab === 'andamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/andamentos')}>Andamentos</button>}
+      {canViewCadastro && <button type="button" className={displayedTab === 'cadastro' ? 'active' : ''} aria-current={displayedTab === 'cadastro' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/cadastro')}>Cadastro</button>}
+      {canViewAndamentos && <button type="button" className={displayedTab === 'andamentos' ? 'active' : ''} aria-current={displayedTab === 'andamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/andamentos')}>Andamentos</button>}
       {canViewClosing && <button type="button" className={displayedTab === 'encerramentos' ? 'active' : ''} aria-current={displayedTab === 'encerramentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/encerramentos')}>Encerramentos</button>}
       {canViewPayments && <button type="button" className={displayedTab === 'pagamentos' ? 'active' : ''} aria-current={displayedTab === 'pagamentos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/pagamentos')}>Pagamentos</button>}
       {canViewEnterDefenses && <button type="button" className={displayedTab === 'defesas' || displayedTab === 'protocolos' ? 'active' : ''} aria-current={displayedTab === 'defesas' || displayedTab === 'protocolos' ? 'page' : undefined} onClick={() => navigateAnalytics('analytics/controladoria/defesas')}>Controladoria</button>}
@@ -116,8 +123,8 @@ export function GestaoProcessualPage() {
         <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} onClick={() => navigateAnalytics('analytics/controladoria/defesas')}>Defesas</button>
         <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} onClick={() => navigateAnalytics('analytics/controladoria/protocolos')}>Protocolos</button>
       </nav>}
-    {canViewAnalytics && visitedTabs.includes('cadastro') ? <div style={{display: displayedTab === 'cadastro' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='cadastro'} cardsOnly/></div> : null}
-    {canViewAnalytics && visitedTabs.includes('andamentos') ? <div style={{display: displayedTab === 'andamentos' ? 'contents' : 'none'}}><AndamentosCardsPage key={runtimeScope()} visible={visible && displayedTab==='andamentos'}/></div> : null}
+    {canViewCadastro && visitedTabs.includes('cadastro') ? <div style={{display: displayedTab === 'cadastro' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='cadastro'} cardsOnly/></div> : null}
+    {canViewAndamentos && visitedTabs.includes('andamentos') ? <div style={{display: displayedTab === 'andamentos' ? 'contents' : 'none'}}><AndamentosCardsPage key={runtimeScope()} visible={visible && displayedTab==='andamentos'}/></div> : null}
     {canViewV3Faturamento && visible && displayedTab==='faturamento' && <BackofficeRead key={runtimeScope()} module="faturamento"/>}
     {canViewClosing && (readSource('encerramentos') === 'V3' ? (visible && displayedTab === 'encerramentos' ? <BackofficeRead key={runtimeScope()} module="encerramentos"/> : null) : (visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null))}
     {canViewPayments && (readSource('pagamentos') === 'V3' ? (visible && displayedTab === 'pagamentos' ? <BackofficeRead key={runtimeScope()} module="pagamentos"/> : null) : (visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null))}
