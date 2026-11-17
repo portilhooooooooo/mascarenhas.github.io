@@ -1,6 +1,5 @@
 import {SelectMenu} from './SelectMenu';
 import {CadastroCpjCards} from './CadastroCpjCards';
-import {ReadModelDashboard} from './ReadModelDashboard';
 import { DashboardRecovery, MetricDots } from './dashboardFeedback';
 import {runtimeQueries,runtimeScope} from '../tasks/runtimeQueries';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -357,7 +356,6 @@ export function BaseGeralPage({visible=true,cardsOnly=false}:{visible?:boolean;c
         </button>}
         {agingCards}
       </div>
-      <ReadModelDashboard dashboard="cadastro" visible={visible}/>
       {products}
       </>}
     </CadastroCpjCards> : <>

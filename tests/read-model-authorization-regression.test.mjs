@@ -81,6 +81,9 @@ test('test build and navigation use the same per-portfolio Read Model scope',()=
   const build=read('build-static.mjs');
   const app=read('app.js');
   const results=read('src/dashboard/GestaoProcessualPage.tsx');
+  const cadastro=read('src/dashboard/BaseGeralPage.tsx');
+  assert.doesNotMatch(cadastro,/ReadModelDashboard/);
+  assert.match(cadastro,/CadastroCpjCards/);
   assert.match(build,/npm_lifecycle_event === 'build:routes-testing'/);
   assert.match(build,/MBA_DASHBOARD_V1_SCOPES = Object.freeze/);
   assert.ok(build.includes('cadastro:["agibank_enter","agibank_mba"]'));
