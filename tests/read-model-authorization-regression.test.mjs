@@ -83,6 +83,7 @@ test('test build and navigation use the same per-portfolio Read Model scope',()=
   const results=read('src/dashboard/GestaoProcessualPage.tsx');
   assert.match(build,/npm_lifecycle_event === 'build:routes-testing'/);
   assert.match(build,/MBA_DASHBOARD_V1_SCOPES = Object.freeze/);
+  assert.ok(build.includes('cadastro:["agibank_enter","agibank_mba"]'));
   assert.match(app,/window\.MBA_READ_MODEL_SCOPE_ALLOWED = readModelScopeAllowed/);
   assert.doesNotMatch(app,/route === 'analytics\/andamentos' && !readModelScopeAllowed\('andamentos'\)/);
   assert.doesNotMatch(app,/route === 'analytics\/cadastro' && !readModelScopeAllowed\('cadastro'\)/);

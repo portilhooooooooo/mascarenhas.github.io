@@ -89,7 +89,7 @@ if (staging || process.env.npm_lifecycle_event === 'build:routes-testing') {
   const config = await readFile(configPath, 'utf8');
   await writeFile(configPath, config + '\n'
     + (staging ? '' : 'window.MBA_DASHBOARD_V1_ENABLED = true;\n')
-    + 'window.MBA_DASHBOARD_V1_SCOPES = Object.freeze({cadastro:["agibank_enter"],andamentos:["agibank_enter","agibank_mba"]});\n', 'utf8');
+    + 'window.MBA_DASHBOARD_V1_SCOPES = Object.freeze({cadastro:["agibank_enter","agibank_mba"],andamentos:["agibank_enter","agibank_mba"]});\n', 'utf8');
 }
 
 // O vídeo institucional da branch de testes é obrigatório na tela de login.
