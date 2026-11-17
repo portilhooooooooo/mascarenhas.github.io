@@ -84,7 +84,11 @@ test('test build and navigation use the same per-portfolio Read Model scope',()=
   assert.match(build,/npm_lifecycle_event === 'build:routes-testing'/);
   assert.match(build,/MBA_DASHBOARD_V1_SCOPES = Object.freeze/);
   assert.match(app,/window\.MBA_READ_MODEL_SCOPE_ALLOWED = readModelScopeAllowed/);
-  assert.match(app,/route === 'analytics\/andamentos' && !readModelScopeAllowed\('andamentos'\)/);
-  assert.match(results,/const canViewAndamentos=canViewAnalytics&&permissions\['automations.view'\]===true&&readModelScopeAllowed\('andamentos'\)/);
+  assert.doesNotMatch(app,/route === 'analytics\/andamentos' && !readModelScopeAllowed\('andamentos'\)/);
+  assert.doesNotMatch(app,/route === 'analytics\/cadastro' && !readModelScopeAllowed\('cadastro'\)/);
+  assert.match(results,/const canViewCadastro=canViewAnalytics;/);
+  assert.match(results,/const canViewAndamentos=canViewAnalytics&&permissions\['automations.view'\]===true;/);
+  assert.match(results,/Dados de Cadastro ainda não publicados para esta carteira/);
+  assert.match(results,/Dados de Andamentos ainda não publicados para esta carteira/);
   assert.match(results,/\{canViewAndamentos && <button/);
 });

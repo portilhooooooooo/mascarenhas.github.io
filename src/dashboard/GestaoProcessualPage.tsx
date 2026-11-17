@@ -45,8 +45,12 @@ export function GestaoProcessualPage() {
   const portfolio = (window as Window & {MBA_API?: {getPortfolioId?: () => string}}).MBA_API?.getPortfolioId?.();
   const readModelScopeAllowed=(module:'cadastro'|'andamentos')=>
     (window as Window & {MBA_READ_MODEL_SCOPE_ALLOWED?:(module:string)=>boolean}).MBA_READ_MODEL_SCOPE_ALLOWED?.(module)!==false;
-  const canViewCadastro=canViewAnalytics&&readModelScopeAllowed('cadastro');
-  const canViewAndamentos=canViewAnalytics&&permissions['automations.view']===true&&readModelScopeAllowed('andamentos');
+  // Module visibility is permission-based; unpublished read-model data only
+  // changes the content state, never the administrator's navigation rights.
+  const canViewCadastro=canViewAnalytics;
+  const canViewAndamentos=canViewAnalytics&&permissions['automations.view']===true;
+  const hasCadastroReadModel=readModelScopeAllowed('cadastro');
+  const hasAndamentosReadModel=readModelScopeAllowed('andamentos');
   const canViewEnterDefenses = canViewAnalytics && permissions['tasks.view'] === true && portfolio === 'agibank_enter';
   const canViewEnterProtocols = canViewEnterDefenses;
   const canViewPayments = canViewAnalytics && ((profile?.is_master_admin === true && permissions['pagamentos.view'] === true) || (profile?.id === 'bbe93618-a630-4d2b-8c21-c3c2e6ec4b7e' && portfolio === 'agibank_mba'));
@@ -123,8 +127,8 @@ export function GestaoProcessualPage() {
         <button type="button" className={displayedTab === 'defesas' ? 'active' : ''} onClick={() => navigateAnalytics('analytics/controladoria/defesas')}>Defesas</button>
         <button type="button" className={displayedTab === 'protocolos' ? 'active' : ''} onClick={() => navigateAnalytics('analytics/controladoria/protocolos')}>Protocolos</button>
       </nav>}
-    {canViewCadastro && visitedTabs.includes('cadastro') ? <div style={{display: displayedTab === 'cadastro' ? 'contents' : 'none'}}><BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='cadastro'} cardsOnly/></div> : null}
-    {canViewAndamentos && visitedTabs.includes('andamentos') ? <div style={{display: displayedTab === 'andamentos' ? 'contents' : 'none'}}><AndamentosCardsPage key={runtimeScope()} visible={visible && displayedTab==='andamentos'}/></div> : null}
+    {canViewCadastro && visitedTabs.includes('cadastro') ? <div style={{display: displayedTab === 'cadastro' ? 'contents' : 'none'}}>{hasCadastroReadModel?<BaseGeralPage key={runtimeScope()} visible={visible && displayedTab==='cadastro'} cardsOnly/>:<section className="base-geral-panel" aria-label="Cadastro indisponível">Dados de Cadastro ainda não publicados para esta carteira.</section>}</div> : null}
+    {canViewAndamentos && visitedTabs.includes('andamentos') ? <div style={{display: displayedTab === 'andamentos' ? 'contents' : 'none'}}>{hasAndamentosReadModel?<AndamentosCardsPage key={runtimeScope()} visible={visible && displayedTab==='andamentos'}/>:<section className="base-geral-panel" aria-label="Andamentos indisponíveis">Dados de Andamentos ainda não publicados para esta carteira.</section>}</div> : null}
     {canViewV3Faturamento && visible && displayedTab==='faturamento' && <BackofficeRead key={runtimeScope()} module="faturamento"/>}
     {canViewClosing && (readSource('encerramentos') === 'V3' ? (visible && displayedTab === 'encerramentos' ? <BackofficeRead key={runtimeScope()} module="encerramentos"/> : null) : (visitedTabs.includes('encerramentos') ? <div style={{display: displayedTab === 'encerramentos' ? 'contents' : 'none'}}><EncerramentosPage key={runtimeScope()} visible={visible && displayedTab==='encerramentos'}/></div> : null))}
     {canViewPayments && (readSource('pagamentos') === 'V3' ? (visible && displayedTab === 'pagamentos' ? <BackofficeRead key={runtimeScope()} module="pagamentos"/> : null) : (visitedTabs.includes('pagamentos') ? <div style={{display: displayedTab === 'pagamentos' ? 'contents' : 'none'}}><PagamentosResultadosPage key={runtimeScope()} visible={visible && displayedTab==='pagamentos'}/></div> : null))}

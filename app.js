@@ -123,8 +123,7 @@ function readModelScopeAllowed(module) {
 window.MBA_READ_MODEL_SCOPE_ALLOWED = readModelScopeAllowed;
 function canAccessRoute(pageId, route) {
   if (pageId === 'sem-acesso') return true;
-  if (route === 'analytics/cadastro' && !readModelScopeAllowed('cadastro')) return false;
-  if (route === 'analytics/andamentos' && !readModelScopeAllowed('andamentos')) return false;
+  // Module access follows permissions; absent Read Model coverage is a content state.
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
