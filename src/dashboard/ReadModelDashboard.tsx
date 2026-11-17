@@ -38,12 +38,16 @@ const METRICS:Record<ReadModelName,{name:string;label:string;kind:'STOCK'|'FLOW'
     {name:'confirmed_benner_cases',label:'Confirmados no Benner',kind:'FLOW',icon:Send},
   ],
 };
-// Cadastro only: auto-refresh replaces the manual button (60s while visible + refocus).
-// Andamentos/Encerramentos keep the previous behaviour (tag, Recarregar, no polling).
-const REFRESH_MS=60000;
+// Cadastro and Andamentos poll their compact aggregated release, never raw cases.
+// Andamentos' 30s cadence follows the producer's 100-case webhook batches.
+const CADASTRO_REFRESH_MS=60000;
+const ANDAMENTOS_REFRESH_MS=30000;
 const cache=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:60000,refetchOnWindowFocus:false}}});
 
-export const readModelEnabled=()=>Boolean((window as Window&{MBA_DASHBOARD_V1_ENABLED?:boolean}).MBA_DASHBOARD_V1_ENABLED);
+// The routes-testing build is an isolated, read-only preview. Its static config
+// is not the staging build, so route selection cannot depend on a staging flag.
+export const readModelEnabled=()=>import.meta.env.MODE==='routes-testing'
+  ||Boolean((window as Window&{MBA_DASHBOARD_V1_ENABLED?:boolean}).MBA_DASHBOARD_V1_ENABLED);
 
 /** Contract 1.1.0: one card per metric, counted only from frozen detail evidence. 1.0.0 is accepted for UNAVAILABLE only. */
 const CONTRACTS=new Set(['1.0.0','1.1.0']);
@@ -57,6 +61,7 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
     return()=>AUTH_EVENTS.forEach(e=>window.removeEventListener(e,change));
   },[]);
   const isCadastro=dashboard==='cadastro';
+  const isAndamentos=dashboard==='andamentos';
   useEffect(()=>isCadastro
     ?onCadastroInvalidate(()=>void cache.invalidateQueries({queryKey:['dashboard-v1','cadastro']})):undefined,[isCadastro]);
   const api=getApi();
@@ -64,9 +69,10 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
   const summary=useQuery({
     queryKey:['dashboard-v1',dashboard,runtimeScope(),portfolio,revision],
     enabled:Boolean(visible&&portfolio&&api),
-    staleTime:isCadastro?15000:60000,
-    refetchOnWindowFocus:isCadastro,
-    refetchInterval:isCadastro&&visible?REFRESH_MS:false,
+    staleTime:isCadastro||isAndamentos?15000:60000,
+    refetchOnWindowFocus:isCadastro||isAndamentos,
+    refetchInterval:visible&&(isCadastro||isAndamentos)
+      ?(isCadastro?CADASTRO_REFRESH_MS:ANDAMENTOS_REFRESH_MS):false,
     queryFn:async({signal})=>{
       const body=await api!.request<Summary>('/api/dashboard/v1/'+dashboard,{signal,cache:'no-store'});
       if(!CONTRACTS.has(String(body?.contract_version))||body.dashboard!==dashboard)
@@ -105,8 +111,12 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
         const state=stateFor(m.name);
         const rev=data?.revision;
         const source=()=>dashboardV1Cases(dashboard,m.name,m.label+' (Read Model)',rev!,portfolio);
-        return <MetricCard key={m.name} label={m.label} icon={m.icon} state={state} hideCertTag={isCadastro}
-          onOpen={rev?()=>setDrill(source()):undefined}/>;
+        // A partial total is a confirmed lower bound; exact-revision case lists
+        // remain unavailable until the producer certifies their coverage.
+        const partialWithoutDetails=dashboard==='andamentos'&&state.kind==='uncertified';
+        return <MetricCard key={m.name} label={m.label} icon={m.icon} state={state}
+          hideCertTag={isCadastro} uncertifiedLabel={dashboard==='andamentos'?'parcial':undefined}
+          onOpen={rev&&!partialWithoutDetails?()=>setDrill(source()):undefined}/>;
       })}
     </div>
     {dashboard!=='andamentos'&&limitations.length>0&&<p className="mba-read-model-note">{reasonText(limitations)}</p>}

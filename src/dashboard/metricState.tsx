@@ -125,13 +125,18 @@ export function metricAriaLabel(label:string,state:CardState):string{
  * `hideCertTag` (Cadastro/Read Model only) hides the visible "não certificado" tag and
  * muted value styling. No provenance hover tooltip: state stays in data-state,
  * aria-label describes the value, and reason codes stay in data-reasons. */
-export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false}:{
+export function MetricCard({label,icon:Icon,state,onOpen,hideCertTag=false,uncertifiedLabel}:{
   label:string;icon:LucideIcon;state:CardState;onOpen?:()=>void;hideCertTag?:boolean;
+  uncertifiedLabel?:string;
 }){
-  const tag=STATE_TAG[state.kind];
+  const originalTag=STATE_TAG[state.kind];
+  const tag=state.kind==='uncertified'&&originalTag&&uncertifiedLabel
+    ?{...originalTag,label:uncertifiedLabel}:originalTag;
   const plain=hideCertTag&&state.kind==='uncertified';
   const hasValue=state.kind==='certified'||state.kind==='uncertified';
-  const name=metricAriaLabel(label,state);
+  const name=state.kind==='uncertified'&&uncertifiedLabel
+    ?label+': '+formatCount(state.value)+', '+uncertifiedLabel
+    :metricAriaLabel(label,state);
   const reasons='reasons' in state&&state.reasons.length?state.reasons.join(' '):undefined;
   const body=<>
     <span className="base-geral-card-top"><span>{label}</span><Icon size={15} strokeWidth={1.7}/></span>
