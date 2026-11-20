@@ -20,9 +20,6 @@ const METRICS:Record<ReadModelName,{name:string;label:string;kind:'STOCK'|'FLOW'
   cadastro:[{name:'entradas',label:'Entradas',kind:'STOCK',icon:FolderOpen}],
   andamentos:[
     {name:'fase_conhecimento',label:'Fase de conhecimento',kind:'STOCK',icon:BookOpen},
-    {name:'sentenca_extincao',label:'Sentença - Extinção',kind:'STOCK',icon:Archive},
-    {name:'sentenca_improcedente',label:'Sentença - Improcedente',kind:'STOCK',icon:FileCheck2},
-    {name:'sentenca_procedente',label:'Sentença - Procedente',kind:'STOCK',icon:Gavel},
     {name:'recursal_extincao',label:'Recursal - Extinção',kind:'STOCK',icon:Archive},
     {name:'recursal_improcedente',label:'Recursal - Improcedente',kind:'STOCK',icon:FileCheck2},
     {name:'recursal_procedente',label:'Recursal - Procedente',kind:'STOCK',icon:Scale},
@@ -90,7 +87,11 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
     if(summary.isLoading)return {kind:'loading'};
     if(summary.error)return failureState(summary.error);
     if(!data||data.status==='UNAVAILABLE')return {kind:'absent',reasons:limitations.length?limitations:['NO_PUBLISHED_REVISION']};
-    const state=classifyCard(data.cards?.[name]);
+    const card=data.cards?.[name];
+    // A confirmed-minimum 0 is not a measured zero: unclassified cases may exist, so it is "no reliable data".
+    if(dashboard==='andamentos'&&card?.value_semantics==='confirmed_minimum'&&card.value===0)
+      return {kind:'absent',reasons:['CONFIRMED_MINIMUM_ZERO_NO_BASIS']};
+    const state=classifyCard(card);
     return state.kind==='absent'&&!state.reasons?.length?{...state,reasons:['NO_FROZEN_DETAILS']}:state;
   };
   const when=(iso?:string)=>{if(!iso)return '—';const d=new Date(iso);return Number.isNaN(d.getTime())?iso:d.toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});};

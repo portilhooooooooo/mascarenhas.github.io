@@ -45,7 +45,7 @@ const ABSENT_STATUSES=new Set(['UNAVAILABLE','NOT_APPLICABLE','RESTRICTED','AVAI
 const UNCERTIFIED_STATUSES=new Set(['PARTIAL','STALE','REBUILDING','UNCERTIFIED']);
 
 export type BackendCard={
-  value?:unknown;status?:string;data_status?:string;source?:string|null;
+  value?:unknown;value_semantics?:string;status?:string;data_status?:string;source?:string|null;
   blockers?:string[];limitations?:string[];provenance?:{source?:string|null}|null;
 };
 
@@ -94,6 +94,7 @@ const REASON_LABELS:Record<string,string>={
   NO_REVISION_BOUND_DETAILS:'Revisão sem relação de processos vinculada',
   DETAIL_SOURCE_PROVENANCE_UNAVAILABLE:'Proveniência da relação indisponível',
   DETAIL_UNAVAILABLE:'Relação indisponível',
+  CONFIRMED_MINIMUM_ZERO_NO_BASIS:'Sem dado confiável: nenhum processo confirmado nesta fase',
   METRIC_UNAVAILABLE:'Indicador indisponível para esta carteira',
 };
 export const reasonText=(reasons:string[])=>reasons.map(r=>REASON_LABELS[r]||r).join(' · ');
