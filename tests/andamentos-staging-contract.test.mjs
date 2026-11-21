@@ -35,7 +35,7 @@ test('resumo e detalhamento usam o mesmo dashboard, revisão e escopo autenticad
   assert.match(view,/request<Summary>\('\/api\/dashboard\/v1\/'\+dashboard/);
   assert.match(view,/portfolio_id!==portfolio/);
   assert.match(view,/dashboardV1Cases\(dashboard,m\.name,m\.label\+' \(Read Model\)',rev!,portfolio\)/);
-  assert.match(detail,/andamentos:'2'/);
+  assert.match(detail,/andamentos:'3'/);
   assert.match(detail,/new URLSearchParams\(\{revision,version,limit:String\(size\)\}\)/);
   assert.match(detail,/\`\/api\/dashboard\/v1\/\$\{dashboard\}\/metrics\/\$\{metric\}\/cases\?/);
   assert.match(detail,/body\.portfolio_id!==portfolio\|\|body\.revision!==revision/);
