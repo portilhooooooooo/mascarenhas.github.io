@@ -146,8 +146,8 @@ type V1Case={canonical_case_id:string;reference_date?:string;dimensions?:Record<
   evidence?:{source_revision?:unknown;source_position?:unknown;batch_id?:unknown}|null};
 type V1Cases={contract_version?:string;portfolio_id?:string;total?:number;cases?:V1Case[];next_after?:string|null;revision?:string};
 
-// Mirrors backend dashboard_api.METRIC_VERSIONS: Cadastro Enter publishes metric version 2.
-const METRIC_VERSIONS:Record<string,string>={cadastro:'2',andamentos:'2'};
+// Mirrors backend dashboard_api.METRIC_VERSIONS: Cadastro Enter publishes metric version 2; Andamentos publishes version 3 (has_unknown).
+const METRIC_VERSIONS:Record<string,string>={cadastro:'2',andamentos:'3'};
 
 export function dashboardV1Cases(dashboard:string,metric:string,label:string,revision:string,portfolio:string):CaseSource{
   const pageSize=50;

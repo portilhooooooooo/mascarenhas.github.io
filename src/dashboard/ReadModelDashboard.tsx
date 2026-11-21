@@ -89,9 +89,12 @@ function Panel({dashboard,visible}:{dashboard:ReadModelName;visible:boolean}){
     if(summary.error)return failureState(summary.error);
     if(!data||data.status==='UNAVAILABLE')return {kind:'absent',reasons:limitations.length?limitations:['NO_PUBLISHED_REVISION']};
     const card=data.cards?.[name];
-    // A confirmed-minimum 0 is not a measured zero: unclassified cases may exist, so it is "no reliable data".
-    if(dashboard==='andamentos'&&card?.value_semantics==='confirmed_minimum'&&card.value===0)
+    // Confirmed-minimum 0: has_unknown=true is incomplete coverage ("sem dado"); has_unknown=false is a certified real 0.
+    // Old responses without has_unknown keep the conservative rule: treat as "sem dado".
+    if(dashboard==='andamentos'&&card?.value_semantics==='confirmed_minimum'&&card.value===0){
+      if(card.has_unknown===false)return {kind:'certified',value:0,source:card.provenance?.source??card.source??null,reasons:[]};
       return {kind:'absent',reasons:['CONFIRMED_MINIMUM_ZERO_NO_BASIS']};
+    }
     const state=classifyCard(card);
     return state.kind==='absent'&&!state.reasons?.length?{...state,reasons:['NO_FROZEN_DETAILS']}:state;
   };

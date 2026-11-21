@@ -45,7 +45,7 @@ const ABSENT_STATUSES=new Set(['UNAVAILABLE','NOT_APPLICABLE','RESTRICTED','AVAI
 const UNCERTIFIED_STATUSES=new Set(['PARTIAL','STALE','REBUILDING','UNCERTIFIED']);
 
 export type BackendCard={
-  value?:unknown;value_semantics?:string;status?:string;data_status?:string;source?:string|null;
+  value?:unknown;value_semantics?:string;has_unknown?:boolean;status?:string;data_status?:string;source?:string|null;
   blockers?:string[];limitations?:string[];provenance?:{source?:string|null}|null;
 };
 
