@@ -1,0 +1,33 @@
+.automation-job-panel {
+  padding: 16px;
+  border: 1px solid var(--mba-border);
+  border-radius: 9px;
+  overflow-wrap: anywhere;
+}
+.automation-job-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.automation-job-filters label { display: grid; gap: 5px; }
+.automation-job-panel button,
+.automation-job-filters :is(input, select) {
+  font: inherit;
+  color: var(--mba-text);
+  background: var(--mba-subtle);
+  border: 1px solid var(--mba-border);
+  border-radius: 6px;
+  padding: 6px 9px;
+}
+.automation-job-panel button:not(:disabled) { cursor: pointer; }
+.automation-job-panel dl { margin: 8px 0; }
+.automation-job-panel dt { font-weight: 600; }
+.automation-job-panel dd { margin: 0 0 8px; }
+.automation-job-table { overflow-x: auto; margin: 12px 0; }
+.automation-job-table table { width: 100%; border-collapse: collapse; text-align: left; }
+.automation-job-table :is(td, th) { padding: 8px 10px; border-bottom: 1px solid var(--mba-border); vertical-align: top; }
+
+.automation-history-navigation { margin-bottom: 12px; }
+#automation-existing-content:not([hidden]) { display: contents; }

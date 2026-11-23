@@ -41,6 +41,7 @@ const nestedPageRoutes = Object.freeze({
   'analytics/defesas': 'dashboard',
   'analytics/protocolos': 'dashboard',
   'analytics/ranking': 'dashboard',
+  'automacoes/historico': 'automacoes',
   'operacao/pagamentos': 'acordos',
   'operacao/liminar': 'acordos',
   'operacao/encerramentos': 'acordos',
@@ -111,6 +112,7 @@ function canAccessRoute(pageId, route) {
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
   if (route === 'analytics/faturamento' && window.MBA_CURRENT_USER?.permissions?.['faturamento.view'] !== true) return false;
+  if (route === 'automacoes/historico' && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/andamentos' && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
   if (route === 'analytics/pagamentos') {

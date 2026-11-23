@@ -78,6 +78,11 @@
 
 
         <section class="page list-page" id="automacoes" data-permission="automations.view">
+          <div class="automation-history-navigation">
+            <button class="secondary-button" id="automation-history-toggle" type="button" hidden>Histórico de execuções</button>
+          </div>
+          <div id="automation-history-root" hidden></div>
+          <div id="automation-existing-content">
           <div class="page-title"><div><h1>Integrações</h1><p>Execute e acompanhe as APIs operacionais do MBA Backoffice.</p></div></div>
 
           <div class="module-grid">
@@ -105,6 +110,7 @@
               <div class="module-actions"><button class="primary-button" type="button" data-benner-launch data-permission="encerramentos.view"><i data-lucide="play"></i>Lançar</button><button class="secondary-button integration-jobs-button" type="button" data-integration-jobs="benner-andamentos"><i data-lucide="list-checks"></i>Consultar envios</button></div>
             </article>
 
+          </div>
           </div>
         </section>
 

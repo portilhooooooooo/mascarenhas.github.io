@@ -9,6 +9,7 @@ import { UsersPage } from './UsersPage';
 import { PortfolioSwitcher } from './PortfolioSwitcher';
 import { configureBaseTaskImport } from './taskBaseImport';
 import { mountTasksPage } from '../tasks/mount';
+import { mountAutomationHistory } from './mountAutomationHistory';
 import './shell.css';
 import './protocolos.css';
 import './controladoria.css';
@@ -365,16 +366,19 @@ if (processosHost) {
   syncProcessos();
 }
 
+mountAutomationHistory();
+
 // The static automation shell retains all legacy commands in LEGACY builds.
 if (readSource('automacoes')==='V3') {
  let root:Root|null=null;
- const host=document.getElementById('automacoes');
+ const page=document.getElementById('automacoes');
+ const host=document.getElementById('automation-existing-content');
  const clear=()=>{root?.unmount();root=null;host?.replaceChildren();};
  const sync=()=>{
   if(!host||!mayOpen('automacoes')){clear();return;}
-  if(host.classList.contains('active')&&!root){host.replaceChildren();root=createRoot(host);root.render(<BackofficeRead module="automacoes"/>);}
+  if(page?.classList.contains('active')&&!root){host.replaceChildren();root=createRoot(host);root.render(<BackofficeRead module="automacoes"/>);}
  };
- if(host)new MutationObserver(sync).observe(host,{attributes:true,attributeFilter:['class']});
+ if(page)new MutationObserver(sync).observe(page,{attributes:true,attributeFilter:['class']});
  for(const event of ['mba:authenticated','mba:profile-ready','mba:module-visibility-updated'])window.addEventListener(event,sync);
  window.addEventListener('mba:portfolio-changed',()=>{clear();sync();});
  for(const event of ['mba:session-expired','mba:logged-out'])window.addEventListener(event,clear);
