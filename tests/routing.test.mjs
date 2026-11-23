@@ -196,3 +196,14 @@ test('Byanca vê resultados Regular sem acesso de Pagamentos global', () => {
   e.window.MBA_API.getPortfolioId=()=> 'agibank_enter';
   assert.equal(e.window.MBA_NAVIGATE('analytics/pagamentos'),false);
 });
+
+test('histórico de Automações aceita link direto e exige permissão de leitura', () => {
+  const path = '/automacoes/historico';
+  const permitted = environment(path, {permissions: {'automations.view': true}});
+  assert.equal(permitted.window.restorePageRoute(), true);
+  assert.equal(permitted.location.pathname, path);
+  assert.equal(permitted.active.get('automacoes'), true);
+  const blocked = environment(path);
+  blocked.window.restorePageRoute();
+  assert.equal(blocked.active.get('sem-acesso'), true);
+});

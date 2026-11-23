@@ -6,16 +6,17 @@ import {ClosingExecutionPanel} from './ClosingExecutionPanel';
 import {PaymentsACPExecutionPanel} from './PaymentsACPExecutionPanel';
 import {useModuleVisible} from './useModuleVisible';
 import {AutomationKanban,type KanbanFlow} from './AutomationKanban';
+import {AutomationHistory} from './AutomationHistory';
 import './automationWorkspace.css';
 
-type Module='home'|'datajud'|'executar-encerramentos'|'executar-pagamentos'|'encerramentos'|'pagamentos'|'liminar'|'protocolos'|'defesas'|'andamentos';
+type Module='home'|'historico'|'datajud'|'executar-encerramentos'|'executar-pagamentos'|'encerramentos'|'pagamentos'|'liminar'|'protocolos'|'defesas'|'andamentos';
 type AutomationModule='datajud'|'encerramentos'|'pagamentos';
 type Mode='import'|'manual'|'run'|null;
 const route=(module:Module)=>module==='home'?'automacoes':'automacoes/'+module;
 function fromUrl():Module{
   const current=(location.hash.startsWith('#/')?location.hash.slice(2):location.pathname).replace(/^\/+|\/+$/g,'');
   const name=current.startsWith('automacoes/')?current.slice('automacoes/'.length):'home';
-  return ['home','datajud','executar-encerramentos','executar-pagamentos','encerramentos','pagamentos','liminar','protocolos','defesas','andamentos'].includes(name)?name as Module:'home';
+  return ['home','historico','datajud','executar-encerramentos','executar-pagamentos','encerramentos','pagamentos','liminar','protocolos','defesas','andamentos'].includes(name)?name as Module:'home';
 }
 function go(module:Module){
   (window as Window&{MBA_NAVIGATE?:(page:string)=>boolean}).MBA_NAVIGATE?.(route(module));
@@ -43,8 +44,9 @@ function authorized():Set<Module>{
   const access=new Set<Module>(['home']);
   const portfolio=(window as Window&{MBA_API?:{getPortfolioId?:()=>string}}).MBA_API?.getPortfolioId?.()||'';
   const ownAutomationScope=portfolio.endsWith('_enter')||portfolio==='agibank_mba';
-  if(perms['automations.view']===true&&can('automacoes')&&ownAutomationScope){
-    access.add('datajud');access.add('andamentos');
+  if(perms['automations.view']===true&&can('automacoes')){
+    access.add('historico');
+    if(ownAutomationScope){access.add('datajud');access.add('andamentos');}
   }
   if(can('encerramentos')){access.add('encerramentos');access.add('executar-encerramentos');}
   if(can('pagamentos')){access.add('pagamentos');access.add('executar-pagamentos');}
@@ -89,17 +91,16 @@ const integrations=[
   {id:'protocolos' as const,label:'Protocolos',icon:Files},
 ];
 type HomeIntegration=typeof integrations[number]['id'];
-const historyEnabled=new Set<HomeIntegration>(['encerramentos','pagamentos','liminar','protocolos']);
-function Home({access,onExecute}:{access:Set<Module>;onExecute:(module:HomeIntegration)=>void}){
+function Home({access,onExecute,onHistory}:{access:Set<Module>;onExecute:(module:HomeIntegration)=>void;onHistory:(module:HomeIntegration)=>void}){
   return <div className="automation-home-grid" aria-label="Integrações">
     {integrations.filter(entry=>entry.id!=='datajud'&&access.has(entry.id)).map(({id,label,icon:Icon})=><article className="automation-home-card" key={id}>
       <div className={'automation-home-icon automation-home-icon-'+id}><Icon size={19} strokeWidth={1.8} aria-hidden="true"/></div>
       <div className="automation-home-copy"><h2>{label}</h2><p>{homeDescriptions[id]}</p></div>
       <div className="automation-home-actions">
         <button type="button" className="automation-execute" onClick={()=>onExecute(id)}><Play size={14} aria-hidden="true"/>Executar</button>
-        <button type="button" className="automation-history" disabled={!historyEnabled.has(id)}
-          title={!historyEnabled.has(id)?'Histórico ainda não integrado':undefined}
-          onClick={()=>go(id)}><History size={14} aria-hidden="true"/>Histórico</button>
+        {access.has('historico')&&<button type="button" className="automation-history" onClick={()=>onHistory(id)}>
+          <History size={14} aria-hidden="true"/>Histórico
+        </button>}
       </div>
     </article>)}
   </div>;
@@ -109,6 +110,7 @@ export function AutomacoesWorkspace(){
   const [module,setModule]=useState<Module>(fromUrl);
   const [access,setAccess]=useState<Set<Module>>(authorized);
   const [execute,setExecute]=useState<HomeIntegration|null>(null);
+  const [history,setHistory]=useState<{service:HomeIntegration|''; revision:number}>({service:'',revision:0});
   const dialogId=useId();
   const dialogRef=useRef<HTMLElement>(null);
   const originFocus=useRef<HTMLElement|null>(null);
@@ -141,24 +143,35 @@ export function AutomacoesWorkspace(){
     if(execute&&!access.has(execute))setExecute(null);
   },[access,execute]);
   useEffect(()=>{
-    const close=()=>setExecute(null);
-    window.addEventListener('mba:portfolio-changed',close);
-    return()=>window.removeEventListener('mba:portfolio-changed',close);
+    const reset=()=>{
+      setExecute(null);
+      setAccess(authorized());
+      setHistory(previous=>({service:'',revision:previous.revision+1}));
+    };
+    const events='mba:portfolio-changed mba:logged-out mba:session-expired mba:authorization-invalidated mba:profile-ready mba:authenticated'.split(' ');
+    events.forEach(event=>window.addEventListener(event,reset));
+    return()=>events.forEach(event=>window.removeEventListener(event,reset));
   },[]);
   const active=access.has(module)?module:'home';
-  const tabs:Module[]=['home','encerramentos','pagamentos','liminar','protocolos','defesas'];
+  const tabs:Module[]=['home','historico','encerramentos','pagamentos','liminar','protocolos','defesas'];
   const visibleTabs=tabs.filter(id=>access.has(id));
   const homeFlow=active==='datajud'||active==='executar-encerramentos'||active==='executar-pagamentos'||active==='andamentos';
   const tabsNav=<nav className="mba-operation-subnav automation-workspace-tabs" aria-label="Seções de Automações">
     {visibleTabs.map(id=><button type="button" key={id} className={(active===id||(id==='home'&&homeFlow))?'active':''} aria-current={(active===id||(id==='home'&&homeFlow))?'page':undefined} onClick={()=>go(id)}>
-      {id==='home'?'Home':id==='liminar'?'Liminar':id==='protocolos'?'Protocolos':id==='defesas'?'Defesas':id==='encerramentos'?'Encerramentos':'Pagamentos'}
+      {id==='home'?'Home':id==='historico'?'Histórico':id==='liminar'?'Liminar':id==='protocolos'?'Protocolos':id==='defesas'?'Defesas':id==='encerramentos'?'Encerramentos':'Pagamentos'}
     </button>)}
 
   </nav>;
   const shellTabs=document.getElementById('mba-shell-tabs');
   return <div className="automation-workspace" hidden={!visible}>
     {visible ? (shellTabs?createPortal(tabsNav,shellTabs):tabsNav) : null}
-    {active==='home'&&<Home access={access} onExecute={setExecute}/>}
+    {active==='home'&&<Home access={access} onExecute={setExecute} onHistory={service=>{
+      setHistory(previous=>({service,revision:previous.revision+1}));
+      go('historico');
+    }}/>}
+    {access.has('historico')&&<div hidden={active!=='historico'}>
+      <AutomationHistory key={history.revision} initialService={history.service} enabled={visible&&active==='historico'}/>
+    </div>}
     {visible&&execute&&access.has(execute)&&createPortal(<div className="automation-dialog-backdrop" onMouseDown={event=>{if(event.target===event.currentTarget)setExecute(null)}}>
       <section ref={dialogRef} className="automation-dialog" data-module={execute} role="dialog" aria-modal="true" aria-labelledby={dialogId}>
         <header className="automation-dialog-header">

@@ -453,7 +453,7 @@
 
 /* 2026-11 — Refino pós-login (THOM-REFINO-POSTLOGIN-20261114).
    Início de Automações como lista de operações: ícone neutro ao lado do texto,
-   ações com largura própria e "Histórico" indisponível legível (continua desabilitado). */
+   ações com largura própria. */
 .automation-workspace .automation-home-card{display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-areas:"icon copy" "actions actions";grid-template-rows:1fr auto;align-items:start;gap:12px;min-height:0;padding:14px 14px 12px}
 .automation-workspace .automation-home-icon,
 .automation-workspace .automation-home-icon[class*="automation-home-icon-"]{grid-area:icon;width:32px;height:32px;border-radius:7px;background:var(--mba-subtle);color:var(--mba-text-2)}
@@ -464,3 +464,34 @@
 .automation-workspace .automation-home-actions button{width:auto;min-width:104px;min-height:30px;padding:5px 12px;gap:6px}
 .automation-workspace .automation-home-actions .automation-history:disabled{opacity:1;border-color:var(--mba-border);background:var(--mba-subtle);color:var(--mba-muted,var(--mba-text-2));cursor:not-allowed}
 html[data-mba-theme="lua"] .automation-workspace .automation-home-actions .automation-execute{color:#171A1B}
+
+.automation-job-panel {
+  padding: 16px;
+  border: 1px solid var(--mba-border);
+  border-radius: 9px;
+  overflow-wrap: anywhere;
+}
+.automation-job-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.automation-job-filters label { display: grid; gap: 5px; }
+.automation-job-panel button,
+.automation-job-filters :is(input, select) {
+  font: inherit;
+  color: var(--mba-text);
+  background: var(--mba-subtle);
+  border: 1px solid var(--mba-border);
+  border-radius: 6px;
+  padding: 6px 9px;
+}
+.automation-job-panel button:not(:disabled) { cursor: pointer; }
+.automation-job-panel dl { margin: 8px 0; }
+.automation-job-panel dt { font-weight: 600; }
+.automation-job-panel dd { margin: 0 0 8px; }
+.automation-job-table { overflow-x: auto; margin: 12px 0; }
+.automation-job-table table { width: 100%; border-collapse: collapse; text-align: left; }
+.automation-job-table :is(td, th) { padding: 8px 10px; border-bottom: 1px solid var(--mba-border); vertical-align: top; }

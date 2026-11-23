@@ -40,6 +40,7 @@ const nestedPageRoutes = Object.freeze({
   'analytics/protocolos': 'dashboard',
   'analytics/ranking': 'dashboard',
   'automacoes/datajud': 'automacoes',
+  'automacoes/historico': 'automacoes',
   'automacoes/executar-encerramentos': 'automacoes',
   'automacoes/executar-pagamentos': 'automacoes',
   'automacoes/encerramentos': 'automacoes',
@@ -127,7 +128,7 @@ function canAccessRoute(pageId, route) {
   if (window.MBA_PORTFOLIO_POLICY?.canAccess(pageId) !== true) return false;
   const operationPageId = operationRoutePermissions[route];
   if (operationPageId && window.MBA_PORTFOLIO_POLICY?.canAccess(operationPageId) !== true) return false;
-  if ((route === 'automacoes/datajud' || route === 'automacoes/andamentos') && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
+  if ((route === 'automacoes/datajud' || route === 'automacoes/andamentos' || route === 'automacoes/historico') && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/faturamento' && window.MBA_CURRENT_USER?.permissions?.['faturamento.view'] !== true) return false;
   if (route === 'analytics/andamentos' && window.MBA_CURRENT_USER?.permissions?.['automations.view'] !== true) return false;
   if (route === 'analytics/encerramentos' && window.MBA_PORTFOLIO_POLICY?.canAccess('encerramentos') !== true) return false;
