@@ -31,7 +31,7 @@ type JobPage = {
   sources: {service: JobService; state: 'AVAILABLE' | 'UNAVAILABLE'}[];
 };
 type ItemPage = {
-  items: {item_id: string; status: string | null; record: Record<string, string | number | boolean | null>}[];
+  items: {item_id: string; status: string | null; record: Record<string, string | number | boolean | null> | null}[];
   pagination: Pagination;
   coverage: Coverage;
 };

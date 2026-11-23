@@ -4,8 +4,12 @@ import {getJob, getJobItems, listJobs, serviceLabels, statusLabels, type Automat
 
 const uuid = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 const dateFormat = new Intl.DateTimeFormat('pt-BR', {dateStyle: 'short', timeStyle: 'short'});
-const dateLabel = (date: string | null) => date ? dateFormat.format(new Date(date)) : '—';
+function dateLabel(value: string | null) {
+  const date = value ? new Date(value) : null;
+  return date && Number.isFinite(date.getTime()) ? dateFormat.format(date) : '—';
+}
 const coverageReasons: Record<string, string> = {
+  REEXECUTIONS_NOT_RECORDED: 'O histórico registra apenas importações de Pagamentos. As reexecuções ficam fora do histórico.',
   ITEMS_LINKED_BY_LATEST_IMPORT: 'Os itens refletem apenas a importação mais recente que os atualizou.',
   NO_BATCH_CORRELATION: 'A execução não tem um lote associado.',
   ITEMS_NOT_RECORDED: 'A fonte não registra itens para este tipo de execução.',
@@ -21,12 +25,17 @@ const itemLabels: Record<string, string> = {
 };
 
 type LoadError = Error & {status?: number; code?: string};
-function RequestError({error, retry}: {error: LoadError; retry: () => void}) {
+function RequestError({error, retry, list = false}: {error: LoadError; retry: () => void; list?: boolean}) {
   const message = error.code?.includes('CURSOR') ? 'A página expirou. Recarregue a consulta.'
     : error.status === 401 || error.status === 403 ? 'Acesso indisponível para esta sessão.'
-      : error.status === 404 ? 'Registro ou serviço indisponível nesta carteira.'
+      : error.status === 404 ? (list ? 'O histórico ainda não está publicado neste ambiente.' : 'Registro ou serviço indisponível nesta carteira.')
         : error.status === 503 ? 'Fonte temporariamente indisponível.' : 'Não foi possível carregar os dados.';
   return <p role="alert">{message} <button type="button" onClick={retry}>Recarregar</button></p>;
+}
+
+function JobCoverage({coverage}: {coverage: AutomationJob['coverage']}) {
+  if (coverage?.state !== 'PARTIAL') return null;
+  return <p>Cobertura parcial. {coverage.reason && coverageReasons[coverage.reason]}</p>;
 }
 
 function JobDetails({job, close}: {job: AutomationJob; close: () => void}) {
@@ -56,6 +65,7 @@ function JobDetails({job, close}: {job: AutomationJob; close: () => void}) {
         <dt>Sucessos / erros</dt><dd>{detail.data.success ?? '—'} / {detail.data.errors ?? '—'}</dd>
       </dl>
       {detail.data.correlation?.shared && <p>Lote compartilhado</p>}
+      <JobCoverage coverage={detail.data.coverage}/>
       <h3>Itens</h3>
       {items.isPending && <p role="status">Carregando itens…</p>}
       {items.error && <RequestError error={items.error} retry={() => void client.resetQueries({queryKey: [...key, 'items']})}/>}
@@ -68,10 +78,10 @@ function JobDetails({job, close}: {job: AutomationJob; close: () => void}) {
         <thead><tr><th scope="col">Item</th><th scope="col">Status</th><th scope="col">Dados</th></tr></thead>
         <tbody>{records.map(item => <tr key={item.item_id}>
           <td>{item.item_id}</td><td>{item.status ?? '—'}</td>
-          <td><dl>{Object.entries(item.record).map(([field, value]) => <div key={field}>
+          <td>{item.record ? <dl>{Object.entries(item.record).map(([field, value]) => <div key={field}>
             <dt>{itemLabels[field] ?? field}</dt>
             <dd>{typeof value === 'boolean' ? (value ? 'Sim' : 'Não') : value ?? '—'}</dd>
-          </div>)}</dl></td>
+          </div>)}</dl> : '—'}</td>
         </tr>)}</tbody>
       </table></div>}
       {items.hasNextPage && !items.isError && <button type="button" disabled={items.isFetching} onClick={() => void items.fetchNextPage()}>Carregar mais itens</button>}
@@ -91,7 +101,7 @@ function HistoryPanel({initialService, enabled}: {initialService: JobService | '
   });
   const jobs = useInfiniteQuery({
     queryKey: ['jobs', filters], queryFn: ({pageParam, signal}) => listJobs(filters, pageParam, signal),
-    initialPageParam: null as string | null, getNextPageParam: page => page.pagination.next_cursor, enabled,
+    initialPageParam: null as string | null, getNextPageParam: page => page.pagination.next_cursor, enabled, staleTime: Infinity,
   });
   const sources = serviceFiltered ? discovery.data?.sources : jobs.data?.pages[0]?.sources;
   const services = new Set(sources?.map(source => source.service));
@@ -131,17 +141,18 @@ function HistoryPanel({initialService, enabled}: {initialService: JobService | '
         <label>Criado a partir de<input name="created_from" type="datetime-local"/></label>
         <label>Criado antes de<input name="created_before" type="datetime-local"/></label>
         <button type="submit">Filtrar</button>
+        <button type="button" disabled={jobs.isFetching} onClick={() => void client.resetQueries({queryKey: ['jobs', filters]})}>Atualizar resultados</button>
       </form>
       {invalidPeriod && <p role="alert">O fim do período deve ser posterior ao início.</p>}
       {jobs.isPending && <p role="status">Carregando execuções…</p>}
-      {jobs.error && <RequestError error={jobs.error} retry={() => void client.resetQueries({queryKey: ['jobs', filters]})}/>}
+      {jobs.error && <RequestError list error={jobs.error} retry={() => void client.resetQueries({queryKey: ['jobs', filters]})}/>}
       {unavailable.length > 0 && <p role="status">Histórico parcial. Fontes indisponíveis: {unavailable.join(', ')}.</p>}
       {jobs.isSuccess && !rows.length && <p>{jobs.data.pages[0].sources.length ? 'Nenhuma execução para os filtros selecionados.' : 'Nenhum serviço de histórico disponível nesta carteira.'}</p>}
       {rows.length > 0 && <div className="automation-job-table"><table>
         <thead><tr><th scope="col">Execução</th><th scope="col">Serviço</th><th scope="col">Criada em</th><th scope="col">Status</th><th scope="col">Processados / total</th></tr></thead>
         <tbody>{rows.map(row => <tr key={`${row.service}/${row.job_id}`}>
           <td><button type="button" onClick={() => setJob(row)}>{row.job_id}</button></td>
-          <td>{serviceLabels[row.service]}{row.correlation?.shared && ' · Lote compartilhado'}</td>
+          <td>{serviceLabels[row.service]}{row.correlation?.shared && ' · Lote compartilhado'}<JobCoverage coverage={row.coverage}/></td>
           <td>{dateLabel(row.created_at)}</td><td>{statusLabels[row.status]}</td>
           <td>{row.processed ?? '—'} / {row.total ?? '—'}</td>
         </tr>)}</tbody>
