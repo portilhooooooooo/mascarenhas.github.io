@@ -1,0 +1,15 @@
+{
+  "_doc": "Fixture sintética. CNJs fictícios. Contrato /api/operacao/encerramentos/items (carteira agibank/regular).",
+  "portfolio_id": "agibank/regular",
+  "total": 8, "limit": 50, "offset": 0,
+  "rows": [
+    {"portfolio_id":"agibank/regular","cnj":"0000001-00.2026.8.00.0001","datajud_tipo":"DERROTA","datajud_indicio_apto":true,"fase_recursal":false},
+    {"portfolio_id":"agibank/regular","cnj":"0000002-00.2026.8.00.0001","datajud_tipo":"DERROTA_VOLUNTARIA","datajud_indicio_apto":true,"fase_recursal":false},
+    {"portfolio_id":"agibank/regular","cnj":"0000003-00.2026.8.00.0001","datajud_tipo":"VITORIA","datajud_indicio_apto":true,"fase_recursal":false},
+    {"portfolio_id":"agibank/regular","cnj":"0000004-00.2026.8.00.0001","datajud_tipo":"ACORDO","datajud_indicio_apto":false,"fase_recursal":false},
+    {"portfolio_id":"agibank/regular","cnj":"0000005-00.2026.8.00.0001","datajud_tipo":"EXTINCAO","datajud_indicio_apto":false,"fase_recursal":false},
+    {"portfolio_id":"agibank/regular","cnj":"0000006-00.2026.8.00.0001","datajud_tipo":"INDETERMINADO","datajud_indicio_apto":null,"fase_recursal":false},
+    {"portfolio_id":"agibank/regular","cnj":"0000007-00.2026.8.00.0001","datajud_tipo":null,"datajud_indicio_apto":null,"fase_recursal":null},
+    {"portfolio_id":"agibank/regular","cnj":"0000008-00.2026.8.00.0001","datajud_tipo":"DERROTA","datajud_indicio_apto":true,"fase_recursal":true}
+  ]
+}

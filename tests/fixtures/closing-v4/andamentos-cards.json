@@ -1,0 +1,19 @@
+{
+  "_doc": "Fixture sintética. Contrato /api/resultados/andamentos/cards preferido (cards[KIND]). Cobre certificado, não certificado, ausente, indisponível e valor zero real.",
+  "regular_certified_and_gaps": {
+    "status": "CURRENT", "portfolio_id": "agibank/regular",
+    "cards": {
+      "FASE_CONHECIMENTO": {"value": 120, "status": "CURRENT", "source": "READ_MODEL"},
+      "SENTENCA_PROCEDENTE": {"value": 14, "status": "PARTIAL", "limitations": ["JUDICIAL_COVERAGE_NOT_CERTIFIED"]},
+      "SENTENCA_EXTINCAO": {"value": 0, "status": "CURRENT", "source": "READ_MODEL"},
+      "RECURSAL_PROCEDENTE": {"value": null, "status": "UNAVAILABLE", "limitations": ["NO_PUBLISHED_EVENTS_FOR_KIND"]},
+      "TRANSITO_EM_JULGADO": {"value": null, "status": "UNAVAILABLE", "limitations": ["CANONICAL_PROCESS_PHASE_NOT_AVAILABLE"]}
+    }
+  },
+  "enter_other_scope": {
+    "status": "CURRENT", "portfolio_id": "agibank/enter",
+    "cards": {"FASE_CONHECIMENTO": {"value": 7, "status": "CURRENT", "source": "READ_MODEL"}}
+  },
+  "stale_body": {"status": "STALE", "portfolio_id": "agibank/regular",
+    "cards": {"FASE_CONHECIMENTO": {"value": 120, "status": "CURRENT"}}}
+}

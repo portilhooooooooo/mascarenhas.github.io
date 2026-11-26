@@ -1,0 +1,9 @@
+{
+  "_doc": "Fixture sintética. Mesmo CNJ 0000001 existe nas duas carteiras com resultado distinto: isolamento.",
+  "portfolio_id": "agibank/enter",
+  "total": 2, "limit": 50, "offset": 0,
+  "rows": [
+    {"portfolio_id":"agibank/enter","cnj":"0000001-00.2026.8.00.0001","datajud_tipo":"VITORIA","datajud_indicio_apto":true,"fase_recursal":false},
+    {"portfolio_id":"agibank/enter","cnj":"0000009-00.2026.8.00.0001","datajud_tipo":null,"datajud_indicio_apto":null,"fase_recursal":null}
+  ]
+}
