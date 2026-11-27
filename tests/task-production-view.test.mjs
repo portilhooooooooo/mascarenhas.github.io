@@ -6,7 +6,7 @@ const component = readFileSync(new URL('src/tasks/TaskResults.tsx', root), 'utf8
 const css = readFileSync(new URL('src/tasks/taskResults.css', root), 'utf8');
 const shell = readFileSync(new URL('src/tasks/TasksApp.tsx', root), 'utf8');
 
-assert.match(shell, /navigateTaskTab\('tarefas\/resultados'\)}>Produtividade<\/button>/);
+assert.match(shell, /navigateTaskTab\('tarefas\/resultados'\)}>Analytics<\/button>/);
 for(const label of ['Pendentes','Concluídos','Tempo médio','Tarefas concluídas','Produtividade por colaborador']){
   assert.ok(component.includes(label),'Falta o elemento '+label);
 }

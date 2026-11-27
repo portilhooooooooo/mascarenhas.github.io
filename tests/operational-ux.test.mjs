@@ -31,6 +31,7 @@ try {
   const records = () => page.evaluate(() => window.__uxSubmissions);
   const open = async (scenario='', fixture='') => {
     await page.goto(`http://127.0.0.1:5174/?scenario=${scenario}&fixture=${fixture}`);
+    await page.locator('.tasks-process-item').first().click();
     await page.locator('.execution-process-heading').waitFor();
     await page.locator('.task-station .tasks-react-subnav').waitFor();
     await page.evaluate(() => {

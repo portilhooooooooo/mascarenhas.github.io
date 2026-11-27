@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Search, Trash2, UserPlus } from 'lucide-react';
+import { Plus, Search, Trash2, UserPlus, X } from 'lucide-react';
 import {
   TASK_STATE_META,
   priorityLevel, processStatus,
@@ -39,6 +39,7 @@ import { runtimeScope } from './runtimeQueries';
 import { TaskResults } from './TaskResults';
 import { AssignmentsBoard } from './AssignmentsBoard';
 import { ProcessHeading, TaskBrief } from './TaskExecution';
+import { TaskCalendar, type CalendarMode } from './TaskCalendar';
 import { SelectMenu } from '../dashboard/SelectMenu';
 import { getProcessUf } from './processUf';
 import './tasks.css';
@@ -58,6 +59,7 @@ function sessionFingerprint(account: MbaUser | null | undefined) {
   ]);
 }
 const LAST_TASK_TYPE_KEY = 'mba-last-task-type';
+const CALENDAR_MODE_KEY = 'mba-tasks-calendar-mode';
 const HYDRATION_CONCURRENCY = 3;
 type TaskStatusFilter = string;
 type AssigneeTotal = { id: string; name: string; count: number; task_ids: string[] };
@@ -282,6 +284,24 @@ export function TasksApp() {
   const [linkedPreview, setLinkedPreview] = useState<WorkItem | null>(null);
   const [linkedError, setLinkedError] = useState<string | null>(null);
   const [assignTask, setAssignTask] = useState<Task | null>(null);
+  // Weekly/Monthly são apenas modos de visualização da mesma fila filtrada.
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => sessionStorage.getItem(CALENDAR_MODE_KEY) === 'monthly' ? 'monthly' : 'weekly');
+  const [calendarAnchor, setCalendarAnchor] = useState(() => new Date());
+  const [cardOpen, setCardOpen] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const cardOpener = useRef<HTMLElement | null>(null);
+  const changeCalendarMode = useCallback((mode: CalendarMode) => {
+    setCalendarMode(mode);
+    try { sessionStorage.setItem(CALENDAR_MODE_KEY, mode); } catch { /* Preferência é opcional. */ }
+  }, []);
+  const closeCard = useCallback(() => {
+    setCardOpen(false);
+    setLinkedPreview(null);
+    setLinkedError(null);
+    const opener = cardOpener.current;
+    cardOpener.current = null;
+    if (opener?.isConnected) window.setTimeout(() => opener.focus(), 0);
+  }, []);
 
   useEffect(() => {
     const sync = () => { const route = (location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname).replace(/^\//, ''); if (!/^tarefas(?:\/|$)/.test(route)) return; setTab(currentTaskTab()); setTaskRoute((location.hash.startsWith('#/') ? location.hash.slice(2) : location.pathname).replace(/^\//, '')); };
@@ -430,15 +450,15 @@ export function TasksApp() {
       if (!active) return;
       if (process.task_id !== task.id) throw new Error('Tarefa e processo não correspondem.');
       if (!user.permissions?.['tasks.execute'] || !(canExecuteTeam || processAssignedToUser(task, process, user, manager)) || ['completed','inactive','cancelled'].includes(normalize(task.status)) || ['completed','inactive','cancelled','waiting'].includes(normalize(process.status))) {
-        setLinkedPreview({task, process});
+        setLinkedPreview({task, process}); setCardOpen(true);
         return;
       }
       const cached = processCache.current.get(task.id) || [];
       processCache.current.set(task.id, [...cached.filter(p => p.id !== process.id),process]);
       if (canViewTeam && !processAssignedToUser(task, process, user, manager)) { assigneeScopeRef.current = String(process.assignee_id || '__unassigned__'); setSelectedAssignee(assigneeScopeRef.current); processCache.current.clear(); }
       setTasks(rows => [...rows.filter(t => t.id !== task.id),task]);
-      setProcessVersion(v=>v+1); setActiveKey(task.id+':'+process.id);
-    }).catch(error => {if(active) setLinkedError(error?.message || 'Não foi possível abrir a tarefa.');});
+      setProcessVersion(v=>v+1); setActiveKey(task.id+':'+process.id); setCardOpen(true);
+    }).catch(error => {if(active){ setLinkedError(error?.message || 'Não foi possível abrir a tarefa.'); setCardOpen(true); }});
     return () => {active=false;};
   }, [taskRoute, pageVisible, user]);
 
@@ -649,6 +669,14 @@ export function TasksApp() {
   }, [filteredItems, activeKey]);
 
   const activeItem = useMemo(() => filteredItems.find(item => workItemKey(item) === activeKey) || null, [filteredItems, activeKey]);
+  const cardVisible = cardOpen && Boolean(activeItem || linkedPreview || linkedError);
+  useEffect(() => {
+    if (!cardVisible) return undefined;
+    cardRef.current?.focus({ preventScroll: true });
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented) closeCard(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [cardVisible, closeCard]);
   const queueHydrating = relevantTasks.some(task => !processCache.current.has(task.id));
   const qaDraftKey = activeItem ? 'mba-qa-v2:' + String(user?.id || 'no-user') + ':' + String(mbaWindow.MBA_API?.getPortfolioId?.() || 'no-portfolio') + ':' + activeItem.task.id + ':' + activeItem.process.id : '';
   const activeIndex = filteredItems.findIndex(item => workItemKey(item) === activeKey);
@@ -674,6 +702,7 @@ export function TasksApp() {
 
   const markCompleted = useCallback((task: Task, process: TaskProcess) => {
     setActionNotice(`Análise de ${process.case_number || 'processo'} registrada.`);
+    setCardOpen(false);
     const key = `${task.id}:${process.id}`;
     chooseNext(key);
     const rows = processCache.current.get(task.id) || [];
@@ -686,6 +715,7 @@ export function TasksApp() {
   // O envio do motivo avança a fila sem contar conclusão antes do worker Benner.
   const markMotivoQueued = useCallback((task: Task, process: TaskProcess) => {
     setActionNotice(`Motivo do processo ${process.case_number || ''} enviado à fila Benner.`);
+    setCardOpen(false);
     const key = workItemKey({ task, process });
     chooseNext(key);
     const rows = processCache.current.get(task.id) || [];
@@ -698,6 +728,7 @@ export function TasksApp() {
 
   const markClosingDeferred = useCallback((task: Task, process: TaskProcess, reopenAt: string) => {
     const key = workItemKey({ task, process });
+    setCardOpen(false);
     setActionNotice(`Processo ${process.case_number || ''} reagendado para ${new Date(reopenAt + 'T12:00:00').toLocaleDateString('pt-BR')}.`);
     chooseNext(key);
     const rows = processCache.current.get(task.id) || [];
@@ -712,6 +743,7 @@ export function TasksApp() {
   const markSkipped = useCallback((task: Task, process: TaskProcess) => {
     setDeferredKeys(current => [...current.filter(key => key !== `${task.id}:${process.id}`), `${task.id}:${process.id}`]);
     setActionNotice(`${process.case_number || 'Processo'} enviado para o final da fila.`);
+    setCardOpen(false);
     const rows = [...(processCache.current.get(task.id) || [])];
     const index = rows.findIndex(row => String(row.id) === String(process.id));
     if (index >= 0) {
@@ -744,7 +776,7 @@ export function TasksApp() {
       setProcessVersion(value => value + 1);
     }
     if (next) alignAgreement(task, next);
-    else setActiveKey(null);
+    else { setActiveKey(null); setCardOpen(false); }
     window.setTimeout(() => { void hydrateTask(task, true); }, 250);
   }, [alignAgreement, hydrateTask]);
 
@@ -762,6 +794,12 @@ export function TasksApp() {
     if (next) alignAgreement(task, next);
     window.setTimeout(() => { void hydrateTask(task, true); }, 250);
   }, [alignAgreement, hydrateTask]);
+
+  const openItem = (item: WorkItem) => {
+    cardOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    selectItem(item);
+    setCardOpen(true);
+  };
 
   const selectItem = (item: WorkItem) => {
     setLinkedPreview(null);
@@ -796,7 +834,7 @@ export function TasksApp() {
   };
 
     if(!user && currentTaskTab()==='results' && (document.body.classList.contains('auth-validating')||document.body.classList.contains('auth-unavailable')))return <div className="tasks-react-root">
-    <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas"><button disabled>Tarefas</button><button disabled>Atribuições</button><button disabled className="active">Produtividade</button></nav>
+    <nav className="analytics-subnav tasks-react-subnav" aria-label="Tarefas"><button disabled>Tarefas</button><button disabled>Atribuições</button><button disabled className="active">Analytics</button></nav>
     <TaskResults api={apiRequest} visible={false} canViewOthers={false}/>
   </div>;
   if (!user?.permissions?.['tasks.view']) return <div className="tasks-react-state"><strong>Sem acesso ao módulo de tarefas</strong><span>Solicite a autorização tasks.view.</span></div>;
@@ -807,7 +845,7 @@ export function TasksApp() {
   const tasksTabs = <nav className="analytics-subnav tasks-react-subnav" aria-label="Seções de Tarefas">
     <button type="button" className={tab === 'execution' ? 'active' : ''} onClick={() => { setSelectedType('all'); navigateTaskTab('tarefas'); }}>Tarefas</button>
     <button type="button" disabled={!(manager || canViewOtherTasks)} className={tab === 'management' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/atribuicoes')}>Atribuições</button>
-    <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Produtividade</button>
+    <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => navigateTaskTab('tarefas/resultados')}>Analytics</button>
   </nav>;
   return <div ref={stationRef} className={`tasks-react-root ${tab === 'execution' ? 'task-station' : ''}`}>
     {shellTabs ? (pageVisible ? createPortal(tasksTabs,shellTabs) : null) : tasksTabs}
@@ -823,7 +861,7 @@ export function TasksApp() {
         <SelectMenu label="Tipo de tarefa" value={selectedType} options={typeOptions} onChange={value => { setSelectedType(value); setActiveKey(null); }} />
         <SelectMenu label="Responsável" searchable searchPlaceholder="Buscar responsável" value={selectedAssignee} options={assigneeOptions} onChange={changeAssignee} />
         <SelectMenu label="UF" searchable value={selectedUf} options={ufOptions} onChange={value => { setSelectedUf(value); setActiveKey(null); }} />
-      </div>{assigneeError ? <small className="tasks-queue-load-error" role="alert">{assigneeError}</small> : null}<label className="tasks-process-search"><Search size={14} /><input value={search} type="search" aria-label="Buscar processo" placeholder="Buscar processo" onChange={event => setSearch(event.target.value)} /></label><div className="tasks-process-list">{visibleItems.length ? visibleItems.map(item => { const priority = situation(item); return <button type="button" key={workItemKey(item)} className={`tasks-process-item ${workItemKey(item) === activeKey ? 'selected' : ''}`} onClick={() => selectItem(item)}><div><strong>{item.process.case_number || 'Processo sem número'}</strong><small>{taskTypeLabel(item.task.type)}</small></div><div className="queue-item-badges"><span className={`tasks-state-pill ${priority}`}>{priority === 'high' ? 'Alta' : priority === 'medium' ? 'Média' : 'Baixa'}</span></div></button>; }) : <div className="tasks-sidebar-empty">{loading || queueHydrating ? 'Carregando fila…' : 'Nenhum prazo para este responsável e filtros.'}</div>}</div><div className="workbench-queue-pagination"><button type="button" disabled={windowStart === 0} onClick={() => selectItem(filteredItems[Math.max(0, windowStart - queueSize)])}>Anterior</button><span>{filteredItems.length ? windowStart + 1 : 0}–{Math.min(windowStart + queueSize, filteredItems.length)}</span><button type="button" disabled={windowStart + queueSize >= filteredItems.length} onClick={() => selectItem(filteredItems[windowStart + queueSize])}>Próximos</button></div></section></aside><main className="tasks-execution-panel">{linkedError ? <div className="tasks-react-state" role="alert">{linkedError}</div> : linkedPreview ? <article className="tasks-renderer-card execution-card"><ProcessHeading task={linkedPreview.task} process={linkedPreview.process}/><div className="task-form-content"><h3>{linkedPreview.task.title}</h3><p>Status: {taskStatusLabel(linkedPreview.process.status)} · Prioridade: {linkedPreview.task.priority}</p><p>Responsável: {linkedPreview.task.responsible_name || linkedPreview.process.assignee_id || 'Não informado'}</p><p>Prazo: {formatDate(linkedPreview.task.deadline_at)}</p><p role="status">Consulta da tarefa. A execução exige atribuição e tarefa pendente.</p></div></article> : activeItem && !canExecuteTeam && !processAssignedToUser(activeItem.task, activeItem.process, user, manager) ? <article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="task-form-content"><p><strong>Visualização da equipe</strong></p><p>Responsável selecionado: {assigneeTotals.find(person => person.id === activeItem.process.assignee_id)?.name || 'Não informado'}</p><p>Prazo: {formatDate(activeItem.task.deadline_at)}</p><p>Você pode consultar este prazo. A execução exige permissão específica para tarefas de outros responsáveis.</p></div></article> : activeItem ? <><article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="tasks-renderer-body" key={normalize(activeItem.task.type) === 'acordos' ? `agreement:${activeItem.task.id}` : workItemKey(activeItem)}>{normalize(activeItem.process.status) === 'completed' ? <div className="tasks-renderer-state"><strong>Processo concluído</strong></div> : normalize(activeItem.task.type) === 'liminar' ? <LiminarRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'defesa' ? <DefenseRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'encerramento' ? <ClosingRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onDeferred={(process, reopenAt) => markClosingDeferred(activeItem.task, process, reopenAt)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'motivo_derrota' ? (
+      </div>{assigneeError ? <small className="tasks-queue-load-error" role="alert">{assigneeError}</small> : null}<label className="tasks-process-search"><Search size={14} /><input value={search} type="search" aria-label="Buscar processo" placeholder="Buscar processo" onChange={event => setSearch(event.target.value)} /></label><div className="tasks-process-list">{visibleItems.length ? visibleItems.map(item => { const priority = situation(item); return <button type="button" key={workItemKey(item)} className={`tasks-process-item ${workItemKey(item) === activeKey ? 'selected' : ''}`} onClick={() => openItem(item)}><div><strong>{item.process.case_number || 'Processo sem número'}</strong><small>{taskTypeLabel(item.task.type)}</small></div><div className="queue-item-badges"><span className={`tasks-state-pill ${priority}`}>{priority === 'high' ? 'Alta' : priority === 'medium' ? 'Média' : 'Baixa'}</span></div></button>; }) : <div className="tasks-sidebar-empty">{loading || queueHydrating ? 'Carregando fila…' : 'Nenhum prazo para este responsável e filtros.'}</div>}</div><div className="workbench-queue-pagination"><button type="button" disabled={windowStart === 0} onClick={() => selectItem(filteredItems[Math.max(0, windowStart - queueSize)])}>Anterior</button><span>{filteredItems.length ? windowStart + 1 : 0}–{Math.min(windowStart + queueSize, filteredItems.length)}</span><button type="button" disabled={windowStart + queueSize >= filteredItems.length} onClick={() => selectItem(filteredItems[windowStart + queueSize])}>Próximos</button></div></section></aside><main className="tasks-execution-panel">{!filteredItems.length ? <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div> : null}<TaskCalendar items={filteredItems} mode={calendarMode} anchor={calendarAnchor} activeKey={activeKey} onModeChange={changeCalendarMode} onAnchorChange={setCalendarAnchor} onOpen={openItem} />{cardVisible ? <div className="task-card-layer" onMouseDown={event => { if (event.target === event.currentTarget) closeCard(); }}><div className="task-card-shell" ref={cardRef} tabIndex={-1} role="dialog" aria-label={activeItem ? `Execução de ${activeItem.process.case_number || 'processo'}` : 'Detalhe da tarefa'}><div className="task-card-bar"><span>{activeItem ? taskTypeLabel(activeItem.task.type) : 'Tarefa'}</span><button type="button" onClick={closeCard} aria-label="Fechar e voltar à visualização"><X size={14} /> Fechar</button></div>{linkedError ? <div className="tasks-react-state" role="alert">{linkedError}</div> : linkedPreview ? <article className="tasks-renderer-card execution-card"><ProcessHeading task={linkedPreview.task} process={linkedPreview.process}/><div className="task-form-content"><h3>{linkedPreview.task.title}</h3><p>Status: {taskStatusLabel(linkedPreview.process.status)} · Prioridade: {linkedPreview.task.priority}</p><p>Responsável: {linkedPreview.task.responsible_name || linkedPreview.process.assignee_id || 'Não informado'}</p><p>Prazo: {formatDate(linkedPreview.task.deadline_at)}</p><p role="status">Consulta da tarefa. A execução exige atribuição e tarefa pendente.</p></div></article> : activeItem && !canExecuteTeam && !processAssignedToUser(activeItem.task, activeItem.process, user, manager) ? <article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="task-form-content"><p><strong>Visualização da equipe</strong></p><p>Responsável selecionado: {assigneeTotals.find(person => person.id === activeItem.process.assignee_id)?.name || 'Não informado'}</p><p>Prazo: {formatDate(activeItem.task.deadline_at)}</p><p>Você pode consultar este prazo. A execução exige permissão específica para tarefas de outros responsáveis.</p></div></article> : activeItem ? <><article className="tasks-renderer-card execution-card"><ProcessHeading task={activeItem.task} process={activeItem.process}/><TaskBrief task={activeItem.task} process={activeItem.process}/><div className="tasks-renderer-body" key={normalize(activeItem.task.type) === 'acordos' ? `agreement:${activeItem.task.id}` : workItemKey(activeItem)}>{normalize(activeItem.process.status) === 'completed' ? <div className="tasks-renderer-state"><strong>Processo concluído</strong></div> : normalize(activeItem.task.type) === 'liminar' ? <LiminarRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'defesa' ? <DefenseRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'encerramento' ? <ClosingRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onDeferred={(process, reopenAt) => markClosingDeferred(activeItem.task, process, reopenAt)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'motivo_derrota' ? (
       (activeItem.process.assignee_id !== user?.id && !canManage)
         ? <div className="task-form-content motivo-derrota-reassignment">
             <h3>Processo atribuído a outro analista</h3>
@@ -834,7 +872,7 @@ export function TasksApp() {
             onCompleted={process => markCompleted(activeItem.task, process)}
             onQueued={process => markMotivoQueued(activeItem.task, process)}
             onSkipped={process => markSkipped(activeItem.task, process)} />
-    ) : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : <div className="tasks-react-state"><strong>{loading ? 'Carregando tarefas' : 'Nenhum processo selecionado'}</strong><span>{loadError || (relevantTasks.length ? 'Selecione um filtro com processos pendentes.' : 'Não há tarefas atribuídas a este usuário.')}</span>{loadError ? <button className="secondary-button" type="button" onClick={() => void loadTaskList(true)}>Tentar novamente</button> : null}</div>}</main></section></div> : null}
+    ) : normalize(activeItem.task.type) === 'comprovante_pagamento' ? <PaymentRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} draftKey={qaDraftKey} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : normalize(activeItem.task.type) === 'acordos' ? <AgreementRenderer api={apiRequest} task={activeItem.task} onServerProcess={agreement => alignAgreement(activeItem.task, agreement)} onAgreementCompleted={(previous, next) => completeAgreement(activeItem.task, previous, next)} onAgreementSkipped={(previous, next) => skipAgreement(activeItem.task, previous, next)} /> : normalize(activeItem.task.type) === 'protocolo' ? <ProtocolCollectionRenderer api={apiRequest} task={activeItem.task} process={activeItem.process} onCompleted={process => markCompleted(activeItem.task, process)} onSkipped={process => markSkipped(activeItem.task, process)} /> : <UnsupportedRenderer task={activeItem.task} />}</div></article></> : null}</div></div> : null}</main></section></div> : null}
 
     {createOpen && canCreate ? <CreateTaskModal onClose={() => setCreateOpen(false)} onCreated={() => loadTaskList(true)} /> : null}
     {assignTask && canManage ? <AssignTaskModal task={assignTask} onClose={() => setAssignTask(null)} onAssigned={() => loadTaskList(true)} /> : null}

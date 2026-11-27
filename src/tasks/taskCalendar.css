@@ -1,0 +1,51 @@
+/* Weekly / Monthly: modos de visualização da fila de Tarefas. */
+.tcal{height:100%;min-height:0;display:flex;flex-direction:column;gap:10px;color:var(--mba-text,#0f1f3d);font-size:12px}
+.tcal-toolbar{flex:none;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-right:14px}
+.tcal-modes{display:inline-flex;border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;overflow:hidden;background:var(--mba-surface,#fff)}
+.tcal-modes button{height:30px;padding:0 14px;border:0;background:transparent;color:var(--mba-text-2,#52647d);font:inherit;font-weight:600;cursor:pointer}
+.tcal-modes button.active{background:var(--mba-primary,#1d4ed8);color:#fff}
+.tcal-modes button:focus-visible,.tcal-nav button:focus-visible,.tcal-item:focus-visible,.tcal-more:focus-visible{outline:2px solid var(--mba-primary,#1d4ed8);outline-offset:1px}
+.tcal-nav{display:inline-flex;align-items:center;gap:6px}
+.tcal-nav strong{min-width:150px;text-align:center;font-size:13px}
+.tcal-nav button{height:30px;min-width:30px;padding:0 8px;display:inline-grid;place-items:center;border:1px solid var(--mba-border,#dbe4ef);border-radius:7px;background:var(--mba-surface,#fff);color:inherit;font:inherit;cursor:pointer}
+.tcal-count{margin-left:auto;color:var(--mba-text-2,#64748b);font-size:11px}
+.tcal-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-gutter:stable}
+.tcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;background:var(--mba-border,#dbe4ef);overflow:hidden;flex:none}
+.tcal-weekday{padding:6px 8px;background:var(--mba-surface-2,#f8fafc);color:var(--mba-text-2,#64748b);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.tcal-day{min-width:0;background:var(--mba-surface,#fff);padding:6px;display:flex;flex-direction:column;gap:4px}
+.tcal-weekly .tcal-day{min-height:260px}
+.tcal-monthly .tcal-day{min-height:96px}
+.tcal-day.outside{background:var(--mba-surface-2,#f8fafc);opacity:.55}
+.tcal-day.today{box-shadow:inset 0 0 0 2px var(--mba-primary,#1d4ed8)}
+.tcal-day-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:11px}
+.tcal-day-head em{font-style:normal;min-width:18px;padding:1px 6px;border-radius:999px;background:var(--mba-surface-2,#eef2f7);color:var(--mba-text-2,#52647d);font-size:10px;text-align:center}
+.tcal-day-items{display:flex;flex-direction:column;gap:4px;min-height:0}
+.tcal-item{width:100%;min-width:0;display:flex;flex-direction:column;gap:1px;padding:5px 7px;border:1px solid var(--mba-border,#dbe4ef);border-left:3px solid #94a3b8;border-radius:6px;background:var(--mba-surface,#fff);color:inherit;font:inherit;text-align:left;cursor:pointer}
+.tcal-item strong{font-size:11px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcal-item small{color:var(--mba-text-2,#64748b);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcal-item.compact{padding:3px 6px}
+.tcal-item.compact strong{font-size:10px}
+.tcal-item.high{border-left-color:#dc2626}
+.tcal-item.medium{border-left-color:#d97706}
+.tcal-item.low{border-left-color:#2563eb}
+.tcal-item:hover{background:var(--mba-surface-2,#f1f5f9)}
+.tcal-item.selected{box-shadow:0 0 0 2px var(--mba-primary,#1d4ed8) inset}
+.tcal-more{align-self:flex-start;padding:2px 4px;border:0;background:transparent;color:var(--mba-primary,#1d4ed8);font:inherit;font-size:10.5px;font-weight:600;cursor:pointer}
+.tcal-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;flex:none}
+.tcal-lane{border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;background:var(--mba-surface,#fff);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.tcal-lane.overdue{border-color:#fca5a5}
+.tcal-lane h3{margin:0;font-size:11px;display:flex;align-items:center;gap:8px}
+.tcal-lane h3 em{font-style:normal;padding:1px 6px;border-radius:999px;background:var(--mba-surface-2,#eef2f7);font-size:10px}
+.tcal-lane>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px}
+.tcal-lane .tcal-more{grid-column:1/-1}
+
+/* Card contextual: camada sobre a área principal, sem trocar de rota. */
+#tarefas[data-react-tasks='true'] .tasks-react-root.task-station .tasks-execution-panel{position:relative;top:auto;display:flex;flex-direction:column;gap:8px}
+#tarefas[data-react-tasks='true'] .tasks-react-root.task-station .tasks-execution-panel>.tcal{flex:1;height:auto}
+.task-card-layer{position:absolute;inset:0;z-index:20;display:flex;align-items:stretch;justify-content:center;padding:10px;background:rgba(7,19,35,.45);border-radius:8px}
+.task-card-layer>.task-card-shell{width:min(1000px,100%);height:100%;min-height:0;display:flex;flex-direction:column;border-radius:10px;box-shadow:0 20px 65px rgba(5,21,42,.3);overflow:hidden;background:var(--mba-surface,#fff);outline:0}
+.task-card-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--mba-border,#e3eaf2);font-size:11px;color:var(--mba-text-2,#64748b)}
+.task-card-bar button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--mba-border,#dbe4ef);border-radius:7px;background:var(--mba-surface,#fff);color:inherit;font:inherit;cursor:pointer}
+.task-card-shell>.execution-card,.task-card-shell>.tasks-react-state{flex:1;min-height:0}
+@media(max-width:900px){.tcal-weekly .tcal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tcal-weekly .tcal-weekday{display:none}.tcal-weekly .tcal-day{min-height:120px}.tcal-monthly .tcal-scroll{overflow-x:auto}.tcal-monthly .tcal-grid{min-width:640px}}
+@media(max-width:600px){.task-card-layer{padding:0}}
