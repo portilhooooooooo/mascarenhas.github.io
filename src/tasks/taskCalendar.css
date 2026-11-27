@@ -1,51 +1,80 @@
-/* Weekly / Monthly: modos de visualização da fila de Tarefas. */
-.tcal{height:100%;min-height:0;display:flex;flex-direction:column;gap:10px;color:var(--mba-text,#0f1f3d);font-size:12px}
-.tcal-toolbar{flex:none;display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-right:14px}
-.tcal-modes{display:inline-flex;border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;overflow:hidden;background:var(--mba-surface,#fff)}
-.tcal-modes button{height:30px;padding:0 14px;border:0;background:transparent;color:var(--mba-text-2,#52647d);font:inherit;font-weight:600;cursor:pointer}
-.tcal-modes button.active{background:var(--mba-primary,#1d4ed8);color:#fff}
-.tcal-modes button:focus-visible,.tcal-nav button:focus-visible,.tcal-item:focus-visible,.tcal-more:focus-visible{outline:2px solid var(--mba-primary,#1d4ed8);outline-offset:1px}
-.tcal-nav{display:inline-flex;align-items:center;gap:6px}
-.tcal-nav strong{min-width:150px;text-align:center;font-size:13px}
-.tcal-nav button{height:30px;min-width:30px;padding:0 8px;display:inline-grid;place-items:center;border:1px solid var(--mba-border,#dbe4ef);border-radius:7px;background:var(--mba-surface,#fff);color:inherit;font:inherit;cursor:pointer}
-.tcal-count{margin-left:auto;color:var(--mba-text-2,#64748b);font-size:11px}
-.tcal-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-gutter:stable}
-.tcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;background:var(--mba-border,#dbe4ef);overflow:hidden;flex:none}
-.tcal-weekday{padding:6px 8px;background:var(--mba-surface-2,#f8fafc);color:var(--mba-text-2,#64748b);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.tcal-day{min-width:0;background:var(--mba-surface,#fff);padding:6px;display:flex;flex-direction:column;gap:4px}
-.tcal-weekly .tcal-day{min-height:260px}
-.tcal-monthly .tcal-day{min-height:96px}
-.tcal-day.outside{background:var(--mba-surface-2,#f8fafc);opacity:.55}
-.tcal-day.today{box-shadow:inset 0 0 0 2px var(--mba-primary,#1d4ed8)}
-.tcal-day-head{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:11px}
-.tcal-day-head em{font-style:normal;min-width:18px;padding:1px 6px;border-radius:999px;background:var(--mba-surface-2,#eef2f7);color:var(--mba-text-2,#52647d);font-size:10px;text-align:center}
-.tcal-day-items{display:flex;flex-direction:column;gap:4px;min-height:0}
-.tcal-item{width:100%;min-width:0;display:flex;flex-direction:column;gap:1px;padding:5px 7px;border:1px solid var(--mba-border,#dbe4ef);border-left:3px solid #94a3b8;border-radius:6px;background:var(--mba-surface,#fff);color:inherit;font:inherit;text-align:left;cursor:pointer}
-.tcal-item strong{font-size:11px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tcal-item small{color:var(--mba-text-2,#64748b);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tcal-item.compact{padding:3px 6px}
+/* Workspace presentation only. Use the current shell's Sol/Lua design tokens. */
+#tarefas[data-react-tasks='true'] .task-station .tasks-workspace.task-calendar-workspace {
+  display:flex;flex-direction:column;grid-template-columns:none!important;grid-template-rows:none!important;
+  gap:14px!important;min-height:0;height:100%!important;overflow:visible!important;
+}
+.task-agenda-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;flex:none}
+.task-agenda-header h1{margin:0;color:var(--mba-text);font-size:23px;font-weight:600;letter-spacing:-.035em;line-height:1.2}
+.task-agenda-header p{margin:4px 0 0;color:var(--mba-text-2);font-size:11px}
+.task-agenda-actions{display:flex;gap:8px;flex-wrap:wrap}
+.task-agenda-actions button,.task-management-return button{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.task-management-return{margin-bottom:14px}
+.task-agenda-filters{flex:none}
+#tarefas .task-agenda-filters .queue-station-filters{display:grid;grid-template-columns: minmax(130px,1fr) minmax(150px,1.2fr) minmax(100px,.6fr) minmax(180px,1.5fr)!important;align-items:end;gap:12px}
+.task-agenda-search{display:grid;gap:4px;min-width:0}
+.task-agenda-search>span{font-size:10px;color:var(--mba-text-2);font-weight:500}
+#tarefas .task-agenda-filters .tasks-process-search{display:flex!important;flex-direction:row;align-items:center;gap:8px;margin:0;height:34px;min-width:0}
+#tarefas .task-agenda-filters .tasks-process-search>svg{flex:none}
+#tarefas .task-agenda-filters .tasks-process-search input{display:block;flex:1;min-width:0;width:100%;height:30px;margin:0;padding:0}
+#tarefas .task-agenda-filters .mba-react-select-trigger{height:34px;padding:0 10px}
+#tarefas[data-react-tasks='true'] .tasks-react-root.task-station .task-calendar-workspace .tasks-execution-panel{position:relative;top:auto;flex:1;display:flex;flex-direction:column;min-height:0;height:auto;gap:6px}
+.tcal{min-height:0;display:flex;flex:1;flex-direction:column;gap:10px;color:var(--mba-text);font-size:12px}
+.tcal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:none;padding:0 0 6px}
+.tcal-modes{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--mba-border);border-radius:8px;background:var(--mba-subtle)}
+.tcal-modes button{height:28px;padding:0 13px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--mba-text-2);font:inherit;font-weight:600;cursor:pointer}
+.tcal-modes button.active{background:var(--mba-accent-soft,var(--mba-blue-soft));color:var(--mba-accent,var(--mba-blue));border-color:color-mix(in srgb,var(--mba-blue) 17%,transparent)}
+.tcal button:focus-visible{outline:2px solid var(--mba-blue);outline-offset:2px}
+.tcal-nav{display:inline-flex;align-items:center;gap:6px;margin-left:auto}
+.tcal-nav strong{min-width:150px;text-align:center;font-size:12px;font-weight:600}
+.tcal-nav button{height:31px;min-width:31px;padding:0 9px;display:inline-grid;place-items:center;border:1px solid var(--mba-border);border-radius:7px;background:var(--mba-surface);color:var(--mba-text-2);font:inherit;cursor:pointer}
+.tcal-nav button:hover,.tcal-item:hover{background:var(--mba-subtle)}
+.tcal-count{color:var(--mba-muted);font-size:11px;order:0}
+.tcal-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-gutter:stable;padding:0 3px 12px}
+.tcal-agenda{display:flex;flex-direction:column;gap:9px}
+.tcal-agenda-day,.tcal-lane{border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-surface);overflow:hidden}
+.tcal-agenda-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 14px;border-bottom:1px solid var(--mba-border)}
+.tcal-agenda-heading>div{display:flex;align-items:center;gap:9px}
+.tcal-agenda-heading strong{font-size:12px;font-weight:650}
+.tcal-agenda-heading>span{font-size:11px;color:var(--mba-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.tcal-agenda-day.empty .tcal-agenda-heading{border:0;color:var(--mba-muted)}
+.tcal-today-label{font-size:10px;color:var(--mba-blue);font-weight:600}
+.tcal-agenda-day.today .tcal-agenda-heading{background:var(--mba-subtle)}
+.tcal-agenda-rows{display:grid;padding:0 12px}
+.tcal-item{width:100%;min-width:0;display:flex;align-items:center;gap:12px;min-height:35px;padding:6px 3px;border:0;border-bottom:1px solid var(--mba-border);background:transparent;color:var(--mba-text);font:inherit;text-align:left;cursor:pointer}
+.tcal-agenda-rows>.tcal-item:last-of-type{border-bottom:0}
+.tcal-item-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px}
+.tcal-item strong{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcal-item small{color:var(--mba-text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcal-agenda .tcal-item-main strong{width:min(38%,290px);flex:none}
+.tcal-priority{font-size:10px;color:var(--mba-muted);font-weight:500}
+.tcal-item.high .tcal-priority{color:var(--mba-text-2);font-weight:600}
+.tcal-item-arrow{color:var(--mba-muted);flex:none}
+.tcal-item.selected:focus-visible{background:var(--mba-accent-soft,var(--mba-blue-soft))}
+.tcal-more{align-self:flex-start;padding:8px 3px;border:0;background:transparent;color:var(--mba-blue);font:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:left}
+.tcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-border);overflow:hidden;flex:none}
+.tcal-weekday{padding:8px 10px;background:var(--mba-subtle);color:var(--mba-text-2);font-size:10px;font-weight:600;text-transform:uppercase}
+.tcal-day{min-width:0;background:var(--mba-surface);padding:7px;display:flex;flex-direction:column;gap:5px;min-height:90px}
+.tcal-day.outside{background:var(--mba-subtle);color:var(--mba-muted)}
+.tcal-day.today{box-shadow:inset 0 0 0 1px var(--mba-blue)}
+.tcal-day-head{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:11px}
+.tcal-day-head em{font-style:normal;padding:2px 6px;border-radius:5px;background:var(--mba-subtle);color:var(--mba-text-2);font-size:10px}
+.tcal-day-items{display:flex;flex-direction:column;gap:3px}
+.tcal-item.compact{min-height:22px;padding:4px 6px;border:0;border-radius:4px;background:var(--mba-subtle)}
 .tcal-item.compact strong{font-size:10px}
-.tcal-item.high{border-left-color:#dc2626}
-.tcal-item.medium{border-left-color:#d97706}
-.tcal-item.low{border-left-color:#2563eb}
-.tcal-item:hover{background:var(--mba-surface-2,#f1f5f9)}
-.tcal-item.selected{box-shadow:0 0 0 2px var(--mba-primary,#1d4ed8) inset}
-.tcal-more{align-self:flex-start;padding:2px 4px;border:0;background:transparent;color:var(--mba-primary,#1d4ed8);font:inherit;font-size:10.5px;font-weight:600;cursor:pointer}
+.tcal-item.compact:hover{background:var(--mba-accent-soft,var(--mba-blue-soft))}
 .tcal-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;flex:none}
-.tcal-lane{border:1px solid var(--mba-border,#dbe4ef);border-radius:8px;background:var(--mba-surface,#fff);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
-.tcal-lane.overdue{border-color:#fca5a5}
-.tcal-lane h3{margin:0;font-size:11px;display:flex;align-items:center;gap:8px}
-.tcal-lane h3 em{font-style:normal;padding:1px 6px;border-radius:999px;background:var(--mba-surface-2,#eef2f7);font-size:10px}
-.tcal-lane>div{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px}
-.tcal-lane .tcal-more{grid-column:1/-1}
-
-/* Card contextual: camada sobre a área principal, sem trocar de rota. */
-#tarefas[data-react-tasks='true'] .tasks-react-root.task-station .tasks-execution-panel{position:relative;top:auto;display:flex;flex-direction:column;gap:8px}
-#tarefas[data-react-tasks='true'] .tasks-react-root.task-station .tasks-execution-panel>.tcal{flex:1;height:auto}
-.task-card-layer{position:absolute;inset:0;z-index:20;display:flex;align-items:stretch;justify-content:center;padding:10px;background:rgba(7,19,35,.45);border-radius:8px}
-.task-card-layer>.task-card-shell{width:min(1000px,100%);height:100%;min-height:0;display:flex;flex-direction:column;border-radius:10px;box-shadow:0 20px 65px rgba(5,21,42,.3);overflow:hidden;background:var(--mba-surface,#fff);outline:0}
-.task-card-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--mba-border,#e3eaf2);font-size:11px;color:var(--mba-text-2,#64748b)}
-.task-card-bar button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--mba-border,#dbe4ef);border-radius:7px;background:var(--mba-surface,#fff);color:inherit;font:inherit;cursor:pointer}
+.tcal-lane{padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.tcal-lane h3{margin:0;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+.tcal-lane h3 em{font-style:normal;color:var(--mba-muted);font-size:11px;font-weight:500}
+.tcal-lane>div{display:grid}
+.tcal-lane .tcal-item:last-of-type{border-bottom:0}
+/* Same geometry and layering conventions as the existing Analytics detail dialog. */
+.task-card-layer{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(25,29,28,.38)}
+.task-card-layer>.task-card-shell{width:min(900px,100%);height:min(63dvh,680px);max-height:calc(100dvh - 48px);min-height:0;display:flex;flex-direction:column;border:1px solid var(--mba-border);border-radius:12px;box-shadow:0 20px 65px #10151333;overflow:hidden;background:var(--mba-surface);outline:0}
+.task-card-bar{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 15px;border-bottom:1px solid var(--mba-border);font-size:11px;color:var(--mba-text-2)}
+.task-card-bar button{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px;border:1px solid var(--mba-border);border-radius:7px;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .task-card-shell>.execution-card,.task-card-shell>.tasks-react-state{flex:1;min-height:0}
-@media(max-width:900px){.tcal-weekly .tcal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tcal-weekly .tcal-weekday{display:none}.tcal-weekly .tcal-day{min-height:120px}.tcal-monthly .tcal-scroll{overflow-x:auto}.tcal-monthly .tcal-grid{min-width:640px}}
-@media(max-width:600px){.task-card-layer{padding:0}}
+#tarefas .task-card-shell>.execution-card{border:0!important;border-radius:0!important}
+.task-card-shell .tasks-renderer-body{min-height:0;overflow:auto}
+@media(max-width:1000px){#tarefas .task-agenda-filters .queue-station-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}.tcal-nav{margin-left:0}}
+@media(max-width:700px){#tarefas .task-agenda-filters .queue-station-filters{gap:7px}.task-agenda-header h1{font-size:19px}.tcal-scroll{overflow:visible}.tcal-monthly .tcal-scroll{overflow:auto}.tcal-monthly .tcal-grid{min-width:560px}.tcal-item-main{flex-direction:column;align-items:flex-start;gap:3px}.tcal-agenda .tcal-item-main strong{width:100%}.task-card-layer{padding:8px}.task-card-layer>.task-card-shell{height:min(86dvh,680px);max-height:calc(100dvh - 16px)}}

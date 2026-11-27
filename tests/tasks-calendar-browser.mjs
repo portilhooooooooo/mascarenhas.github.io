@@ -44,10 +44,11 @@ try {
   await page.locator('.tcal').waitFor();
   await page.locator('.tcal-item').first().waitFor();
 
-  const total = async () => (await page.locator('.task-station .tasks-process-title span').innerText());
+  const total = async () => (await page.locator('.task-agenda-header p').innerText());
   assert.match(await total(), /24/);
   assert.equal(await page.locator('.tcal-weekly').count(), 1);
-  assert.equal(await page.locator('.tcal-weekday').count(), 7);
+  assert.equal(await page.locator('.tcal-agenda-day').count(), 7);
+  assert.equal(await page.locator('.tasks-workspace-sidebar').count(), 0);
   log('Weekly abre com 7 dias e', await page.locator('.tcal-item').count(), 'itens visíveis');
 
   // Todos os 24 itens aparecem em algum lugar navegável: período + faixas.
@@ -74,7 +75,7 @@ try {
   // Filtro: busca preservada ao abrir/fechar.
   await page.locator('.tasks-process-search input').fill('DEMO 0005');
   await page.waitForTimeout(200);
-  assert.equal(await page.locator('.tasks-process-list .tasks-process-item').count(), 1);
+  assert.equal(await page.locator('.tcal-item').count(), 1);
   await page.locator('.tasks-process-search input').fill('');
   await page.getByRole('button', { name: 'Próxima semana' }).click();
   const periodBefore = await page.locator('.tcal-nav strong').innerText();
@@ -82,13 +83,13 @@ try {
   const pagesBefore = browser.contexts()[0].pages().length;
 
   await page.locator('.tasks-process-search input').fill('DEMO 00');
-  const item = page.locator('.tasks-process-list .tasks-process-item').first();
+  const item = page.locator('.tcal-item').first();
   const caseNumber = (await item.locator('strong').innerText()).trim();
   const searchBefore = await page.locator('.tasks-process-search input').inputValue();
 
-  // Abertura pelo calendário (item visível) ou, se a semana estiver vazia, pela lista lateral.
+  // Abertura pela agenda, sem fila lateral duplicada.
   const calendarItem = page.locator('.tcal-item', { hasText: caseNumber }).first();
-  if (await calendarItem.count()) await calendarItem.click(); else await item.click();
+  await calendarItem.click();
   const dialog = page.locator('.task-card-shell[role="dialog"]');
   await dialog.waitFor();
   assert.equal(page.url(), url, 'não pode trocar de rota');
@@ -106,7 +107,7 @@ try {
   log('Esc fecha, período e filtro preservados');
 
   // Reabre, responde e salva pelo fluxo existente.
-  await item.click();
+  await calendarItem.click();
   await dialog.waitFor();
   const layoutBefore = await dialog.boundingBox();
   await dialog.getByText('Não', { exact: true }).first().click();
@@ -125,14 +126,15 @@ try {
   assert.equal(await page.locator('.tcal-nav strong').innerText(), periodBefore);
   assert.equal(await page.locator('.tcal-weekly').count(), 1);
   assert.equal(await page.locator('.tasks-process-search input').inputValue(), searchBefore);
-  assert.equal(await page.locator('.tasks-process-list .tasks-process-item', { hasText: caseNumber }).count(), 0);
   assert.equal(await page.locator('.tcal-item', { hasText: caseNumber }).count(), 0);
   log('retorno à view com estado atualizado:', caseNumber, 'saiu da fila');
 
   // Analytics permanece como submódulo.
   assert.equal(await page.locator('.tasks-react-subnav button', { hasText: 'Analytics' }).count(), 1);
   assert.equal(await page.locator('.tasks-react-subnav button', { hasText: 'Produtividade' }).count(), 0);
-  log('aba Analytics presente');
+  assert.equal(await page.locator('.tasks-react-subnav button').count(), 2);
+  assert.equal(await page.locator('.task-agenda-actions button', { hasText: 'Atribuições' }).count(), 1);
+  log('duas abas e acesso gerencial preservado');
   await page.screenshot({ path: '/tmp/tcal-weekly.png' });
   await page.getByRole('button', { name: 'Monthly' }).click();
   await page.screenshot({ path: '/tmp/tcal-monthly.png' });

@@ -12,12 +12,13 @@ test('A/B/C labels do not change the answer keyboard contract', () => {
   assert.match(question, /selected\.click\(\)/);
   assert.match(question, /if \(event\.key === 'Enter'\)/);
 });
-test('workspace still has left queue and right answers', () => {
+test('workspace renders a full-width agenda and keeps execution in a dialog', () => {
   const shell = read('src/tasks/TasksApp.tsx');
-  const index = shell.indexOf('<section className="tasks-workspace">');
-  assert.ok(index >= 0);
-  assert.ok(shell.indexOf('<aside className="tasks-workspace-sidebar"', index) < shell.indexOf('<main className="tasks-execution-panel"', index));
-  assert.match(read('src/tasks/tasks.css'), /\.tasks-workspace\{[^}]*grid-template-columns:310px minmax\(0,1fr\)/);
+  assert.ok(shell.includes('className="tasks-workspace task-calendar-workspace"'));
+  assert.ok(!shell.includes('<aside className="tasks-workspace-sidebar"'));
+  assert.match(shell, /<TaskCalendar items=\{filteredItems\}/);
+  assert.match(shell, /className="task-card-shell"/);
+  assert.match(read('src/tasks/taskCalendar.css'), /grid-template-columns:none!important/);
 });
 test('assignments operate per task_process with server-side enforcement', () => {
   const app = read('src/tasks/TasksApp.tsx'), board = read('src/tasks/AssignmentsBoard.tsx');

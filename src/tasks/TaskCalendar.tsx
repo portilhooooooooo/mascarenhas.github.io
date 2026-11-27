@@ -7,7 +7,7 @@ export type CalendarMode = 'weekly' | 'monthly';
 
 const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const PRIORITY_LABEL = { high: 'Alta', medium: 'Média', low: 'Baixa' } as const;
-const WEEK_LIMIT = 40;
+const WEEK_LIMIT = 12;
 const MONTH_LIMIT = 4;
 const LANE_LIMIT = 60;
 
@@ -59,8 +59,8 @@ function ItemButton({ item, selected, compact, onOpen }: { item: WorkItem; selec
     aria-label={`Abrir ${number}, ${type}, prioridade ${PRIORITY_LABEL[priority]}`}
     title={`${number} · ${type} · ${PRIORITY_LABEL[priority]}`}
     onClick={() => onOpen(item)}>
-    <strong>{number}</strong>
-    {compact ? null : <small>{type}</small>}
+    <span className="tcal-item-main"><strong>{number}</strong>{compact ? null : <small>{type}</small>}</span>
+    {compact ? null : <><span className="tcal-priority">{PRIORITY_LABEL[priority]}</span><ChevronRight className="tcal-item-arrow" size={14}/></>}
   </button>;
 }
 
@@ -129,20 +129,29 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
     </header>
 
     <div className="tcal-scroll">
-      <div className="tcal-grid" role="grid" aria-label={range.label}>
+      {mode === 'weekly' ? <div className="tcal-agenda" aria-label={range.label}>
+        {days.map(date => {
+          const key = dayKey(date);
+          const rows = buckets.byDay.get(key) || [];
+          const today = key === todayKey;
+          const label = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' });
+          return <section key={key} className={`tcal-agenda-day ${today ? 'today' : ''} ${rows.length ? '' : 'empty'}`}>
+            <header className="tcal-agenda-heading"><div><strong>{label.charAt(0).toUpperCase() + label.slice(1)}</strong>{today ? <span className="tcal-today-label">Hoje</span> : null}</div><span>{rows.length} {rows.length === 1 ? 'pendência' : 'pendências'}</span></header>
+            {rows.length ? <div className="tcal-agenda-rows"><DayItems id={key} items={rows} limit={limit} activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen}/></div> : null}
+          </section>;
+        })}
+      </div> : <div className="tcal-grid" role="grid" aria-label={range.label}>
         {WEEKDAYS.map(name => <div key={name} className="tcal-weekday" role="columnheader">{name}</div>)}
         {days.map(date => {
           const key = dayKey(date);
           const outside = key < startKey || key > endKey;
           const dayItems = outside ? [] : buckets.byDay.get(key) || [];
           return <div key={key} role="gridcell" className={`tcal-day ${key === todayKey ? 'today' : ''} ${outside ? 'outside' : ''}`}>
-            <div className="tcal-day-head"><span>{date.getDate()}{mode === 'monthly' && date.getDate() === 1 ? ` ${date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}` : ''}</span>{dayItems.length ? <em>{dayItems.length}</em> : null}</div>
-            <div className="tcal-day-items">
-              <DayItems id={key} items={dayItems} limit={limit} compact={mode === 'monthly'} activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen} />
-            </div>
+            <div className="tcal-day-head"><span>{date.getDate()}{date.getDate() === 1 ? ` ${date.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}` : ''}</span>{dayItems.length ? <em>{dayItems.length}</em> : null}</div>
+            <div className="tcal-day-items"><DayItems id={key} items={dayItems} limit={limit} compact activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen}/></div>
           </div>;
         })}
-      </div>
+      </div>}
 
       {buckets.before.length || buckets.undated.length ? <div className="tcal-lanes">
         {buckets.before.length ? <section className="tcal-lane overdue" aria-label="Anteriores ao período">
