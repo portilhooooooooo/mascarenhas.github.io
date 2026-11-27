@@ -2,54 +2,100 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Backoffice | Mascarenhas Barbosa</title>
 <link rel="icon" href="../favicon-copper.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{color-scheme:light;--ink:#202020;--muted:#686868;--paper:#fff;--copper:#b97a58}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%;background:var(--paper);color:var(--ink);font-family:Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased}
-.page{min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:64px 56px}
-.composition{width:100%;max-width:1248px;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,336px);gap:clamp(56px,7vw,104px);align-items:center}
-.film{width:100%;aspect-ratio:910/512;margin:0;background:#e9e9e7;overflow:hidden}
-.film video{display:block;width:100%;height:100%;object-fit:contain}
-.access{min-width:0}
-.brand{display:flex;align-items:center;gap:13px;margin-bottom:46px}
-.brand img{display:block;width:51px;height:43px;object-fit:contain;flex:none}
-.brand-name{font-size:16px;font-weight:600;letter-spacing:-.35px;line-height:1.25}
-h1{font-size:36px;font-weight:500;line-height:1.2;letter-spacing:-1.5px;margin:0 0 10px}
-.description{font-size:14px;line-height:1.65;color:var(--muted);margin:0 0 27px}
-.microsoft{width:100%;min-height:46px;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 16px;border:1px solid #c5c5c5;border-radius:3px;background:white;color:var(--ink);font:500 14px Inter,Arial,sans-serif;cursor:pointer}
-.microsoft svg{width:18px;height:18px;flex:none}
-.microsoft:hover{background:#f6f6f6;border-color:#969696}
-.microsoft:focus-visible{outline:2px solid #946044;outline-offset:3px}
-.status{font-size:13px;color:var(--muted);line-height:1.5;margin:14px 0 0}.status[hidden]{display:none}
-@media(max-width:1024px){.page{padding:48px 36px}.composition{grid-template-columns:minmax(0,1fr) minmax(260px,300px);gap:48px}}
-@media(max-width:720px){.page{padding:36px 26px;place-items:center}.composition{max-width:440px;grid-template-columns:1fr;gap:32px}.access{display:contents}.brand{grid-row:1;margin:0}.film{grid-row:2}.credentials{grid-row:3}h1{font-size:32px}.description{margin-bottom:22px}}
-@media(prefers-reduced-motion:reduce){.film video{display:none}.film{background:#e9e9e7 url('../assets/mascarenhas-login-poster.jpg') center/contain no-repeat}}
+:root {
+  color-scheme: light;
+  --paper: #fafaf9;
+  --ink: #202120;
+  --muted: #646563;
+  --copper: #b97a58;
+  --line: #e2e1de;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: Inter, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+.page { min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; justify-content: center; padding-block: 48px; }
+.frame { width: min(1160px, calc(100% - 112px)); margin-inline: auto; }
+.masthead { flex: none; }
+.masthead .frame { height: 58px; display: flex; align-items: center; border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; align-items: center; gap: 14px; }
+.brand img { display: block; width: 52px; height: 48px; object-fit: contain; }
+.brand-name { font-size: 17px; font-weight: 600; line-height: 1.3; letter-spacing: -.45px; }
+.main { flex: none; display: grid; align-items: center; padding-block: 36px 0; }
+.composition { display: grid; grid-template-columns: minmax(300px, 348px) minmax(0, 1fr); gap: clamp(48px, 5.5vw, 80px); align-items: center; }
+.access { min-width: 0; width: 100%; max-width: 348px; }
+h1 { margin: 0 0 12px; font-size: clamp(32px, 3vw, 40px); line-height: 1.15; letter-spacing: -1.5px; font-weight: 600; }
+.description { margin: 0 0 32px; font-size: 15px; line-height: 1.6; color: var(--muted); }
+.microsoft { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; padding: 12px 16px; border: 1px solid #252625; border-radius: 4px; background: #252625; color: white; font: 500 14px/1.35 Inter, Arial, sans-serif; cursor: pointer; }
+.microsoft:hover { background: #3d3e3d; border-color: #3d3e3d; }
+.microsoft svg { width: 18px; height: 18px; flex: none; }
+button:focus-visible { outline: 2px solid #946044; outline-offset: 3px; }
+.film { position: relative; margin: 0; width: 100%; aspect-ratio: 910 / 512; background: #e6e5e2; overflow: hidden; border-radius: 6px; }
+.film video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.playback { position: absolute; bottom: 12px; right: 12px; background: #fff; color: #202120; border: 1px solid #d9d9d7; border-radius: 4px; padding: 8px 10px; font: 500 12px Inter, Arial, sans-serif; cursor: pointer; opacity: 0; }
+.film:hover .playback, .playback:focus-visible { opacity: 1; }
+.status { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 16px 0 0; }
+.status[hidden] { display: none; }
+@media (max-width: 1100px) {
+  .frame { width: calc(100% - 96px); }
+  .composition { grid-template-columns: minmax(260px, 33%) minmax(0, 1fr); gap: 48px; }
+}
+@media (max-width: 900px) {
+  .page { justify-content: flex-start; padding-block: 0; }
+  .frame { width: min(480px, calc(100% - 48px)); }
+  .masthead .frame { height: 76px; }
+  .brand img { width: 42px; height: 38px; }
+  .brand { gap: 11px; }
+  .brand-name { font-size: 16px; }
+  .main { align-items: start; padding-block: 48px 40px; }
+  .composition { max-width: 480px; grid-template-columns: 1fr; gap: 48px; }
+  .access { max-width: none; }
+  h1 { font-size: 34px; }
+  .description { margin-bottom: 26px; }
+}
+@media (hover: none) { .playback { opacity: 1; } }
+@media (max-width: 400px) { .main { padding-top: 40px; } .composition { gap: 40px; } }
+@media (prefers-reduced-motion: reduce) { .film video { display: none; } .film { background: #e6e5e2 url('../assets/mascarenhas-login-poster.jpg') center/contain no-repeat; } .playback { display: none; } }
 </style>
 </head>
 <body>
-<main class="page">
-<div class="composition">
-<figure class="film"><video autoplay muted loop playsinline preload="metadata" poster="../assets/mascarenhas-login-poster.jpg" aria-label="Vídeo institucional do Mascarenhas Barbosa"><source src="../assets/mascarenhas-login.mp4" type="video/mp4"></video></figure>
-<section class="access" aria-labelledby="access-title">
-<div class="brand"><img src="../favicon-copper.svg" alt=""><span class="brand-name">Mascarenhas Barbosa</span></div>
-<div class="credentials">
-<h1 id="access-title">Backoffice</h1>
-<p class="description">Acesse sua conta institucional.</p>
-<button type="button" class="microsoft" id="microsoft"><svg viewBox="0 0 23 23" aria-hidden="true"><rect width="11" height="11" fill="#f25022"/><rect x="12" width="11" height="11" fill="#7fba00"/><rect y="12" width="11" height="11" fill="#00a4ef"/><rect x="12" y="12" width="11" height="11" fill="#ffb900"/></svg>Entrar com Microsoft</button>
-<p class="status" id="status" role="status" hidden>Protótipo visual. A autenticação não está conectada neste ambiente.</p>
-</div></section>
+<div class="page">
+  <header class="masthead">
+    <div class="frame"><div class="brand"><img src="../favicon-copper.svg" alt=""><span class="brand-name">Mascarenhas Barbosa</span></div></div>
+  </header>
+  <main class="main">
+    <div class="frame composition">
+      <section class="access" aria-labelledby="access-title">
+        <h1 id="access-title">Backoffice</h1>
+        <p class="description">Acesse sua conta institucional.</p>
+        <button class="microsoft" type="button" id="microsoft">
+          <svg viewBox="0 0 23 23" aria-hidden="true"><rect width="11" height="11" fill="#f25022"/><rect x="12" width="11" height="11" fill="#7fba00"/><rect y="12" width="11" height="11" fill="#00a4ef"/><rect x="12" y="12" width="11" height="11" fill="#ffb900"/></svg>
+          Entrar com Microsoft
+        </button>
+        <p class="status" id="status" role="status" hidden>Protótipo visual. A autenticação não está conectada neste ambiente.</p>
+      </section>
+      <figure class="film" aria-label="Vídeo institucional do Mascarenhas Barbosa">
+        <video autoplay muted loop playsinline preload="metadata" poster="../assets/mascarenhas-login-poster.jpg" aria-label="Vídeo institucional"><source src="../assets/mascarenhas-login.mp4" type="video/mp4"></video>
+        <button class="playback" type="button" id="playback">Pausar vídeo</button>
+      </figure>
+    </div>
+  </main>
 </div>
-</main>
 <script>
-const video=document.querySelector('video');
-if(matchMedia('(prefers-reduced-motion: reduce)').matches){video.autoplay=false;video.pause();}
-document.querySelector('#microsoft').addEventListener('click',()=>{document.querySelector('#status').hidden=false;});
+const video = document.querySelector('video');
+const playback = document.querySelector('#playback');
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) { video.autoplay = false; video.pause(); }
+playback.addEventListener('click', async () => {
+  if (video.paused) { await video.play(); } else { video.pause(); }
+  playback.textContent = video.paused ? 'Reproduzir vídeo' : 'Pausar vídeo';
+});
+document.querySelector('#microsoft').addEventListener('click', () => { document.querySelector('#status').hidden = false; });
 </script>
 </body>
 </html>
