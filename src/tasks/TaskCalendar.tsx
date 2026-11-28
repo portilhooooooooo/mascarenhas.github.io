@@ -36,7 +36,7 @@ const weekStart = (date: Date) => addDays(new Date(date.getFullYear(), date.getM
 export function calendarRange(mode: CalendarMode, anchor: Date) {
   if (mode === 'weekly') {
     const start = weekStart(anchor);
-    return { start, end: addDays(start, 6), label: `${start.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} – ${addDays(start, 6).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}` };
+    return { start, end: addDays(start, 6), label: `${start.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} – ${addDays(start, 4).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}` };
   }
   const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
@@ -81,7 +81,7 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
   actions?: ReactNode; items: WorkItem[]; mode: CalendarMode; anchor: Date; activeKey: string | null;
   onModeChange: (mode: CalendarMode) => void; onAnchorChange: (anchor: Date) => void; onOpen: (item: WorkItem) => void;
 }) {
-  const [deadlineScope, setDeadlineScope] = useState<'dated' | 'undated'>('dated');
+  const [deadlineScope, setDeadlineScope] = useState<'dated' | 'undated' | 'weekend'>('dated');
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const toggle = (id: string) => setExpanded(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const range = useMemo(() => calendarRange(mode, anchor), [mode, anchor]);
@@ -93,19 +93,21 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
     const byDay = new Map<string, WorkItem[]>();
     const before: WorkItem[] = [];
     const undated: WorkItem[] = [];
+    const weekend: WorkItem[] = [];
     let after = 0;
     for (const item of items) {
       const key = itemDeadline(item);
       if (!key) undated.push(item);
       else if (key < startKey) before.push(item);
       else if (key > endKey) after += 1;
+      else if (mode === 'weekly' && [0, 6].includes(parseKey(key).getDay())) weekend.push(item);
       else { const list = byDay.get(key); if (list) list.push(item); else byDay.set(key, [item]); }
     }
-    return { byDay, before, undated, after };
-  }, [items, startKey, endKey]);
+    return { byDay, before, undated, weekend, after };
+  }, [items, startKey, endKey, mode]);
 
   const days = useMemo(() => {
-    if (mode === 'weekly') return Array.from({ length: 7 }, (_, index) => addDays(range.start, index));
+    if (mode === 'weekly') return Array.from({ length: 5 }, (_, index) => addDays(range.start, index));
     const first = weekStart(range.start);
     const total = Math.ceil((((range.end.getTime() - first.getTime()) / 86400000) + 1) / 7) * 7;
     return Array.from({ length: total }, (_, index) => addDays(first, index));
@@ -119,11 +121,12 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
         <button type="button" aria-pressed={mode === 'weekly'} className={mode === 'weekly' ? 'active' : ''} onClick={() => { setDeadlineScope('dated'); onModeChange('weekly'); }}>Weekly</button>
         <button type="button" aria-pressed={mode === 'monthly'} className={mode === 'monthly' ? 'active' : ''} onClick={() => { setDeadlineScope('dated'); onModeChange('monthly'); }}>Monthly</button>
       </div>
-      <select className="tcal-deadline-filter" aria-label="Prazo" value={deadlineScope} onChange={event => setDeadlineScope(event.target.value === 'undated' ? 'undated' : 'dated')}>
+      <select className="tcal-deadline-filter" aria-label="Prazo" value={deadlineScope} onChange={event => setDeadlineScope(event.target.value === 'undated' ? 'undated' : event.target.value === 'weekend' ? 'weekend' : 'dated')}>
         <option value="dated">Com prazo</option>
         <option value="undated">Sem prazo ({buckets.undated.length})</option>
+        {mode === 'weekly' ? <option value="weekend">Fim de semana ({buckets.weekend.length})</option> : null}
       </select>
-      {deadlineScope === 'dated' ? <div className="tcal-nav">
+      {deadlineScope !== 'undated' ? <div className="tcal-nav">
         <button type="button" aria-label={mode === 'weekly' ? 'Semana anterior' : 'Mês anterior'} onClick={() => onAnchorChange(shiftAnchor(mode, anchor, -1))}><ChevronLeft size={15} /></button>
         <strong aria-live="polite">{range.label}</strong>
         <button type="button" aria-label={mode === 'weekly' ? 'Próxima semana' : 'Próximo mês'} onClick={() => onAnchorChange(shiftAnchor(mode, anchor, 1))}><ChevronRight size={15} /></button>
@@ -133,7 +136,9 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
     </header>
 
     <div className="tcal-scroll">
-      {deadlineScope === 'undated' ? <section className="tcal-undated-view" aria-label="Tarefas sem prazo">
+      {deadlineScope === 'weekend' ? <section className="tcal-undated-view" aria-label="Tarefas de sábado e domingo">
+        {buckets.weekend.length ? <div className="tcal-undated-items tcal-weekend-items"><DayItems id="weekend" items={buckets.weekend} limit={LANE_LIMIT} activeKey={activeKey} expanded={expanded.has('weekend')} onToggle={toggle} onOpen={onOpen} /></div> : <span className="tcal-undated-empty">Nenhuma tarefa no fim de semana.</span>}
+      </section> : deadlineScope === 'undated' ? <section className="tcal-undated-view" aria-label="Tarefas sem prazo">
         {buckets.undated.length ? <div className="tcal-undated-items"><DayItems id="undated" items={buckets.undated} limit={LANE_LIMIT} activeKey={activeKey} expanded={expanded.has('undated')} onToggle={toggle} onOpen={onOpen} /></div> : <span className="tcal-undated-empty">Nenhuma tarefa sem prazo.</span>}
       </section> : <>{mode === 'weekly' ? <div className="tcal-kanban-scroll">
         <div className="tcal-kanban" aria-label={range.label}>
@@ -141,7 +146,7 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
             const key = dayKey(date);
             const rows = buckets.byDay.get(key) || [];
             const today = key === todayKey;
-            return <section key={key} className={`tcal-kanban-column ${today ? 'today' : ''} ${index >= 5 ? 'weekend' : ''}`} aria-label={date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}>
+            return <section key={key} className={`tcal-kanban-column ${today ? 'today' : ''}`} aria-label={date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}>
               <header className="tcal-kanban-heading">
                 <div><strong>{WEEKDAYS[index]}</strong><span className="tcal-kanban-date">{date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>{today ? <span className="tcal-today-label">Hoje</span> : null}</div>
                 <span className="tcal-kanban-count" aria-label={`${rows.length} pendências`}>{rows.length}</span>
