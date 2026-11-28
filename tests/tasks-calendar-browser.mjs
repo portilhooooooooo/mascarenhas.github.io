@@ -46,12 +46,12 @@ try {
 
   assert.equal(await page.locator('.task-agenda-header').count(), 0);
   assert.equal(await page.locator('.tcal-weekly').count(), 1);
-  assert.equal(await page.locator('.tcal-kanban-column').count(), 7);
+  assert.equal(await page.locator('.tcal-kanban-column').count(), 5);
   assert.equal(await page.locator('.tcal-kanban').count(), 1);
   assert.equal(await page.locator('.tcal-grid').count(), 0);
   assert.ok(await page.locator('.tcal-kanban-column .tcal-item').count() > 0);
   assert.equal(await page.locator('.tasks-workspace-sidebar').count(), 0);
-  log('Weekly abre com 7 colunas Kanban e', await page.locator('.tcal-item').count(), 'itens visíveis');
+  log('Weekly abre com 5 colunas Kanban e', await page.locator('.tcal-item').count(), 'itens visíveis');
 
   // Sem prazo fica acessível pelo filtro, sem seção paralela por padrão.
   assert.equal(await page.locator('.tcal-undated-view').count(), 0);
@@ -66,6 +66,19 @@ try {
   assert.equal(await page.getByLabel('Prazo', {exact:true}).inputValue(), 'undated');
   await page.getByLabel('Prazo', {exact:true}).selectOption('dated');
   log('Sem prazo: filtro e execução acessíveis sem poluir o calendário');
+  // Os prazos de sábado e domingo não desaparecem: ficam no filtro e no mês.
+  const weekendCount = Number((await page.locator('option[value="weekend"]').innerText()).match(/\((\d+)\)/)[1]);
+  await page.getByLabel('Prazo', {exact:true}).selectOption('weekend');
+  assert.equal(await page.locator('.tcal-weekend-items .tcal-item').count(), weekendCount);
+  assert.equal(await page.locator('.tcal-kanban-column').count(), 0);
+  if (weekendCount) {
+    await page.locator('.tcal-weekend-items .tcal-item').first().click();
+    await page.locator('.task-card-shell[role="dialog"]').waitFor();
+    await page.keyboard.press('Escape');
+    await page.locator('.task-card-shell[role="dialog"]').waitFor({state:'detached'});
+  }
+  await page.getByLabel('Prazo', {exact:true}).selectOption('dated');
+  log('Fim de semana acessível sem colunas no Kanban');
 
   await page.getByRole('button', { name: 'Monthly' }).click();
   await page.locator('.tcal-monthly').waitFor();
@@ -84,7 +97,8 @@ try {
   log('navegação de período e Hoje');
 
   // Filtro: busca preservada ao abrir/fechar.
-  await page.locator('.tasks-process-search input').fill('DEMO 0005');
+  const visibleCase = (await page.locator('.tcal-kanban-column .tcal-item strong').first().innerText()).split(' · ')[0];
+  await page.locator('.tasks-process-search input').fill(visibleCase);
   await page.waitForTimeout(200);
   assert.equal(await page.locator('.tcal-item').count(), 1);
   await page.locator('.tasks-process-search input').fill('');
