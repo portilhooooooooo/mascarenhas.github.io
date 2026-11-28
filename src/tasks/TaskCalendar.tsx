@@ -129,17 +129,23 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
     </header>
 
     <div className="tcal-scroll">
-      {mode === 'weekly' ? <div className="tcal-agenda" aria-label={range.label}>
-        {days.map(date => {
-          const key = dayKey(date);
-          const rows = buckets.byDay.get(key) || [];
-          const today = key === todayKey;
-          const label = date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' });
-          return <section key={key} className={`tcal-agenda-day ${today ? 'today' : ''} ${rows.length ? '' : 'empty'}`}>
-            <header className="tcal-agenda-heading"><div><strong>{label.charAt(0).toUpperCase() + label.slice(1)}</strong>{today ? <span className="tcal-today-label">Hoje</span> : null}</div><span>{rows.length} {rows.length === 1 ? 'pendência' : 'pendências'}</span></header>
-            {rows.length ? <div className="tcal-agenda-rows"><DayItems id={key} items={rows} limit={limit} activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen}/></div> : null}
-          </section>;
-        })}
+      {mode === 'weekly' ? <div className="tcal-kanban-scroll">
+        <div className="tcal-kanban" aria-label={range.label}>
+          {days.map((date, index) => {
+            const key = dayKey(date);
+            const rows = buckets.byDay.get(key) || [];
+            const today = key === todayKey;
+            return <section key={key} className={`tcal-kanban-column ${today ? 'today' : ''} ${index >= 5 ? 'weekend' : ''}`} aria-label={date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}>
+              <header className="tcal-kanban-heading">
+                <div><strong>{WEEKDAYS[index]}</strong><span className="tcal-kanban-date">{date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>{today ? <span className="tcal-today-label">Hoje</span> : null}</div>
+                <span className="tcal-kanban-count" aria-label={`${rows.length} pendências`}>{rows.length}</span>
+              </header>
+              <div className="tcal-kanban-items">
+                {rows.length ? <DayItems id={key} items={rows} limit={limit} activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen}/> : <span className="tcal-kanban-empty">Sem tarefas</span>}
+              </div>
+            </section>;
+          })}
+        </div>
       </div> : <div className="tcal-grid" role="grid" aria-label={range.label}>
         {WEEKDAYS.map(name => <div key={name} className="tcal-weekday" role="columnheader">{name}</div>)}
         {days.map(date => {

@@ -47,9 +47,12 @@ try {
   const total = async () => (await page.locator('.task-agenda-header p').innerText());
   assert.match(await total(), /24/);
   assert.equal(await page.locator('.tcal-weekly').count(), 1);
-  assert.equal(await page.locator('.tcal-agenda-day').count(), 7);
+  assert.equal(await page.locator('.tcal-kanban-column').count(), 7);
+  assert.equal(await page.locator('.tcal-kanban').count(), 1);
+  assert.equal(await page.locator('.tcal-grid').count(), 0);
+  assert.ok(await page.locator('.tcal-kanban-column .tcal-item').count() > 0);
   assert.equal(await page.locator('.tasks-workspace-sidebar').count(), 0);
-  log('Weekly abre com 7 dias e', await page.locator('.tcal-item').count(), 'itens visíveis');
+  log('Weekly abre com 7 colunas Kanban e', await page.locator('.tcal-item').count(), 'itens visíveis');
 
   // Todos os 24 itens aparecem em algum lugar navegável: período + faixas.
   const countText = await page.locator('.tcal-count').innerText();

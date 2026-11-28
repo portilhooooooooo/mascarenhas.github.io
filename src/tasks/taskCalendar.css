@@ -30,22 +30,34 @@
 .tcal-nav button:hover,.tcal-item:hover{background:var(--mba-subtle)}
 .tcal-count{color:var(--mba-muted);font-size:11px;order:0}
 .tcal-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-gutter:stable;padding:0 3px 12px}
-.tcal-agenda{display:flex;flex-direction:column;gap:9px}
-.tcal-agenda-day,.tcal-lane{border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-surface);overflow:hidden}
-.tcal-agenda-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 14px;border-bottom:1px solid var(--mba-border)}
-.tcal-agenda-heading>div{display:flex;align-items:center;gap:9px}
-.tcal-agenda-heading strong{font-size:12px;font-weight:650}
-.tcal-agenda-heading>span{font-size:11px;color:var(--mba-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.tcal-agenda-day.empty .tcal-agenda-heading{border:0;color:var(--mba-muted)}
-.tcal-today-label{font-size:10px;color:var(--mba-blue);font-weight:600}
-.tcal-agenda-day.today .tcal-agenda-heading{background:var(--mba-subtle)}
-.tcal-agenda-rows{display:grid;padding:0 12px}
+.tcal-kanban-scroll{flex:1;min-height:410px;overflow-x:auto;overflow-y:hidden;padding-bottom:3px;scrollbar-width:thin}
+.tcal-kanban{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;min-width:1098px;min-height:100%;height:100%}
+.tcal-kanban-column{display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--mba-border);border-radius:8px;background:var(--mba-subtle)}
+.tcal-kanban-column.weekend{background:color-mix(in srgb,var(--mba-subtle) 68%,var(--mba-bg))}
+.tcal-kanban-heading{flex:none;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:10px 9px;border-bottom:1px solid var(--mba-border);min-height:42px}
+.tcal-kanban-heading>div{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}
+.tcal-kanban-heading strong{font-size:12px;font-weight:650;color:var(--mba-text)}
+.tcal-kanban-date{font-size:10px;color:var(--mba-text-2);font-variant-numeric:tabular-nums}
+.tcal-kanban-count{flex:none;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--mba-text-2);background:var(--mba-surface);border:1px solid var(--mba-border);min-width:20px;height:20px;display:grid;place-items:center;border-radius:5px;padding:0 4px}
+.tcal-today-label{font-size:9px;color:var(--mba-blue);font-weight:600}
+.tcal-kanban-column.today{border-color:color-mix(in srgb,var(--mba-blue) 50%,var(--mba-border))}
+.tcal-kanban-column.today .tcal-kanban-heading{background:var(--mba-blue-soft);border-radius:7px 7px 0 0}
+.tcal-kanban-items{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:0;flex:1;padding:7px;scrollbar-width:thin}
+.tcal-kanban-empty{display:block;padding:9px 2px;color:var(--mba-muted);font-size:10px;text-align:center}
+.tcal-lane{border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-surface);overflow:hidden}
 .tcal-item{width:100%;min-width:0;display:flex;align-items:center;gap:12px;min-height:35px;padding:6px 3px;border:0;border-bottom:1px solid var(--mba-border);background:transparent;color:var(--mba-text);font:inherit;text-align:left;cursor:pointer}
-.tcal-agenda-rows>.tcal-item:last-of-type{border-bottom:0}
 .tcal-item-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px}
 .tcal-item strong{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tcal-item small{color:var(--mba-text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tcal-agenda .tcal-item-main strong{width:min(38%,290px);flex:none}
+.tcal-kanban-items>.tcal-item{flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 4px;align-items:start;min-height:74px;padding:9px;border:1px solid var(--mba-border);border-radius:7px;background:var(--mba-surface)}
+.tcal-kanban-items>.tcal-item:hover{border-color:var(--mba-border-strong);background:var(--mba-surface)}
+.tcal-kanban-items .tcal-item-main{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%}
+.tcal-kanban-items .tcal-item-main strong{width:100%;font-size:11px;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
+.tcal-kanban-items .tcal-item-main small{width:100%;font-size:10px;white-space:normal;line-height:1.35}
+.tcal-kanban-items .tcal-item-arrow{justify-self:end;width:12px;height:12px}
+.tcal-kanban-items .tcal-item .tcal-priority{font-size:10px}
+.tcal-kanban-items .tcal-item.selected:focus-visible{border-color:var(--mba-blue);outline-offset:1px}
+
 .tcal-priority{font-size:10px;color:var(--mba-muted);font-weight:500}
 .tcal-item.high .tcal-priority{color:var(--mba-text-2);font-weight:600}
 .tcal-item-arrow{color:var(--mba-muted);flex:none}
@@ -77,4 +89,4 @@
 #tarefas .task-card-shell>.execution-card{border:0!important;border-radius:0!important}
 .task-card-shell .tasks-renderer-body{min-height:0;overflow:auto}
 @media(max-width:1000px){#tarefas .task-agenda-filters .queue-station-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}.tcal-nav{margin-left:0}}
-@media(max-width:700px){#tarefas .task-agenda-filters .queue-station-filters{gap:7px}.task-agenda-header h1{font-size:19px}.tcal-scroll{overflow:visible}.tcal-monthly .tcal-scroll{overflow:auto}.tcal-monthly .tcal-grid{min-width:560px}.tcal-item-main{flex-direction:column;align-items:flex-start;gap:3px}.tcal-agenda .tcal-item-main strong{width:100%}.task-card-layer{padding:8px}.task-card-layer>.task-card-shell{height:min(86dvh,680px);max-height:calc(100dvh - 16px)}}
+@media(max-width:700px){#tarefas .task-agenda-filters .queue-station-filters{gap:7px}.task-agenda-header h1{font-size:19px}.tcal-scroll{overflow:visible}.tcal-monthly .tcal-scroll{overflow:auto}.tcal-monthly .tcal-grid{min-width:560px}.tcal-item-main{flex-direction:column;align-items:flex-start;gap:3px}.tcal-weekly .tcal-scroll{overflow:auto}.tcal-kanban-scroll{flex:none;height:460px}.task-card-layer{padding:8px}.task-card-layer>.task-card-shell{height:min(86dvh,680px);max-height:calc(100dvh - 16px)}}
