@@ -44,8 +44,7 @@ try {
   await page.locator('.tcal').waitFor();
   await page.locator('.tcal-item').first().waitFor();
 
-  const total = async () => (await page.locator('.task-agenda-header p').innerText());
-  assert.match(await total(), /24/);
+  assert.equal(await page.locator('.task-agenda-header').count(), 0);
   assert.equal(await page.locator('.tcal-weekly').count(), 1);
   assert.equal(await page.locator('.tcal-kanban-column').count(), 7);
   assert.equal(await page.locator('.tcal-kanban').count(), 1);
@@ -54,14 +53,23 @@ try {
   assert.equal(await page.locator('.tasks-workspace-sidebar').count(), 0);
   log('Weekly abre com 7 colunas Kanban e', await page.locator('.tcal-item').count(), 'itens visíveis');
 
-  // Todos os 24 itens aparecem em algum lugar navegável: período + faixas.
-  const countText = await page.locator('.tcal-count').innerText();
-  log('contagem do período:', countText);
+  // Sem prazo fica acessível pelo filtro, sem seção paralela por padrão.
+  assert.equal(await page.locator('.tcal-undated-view').count(), 0);
+  assert.equal(await page.locator('.tcal-count').count(), 0);
+  assert.equal(await page.locator('.tcal-kanban-empty').count(), 0);
+  await page.getByLabel('Prazo', {exact:true}).selectOption('undated');
+  assert.equal(await page.locator('.tcal-undated-items .tcal-item').count(), 2);
+  await page.locator('.tcal-undated-items .tcal-item').first().click();
+  await page.locator('.task-card-shell[role="dialog"]').waitFor();
+  await page.keyboard.press('Escape');
+  await page.locator('.task-card-shell[role="dialog"]').waitFor({state:'detached'});
+  assert.equal(await page.getByLabel('Prazo', {exact:true}).inputValue(), 'undated');
+  await page.getByLabel('Prazo', {exact:true}).selectOption('dated');
+  log('Sem prazo: filtro e execução acessíveis sem poluir o calendário');
 
   await page.getByRole('button', { name: 'Monthly' }).click();
   await page.locator('.tcal-monthly').waitFor();
   assert.ok(await page.locator('.tcal-day').count() >= 28);
-  assert.match(await total(), /24/);
   log('Monthly abre com', await page.locator('.tcal-day').count(), 'células e mesma fila (24)');
   await page.getByRole('button', { name: 'Weekly' }).click();
   await page.locator('.tcal-weekly').waitFor();

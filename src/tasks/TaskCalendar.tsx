@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { priorityLevel, taskTypeLabel, workItemKey, type WorkItem } from './model';
 import './taskCalendar.css';
@@ -77,10 +77,11 @@ function DayItems({ id, items, limit, activeKey, compact, expanded, onToggle, on
   </>;
 }
 
-export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onAnchorChange, onOpen }: {
-  items: WorkItem[]; mode: CalendarMode; anchor: Date; activeKey: string | null;
+export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onAnchorChange, onOpen, actions }: {
+  actions?: ReactNode; items: WorkItem[]; mode: CalendarMode; anchor: Date; activeKey: string | null;
   onModeChange: (mode: CalendarMode) => void; onAnchorChange: (anchor: Date) => void; onOpen: (item: WorkItem) => void;
 }) {
+  const [deadlineScope, setDeadlineScope] = useState<'dated' | 'undated'>('dated');
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const toggle = (id: string) => setExpanded(current => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
   const range = useMemo(() => calendarRange(mode, anchor), [mode, anchor]);
@@ -110,26 +111,31 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
     return Array.from({ length: total }, (_, index) => addDays(first, index));
   }, [mode, range]);
 
-  const inPeriod = items.length - buckets.before.length - buckets.undated.length - buckets.after;
   const limit = mode === 'weekly' ? WEEK_LIMIT : MONTH_LIMIT;
 
   return <section className={`tcal tcal-${mode}`} aria-label="Distribuição das tarefas">
     <header className="tcal-toolbar">
       <div className="tcal-modes" role="group" aria-label="Modo de visualização">
-        <button type="button" aria-pressed={mode === 'weekly'} className={mode === 'weekly' ? 'active' : ''} onClick={() => onModeChange('weekly')}>Weekly</button>
-        <button type="button" aria-pressed={mode === 'monthly'} className={mode === 'monthly' ? 'active' : ''} onClick={() => onModeChange('monthly')}>Monthly</button>
+        <button type="button" aria-pressed={mode === 'weekly'} className={mode === 'weekly' ? 'active' : ''} onClick={() => { setDeadlineScope('dated'); onModeChange('weekly'); }}>Weekly</button>
+        <button type="button" aria-pressed={mode === 'monthly'} className={mode === 'monthly' ? 'active' : ''} onClick={() => { setDeadlineScope('dated'); onModeChange('monthly'); }}>Monthly</button>
       </div>
-      <div className="tcal-nav">
+      <select className="tcal-deadline-filter" aria-label="Prazo" value={deadlineScope} onChange={event => setDeadlineScope(event.target.value === 'undated' ? 'undated' : 'dated')}>
+        <option value="dated">Com prazo</option>
+        <option value="undated">Sem prazo ({buckets.undated.length})</option>
+      </select>
+      {deadlineScope === 'dated' ? <div className="tcal-nav">
         <button type="button" aria-label={mode === 'weekly' ? 'Semana anterior' : 'Mês anterior'} onClick={() => onAnchorChange(shiftAnchor(mode, anchor, -1))}><ChevronLeft size={15} /></button>
         <strong aria-live="polite">{range.label}</strong>
         <button type="button" aria-label={mode === 'weekly' ? 'Próxima semana' : 'Próximo mês'} onClick={() => onAnchorChange(shiftAnchor(mode, anchor, 1))}><ChevronRight size={15} /></button>
         <button type="button" className="tcal-today" onClick={() => onAnchorChange(new Date())}>Hoje</button>
-      </div>
-      <span className="tcal-count">{inPeriod} no período{buckets.after ? ` · ${buckets.after} depois` : ''}</span>
+      </div> : <div className="tcal-nav-spacer" />}
+      {actions}
     </header>
 
     <div className="tcal-scroll">
-      {mode === 'weekly' ? <div className="tcal-kanban-scroll">
+      {deadlineScope === 'undated' ? <section className="tcal-undated-view" aria-label="Tarefas sem prazo">
+        {buckets.undated.length ? <div className="tcal-undated-items"><DayItems id="undated" items={buckets.undated} limit={LANE_LIMIT} activeKey={activeKey} expanded={expanded.has('undated')} onToggle={toggle} onOpen={onOpen} /></div> : <span className="tcal-undated-empty">Nenhuma tarefa sem prazo.</span>}
+      </section> : <>{mode === 'weekly' ? <div className="tcal-kanban-scroll">
         <div className="tcal-kanban" aria-label={range.label}>
           {days.map((date, index) => {
             const key = dayKey(date);
@@ -141,7 +147,7 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
                 <span className="tcal-kanban-count" aria-label={`${rows.length} pendências`}>{rows.length}</span>
               </header>
               <div className="tcal-kanban-items">
-                {rows.length ? <DayItems id={key} items={rows} limit={limit} activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen}/> : <span className="tcal-kanban-empty">Sem tarefas</span>}
+                {rows.length ? <DayItems id={key} items={rows} limit={limit} activeKey={activeKey} expanded={expanded.has(key)} onToggle={toggle} onOpen={onOpen}/> : null}
               </div>
             </section>;
           })}
@@ -159,16 +165,11 @@ export function TaskCalendar({ items, mode, anchor, activeKey, onModeChange, onA
         })}
       </div>}
 
-      {buckets.before.length || buckets.undated.length ? <div className="tcal-lanes">
-        {buckets.before.length ? <section className="tcal-lane overdue" aria-label="Anteriores ao período">
-          <h3>Anteriores ao período <em>{buckets.before.length}</em></h3>
-          <div><DayItems id="before" items={buckets.before} limit={LANE_LIMIT} activeKey={activeKey} expanded={expanded.has('before')} onToggle={toggle} onOpen={onOpen} /></div>
-        </section> : null}
-        {buckets.undated.length ? <section className="tcal-lane" aria-label="Sem prazo">
-          <h3>Sem prazo <em>{buckets.undated.length}</em></h3>
-          <div><DayItems id="undated" items={buckets.undated} limit={LANE_LIMIT} activeKey={activeKey} expanded={expanded.has('undated')} onToggle={toggle} onOpen={onOpen} /></div>
-        </section> : null}
-      </div> : null}
+      {buckets.before.length ? <section className="tcal-lane overdue" aria-label="Anteriores ao período">
+        <h3>Anteriores <em>{buckets.before.length}</em></h3>
+        <div><DayItems id="before" items={buckets.before} limit={LANE_LIMIT} activeKey={activeKey} expanded={expanded.has('before')} onToggle={toggle} onOpen={onOpen} /></div>
+      </section> : null}
+      </>}
     </div>
   </section>;
 }

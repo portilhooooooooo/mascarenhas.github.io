@@ -1,12 +1,10 @@
 /* Workspace presentation only. Use the current shell's Sol/Lua design tokens. */
 #tarefas[data-react-tasks='true'] .task-station .tasks-workspace.task-calendar-workspace {
   display:flex;flex-direction:column;grid-template-columns:none!important;grid-template-rows:none!important;
-  gap:14px!important;min-height:0;height:100%!important;overflow:visible!important;
+  gap:9px!important;min-height:0;height:100%!important;overflow:visible!important;
 }
-.task-agenda-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;flex:none}
-.task-agenda-header h1{margin:0;color:var(--mba-text);font-size:23px;font-weight:600;letter-spacing:-.035em;line-height:1.2}
-.task-agenda-header p{margin:4px 0 0;color:var(--mba-text-2);font-size:11px}
-.task-agenda-actions{display:flex;gap:8px;flex-wrap:wrap}
+.task-agenda-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.task-agenda-actions button{min-height:31px;padding:0 9px;font-size:11px}
 .task-agenda-actions button,.task-management-return button{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .task-management-return{margin-bottom:14px}
 .task-agenda-filters{flex:none}
@@ -19,7 +17,7 @@
 #tarefas .task-agenda-filters .mba-react-select-trigger{height:34px;padding:0 10px}
 #tarefas[data-react-tasks='true'] .tasks-react-root.task-station .task-calendar-workspace .tasks-execution-panel{position:relative;top:auto;flex:1;display:flex;flex-direction:column;min-height:0;height:auto;gap:6px}
 .tcal{min-height:0;display:flex;flex:1;flex-direction:column;gap:10px;color:var(--mba-text);font-size:12px}
-.tcal-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:none;padding:0 0 6px}
+.tcal-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none;padding:0}
 .tcal-modes{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--mba-border);border-radius:8px;background:var(--mba-subtle)}
 .tcal-modes button{height:28px;padding:0 13px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--mba-text-2);font:inherit;font-weight:600;cursor:pointer}
 .tcal-modes button.active{background:var(--mba-accent-soft,var(--mba-blue-soft));color:var(--mba-accent,var(--mba-blue));border-color:color-mix(in srgb,var(--mba-blue) 17%,transparent)}
@@ -28,28 +26,28 @@
 .tcal-nav strong{min-width:150px;text-align:center;font-size:12px;font-weight:600}
 .tcal-nav button{height:31px;min-width:31px;padding:0 9px;display:inline-grid;place-items:center;border:1px solid var(--mba-border);border-radius:7px;background:var(--mba-surface);color:var(--mba-text-2);font:inherit;cursor:pointer}
 .tcal-nav button:hover,.tcal-item:hover{background:var(--mba-subtle)}
-.tcal-count{color:var(--mba-muted);font-size:11px;order:0}
+.tcal-nav-spacer{flex:1}
+.tcal-deadline-filter{height:32px;padding:0 8px;border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-surface);color:var(--mba-text-2);font:inherit;font-size:11px;cursor:pointer}
 .tcal-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;scrollbar-gutter:stable;padding:0 3px 12px}
 .tcal-kanban-scroll{flex:1;min-height:410px;overflow-x:auto;overflow-y:hidden;padding-bottom:3px;scrollbar-width:thin}
 .tcal-kanban{display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:8px;min-width:1098px;min-height:100%;height:100%}
-.tcal-kanban-column{display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid var(--mba-border);border-radius:8px;background:var(--mba-subtle)}
+.tcal-kanban-column{display:flex;flex-direction:column;min-width:0;min-height:0;border:1px solid transparent;border-radius:15px;background:color-mix(in srgb,var(--mba-subtle) 65%,var(--mba-bg));overflow:hidden}
 .tcal-kanban-column.weekend{background:color-mix(in srgb,var(--mba-subtle) 68%,var(--mba-bg))}
-.tcal-kanban-heading{flex:none;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:10px 9px;border-bottom:1px solid var(--mba-border);min-height:42px}
+.tcal-kanban-heading{flex:none;display:flex;align-items:center;justify-content:space-between;gap:4px;padding:10px 9px;border-bottom:0;min-height:42px}
 .tcal-kanban-heading>div{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}
 .tcal-kanban-heading strong{font-size:12px;font-weight:650;color:var(--mba-text)}
 .tcal-kanban-date{font-size:10px;color:var(--mba-text-2);font-variant-numeric:tabular-nums}
-.tcal-kanban-count{flex:none;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--mba-text-2);background:var(--mba-surface);border:1px solid var(--mba-border);min-width:20px;height:20px;display:grid;place-items:center;border-radius:5px;padding:0 4px}
+.tcal-kanban-count{flex:none;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--mba-text-2);background:var(--mba-surface);border:0;min-width:20px;height:20px;display:grid;place-items:center;border-radius:999px;padding:0 4px}
 .tcal-today-label{font-size:9px;color:var(--mba-blue);font-weight:600}
 .tcal-kanban-column.today{border-color:color-mix(in srgb,var(--mba-blue) 50%,var(--mba-border))}
-.tcal-kanban-column.today .tcal-kanban-heading{background:var(--mba-blue-soft);border-radius:7px 7px 0 0}
+.tcal-kanban-column.today .tcal-kanban-heading{background:var(--mba-blue-soft);border-radius:14px 14px 0 0}
 .tcal-kanban-items{display:flex;flex-direction:column;gap:7px;overflow:auto;min-height:0;flex:1;padding:7px;scrollbar-width:thin}
-.tcal-kanban-empty{display:block;padding:9px 2px;color:var(--mba-muted);font-size:10px;text-align:center}
 .tcal-lane{border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-surface);overflow:hidden}
 .tcal-item{width:100%;min-width:0;display:flex;align-items:center;gap:12px;min-height:35px;padding:6px 3px;border:0;border-bottom:1px solid var(--mba-border);background:transparent;color:var(--mba-text);font:inherit;text-align:left;cursor:pointer}
 .tcal-item-main{flex:1;min-width:0;display:flex;align-items:center;gap:14px}
 .tcal-item strong{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tcal-item small{color:var(--mba-text-2);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tcal-kanban-items>.tcal-item{flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 4px;align-items:start;min-height:74px;padding:9px;border:1px solid var(--mba-border);border-radius:7px;background:var(--mba-surface)}
+.tcal-kanban-items>.tcal-item{flex:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 4px;align-items:start;min-height:74px;padding:9px;border:1px solid color-mix(in srgb,var(--mba-border) 45%,transparent);border-radius:12px;background:var(--mba-surface);box-shadow:0 1px 2px color-mix(in srgb,var(--mba-text) 5%,transparent)}
 .tcal-kanban-items>.tcal-item:hover{border-color:var(--mba-border-strong);background:var(--mba-surface)}
 .tcal-kanban-items .tcal-item-main{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%}
 .tcal-kanban-items .tcal-item-main strong{width:100%;font-size:11px;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
@@ -63,7 +61,7 @@
 .tcal-item-arrow{color:var(--mba-muted);flex:none}
 .tcal-item.selected:focus-visible{background:var(--mba-accent-soft,var(--mba-blue-soft))}
 .tcal-more{align-self:flex-start;padding:8px 3px;border:0;background:transparent;color:var(--mba-blue);font:inherit;font-size:11px;font-weight:600;cursor:pointer;text-align:left}
-.tcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;border:1px solid var(--mba-border);border-radius:9px;background:var(--mba-border);overflow:hidden;flex:none}
+.tcal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;border:1px solid var(--mba-border);border-radius:14px;background:var(--mba-border);overflow:hidden;flex:none}
 .tcal-weekday{padding:8px 10px;background:var(--mba-subtle);color:var(--mba-text-2);font-size:10px;font-weight:600;text-transform:uppercase}
 .tcal-day{min-width:0;background:var(--mba-surface);padding:7px;display:flex;flex-direction:column;gap:5px;min-height:90px}
 .tcal-day.outside{background:var(--mba-subtle);color:var(--mba-muted)}
@@ -71,11 +69,16 @@
 .tcal-day-head{display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:11px}
 .tcal-day-head em{font-style:normal;padding:2px 6px;border-radius:5px;background:var(--mba-subtle);color:var(--mba-text-2);font-size:10px}
 .tcal-day-items{display:flex;flex-direction:column;gap:3px}
-.tcal-item.compact{min-height:22px;padding:4px 6px;border:0;border-radius:4px;background:var(--mba-subtle)}
+.tcal-item.compact{min-height:22px;padding:4px 6px;border:0;border-radius:7px;background:var(--mba-subtle)}
 .tcal-item.compact strong{font-size:10px}
 .tcal-item.compact:hover{background:var(--mba-accent-soft,var(--mba-blue-soft))}
-.tcal-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;flex:none}
-.tcal-lane{padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.tcal-undated-view{flex:1;min-height:0}
+.tcal-undated-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.tcal-undated-items>.tcal-item{padding:10px;border:1px solid var(--mba-border);border-radius:12px;background:var(--mba-surface)}
+.tcal-undated-items .tcal-item-main{flex-direction:column;align-items:flex-start;gap:4px}
+.tcal-undated-items .tcal-more{grid-column:1/-1}
+.tcal-undated-empty{color:var(--mba-muted);font-size:11px}
+.tcal-lane{flex:none;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
 .tcal-lane h3{margin:0;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
 .tcal-lane h3 em{font-style:normal;color:var(--mba-muted);font-size:11px;font-weight:500}
 .tcal-lane>div{display:grid}
@@ -89,4 +92,4 @@
 #tarefas .task-card-shell>.execution-card{border:0!important;border-radius:0!important}
 .task-card-shell .tasks-renderer-body{min-height:0;overflow:auto}
 @media(max-width:1000px){#tarefas .task-agenda-filters .queue-station-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}.tcal-nav{margin-left:0}}
-@media(max-width:700px){#tarefas .task-agenda-filters .queue-station-filters{gap:7px}.task-agenda-header h1{font-size:19px}.tcal-scroll{overflow:visible}.tcal-monthly .tcal-scroll{overflow:auto}.tcal-monthly .tcal-grid{min-width:560px}.tcal-item-main{flex-direction:column;align-items:flex-start;gap:3px}.tcal-weekly .tcal-scroll{overflow:auto}.tcal-kanban-scroll{flex:none;height:460px}.task-card-layer{padding:8px}.task-card-layer>.task-card-shell{height:min(86dvh,680px);max-height:calc(100dvh - 16px)}}
+@media(max-width:700px){#tarefas .task-agenda-filters .queue-station-filters{gap:7px}.tcal-scroll{overflow:visible}.tcal-monthly .tcal-scroll{overflow:auto}.tcal-monthly .tcal-grid{min-width:560px}.tcal-item-main{flex-direction:column;align-items:flex-start;gap:3px}.tcal-weekly .tcal-scroll{overflow:auto}.tcal-kanban-scroll{flex:none;height:460px}.task-card-layer{padding:8px}.task-card-layer>.task-card-shell{height:min(86dvh,680px);max-height:calc(100dvh - 16px)}}

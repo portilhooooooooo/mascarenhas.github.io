@@ -16,7 +16,7 @@ test('workspace renders a full-width agenda and keeps execution in a dialog', ()
   const shell = read('src/tasks/TasksApp.tsx');
   assert.ok(shell.includes('className="tasks-workspace task-calendar-workspace"'));
   assert.ok(!shell.includes('<aside className="tasks-workspace-sidebar"'));
-  assert.match(shell, /<TaskCalendar items=\{filteredItems\}/);
+  assert.match(shell, /<TaskCalendar\b[\s\S]*?items=\{filteredItems\}/);
   assert.match(shell, /className="task-card-shell"/);
   assert.match(read('src/tasks/taskCalendar.css'), /grid-template-columns:none!important/);
 });
